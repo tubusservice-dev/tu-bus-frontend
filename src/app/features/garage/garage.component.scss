@@ -74,3 +74,34 @@
     @apply text-sm text-gray-500 dark:text-gray-400;
   }
 }
+
+// ============================================
+// DARK MODE
+// ============================================
+:host-context(.dark) {
+  .garage-title { color: #ffffff; }
+  .garage-subtitle { color: #9ca3af; }
+
+  .alert-success {
+    background-color: rgba(34, 197, 94, 0.1);
+    color: #4ade80;
+    border-color: #166534;
+  }
+
+  .alert-error {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #f87171;
+    border-color: #7f1d1d;
+  }
+
+  .empty-state {
+    .empty-icon { color: #4b5563; }
+    h3 { color: #d1d5db; }
+    p { color: #9ca3af; }
+  }
+
+  .loading-state {
+    .spinner { border-color: #374151; border-top-color: var(--tubus-text-accent, #4d94ff); }
+    p { color: #9ca3af; }
+  }
+}

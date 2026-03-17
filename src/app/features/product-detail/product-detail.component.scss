@@ -4,18 +4,25 @@
 
 // Breadcrumb
 .breadcrumb {
-  @apply flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-6;
+  @apply flex items-center gap-2 text-sm mb-6;
+  color: var(--text-secondary);
 
   a {
-    @apply hover:text-red-600 dark:hover:text-red-500 transition-colors;
+    @apply transition-colors;
+    color: var(--text-secondary);
+
+    &:hover {
+      color: var(--accent-primary);
+    }
   }
 
   .separator {
-    @apply text-gray-300 dark:text-gray-600;
+    color: var(--text-tertiary);
   }
 
   .current {
-    @apply text-gray-700 dark:text-gray-300 truncate max-w-[200px];
+    @apply truncate max-w-[200px];
+    color: var(--text-primary);
   }
 }
 
@@ -30,7 +37,8 @@
 
 .skeleton-gallery {
   .skeleton-main {
-    @apply w-full aspect-square bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse;
+    @apply w-full aspect-square rounded-xl animate-pulse;
+    background-color: #e5e7eb;
   }
 
   .skeleton-thumbs {
@@ -38,7 +46,8 @@
   }
 
   .skeleton-thumb {
-    @apply w-20 h-20 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse;
+    @apply w-20 h-20 rounded-lg animate-pulse;
+    background-color: #e5e7eb;
   }
 }
 
@@ -46,15 +55,18 @@
   @apply space-y-4;
 
   .skeleton-title {
-    @apply h-8 bg-gray-200 dark:bg-gray-700 rounded-lg w-3/4 animate-pulse;
+    @apply h-8 rounded-lg w-3/4 animate-pulse;
+    background-color: #e5e7eb;
   }
 
   .skeleton-price {
-    @apply h-10 bg-gray-200 dark:bg-gray-700 rounded-lg w-1/3 animate-pulse;
+    @apply h-10 rounded-lg w-1/3 animate-pulse;
+    background-color: #e5e7eb;
   }
 
   .skeleton-text {
-    @apply h-4 bg-gray-200 dark:bg-gray-700 rounded w-full animate-pulse;
+    @apply h-4 rounded w-full animate-pulse;
+    background-color: #e5e7eb;
 
     &.short {
       @apply w-2/3;
@@ -62,7 +74,8 @@
   }
 
   .skeleton-button {
-    @apply h-12 bg-gray-200 dark:bg-gray-700 rounded-lg w-full animate-pulse mt-6;
+    @apply h-12 rounded-lg w-full animate-pulse mt-6;
+    background-color: #e5e7eb;
   }
 }
 
@@ -79,11 +92,13 @@
   }
 
   h2 {
-    @apply text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2;
+    @apply text-xl font-semibold mb-2;
+    color: var(--text-primary);
   }
 
   p {
-    @apply text-gray-500 dark:text-gray-400 mb-6;
+    @apply mb-6;
+    color: var(--text-secondary);
   }
 }
 
@@ -98,7 +113,8 @@
 }
 
 .main-image-container {
-  @apply relative aspect-square bg-gray-100 dark:bg-gray-800 rounded-xl overflow-hidden;
+  @apply relative aspect-square rounded-xl overflow-hidden;
+  background-color: #f3f4f6;
 
   .main-image {
     @apply w-full h-full object-cover;
@@ -121,11 +137,16 @@
   }
 
   .nav-arrow {
-    @apply absolute top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 dark:bg-gray-800/90 rounded-full flex items-center justify-center shadow-lg opacity-0 transition-opacity z-20;
-    @apply hover:bg-white dark:hover:bg-gray-700;
+    @apply absolute top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center shadow-lg opacity-0 transition-opacity z-20;
+    background-color: rgba(255, 255, 255, 0.9);
+
+    &:hover {
+      background-color: #ffffff;
+    }
 
     svg {
-      @apply w-5 h-5 text-gray-700 dark:text-gray-200;
+      @apply w-5 h-5;
+      color: #374151;
     }
 
     &.prev {
@@ -147,10 +168,13 @@
 
   .thumbnail {
     @apply flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 border-transparent transition-all;
-    @apply hover:border-gray-300 dark:hover:border-gray-600;
+
+    &:hover {
+      border-color: #d1d5db;
+    }
 
     &.active {
-      @apply border-red-600 dark:border-red-500;
+      border-color: #dc2626;
     }
 
     img {
@@ -171,21 +195,28 @@
     @apply text-xs font-semibold px-3 py-1 rounded-full;
 
     &.series {
-      @apply bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400;
+      @apply bg-blue-100 text-blue-800;
     }
 
     &.condition {
-      @apply bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400;
+      @apply bg-green-100 text-green-800;
+    }
+
+    &.category {
+      background-color: var(--accent-light);
+      color: var(--accent-primary);
     }
   }
 }
 
 .product-name {
-  @apply text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white leading-tight;
+  @apply text-2xl sm:text-3xl font-bold leading-tight;
+  color: var(--text-primary);
 }
 
 .sku {
-  @apply text-sm text-gray-500 dark:text-gray-400;
+  @apply text-sm;
+  color: var(--text-secondary);
 }
 
 .rating {
@@ -195,7 +226,8 @@
     @apply flex gap-0.5;
 
     svg {
-      @apply w-5 h-5 fill-gray-300 dark:fill-gray-600 stroke-none;
+      @apply w-5 h-5 stroke-none;
+      fill: var(--border-color);
 
       &.filled {
         @apply fill-amber-400;
@@ -204,15 +236,19 @@
   }
 
   .rating-text {
-    @apply text-sm text-gray-600 dark:text-gray-400;
+    @apply text-sm;
+    color: var(--text-secondary);
   }
 }
 
 .price-section {
-  @apply flex flex-col gap-1 py-4 px-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700;
+  @apply flex flex-col gap-1 py-4 px-4 rounded-xl;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
 
   .price-label {
-    @apply text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider;
+    @apply text-xs font-semibold uppercase tracking-wider;
+    color: var(--text-secondary);
   }
 
   .price-values {
@@ -220,7 +256,8 @@
   }
 
   .compare-price {
-    @apply text-lg text-gray-400 line-through;
+    @apply text-lg line-through;
+    color: var(--text-tertiary);
   }
 
   .current-price {
@@ -233,7 +270,8 @@
   @apply text-sm;
 
   .in-stock {
-    @apply flex items-center gap-1.5 text-green-600 dark:text-green-500;
+    @apply flex items-center gap-1.5;
+    color: #16a34a;
 
     svg {
       @apply w-4 h-4;
@@ -241,7 +279,8 @@
   }
 
   .low-stock-text {
-    @apply flex items-center gap-1.5 text-amber-600 dark:text-amber-500 font-medium;
+    @apply flex items-center gap-1.5 font-medium;
+    color: #d97706;
 
     svg {
       @apply w-4 h-4;
@@ -249,7 +288,8 @@
   }
 
   .out-of-stock-text {
-    @apply flex items-center gap-1.5 text-red-600 dark:text-red-500;
+    @apply flex items-center gap-1.5;
+    color: #dc2626;
 
     svg {
       @apply w-4 h-4;
@@ -258,15 +298,18 @@
 }
 
 .cart-info {
-  @apply flex flex-wrap items-center gap-2 px-4 py-3 bg-green-50 dark:bg-green-900/20 rounded-lg;
-  @apply text-sm text-green-700 dark:text-green-400 font-medium;
+  @apply flex flex-wrap items-center gap-2 px-4 py-3 rounded-lg;
+  @apply text-sm font-medium;
+  background-color: rgba(34, 197, 94, 0.08);
+  color: #16a34a;
 
   svg {
     @apply w-5 h-5;
   }
 
   .available-text {
-    @apply text-green-600 dark:text-green-500 text-xs;
+    @apply text-xs;
+    color: #16a34a;
   }
 }
 
@@ -275,16 +318,21 @@
 }
 
 .quantity-selector {
-  @apply flex items-center border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden;
+  @apply flex items-center rounded-lg overflow-hidden;
+  border: 1px solid var(--border-color);
 
   &.disabled {
     @apply opacity-50 pointer-events-none;
   }
 
   .qty-btn {
-    @apply w-10 h-10 flex items-center justify-center text-gray-600 dark:text-gray-300 transition-colors;
-    @apply hover:bg-gray-100 dark:hover:bg-gray-700;
-    @apply disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent;
+    @apply w-10 h-10 flex items-center justify-center transition-colors;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+    color: var(--text-secondary);
+
+    &:hover:not(:disabled) {
+      background-color: var(--bg-tertiary);
+    }
 
     svg {
       @apply w-4 h-4;
@@ -292,7 +340,8 @@
   }
 
   .qty-value {
-    @apply w-12 text-center font-semibold text-gray-900 dark:text-white;
+    @apply w-12 text-center font-semibold;
+    color: var(--text-primary);
   }
 }
 
@@ -326,13 +375,13 @@
 .stock-error-message {
   @apply absolute top-full left-0 right-0 mt-2 px-4 py-2;
   @apply text-sm font-medium text-white text-center rounded-lg;
-  @apply bg-gray-900 dark:bg-gray-700;
+  background-color: #1f2937;
   animation: fadeIn 0.2s ease-out;
   z-index: 10;
 }
 
 .stock-error-message {
-  @apply bg-amber-600 dark:bg-amber-700;
+  background-color: #d97706;
 }
 
 @keyframes fadeIn {
@@ -352,22 +401,27 @@
 }
 
 .description-section {
-  @apply pt-4 border-t border-gray-200 dark:border-gray-700;
+  @apply pt-4;
+  border-top: 1px solid var(--border-color);
 
   h3 {
-    @apply text-lg font-semibold text-gray-900 dark:text-white mb-2;
+    @apply text-lg font-semibold mb-2;
+    color: var(--text-primary);
   }
 
   p {
-    @apply text-gray-600 dark:text-gray-400 leading-relaxed;
+    @apply leading-relaxed;
+    color: var(--text-secondary);
   }
 }
 
 .details-section {
-  @apply pt-4 border-t border-gray-200 dark:border-gray-700;
+  @apply pt-4;
+  border-top: 1px solid var(--border-color);
 
   h3 {
-    @apply text-lg font-semibold text-gray-900 dark:text-white mb-4;
+    @apply text-lg font-semibold mb-4;
+    color: var(--text-primary);
   }
 }
 
@@ -378,21 +432,25 @@
     @apply flex flex-col;
 
     .label {
-      @apply text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide;
+      @apply text-xs uppercase tracking-wide;
+      color: var(--text-secondary);
     }
 
     .value {
-      @apply text-sm font-medium text-gray-900 dark:text-white;
+      @apply text-sm font-medium;
+      color: var(--text-primary);
     }
   }
 }
 
 // Related products
 .related-section {
-  @apply mt-12 pt-8 border-t border-gray-200 dark:border-gray-700;
+  @apply mt-12 pt-8;
+  border-top: 1px solid var(--border-color);
 
   h2 {
-    @apply text-2xl font-bold text-gray-900 dark:text-white mb-6;
+    @apply text-2xl font-bold mb-6;
+    color: var(--text-primary);
   }
 }
 
@@ -402,6 +460,145 @@
   app-product-card {
     @apply w-full sm:w-[calc(50%-12px)] lg:w-[calc(25%-18px)];
     @apply max-w-[300px];
+  }
+}
+
+// ============================================
+// DARK MODE
+// ============================================
+:host-context(.dark) {
+  .breadcrumb {
+    color: #9ca3af;
+
+    a {
+      color: #9ca3af;
+      &:hover { color: var(--tubus-text-accent, #4d94ff); }
+    }
+
+    .separator { color: #4b5563; }
+    .current { color: #d1d5db; }
+  }
+
+  .skeleton-gallery .skeleton-main,
+  .skeleton-gallery .skeleton-thumb,
+  .skeleton-info .skeleton-title,
+  .skeleton-info .skeleton-price,
+  .skeleton-info .skeleton-text,
+  .skeleton-info .skeleton-button {
+    background-color: #374151;
+  }
+
+  .error-container {
+    h2 { color: #e5e7eb; }
+    p { color: #9ca3af; }
+  }
+
+  .main-image-container {
+    background-color: #1f2937;
+  }
+
+  .nav-arrow {
+    background-color: rgba(31, 41, 55, 0.9);
+    &:hover { background-color: #374151; }
+
+    svg { color: #e5e7eb; }
+  }
+
+  .thumbnails .thumbnail {
+    &:hover { border-color: #4b5563; }
+    &.active { border-color: var(--tubus-text-accent, #4d94ff); }
+  }
+
+  .meta-tags .tag {
+    &.series {
+      background-color: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+    }
+    &.condition {
+      background-color: rgba(34, 197, 94, 0.15);
+      color: #4ade80;
+    }
+    &.category {
+      background-color: rgba(77, 148, 255, 0.15);
+      color: #4d94ff;
+    }
+  }
+
+  .product-name { color: #ffffff; }
+  .sku { color: #9ca3af; }
+
+  .rating {
+    .stars svg { fill: #4b5563; &.filled { fill: #fbbf24; } }
+    .rating-text { color: #9ca3af; }
+  }
+
+  .price-section {
+    background-color: rgba(31, 41, 55, 0.5);
+    border-color: #374151;
+
+    .price-label { color: #9ca3af; }
+    .compare-price { color: #6b7280; }
+    .current-price { color: var(--tubus-text-accent, #4d94ff); }
+  }
+
+  .stock-info {
+    .in-stock { color: #22c55e; }
+    .low-stock-text { color: #f59e0b; }
+    .out-of-stock-text { color: #ef4444; }
+  }
+
+  .cart-info {
+    background-color: rgba(34, 197, 94, 0.1);
+    color: #4ade80;
+
+    .available-text { color: #22c55e; }
+  }
+
+  .quantity-selector {
+    border-color: #4b5563;
+
+    .qty-btn {
+      color: #d1d5db;
+      &:hover { background-color: #374151; }
+    }
+
+    .qty-value { color: #ffffff; }
+  }
+
+  .btn-add-to-cart {
+    &:disabled { background-color: #4b5563; }
+  }
+
+  .login-message {
+    background-color: #374151;
+  }
+
+  .stock-error-message {
+    background-color: #b45309;
+  }
+
+  .description-section {
+    border-top-color: #374151;
+
+    h3 { color: #ffffff; }
+    p { color: #9ca3af; }
+  }
+
+  .details-section {
+    border-top-color: #374151;
+
+    h3 { color: #ffffff; }
+
+    .detail-item {
+      .label { color: #9ca3af; }
+      .value { color: #ffffff; }
+    }
+  }
+
+  .related-section {
+    border-top-color: #374151;
+
+    h2 { color: #ffffff; }
   }
 }
 

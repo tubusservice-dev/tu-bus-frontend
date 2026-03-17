@@ -235,3 +235,37 @@
     transform: translateY(0);
   }
 }
+
+// ============================================
+// DARK MODE
+// ============================================
+:host-context(.dark) {
+  .product-card {
+    background-color: #1f2937;
+    border-color: #374151;
+
+    &.clickable:hover {
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+    }
+  }
+
+  .card-image { background-color: #111827; }
+
+  .category-name { color: #9ca3af; }
+  .card-title { color: #ffffff; }
+  .card-model { color: #9ca3af; }
+  .card-quick-info { color: #9ca3af; }
+
+  .quick-item.condition {
+    background-color: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+  }
+
+  .card-footer { border-top-color: #374151; }
+  .price-old { color: #6b7280; }
+  .price { color: #ffffff; }
+  .stock-low { color: #f59e0b; }
+
+  .login-tooltip { background-color: #374151; }
+  .stock-tooltip { background-color: #b45309; }
+}

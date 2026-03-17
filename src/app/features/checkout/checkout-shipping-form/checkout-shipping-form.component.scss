@@ -167,6 +167,63 @@ select.input {
   }
 }
 
+// ============================================
+// DARK MODE
+// ============================================
+:host-context(.dark) {
+  .shipping-form-page { background-color: #111827; }
+
+  .page-header {
+    background-color: #1f2937;
+    border-bottom-color: #374151;
+  }
+
+  .back-btn {
+    color: #9ca3af;
+    &:hover { color: #ffffff; }
+  }
+
+  .page-title h1 { color: #ffffff; }
+
+  .selected-agency-banner {
+    background-color: #1f2937;
+    border-color: #374151;
+  }
+
+  .agency-logo { background-color: #374151; }
+  .agency-logo-placeholder { background-color: #374151; color: #6b7280; }
+  .agency-text {
+    .agency-label { color: #9ca3af; }
+    .agency-name { color: #ffffff; }
+  }
+
+  .form-section {
+    background-color: #1f2937;
+    border-color: #374151;
+  }
+
+  .section-title {
+    color: #ffffff;
+    border-bottom-color: #374151;
+  }
+
+  .form-group label { color: #d1d5db; }
+
+  .input {
+    border-color: #4b5563;
+    background-color: #374151;
+    color: #ffffff;
+    &::placeholder { color: #6b7280; }
+  }
+
+  select.input {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+  }
+
+  .error-message { color: #f87171; }
+  .hint { color: #9ca3af; }
+}
+
 // ========== Responsive ==========
 @media (max-width: 640px) {
   .selected-agency-banner {

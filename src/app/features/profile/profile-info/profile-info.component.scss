@@ -141,6 +141,69 @@
   @apply border-white/30 border-t-white;
 }
 
+// ============================================
+// DARK MODE
+// ============================================
+:host-context(.dark) {
+  .sidebar-card,
+  .content-card {
+    background-color: #1f2937;
+    border-color: #374151;
+  }
+
+  .sidebar-title {
+    color: #9ca3af;
+    border-bottom-color: #374151;
+  }
+
+  .sidebar-btn {
+    color: #d1d5db;
+    &:hover { background-color: rgba(55, 65, 81, 0.5); }
+    svg { color: #9ca3af; }
+  }
+
+  .account-label { color: #9ca3af; }
+  .account-value { color: #ffffff; }
+
+  .card-header { border-bottom-color: #374151; }
+  .card-title { color: #ffffff; }
+  .cancel-link {
+    color: #9ca3af;
+    &:hover { color: #e5e7eb; }
+  }
+
+  .form-label { color: #d1d5db; }
+  .form-input {
+    background-color: #111827;
+    border-color: #4b5563;
+    color: #ffffff;
+    &:focus { background-color: #1f2937; }
+    &.disabled { background-color: rgba(31, 41, 55, 0.5); }
+  }
+
+  .form-select-prefix {
+    background-color: #111827;
+    border-color: #4b5563;
+    color: #ffffff;
+  }
+
+  .field-hint { color: #9ca3af; }
+  .form-actions { border-top-color: #374151; }
+
+  .info-icon {
+    background-color: #374151;
+    svg { color: #9ca3af; }
+  }
+  .info-label { color: #9ca3af; }
+  .info-value { color: #ffffff; }
+
+  .btn-secondary {
+    background-color: #374151;
+    color: #e5e7eb;
+    &:hover { background-color: #4b5563; }
+  }
+}
+
 @media (max-width: 768px) {
   .content-grid { @apply flex flex-col-reverse; }
 }

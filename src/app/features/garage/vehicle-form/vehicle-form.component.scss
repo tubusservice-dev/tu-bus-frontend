@@ -49,3 +49,39 @@
   @apply bg-gray-100 hover:bg-gray-200 text-gray-700;
   @apply dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200;
 }
+
+// ============================================
+// DARK MODE
+// ============================================
+:host-context(.dark) {
+  .form-card {
+    background-color: #1f2937;
+    border-color: #374151;
+  }
+
+  .form-header {
+    border-bottom-color: #374151;
+    h3 { color: #ffffff; }
+  }
+
+  .close-btn {
+    color: #9ca3af;
+    &:hover { background-color: #374151; color: #e5e7eb; }
+  }
+
+  .form-label { color: #d1d5db; }
+  .form-input {
+    background-color: #111827;
+    border-color: #4b5563;
+    color: #ffffff;
+    &::placeholder { color: #6b7280; }
+  }
+
+  .form-actions { border-top-color: #374151; }
+
+  .btn-secondary {
+    background-color: #374151;
+    color: #e5e7eb;
+    &:hover { background-color: #4b5563; }
+  }
+}

@@ -238,3 +238,106 @@
     @apply focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent;
   }
 }
+
+// ============================================
+// DARK MODE
+// ============================================
+:host-context(.dark) {
+  .page-title { color: #ffffff; }
+  .page-subtitle { color: #9ca3af; }
+  .product-count { color: #6b7280; }
+
+  .search-box {
+    .search-icon { color: #6b7280; }
+
+    input {
+      background-color: #1f2937;
+      border-color: #374151;
+      color: #ffffff;
+      &::placeholder { color: #6b7280; }
+    }
+  }
+
+  .btn-filter {
+    background-color: #1f2937;
+    border-color: #374151;
+    color: #d1d5db;
+    &:hover { background-color: #374151; }
+  }
+
+  .sort-select {
+    background-color: #1f2937;
+    border-color: #374151;
+    color: #d1d5db;
+  }
+
+  .filters-panel {
+    background-color: rgba(31, 41, 55, 0.5);
+    border-color: #374151;
+  }
+
+  .filter-group {
+    label { color: #d1d5db; }
+
+    select, input {
+      background-color: #374151;
+      border-color: #4b5563;
+      color: #ffffff;
+    }
+
+    &.price-range .price-inputs span { color: #6b7280; }
+  }
+
+  .btn-clear-filters {
+    color: #f87171;
+    &:hover { background-color: rgba(239, 68, 68, 0.1); }
+  }
+
+  .vehicle-filter-banner {
+    background-color: rgba(59, 130, 246, 0.1);
+    border-color: #1e3a5f;
+
+    .banner-content { color: #93c5fd; }
+    .banner-close {
+      color: #93c5fd;
+      &:hover { background-color: rgba(59, 130, 246, 0.2); }
+    }
+  }
+
+  .skeleton-card {
+    background-color: #1f2937;
+    border-color: #374151;
+  }
+
+  .skeleton-image,
+  .skeleton-line,
+  .skeleton-btn {
+    background-color: #374151;
+  }
+
+  .skeleton-footer {
+    border-top-color: #374151;
+  }
+
+  .empty-state {
+    svg { color: #4b5563; }
+    h3 { color: #ffffff; }
+    p { color: #9ca3af; }
+  }
+
+  .page-btn {
+    color: #9ca3af;
+    &:hover { background-color: #1f2937; }
+    &.active { background-color: var(--accent-primary); color: #ffffff; }
+  }
+
+  .limit-selector {
+    label { color: #9ca3af; }
+
+    select {
+      background-color: #1f2937;
+      border-color: #374151;
+      color: #d1d5db;
+    }
+  }
+}

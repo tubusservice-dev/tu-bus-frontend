@@ -84,3 +84,53 @@
   @apply flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium text-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors;
   .oauth-icon { @apply w-5 h-5; }
 }
+
+// ============================================
+// DARK MODE
+// ============================================
+:host-context(.dark) {
+  .modal-container { background-color: #1f2937; }
+  .modal-title { color: #ffffff; }
+  .close-btn {
+    color: #6b7280;
+    &:hover { color: #d1d5db; background-color: #374151; }
+  }
+
+  .tab {
+    color: #9ca3af;
+    &:hover { background-color: #374151; }
+    &.active { color: #ffffff; }
+  }
+
+  .session-expired-alert {
+    background-color: rgba(245, 158, 11, 0.1);
+    color: #fbbf24;
+  }
+
+  .error-alert {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #f87171;
+  }
+
+  .form-label { color: #d1d5db; }
+  .form-input {
+    background-color: #374151;
+    border-color: #4b5563;
+    color: #ffffff;
+    &::placeholder { color: #6b7280; }
+  }
+
+  .field-error { color: #f87171; }
+
+  .divider {
+    &::before, &::after { background-color: #374151; }
+    span { color: #9ca3af; }
+  }
+
+  .oauth-btn {
+    border-color: #4b5563;
+    background-color: #374151;
+    color: #d1d5db;
+    &:hover { background-color: #4b5563; }
+  }
+}

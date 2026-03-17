@@ -100,6 +100,31 @@
   }
 }
 
+// ============================================
+// DARK MODE
+// ============================================
+:host-context(.dark) {
+  .profile-page { background-color: #111827; }
+
+  .avatar-image {
+    border-color: #1f2937;
+    background-color: #374151;
+  }
+
+  .profile-tabs {
+    background-color: #1f2937;
+    border-color: #374151;
+  }
+
+  .tab-btn {
+    color: #9ca3af;
+    &:hover { color: #ffffff; }
+    &.active { color: #ffffff; }
+  }
+
+  .tab-placeholder { color: #6b7280; }
+}
+
 // Responsive
 @media (max-width: 768px) {
   .banner-content { @apply justify-center; }

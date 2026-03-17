@@ -160,3 +160,81 @@
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+// ============================================
+// DARK MODE
+// ============================================
+:host-context(.dark) {
+  .orders-title { color: #ffffff; }
+  .orders-subtitle { color: #9ca3af; }
+
+  .order-card {
+    background-color: #1f2937;
+    border-color: #374151;
+    &:hover { border-color: #4b5563; }
+  }
+
+  .order-card-header { border-bottom-color: #374151; }
+  .order-number-label { color: #9ca3af; }
+  .order-number-value { color: #ffffff; }
+
+  .order-items-preview {
+    .item-name {
+      background-color: #374151;
+      color: #d1d5db;
+    }
+    .more-items { color: #9ca3af; }
+  }
+
+  .order-date { color: #9ca3af; }
+  .order-total { color: #ffffff; }
+
+  .empty-state {
+    .empty-icon { color: #4b5563; }
+    h3 { color: #d1d5db; }
+    p { color: #9ca3af; }
+  }
+
+  .loading-state {
+    .spinner { border-color: #374151; border-top-color: var(--tubus-text-accent, #4d94ff); }
+    p { color: #9ca3af; }
+  }
+
+  .modal-content {
+    background-color: #1f2937;
+  }
+
+  .modal-header {
+    border-bottom-color: #374151;
+    .modal-title { color: #ffffff; }
+  }
+
+  .modal-close {
+    color: #9ca3af;
+    &:hover { background-color: #374151; color: #e5e7eb; }
+  }
+
+  .detail-section h4 { color: #d1d5db; }
+
+  .detail-item { border-bottom-color: #374151; }
+  .item-image { background-color: #374151; }
+  .item-name-detail { color: #ffffff; }
+  .item-qty { color: #9ca3af; }
+  .item-total { color: #ffffff; }
+
+  .totals { background-color: rgba(17, 24, 39, 0.5); }
+  .total-row {
+    color: #9ca3af;
+    &.total-final {
+      color: #ffffff;
+      border-top-color: #374151;
+    }
+  }
+
+  .timeline-entry::before { background-color: #374151; }
+  .timeline-status { color: #ffffff; }
+  .timeline-date { color: #9ca3af; }
+  .timeline-note { color: #9ca3af; }
+
+  .detail-actions { border-top-color: #374151; }
+}

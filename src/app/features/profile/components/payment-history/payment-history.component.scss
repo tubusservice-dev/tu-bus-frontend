@@ -203,6 +203,83 @@
   @apply text-sm text-gray-600 dark:text-gray-400;
 }
 
+// ============================================
+// DARK MODE
+// ============================================
+:host-context(.dark) {
+  .loading-state { color: #6b7280; }
+
+  .empty-state {
+    .empty-icon { color: #4b5563; }
+    .empty-title { color: #d1d5db; }
+    .empty-subtitle { color: #9ca3af; }
+  }
+
+  .payments-table-wrapper {
+    background-color: #1f2937;
+    border-color: #374151;
+  }
+
+  .payments-table {
+    thead {
+      background-color: rgba(55, 65, 81, 0.5);
+      th { color: #9ca3af; }
+    }
+
+    tbody {
+      tr {
+        border-top-color: rgba(55, 65, 81, 0.5);
+        &:hover { background-color: rgba(55, 65, 81, 0.2); }
+      }
+      td { color: #d1d5db; }
+    }
+  }
+
+  .edit-btn {
+    color: #60a5fa;
+    background-color: rgba(59, 130, 246, 0.1);
+    &:hover { background-color: rgba(59, 130, 246, 0.2); }
+  }
+
+  .edit-form {
+    background-color: rgba(59, 130, 246, 0.05);
+  }
+
+  .edit-form-title { color: #e5e7eb; }
+
+  .form-group label { color: #9ca3af; }
+  .form-input {
+    border-color: #4b5563;
+    background-color: #374151;
+    color: #ffffff;
+  }
+
+  .upload-label {
+    border-color: #4b5563;
+    color: #9ca3af;
+    &:hover { border-color: #6b7280; }
+  }
+
+  .capture-preview img { border-color: #4b5563; }
+
+  .btn-cancel {
+    color: #d1d5db;
+    background-color: #4b5563;
+    &:hover { background-color: #6b7280; }
+  }
+
+  .spinner { border-color: #4b5563; }
+
+  .page-btn {
+    color: #d1d5db;
+    background-color: #1f2937;
+    border-color: #374151;
+    &:hover { background-color: #374151; }
+  }
+
+  .page-info { color: #9ca3af; }
+}
+
 // Responsive
 @media (max-width: 768px) {
   .payments-table {
