@@ -1,0 +1,239 @@
+<div class="pm-form-page">
+  <!-- Header -->
+  <header class="page-header">
+    <button type="button" class="btn-back" (click)="cancel()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+      </svg>
+    </button>
+    <div>
+      <h1 class="page-title">{{ isEditMode() ? 'Editar' : 'Nuevo' }} Método de Pago</h1>
+      <p class="page-subtitle">
+        {{ isEditMode() ? 'Modifica los datos del método de pago' : 'Configura un nuevo método de pago para tus clientes' }}
+      </p>
+    </div>
+  </header>
+
+  @if (isLoading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <span>Cargando...</span>
+    </div>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="save()" class="form-container">
+      <!-- Tipo de método -->
+      <div class="form-section">
+        <h2 class="section-title">Tipo de Método</h2>
+
+        <div class="form-group">
+          <label for="type">Tipo de pago</label>
+          <select id="type" formControlName="type" class="input select">
+            <option value="" disabled>Selecciona un tipo</option>
+            @for (option of typeOptions; track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+            }
+          </select>
+          @if (isFieldInvalid('type')) {
+            <small class="error">Debes seleccionar un tipo de pago</small>
+          }
+        </div>
+
+        <div class="form-group">
+          <label for="label">Nombre / Etiqueta</label>
+          <input
+            type="text"
+            id="label"
+            formControlName="label"
+            placeholder="Ej: Pago Móvil Banesco, Transferencia BOD..."
+            class="input"
+            autocomplete="off"
+          />
+          <small class="hint">Nombre que verán los clientes al seleccionar este método</small>
+          @if (isFieldInvalid('label')) {
+            <small class="error">El nombre es requerido (máx. 100 caracteres)</small>
+          }
+        </div>
+      </div>
+
+      <!-- Campos de Pago Móvil -->
+      @if (selectedType() === PaymentMethodType.PAGO_MOVIL) {
+        <div class="form-section">
+          <h2 class="section-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="section-icon">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
+            </svg>
+            Datos de Pago Móvil
+          </h2>
+
+          <div class="form-group">
+            <label for="pm_phoneNumber">Número de teléfono destino</label>
+            <input
+              type="text"
+              id="pm_phoneNumber"
+              formControlName="pm_phoneNumber"
+              placeholder="Ej: 04121234567"
+              class="input"
+            />
+            @if (isFieldInvalid('pm_phoneNumber')) {
+              <small class="error">El número de teléfono es requerido</small>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="pm_bankName">Banco destino</label>
+            <input
+              type="text"
+              id="pm_bankName"
+              formControlName="pm_bankName"
+              placeholder="Ej: Banesco, Mercantil, Provincial..."
+              class="input"
+            />
+            @if (isFieldInvalid('pm_bankName')) {
+              <small class="error">El banco es requerido</small>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="pm_documentId">Documento de identidad del titular</label>
+            <input
+              type="text"
+              id="pm_documentId"
+              formControlName="pm_documentId"
+              placeholder="Ej: V-12345678"
+              class="input"
+            />
+            @if (isFieldInvalid('pm_documentId')) {
+              <small class="error">El documento de identidad es requerido</small>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- Campos de Transferencia Bancaria -->
+      @if (selectedType() === PaymentMethodType.TRANSFERENCIA) {
+        <div class="form-section">
+          <h2 class="section-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="section-icon">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0 0 12 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75Z" />
+            </svg>
+            Datos de Transferencia Bancaria
+          </h2>
+
+          <div class="form-group">
+            <label for="tr_accountNumber">Número de cuenta</label>
+            <input
+              type="text"
+              id="tr_accountNumber"
+              formControlName="tr_accountNumber"
+              placeholder="Ej: 0134-0000-00-0000000000"
+              class="input"
+            />
+            @if (isFieldInvalid('tr_accountNumber')) {
+              <small class="error">El número de cuenta es requerido</small>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="tr_bankName">Banco destino</label>
+            <input
+              type="text"
+              id="tr_bankName"
+              formControlName="tr_bankName"
+              placeholder="Ej: Banesco, Mercantil, Provincial..."
+              class="input"
+            />
+            @if (isFieldInvalid('tr_bankName')) {
+              <small class="error">El banco es requerido</small>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="tr_documentId">Documento de identidad del titular</label>
+            <input
+              type="text"
+              id="tr_documentId"
+              formControlName="tr_documentId"
+              placeholder="Ej: V-12345678, J-12345678-9"
+              class="input"
+            />
+            @if (isFieldInvalid('tr_documentId')) {
+              <small class="error">El documento de identidad es requerido</small>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- Campos de Efectivo en Divisas -->
+      @if (selectedType() === PaymentMethodType.EFECTIVO_DIVISAS) {
+        <div class="form-section">
+          <h2 class="section-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="section-icon">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm3 0h.008v.008H18V10.5Zm-12 0h.008v.008H6V10.5Z" />
+            </svg>
+            Mensaje para Efectivo en Divisas
+          </h2>
+
+          <div class="form-group">
+            <label for="customMessage">Mensaje informativo</label>
+            <textarea
+              id="customMessage"
+              formControlName="customMessage"
+              placeholder="Ej: Se acepta efectivo en USD. El cambio se calcula al momento de la entrega..."
+              class="input textarea"
+              rows="3"
+            ></textarea>
+            <small class="hint">Este mensaje se mostrará al cliente cuando seleccione este método</small>
+          </div>
+        </div>
+      }
+
+      <!-- Campos de Pago con Tarjeta -->
+      @if (selectedType() === PaymentMethodType.TARJETA) {
+        <div class="form-section">
+          <h2 class="section-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="section-icon">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" />
+            </svg>
+            Mensaje para Pago con Tarjeta
+          </h2>
+
+          <div class="form-group">
+            <label for="customMessageCard">Mensaje informativo</label>
+            <textarea
+              id="customMessageCard"
+              formControlName="customMessage"
+              placeholder="Ej: Se acepta Visa, Mastercard y débito. El cobro se realiza al momento de la entrega..."
+              class="input textarea"
+              rows="3"
+            ></textarea>
+            <small class="hint">Este mensaje se mostrará al cliente cuando seleccione este método</small>
+          </div>
+        </div>
+      }
+
+      <!-- Error general -->
+      @if (errorMessage()) {
+        <div class="alert alert-error">{{ errorMessage() }}</div>
+      }
+
+      <!-- Botones -->
+      <div class="form-actions">
+        <button type="button" class="btn-cancel" (click)="cancel()">
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          class="btn-save"
+          [disabled]="isSaving()"
+        >
+          @if (isSaving()) {
+            <span class="btn-spinner"></span>
+            Guardando...
+          } @else {
+            {{ isEditMode() ? 'Actualizar' : 'Crear' }} Método de Pago
+          }
+        </button>
+      </div>
+    </form>
+  }
+</div>

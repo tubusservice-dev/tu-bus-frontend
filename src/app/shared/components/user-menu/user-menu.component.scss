@@ -1,0 +1,158 @@
+.user-menu-container {
+  @apply relative;
+}
+
+.user-btn {
+  @apply flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200;
+  background-color: transparent;
+  color: var(--text-primary);
+
+  &:hover {
+    background-color: var(--bg-tertiary);
+  }
+}
+
+.user-avatar {
+  @apply w-8 h-8 rounded-full object-cover ring-2;
+  ring-color: var(--accent-primary);
+}
+
+.user-name {
+  @apply hidden sm:block text-sm font-medium;
+}
+
+.arrow-icon {
+  @apply w-4 h-4 transition-transform duration-200;
+  color: var(--text-secondary);
+}
+
+.dropdown-menu {
+  @apply absolute right-0 top-full mt-2 w-64 rounded-xl py-2 z-50 animate-slide-down;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-lg);
+}
+
+.user-info {
+  @apply flex items-center gap-3 px-4 py-3;
+}
+
+.user-info-avatar {
+  @apply w-10 h-10 rounded-full object-cover;
+}
+
+.user-info-details {
+  @apply flex-1 min-w-0;
+}
+
+.user-info-name {
+  @apply text-sm font-semibold truncate;
+  color: var(--text-primary);
+}
+
+.user-info-email {
+  @apply text-xs truncate;
+  color: var(--text-secondary);
+}
+
+.menu-divider {
+  @apply my-2 h-px;
+  background-color: var(--border-color);
+}
+
+.menu-nav {
+  @apply py-1;
+}
+
+.menu-item {
+  @apply flex items-center gap-3 px-4 py-2 text-sm transition-colors duration-150;
+  color: var(--text-primary);
+
+  &:hover {
+    background-color: var(--bg-tertiary);
+    color: var(--accent-primary);
+    text-decoration: none;
+  }
+}
+
+.menu-icon {
+  @apply w-5 h-5;
+  color: var(--text-secondary);
+
+  .menu-item:hover & {
+    color: var(--accent-primary);
+  }
+
+  .logout-btn:hover & {
+    color: var(--accent-primary);
+  }
+}
+
+.logout-btn {
+  @apply flex items-center gap-3 w-full px-4 py-2 text-sm text-left transition-colors duration-150;
+  color: var(--text-primary);
+  background-color: transparent;
+
+  &:hover {
+    background-color: var(--accent-light);
+    color: var(--accent-primary);
+  }
+}
+
+// ============================================
+// DARK MODE
+// ============================================
+:host-context(.dark) {
+  .user-btn {
+    color: #f3f4f6;
+    &:hover {
+      background-color: #374151;
+    }
+  }
+
+  .user-name {
+    color: #f3f4f6;
+  }
+
+  .arrow-icon {
+    color: #9ca3af;
+  }
+
+  .dropdown-menu {
+    background-color: #1f2937;
+    border-color: #374151;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+  }
+
+  .user-info-name {
+    color: #f3f4f6;
+  }
+
+  .user-info-email {
+    color: #9ca3af;
+  }
+
+  .menu-divider {
+    background-color: #374151;
+  }
+
+  .menu-item {
+    color: #d1d5db;
+    &:hover {
+      background-color: #374151;
+      color: var(--tubus-text-accent, #4d94ff);
+    }
+  }
+
+  .menu-icon {
+    color: #6b7280;
+  }
+
+  .logout-btn {
+    color: #d1d5db;
+    &:hover {
+      background-color: rgba(239, 68, 68, 0.1);
+      color: #f87171;
+    }
+  }
+}

@@ -1,0 +1,142 @@
+<div class="brand-form-page">
+  <!-- Header -->
+  <header class="page-header">
+    <a routerLink="/admin/brands" class="back-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+      </svg>
+      Volver a marcas
+    </a>
+    <h1 class="page-title">
+      {{ isEditMode() ? 'Editar Marca' : 'Nueva Marca' }}
+    </h1>
+  </header>
+
+  <!-- Loading -->
+  @if (isLoading()) {
+    <div class="loading-container">
+      <div class="loading-spinner"></div>
+      <span>Cargando marca...</span>
+    </div>
+  } @else {
+    <!-- Error -->
+    @if (errorMessage()) {
+      <div class="alert error">
+        <span>{{ errorMessage() }}</span>
+        <button (click)="errorMessage.set(null)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    }
+
+    <!-- Formulario -->
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="form-container">
+      <div class="form-grid">
+        <!-- Columna izquierda -->
+        <div class="form-main">
+          <section class="form-section">
+            <h2 class="section-title">Información básica</h2>
+
+            <!-- Nombre -->
+            <div class="form-group">
+              <label for="name">
+                Nombre <span class="required">*</span>
+              </label>
+              <input
+                type="text"
+                id="name"
+                formControlName="name"
+                placeholder="Ej: Hot Wheels, Matchbox, Majorette"
+                [class.error]="isInvalid('name')"
+              />
+              @if (hasError('name', 'required')) {
+                <span class="error-text">El nombre es requerido</span>
+              }
+              @if (hasError('name', 'minlength')) {
+                <span class="error-text">Mínimo 2 caracteres</span>
+              }
+            </div>
+
+            <!-- Descripción -->
+            <div class="form-group">
+              <label for="description">Descripción</label>
+              <textarea
+                id="description"
+                formControlName="description"
+                rows="4"
+                placeholder="Describe brevemente esta marca..."
+              ></textarea>
+            </div>
+          </section>
+        </div>
+
+        <!-- Columna derecha -->
+        <div class="form-sidebar">
+          <!-- Estado -->
+          <section class="form-section">
+            <h2 class="section-title">Estado</h2>
+            <label class="toggle-label">
+              <input type="checkbox" formControlName="isActive" />
+              <span class="toggle-switch"></span>
+              <span>Marca activa</span>
+            </label>
+            <p class="help-text">Las marcas inactivas no se muestran en la tienda.</p>
+          </section>
+
+          <!-- Imagen -->
+          <section class="form-section">
+            <h2 class="section-title">Imagen</h2>
+
+            @if (imagePreview()) {
+              <div class="image-preview">
+                <img [src]="imagePreview()" alt="Preview" />
+                <button type="button" class="btn-remove-image" (click)="removeImage()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            } @else {
+              <div class="upload-zone">
+                <input
+                  type="file"
+                  id="image-upload"
+                  accept="image/*"
+                  (change)="onFileSelected($event)"
+                  [disabled]="isUploading()"
+                />
+                <label for="image-upload" class="upload-label">
+                  @if (isUploading()) {
+                    <div class="loading-spinner-sm"></div>
+                    <span>Subiendo...</span>
+                  } @else {
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+                    </svg>
+                    <span>Subir imagen</span>
+                    <span class="upload-hint">PNG, JPG hasta 5MB</span>
+                  }
+                </label>
+              </div>
+            }
+          </section>
+        </div>
+      </div>
+
+      <!-- Acciones -->
+      <div class="form-actions">
+        <a routerLink="/admin/brands" class="btn-cancel">Cancelar</a>
+        <button type="submit" class="btn-submit" [disabled]="isSubmitting()">
+          @if (isSubmitting()) {
+            <span class="loading-spinner-sm"></span>
+            Guardando...
+          } @else {
+            {{ isEditMode() ? 'Actualizar' : 'Crear' }} Marca
+          }
+        </button>
+      </div>
+    </form>
+  }
+</div>

@@ -1,0 +1,114 @@
+.contact-section {
+  @apply py-16 sm:py-20 lg:py-24;
+  background-color: var(--bg-secondary);
+}
+
+.contact-container {
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+.contact-grid {
+  @apply grid lg:grid-cols-2 gap-12 lg:gap-16 items-center;
+}
+
+// Contact Info
+.contact-info {
+  @apply text-center lg:text-left;
+}
+
+.section-badge {
+  @apply inline-block px-4 py-1.5 rounded-full mb-4;
+  @apply text-sm font-semibold;
+  background-color: rgba(var(--tubus-primary-rgb), 0.15);
+  color: var(--tubus-text-accent);
+}
+
+.contact-title {
+  @apply text-3xl sm:text-4xl font-bold mb-4;
+  color: var(--text-primary);
+}
+
+.contact-description {
+  @apply text-lg mb-8;
+  color: var(--text-secondary);
+}
+
+.contact-items {
+  @apply space-y-4;
+}
+
+.contact-item {
+  @apply flex items-center gap-4;
+  @apply justify-center lg:justify-start;
+}
+
+.item-icon {
+  @apply w-12 h-12 flex items-center justify-center rounded-xl flex-shrink-0;
+  background-color: rgba(var(--tubus-primary-rgb), 0.15);
+  color: var(--tubus-text-accent);
+
+  svg {
+    @apply w-6 h-6;
+  }
+}
+
+.item-content {
+  @apply flex flex-col;
+}
+
+.item-label {
+  @apply text-xs font-semibold uppercase tracking-wider;
+  color: var(--text-tertiary);
+}
+
+.item-value {
+  @apply text-base font-medium;
+  color: var(--text-primary);
+}
+
+// CTA Card
+.contact-cta {
+  @apply flex justify-center lg:justify-end;
+}
+
+.cta-card {
+  @apply w-full max-w-md p-8 rounded-3xl text-center;
+  background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+  color: white;
+}
+
+.cta-icon {
+  @apply w-16 h-16 mx-auto mb-5;
+  @apply flex items-center justify-center rounded-2xl;
+  background-color: rgba(255, 255, 255, 0.2);
+
+  svg {
+    @apply w-8 h-8;
+  }
+}
+
+.cta-title {
+  @apply text-xl font-bold mb-2;
+}
+
+.cta-description {
+  @apply text-sm opacity-90 mb-6;
+}
+
+.cta-btn {
+  @apply inline-flex items-center justify-center gap-2;
+  @apply w-full py-3 px-6 rounded-xl;
+  @apply text-base font-semibold;
+  @apply transition-all duration-200;
+  background-color: white;
+  color: #128C7E;
+
+  svg {
+    @apply w-5 h-5;
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px -10px rgba(0, 0, 0, 0.3);
+  }
+}

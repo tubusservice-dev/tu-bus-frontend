@@ -1,0 +1,93 @@
+<div class="category-form-page">
+  <!-- Header -->
+  <header class="page-header">
+    <a routerLink="/admin/categories" class="back-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+      </svg>
+      Volver a categorías
+    </a>
+    <h1 class="page-title">
+      {{ isEditMode() ? 'Editar Categoría' : 'Nueva Categoría' }}
+    </h1>
+  </header>
+
+  <!-- Loading -->
+  @if (isLoading()) {
+    <div class="loading-container">
+      <div class="loading-spinner"></div>
+      <span>Cargando categoría...</span>
+    </div>
+  } @else {
+    <!-- Error -->
+    @if (errorMessage()) {
+      <div class="alert error">
+        <span>{{ errorMessage() }}</span>
+        <button type="button" (click)="errorMessage.set(null)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    }
+
+    <!-- Formulario -->
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="form-container">
+      <div class="form-card">
+        <!-- Nombre -->
+        <div class="form-group">
+          <label for="name">
+            Nombre de la Categoría <span class="required">*</span>
+          </label>
+          <input
+            type="text"
+            id="name"
+            formControlName="name"
+            placeholder="Ej: Electrónica, Ropa, Deportes"
+            [class.error]="isInvalid('name')"
+          />
+          @if (hasError('name', 'required')) {
+            <span class="error-text">El nombre es requerido</span>
+          }
+          @if (hasError('name', 'minlength')) {
+            <span class="error-text">Mínimo 2 caracteres</span>
+          }
+        </div>
+
+        <!-- Descripción -->
+        <div class="form-group">
+          <label for="description">Descripción</label>
+          <textarea
+            id="description"
+            formControlName="description"
+            rows="3"
+            placeholder="Describe brevemente esta categoría..."
+          ></textarea>
+        </div>
+
+        <!-- Toggle Activo -->
+        <div class="form-group">
+          <label class="toggle-label">
+            <input type="checkbox" formControlName="isActive" />
+            <span class="toggle-switch"></span>
+            <span>Categoría activa</span>
+          </label>
+          <p class="help-text">Las categorías inactivas no se muestran en la tienda.</p>
+        </div>
+      </div>
+
+      <!-- Acciones -->
+      <div class="form-actions">
+        <a routerLink="/admin/categories" class="btn-cancel">Cancelar</a>
+        <button type="submit" class="btn-submit" [disabled]="isSubmitting()">
+          @if (isSubmitting()) {
+            <span class="loading-spinner-sm"></span>
+            Guardando...
+          } @else {
+            {{ isEditMode() ? 'Actualizar' : 'Crear' }} Categoría
+          }
+        </button>
+      </div>
+    </form>
+  }
+</div>

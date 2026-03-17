@@ -1,0 +1,736 @@
+<div class="settings-page">
+  <!-- Header -->
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Configuraciones</h1>
+      <p class="page-subtitle">Personaliza tu tienda Hot Wheels</p>
+    </div>
+  </header>
+
+  <!-- Loading -->
+  @if (isLoading()) {
+    <div class="loading-container">
+      <div class="spinner"></div>
+      <p>Cargando configuraciones...</p>
+    </div>
+  } @else {
+    <!-- Acordeón de secciones -->
+    <div class="settings-accordion">
+
+      <!-- ========== SECCIÓN HOME HERO ========== -->
+      <div class="accordion-item" [class.expanded]="activeSection() === 'homeHero'">
+        <button class="accordion-header" (click)="toggleSection('homeHero')" type="button">
+          <div class="header-content">
+            <span class="icon">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+              </svg>
+            </span>
+            <span class="title">Home</span>
+          </div>
+          <span class="chevron" [class.rotated]="activeSection() === 'homeHero'">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+            </svg>
+          </span>
+        </button>
+
+        <div class="accordion-content" [class.open]="activeSection() === 'homeHero'">
+          <form [formGroup]="homeHeroForm" class="section-form">
+            <p class="section-description">
+              Personaliza el título y descripción de la sección principal del Home.
+            </p>
+
+            <div class="form-group">
+              <label for="heroTitle">Título</label>
+              <input
+                type="text"
+                id="heroTitle"
+                formControlName="title"
+                placeholder="Ej: Colección de"
+                class="input"
+              />
+              <small class="hint">Texto principal del título (antes del texto destacado)</small>
+              @if (homeHeroForm.get('title')?.touched && homeHeroForm.get('title')?.invalid) {
+                <small class="error">El título es requerido (máx. 100 caracteres)</small>
+              }
+            </div>
+
+            <div class="form-group">
+              <label for="heroTitleAccent">Texto destacado</label>
+              <input
+                type="text"
+                id="heroTitleAccent"
+                formControlName="titleAccent"
+                placeholder="Ej: Hot Wheels"
+                class="input"
+              />
+              <small class="hint">Texto que aparece con el color de acento</small>
+              @if (homeHeroForm.get('titleAccent')?.touched && homeHeroForm.get('titleAccent')?.invalid) {
+                <small class="error">El texto destacado es requerido (máx. 100 caracteres)</small>
+              }
+            </div>
+
+            <div class="form-group">
+              <label for="heroDescription">Descripción</label>
+              <textarea
+                id="heroDescription"
+                formControlName="description"
+                placeholder="Ej: Descubre nuestra increíble selección..."
+                class="input textarea"
+                rows="3"
+              ></textarea>
+              <small class="hint">Descripción breve debajo del título (máx. 500 caracteres)</small>
+              @if (homeHeroForm.get('description')?.touched && homeHeroForm.get('description')?.invalid) {
+                <small class="error">La descripción es requerida (máx. 500 caracteres)</small>
+              }
+            </div>
+
+            @if (errorMessage()['homeHero']) {
+              <div class="alert alert-error">{{ errorMessage()['homeHero'] }}</div>
+            }
+            @if (saveSuccess()['homeHero']) {
+              <div class="alert alert-success">Configuración guardada correctamente</div>
+            }
+
+            <button
+              type="button"
+              class="btn-save"
+              (click)="saveHomeHero()"
+              [disabled]="isSaving()['homeHero']"
+            >
+              @if (isSaving()['homeHero']) {
+                <span class="btn-spinner"></span>
+                Guardando...
+              } @else {
+                Guardar Home
+              }
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- ========== SECCIÓN WHATSAPP ========== -->
+      <div class="accordion-item" [class.expanded]="activeSection() === 'whatsapp'">
+        <button class="accordion-header" (click)="toggleSection('whatsapp')" type="button">
+          <div class="header-content">
+            <span class="icon">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
+              </svg>
+            </span>
+            <span class="title">WhatsApp</span>
+          </div>
+          <span class="chevron" [class.rotated]="activeSection() === 'whatsapp'">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+            </svg>
+          </span>
+        </button>
+
+        <div class="accordion-content" [class.open]="activeSection() === 'whatsapp'">
+          <form [formGroup]="whatsappForm" class="section-form">
+            <p class="section-description">
+              Configura el número de WhatsApp para que los clientes puedan comunicarse y realizar pedidos.
+            </p>
+
+            <div class="form-group">
+              <label for="phoneNumber">Número de WhatsApp</label>
+              <input
+                type="tel"
+                id="phoneNumber"
+                formControlName="phoneNumber"
+                placeholder="573001234567"
+                class="input"
+              />
+              <small class="hint">Formato: código de país + número (ej: 573001234567)</small>
+              @if (whatsappForm.get('phoneNumber')?.touched && whatsappForm.get('phoneNumber')?.invalid) {
+                <small class="error">Ingresa un número válido (10-15 dígitos)</small>
+              }
+            </div>
+
+            <div class="form-group">
+              <label class="toggle-container">
+                <input type="checkbox" formControlName="isEnabled" class="toggle-input" />
+                <span class="toggle-switch"></span>
+                <span class="toggle-label">Habilitar checkout por WhatsApp</span>
+              </label>
+            </div>
+
+            @if (errorMessage()['whatsapp']) {
+              <div class="alert alert-error">{{ errorMessage()['whatsapp'] }}</div>
+            }
+            @if (saveSuccess()['whatsapp']) {
+              <div class="alert alert-success">Configuración guardada correctamente</div>
+            }
+
+            <button
+              type="button"
+              class="btn-save"
+              (click)="saveWhatsApp()"
+              [disabled]="isSaving()['whatsapp']"
+            >
+              @if (isSaving()['whatsapp']) {
+                <span class="btn-spinner"></span>
+                Guardando...
+              } @else {
+                Guardar WhatsApp
+              }
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- ========== SECCIÓN CARRUSELES ========== -->
+      <div class="accordion-item" [class.expanded]="activeSection() === 'carousels'">
+        <button class="accordion-header" (click)="toggleSection('carousels')" type="button">
+          <div class="header-content">
+            <span class="icon">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+              </svg>
+            </span>
+            <span class="title">Carruseles</span>
+          </div>
+          <span class="chevron" [class.rotated]="activeSection() === 'carousels'">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+            </svg>
+          </span>
+        </button>
+
+        <div class="accordion-content" [class.open]="activeSection() === 'carousels'">
+          <form [formGroup]="carouselsForm" class="section-form">
+            <p class="section-description">
+              Configura el comportamiento de los carruseles automáticos en la tienda.
+            </p>
+
+            <!-- Carrusel Automático del Home -->
+            <div class="carousel-config" formGroupName="homeCarousel" [class.disabled]="!carouselsForm.get('homeCarousel.isEnabled')?.value">
+              <div class="carousel-header">
+                <div class="carousel-info">
+                  <h4>Carrusel Automático del Home</h4>
+                  <p class="carousel-description">Transición automática de productos destacados en la página principal</p>
+                </div>
+                <label class="toggle-container small">
+                  <input type="checkbox" formControlName="isEnabled" class="toggle-input" />
+                  <span class="toggle-switch"></span>
+                </label>
+              </div>
+              @if (carouselsForm.get('homeCarousel.isEnabled')?.value) {
+                <div class="slider-group">
+                  <label>Intervalo de transición: <strong>{{ getIntervalInSeconds('homeCarousel') }}s</strong></label>
+                  <input
+                    type="range"
+                    formControlName="interval"
+                    min="1000"
+                    max="15000"
+                    step="500"
+                    class="slider"
+                  />
+                  <div class="slider-labels">
+                    <span>1s</span>
+                    <span>15s</span>
+                  </div>
+                </div>
+              }
+            </div>
+
+            @if (errorMessage()['carousels']) {
+              <div class="alert alert-error">{{ errorMessage()['carousels'] }}</div>
+            }
+            @if (saveSuccess()['carousels']) {
+              <div class="alert alert-success">Configuración guardada correctamente</div>
+            }
+
+            <button
+              type="button"
+              class="btn-save"
+              (click)="saveCarousels()"
+              [disabled]="isSaving()['carousels']"
+            >
+              @if (isSaving()['carousels']) {
+                <span class="btn-spinner"></span>
+                Guardando...
+              } @else {
+                Guardar Carruseles
+              }
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- ========== SECCIÓN PAGINACIÓN ========== -->
+      <div class="accordion-item" [class.expanded]="activeSection() === 'pagination'">
+        <button class="accordion-header" (click)="toggleSection('pagination')" type="button">
+          <div class="header-content">
+            <span class="icon">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+              </svg>
+            </span>
+            <span class="title">Paginación</span>
+          </div>
+          <span class="chevron" [class.rotated]="activeSection() === 'pagination'">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+            </svg>
+          </span>
+        </button>
+
+        <div class="accordion-content" [class.open]="activeSection() === 'pagination'">
+          <form [formGroup]="paginationForm" class="section-form">
+            <p class="section-description">
+              Configura la cantidad de productos por página en el catálogo y el panel de administración.
+            </p>
+
+            <!-- Catálogo -->
+            <div class="form-group">
+              <label for="catalogLimit">Productos por página en catálogo</label>
+              <div class="inline-save-group">
+                <select
+                  id="catalogLimit"
+                  formControlName="catalogLimit"
+                  class="input select"
+                >
+                  @for (option of paginationOptions; track option) {
+                    <option [ngValue]="option">{{ option }} productos</option>
+                  }
+                </select>
+                <button
+                  type="button"
+                  class="btn-inline-save"
+                  (click)="saveCatalogSettings()"
+                  [disabled]="paginationSaving()['catalogLimit']"
+                  [class.success]="paginationSuccess()['catalogLimit']"
+                >
+                  @if (paginationSaving()['catalogLimit']) {
+                    <span class="btn-spinner-small"></span>
+                  } @else if (paginationSuccess()['catalogLimit']) {
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="icon-check">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                    </svg>
+                  } @else {
+                    Guardar
+                  }
+                </button>
+              </div>
+              @if (paginationError()['catalogLimit']) {
+                <small class="error">{{ paginationError()['catalogLimit'] }}</small>
+              }
+              <small class="hint">Cantidad de productos visibles en el catálogo del cliente</small>
+
+              <!-- Toggle de personalización (relacionado con catálogo) -->
+              <label class="toggle-container catalog-toggle">
+                <input
+                  type="checkbox"
+                  formControlName="allowUserCustomization"
+                  class="toggle-input"
+                  (change)="saveAllowUserCustomization()"
+                />
+                <span class="toggle-switch"></span>
+                <span class="toggle-label">Permitir que el usuario cambie el límite en el catálogo</span>
+              </label>
+            </div>
+
+            <!-- Admin -->
+            <div class="form-group">
+              <label for="adminLimit">Productos por página en admin</label>
+              <div class="inline-save-group">
+                <select
+                  id="adminLimit"
+                  formControlName="adminLimit"
+                  class="input select"
+                >
+                  @for (option of paginationOptions; track option) {
+                    <option [ngValue]="option">{{ option }} productos</option>
+                  }
+                </select>
+                <button
+                  type="button"
+                  class="btn-inline-save"
+                  (click)="saveAdminLimit()"
+                  [disabled]="paginationSaving()['adminLimit']"
+                  [class.success]="paginationSuccess()['adminLimit']"
+                >
+                  @if (paginationSaving()['adminLimit']) {
+                    <span class="btn-spinner-small"></span>
+                  } @else if (paginationSuccess()['adminLimit']) {
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="icon-check">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                    </svg>
+                  } @else {
+                    Guardar
+                  }
+                </button>
+              </div>
+              @if (paginationError()['adminLimit']) {
+                <small class="error">{{ paginationError()['adminLimit'] }}</small>
+              }
+              <small class="hint">Cantidad de productos visibles en la lista del panel admin</small>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- ========== SECCIÓN MÓDULOS DE DESPACHO ========== -->
+      <div class="accordion-item" [class.expanded]="activeSection() === 'dispatchModules'">
+        <button class="accordion-header" (click)="toggleSection('dispatchModules')" type="button">
+          <div class="header-content">
+            <span class="icon">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" />
+              </svg>
+            </span>
+            <span class="title">Módulos de Despacho</span>
+          </div>
+          <span class="chevron" [class.rotated]="activeSection() === 'dispatchModules'">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+            </svg>
+          </span>
+        </button>
+
+        <div class="accordion-content" [class.open]="activeSection() === 'dispatchModules'">
+          <form [formGroup]="dispatchModulesForm" class="section-form">
+            <p class="section-description">
+              Activa o desactiva los métodos de entrega disponibles en el checkout. Solo los módulos activos se mostrarán a los clientes.
+            </p>
+
+            <!-- Toggle Retiro en Tienda -->
+            <div class="dispatch-module-item">
+              <label class="toggle-container">
+                <input
+                  type="checkbox"
+                  formControlName="storePickup"
+                  class="toggle-input"
+                  (change)="saveDispatchModule('storePickup')"
+                />
+                <span class="toggle-switch"></span>
+                <div class="toggle-info">
+                  <span class="toggle-label">Retiro en Tienda</span>
+                  <span class="toggle-hint">El cliente retira su pedido en la tienda física</span>
+                </div>
+              </label>
+            </div>
+
+            <!-- Toggle Agencias de Envío -->
+            <div class="dispatch-module-item">
+              <label class="toggle-container">
+                <input
+                  type="checkbox"
+                  formControlName="shippingAgency"
+                  class="toggle-input"
+                  (change)="saveDispatchModule('shippingAgency')"
+                />
+                <span class="toggle-switch"></span>
+                <div class="toggle-info">
+                  <span class="toggle-label">Agencias de Envío</span>
+                  <span class="toggle-hint">Envío a través de agencias de transporte (MRW, Zoom, etc.)</span>
+                </div>
+              </label>
+            </div>
+
+            <!-- Toggle Delivery Local -->
+            <div class="dispatch-module-item">
+              <label class="toggle-container">
+                <input
+                  type="checkbox"
+                  formControlName="localDelivery"
+                  class="toggle-input"
+                  (change)="saveDispatchModule('localDelivery')"
+                />
+                <span class="toggle-switch"></span>
+                <div class="toggle-info">
+                  <span class="toggle-label">Delivery Local</span>
+                  <span class="toggle-hint">Entrega a domicilio dentro de la zona local</span>
+                </div>
+              </label>
+            </div>
+
+            <!-- Toggle Acordar con Vendedor -->
+            <div class="dispatch-module-item">
+              <label class="toggle-container">
+                <input
+                  type="checkbox"
+                  formControlName="sellerAgreement"
+                  class="toggle-input"
+                  (change)="saveDispatchModule('sellerAgreement')"
+                />
+                <span class="toggle-switch"></span>
+                <div class="toggle-info">
+                  <span class="toggle-label">Acordar con Vendedor</span>
+                  <span class="toggle-hint">El cliente coordina directamente con el vendedor</span>
+                </div>
+              </label>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- ========== SECCIÓN DESPACHO (Configuración) ========== -->
+      <div class="accordion-item" [class.expanded]="activeSection() === 'dispatch'">
+        <button class="accordion-header" (click)="toggleSection('dispatch')" type="button">
+          <div class="header-content">
+            <span class="icon">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 0 0-3.213-9.193 2.056 2.056 0 0 0-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 0 0-10.026 0 1.106 1.106 0 0 0-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+              </svg>
+            </span>
+            <span class="title">Configuración de Despacho</span>
+          </div>
+          <span class="chevron" [class.rotated]="activeSection() === 'dispatch'">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+            </svg>
+          </span>
+        </button>
+
+        <div class="accordion-content" [class.open]="activeSection() === 'dispatch'">
+          <form [formGroup]="dispatchForm" class="section-form">
+            <p class="section-description">
+              Configura los detalles de cada método de entrega activo.
+            </p>
+
+            <!-- Retiro en Tienda - Solo se muestra si el módulo está activo -->
+            @if (dispatchModulesForm.get('storePickup')?.value) {
+              <div class="dispatch-section" formGroupName="storePickup">
+                <div class="dispatch-header">
+                  <div class="dispatch-info">
+                    <h4>Retiro en Tienda</h4>
+                    <p class="dispatch-description">Configura la información de retiro para tus clientes</p>
+                  </div>
+                </div>
+
+                <div class="dispatch-fields">
+                  <div class="form-group">
+                    <label for="storeAddress">Dirección de la tienda</label>
+                    <input
+                      type="text"
+                      id="storeAddress"
+                      formControlName="address"
+                      placeholder="Ej: Av. Principal #123, Local 4, Centro Comercial Plaza"
+                      class="input"
+                    />
+                    <small class="hint">Dirección completa donde los clientes pueden retirar</small>
+                    @if (dispatchForm.get('storePickup.address')?.touched && dispatchForm.get('storePickup.address')?.invalid) {
+                      <small class="error">La dirección es requerida (5-300 caracteres)</small>
+                    }
+                  </div>
+
+                  <div class="form-group">
+                    <label for="storeSchedule">Horarios de atención</label>
+                    <input
+                      type="text"
+                      id="storeSchedule"
+                      formControlName="schedule"
+                      placeholder="Ej: Lunes a Viernes: 9:00 AM - 6:00 PM | Sábados: 9:00 AM - 1:00 PM"
+                      class="input"
+                    />
+                    <small class="hint">Horarios en los que se puede retirar el pedido</small>
+                    @if (dispatchForm.get('storePickup.schedule')?.touched && dispatchForm.get('storePickup.schedule')?.invalid) {
+                      <small class="error">El horario es requerido (5-200 caracteres)</small>
+                    }
+                  </div>
+
+                  <div class="form-group">
+                    <label for="storePhone">Teléfono de contacto</label>
+                    <input
+                      type="tel"
+                      id="storePhone"
+                      formControlName="phone"
+                      placeholder="Ej: +58 412-1234567"
+                      class="input"
+                    />
+                    <small class="hint">Número para coordinar el retiro</small>
+                    @if (dispatchForm.get('storePickup.phone')?.touched && dispatchForm.get('storePickup.phone')?.invalid) {
+                      <small class="error">El teléfono es requerido (7-20 caracteres)</small>
+                    }
+                  </div>
+
+                  <div class="form-group">
+                    <label for="storeAdditionalInfo">Información adicional (opcional)</label>
+                    <textarea
+                      id="storeAdditionalInfo"
+                      formControlName="additionalInfo"
+                      placeholder="Ej: Preguntar por el encargado de entregas. Estacionamiento disponible."
+                      class="input textarea"
+                      rows="2"
+                    ></textarea>
+                    <small class="hint">Instrucciones o detalles adicionales para el cliente</small>
+                  </div>
+                </div>
+
+                @if (errorMessage()['dispatch']) {
+                  <div class="alert alert-error">{{ errorMessage()['dispatch'] }}</div>
+                }
+                @if (saveSuccess()['dispatch']) {
+                  <div class="alert alert-success">Configuración de despacho guardada correctamente</div>
+                }
+
+                <button
+                  type="button"
+                  class="btn-save"
+                  (click)="saveDispatch()"
+                  [disabled]="isSaving()['dispatch']"
+                >
+                  @if (isSaving()['dispatch']) {
+                    <span class="btn-spinner"></span>
+                    Guardando...
+                  } @else {
+                    Guardar Configuración
+                  }
+                </button>
+              </div>
+            } @else {
+              <div class="empty-state">
+                <p>No hay módulos de despacho activos que configurar.</p>
+                <p class="hint">Activa al menos un módulo en la sección "Módulos de Despacho".</p>
+              </div>
+            }
+          </form>
+        </div>
+      </div>
+
+      <!-- ========== SECCIÓN MÉTODOS DE PAGO ========== -->
+      <div class="accordion-item" [class.expanded]="activeSection() === 'paymentMethods'">
+        <button class="accordion-header" (click)="toggleSection('paymentMethods')" type="button">
+          <div class="header-content">
+            <span class="icon">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+              </svg>
+            </span>
+            <span class="title">Métodos de Pago</span>
+          </div>
+          <span class="chevron" [class.rotated]="activeSection() === 'paymentMethods'">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+            </svg>
+          </span>
+        </button>
+
+        <div class="accordion-content" [class.open]="activeSection() === 'paymentMethods'">
+          <div class="section-form">
+            <div class="pm-header-row">
+              <p class="section-description pm-desc">
+                Configura los métodos de pago disponibles para tus clientes en el checkout.
+              </p>
+              <a routerLink="/admin/payment-methods/create" class="btn-add-method">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Agregar
+              </a>
+            </div>
+
+            @if (isLoadingMethods()) {
+              <div class="pm-loading">
+                <div class="spinner-sm-settings"></div>
+                <span>Cargando métodos...</span>
+              </div>
+            } @else if (paymentMethods().length === 0) {
+              <div class="pm-empty">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" />
+                </svg>
+                <p>No hay métodos de pago configurados</p>
+              </div>
+            } @else {
+              <div class="pm-list">
+                @for (method of paymentMethods(); track method.id) {
+                  <div class="pm-row" [class.pm-inactive]="!method.isActive">
+                    <div class="pm-row-left">
+                      <span class="pm-name">{{ method.label }}</span>
+                      <span class="pm-meta">{{ getMethodTypeLabel(method.type) }} · {{ getMethodDetails(method) }}</span>
+                    </div>
+                    <div class="pm-row-right">
+                      <span
+                        class="pm-dot"
+                        [class.dot-active]="method.isActive"
+                        [class.dot-inactive]="!method.isActive"
+                        [title]="method.isActive ? 'Activo' : 'Inactivo'"
+                      ></span>
+                      <a
+                        [routerLink]="['/admin/payment-methods/edit', method.id]"
+                        class="pm-icon-btn"
+                        title="Editar"
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Z" />
+                        </svg>
+                      </a>
+                      <button
+                        type="button"
+                        class="pm-icon-btn"
+                        [disabled]="isTogglingMethod() === method.id"
+                        (click)="toggleMethodStatus(method)"
+                        [title]="method.isActive ? 'Desactivar' : 'Activar'"
+                      >
+                        @if (isTogglingMethod() === method.id) {
+                          <span class="spinner-xs"></span>
+                        } @else {
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5.636 5.636a9 9 0 1 0 12.728 12.728M5.636 5.636a9 9 0 0 1 12.728 12.728M5.636 5.636l12.728 12.728" />
+                          </svg>
+                        }
+                      </button>
+                      <button
+                        type="button"
+                        class="pm-icon-btn pm-icon-delete"
+                        [disabled]="isDeletingMethod() === method.id"
+                        (click)="openDeleteMethodModal(method)"
+                        title="Eliminar"
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+    </div>
+  }
+
+  <!-- Modal de confirmación de eliminación de método de pago -->
+  @if (methodToDelete()) {
+    <div class="modal-overlay" (click)="closeDeleteMethodModal()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+          </svg>
+        </div>
+        <h3 class="modal-title">Eliminar método de pago</h3>
+        <p class="modal-message">
+          ¿Estás seguro de eliminar <strong>{{ methodToDelete()!.label }}</strong>?
+          Esta acción no se puede deshacer.
+        </p>
+        <div class="modal-actions">
+          <button type="button" class="btn-modal-cancel" (click)="closeDeleteMethodModal()">
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="btn-modal-delete"
+            [disabled]="isDeletingMethod() === methodToDelete()!.id"
+            (click)="confirmDeleteMethod()"
+          >
+            @if (isDeletingMethod() === methodToDelete()!.id) {
+              <span class="spinner-xs"></span>
+              Eliminando...
+            } @else {
+              Eliminar
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

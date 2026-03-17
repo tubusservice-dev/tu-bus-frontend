@@ -1,0 +1,8 @@
+.tubus-layout {
+  @apply min-h-screen flex flex-col;
+  background-color: var(--bg-primary);
+}
+
+.tubus-main {
+  @apply flex-1;
+}

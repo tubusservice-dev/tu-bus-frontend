@@ -1,0 +1,214 @@
+<div class="mechanic-list-page">
+  <!-- Header -->
+  <header class="page-header">
+    <div class="header-content">
+      <div>
+        <h1 class="page-title">Mecanicos</h1>
+        <p class="page-subtitle">Gestiona los mecanicos registrados</p>
+      </div>
+      <a routerLink="/admin/mechanics/create" class="btn-primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+        </svg>
+        Nuevo Mecanico
+      </a>
+    </div>
+
+    <!-- Busqueda -->
+    <div class="search-box">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+      </svg>
+      <input
+        type="text"
+        placeholder="Buscar mecanicos..."
+        [ngModel]="searchTerm()"
+        (ngModelChange)="searchTerm.set($event)"
+      />
+    </div>
+  </header>
+
+  <!-- Contenido -->
+  <main class="page-content">
+    @if (isLoading()) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <span>Cargando mecanicos...</span>
+      </div>
+    } @else if (filteredMechanics.length === 0) {
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 0 0 4.486-6.336l-3.276 3.277a3.004 3.004 0 0 1-2.25-2.25l3.276-3.276a4.5 4.5 0 0 0-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437 1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008Z" />
+        </svg>
+        <h3>No hay mecanicos registrados</h3>
+        <p>Registra tu primer mecanico para gestionar despachos</p>
+        <a routerLink="/admin/mechanics/create" class="btn-primary">
+          Crear Mecanico
+        </a>
+      </div>
+    } @else {
+      <!-- Tabla -->
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>WhatsApp</th>
+              <th>Zona</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (mechanic of filteredMechanics; track mechanic.id) {
+              <tr [class.inactive-row]="!mechanic.isActive">
+                <td>
+                  <div class="mechanic-name">
+                    <span class="name-text">{{ mechanic.name }}</span>
+                    @if (mechanic.email) {
+                      <span class="email-text">{{ mechanic.email }}</span>
+                    }
+                  </div>
+                </td>
+                <td>{{ mechanic.whatsapp }}</td>
+                <td>{{ getZoneName(mechanic) }}</td>
+                <td>
+                  <span
+                    class="status-badge"
+                    [class.active]="mechanic.isActive"
+                    [class.inactive]="!mechanic.isActive"
+                  >
+                    {{ mechanic.isActive ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </td>
+                <td>
+                  <div class="actions-cell">
+                    <a
+                      [routerLink]="['/admin/mechanics/edit', mechanic.id]"
+                      class="btn-action btn-edit"
+                      title="Editar"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                      </svg>
+                    </a>
+                    <button
+                      type="button"
+                      class="btn-action btn-toggle"
+                      [class.btn-deactivate]="mechanic.isActive"
+                      [class.btn-activate]="!mechanic.isActive"
+                      [disabled]="isToggling() === mechanic.id"
+                      (click)="toggleStatus(mechanic)"
+                      [title]="mechanic.isActive ? 'Desactivar' : 'Activar'"
+                    >
+                      @if (isToggling() === mechanic.id) {
+                        <span class="spinner-sm"></span>
+                      } @else if (mechanic.isActive) {
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
+                        </svg>
+                      } @else {
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                        </svg>
+                      }
+                    </button>
+                    <button
+                      type="button"
+                      class="btn-action btn-delete"
+                      [disabled]="isDeleting() === mechanic.id"
+                      (click)="openDeleteModal(mechanic)"
+                      title="Eliminar"
+                    >
+                      @if (isDeleting() === mechanic.id) {
+                        <span class="spinner-sm"></span>
+                      } @else {
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                        </svg>
+                      }
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Paginacion -->
+      @if (totalPages() > 1) {
+        <div class="pagination">
+          <span class="pagination-info">
+            Pagina {{ currentPage() }} de {{ totalPages() }} ({{ totalItems() }} registros)
+          </span>
+          <div class="pagination-buttons">
+            <button
+              class="btn-page"
+              [disabled]="currentPage() === 1"
+              (click)="goToPage(currentPage() - 1)"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+              </svg>
+            </button>
+            @for (page of pages; track page) {
+              <button
+                class="btn-page"
+                [class.active]="page === currentPage()"
+                (click)="goToPage(page)"
+              >
+                {{ page }}
+              </button>
+            }
+            <button
+              class="btn-page"
+              [disabled]="currentPage() === totalPages()"
+              (click)="goToPage(currentPage() + 1)"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      }
+    }
+  </main>
+
+  <!-- Modal de confirmacion de eliminacion -->
+  @if (mechanicToDelete()) {
+    <div class="modal-overlay" (click)="closeDeleteModal()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+          </svg>
+        </div>
+        <h3 class="modal-title">Eliminar mecanico</h3>
+        <p class="modal-message">
+          ¿Estas seguro de eliminar a <strong>{{ mechanicToDelete()!.name }}</strong>?
+          Esta accion no se puede deshacer.
+        </p>
+        <div class="modal-actions">
+          <button type="button" class="btn-modal-cancel" (click)="closeDeleteModal()">
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="btn-modal-delete"
+            [disabled]="isDeleting() === mechanicToDelete()!.id"
+            (click)="confirmDelete()"
+          >
+            @if (isDeleting() === mechanicToDelete()!.id) {
+              <span class="spinner-sm"></span>
+              Eliminando...
+            } @else {
+              Eliminar
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

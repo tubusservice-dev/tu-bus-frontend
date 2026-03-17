@@ -1,0 +1,130 @@
+<div class="admin-form-page">
+  <!-- Header -->
+  <div class="page-header">
+    <a routerLink="/admin/administrators" class="back-link">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+      </svg>
+      <span>Volver</span>
+    </a>
+    <h1 class="page-title">
+      {{ isEditMode() ? 'Editar Administrador' : 'Nuevo Administrador' }}
+    </h1>
+  </div>
+
+  <!-- Loading -->
+  @if (isLoading()) {
+    <div class="loading-container">
+      <div class="loading-spinner"></div>
+      <span>Cargando datos...</span>
+    </div>
+  } @else {
+    <!-- Error message -->
+    @if (errorMessage()) {
+      <div class="alert-error">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+        </svg>
+        <span>{{ errorMessage() }}</span>
+        <button type="button" (click)="errorMessage.set(null)">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    }
+
+    <!-- Form -->
+    <div class="form-card">
+      <form [formGroup]="form" (ngSubmit)="onSubmit()">
+        <!-- Username -->
+        <div class="form-group">
+          <label for="username" class="form-label">
+            Nombre de usuario <span class="required">*</span>
+          </label>
+          <input
+            type="text"
+            id="username"
+            formControlName="username"
+            class="form-input"
+            [class.error]="hasError('username', 'required') || hasError('username', 'minlength')"
+            placeholder="Ingresa el nombre de usuario"
+          />
+          @if (hasError('username', 'required')) {
+            <span class="form-error">El nombre de usuario es requerido</span>
+          }
+          @if (hasError('username', 'minlength')) {
+            <span class="form-error">El nombre de usuario debe tener al menos 3 caracteres</span>
+          }
+        </div>
+
+        <!-- Password -->
+        <div class="form-group">
+          <label for="password" class="form-label">
+            Contraseña
+            @if (!isEditMode()) {
+              <span class="required">*</span>
+            } @else {
+              <span class="optional">(dejar vacío para mantener)</span>
+            }
+          </label>
+          <div class="password-input-wrapper">
+            <input
+              [type]="showPassword() ? 'text' : 'password'"
+              id="password"
+              formControlName="password"
+              class="form-input"
+              [class.error]="hasError('password', 'required') || hasError('password', 'minlength')"
+              placeholder="Ingresa la contraseña"
+            />
+            <button type="button" class="password-toggle" (click)="toggleShowPassword()">
+              @if (showPassword()) {
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
+                </svg>
+              } @else {
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                </svg>
+              }
+            </button>
+          </div>
+          @if (hasError('password', 'required')) {
+            <span class="form-error">La contraseña es requerida</span>
+          }
+          @if (hasError('password', 'minlength')) {
+            <span class="form-error">La contraseña debe tener al menos 6 caracteres</span>
+          }
+        </div>
+
+        <!-- Is Active (solo en edición) -->
+        @if (isEditMode()) {
+          <div class="form-group">
+            <label class="form-label">Estado</label>
+            <label class="toggle-label">
+              <input type="checkbox" formControlName="isActive" class="toggle-input" />
+              <span class="toggle-switch"></span>
+              <span class="toggle-text">{{ form.get('isActive')?.value ? 'Activo' : 'Inactivo' }}</span>
+            </label>
+          </div>
+        }
+
+        <!-- Actions -->
+        <div class="form-actions">
+          <a routerLink="/admin/administrators" class="btn-cancel">
+            Cancelar
+          </a>
+          <button type="submit" class="btn-submit" [disabled]="isSubmitting()">
+            @if (isSubmitting()) {
+              <span class="loading-spinner-sm"></span>
+              <span>Guardando...</span>
+            } @else {
+              <span>{{ isEditMode() ? 'Actualizar' : 'Crear' }} Administrador</span>
+            }
+          </button>
+        </div>
+      </form>
+    </div>
+  }
+</div>

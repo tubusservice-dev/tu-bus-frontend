@@ -1,0 +1,648 @@
+.settings-page {
+  @apply space-y-6 max-w-4xl mx-auto;
+}
+
+// ========== Header ==========
+.page-header {
+  @apply mb-8;
+}
+
+.page-title {
+  @apply text-2xl font-bold text-gray-900 dark:text-white;
+}
+
+.page-subtitle {
+  @apply text-gray-500 dark:text-gray-400 mt-1;
+}
+
+// ========== Loading ==========
+.loading-container {
+  @apply flex flex-col items-center justify-center py-16 text-gray-500 dark:text-gray-400;
+
+  .spinner {
+    @apply w-10 h-10 border-4 border-gray-200 dark:border-gray-700 rounded-full animate-spin mb-4;
+    border-top-color: var(--accent-primary);
+  }
+}
+
+// ========== Acordeón ==========
+.settings-accordion {
+  @apply space-y-4;
+}
+
+.accordion-item {
+  @apply bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden transition-all duration-200;
+
+  &.expanded {
+    @apply shadow-md;
+  }
+}
+
+.accordion-header {
+  @apply w-full flex items-center justify-between p-5 text-left bg-transparent hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer;
+
+  .header-content {
+    @apply flex items-center gap-3;
+  }
+
+  .icon {
+    @apply w-10 h-10 flex items-center justify-center rounded-lg;
+    background-color: var(--accent-light);
+    color: var(--accent-primary);
+
+    svg {
+      @apply w-5 h-5;
+    }
+  }
+
+  .title {
+    @apply text-lg font-semibold text-gray-900 dark:text-white;
+  }
+
+  .chevron {
+    @apply text-gray-400 transition-transform duration-200;
+
+    svg {
+      @apply w-5 h-5;
+    }
+
+    &.rotated {
+      @apply rotate-180;
+    }
+  }
+}
+
+.accordion-content {
+  @apply max-h-0 overflow-hidden transition-all duration-300 ease-in-out;
+
+  &.open {
+    @apply max-h-[2000px];
+  }
+}
+
+.section-form {
+  @apply p-5 pt-0 space-y-5;
+}
+
+.section-description {
+  @apply text-gray-600 dark:text-gray-400 text-sm pb-4 border-b border-gray-100 dark:border-gray-700;
+}
+
+// ========== Form Groups ==========
+.form-group {
+  @apply space-y-2;
+
+  label {
+    @apply block text-sm font-medium text-gray-700 dark:text-gray-300;
+  }
+
+  .hint {
+    @apply block text-xs text-gray-500 dark:text-gray-400;
+  }
+
+  .error {
+    @apply block text-xs text-red-600 dark:text-red-400;
+  }
+}
+
+.input {
+  @apply w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-red-500 focus:border-transparent transition-colors;
+
+  &.select {
+    @apply cursor-pointer appearance-none bg-no-repeat;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+    background-position: right 12px center;
+    background-size: 20px;
+    padding-right: 44px;
+  }
+}
+
+.toggle-hint {
+  @apply mt-1 ml-16;
+}
+
+.catalog-toggle {
+  @apply mt-3 pt-3 border-t border-gray-100 dark:border-gray-700;
+}
+
+// ========== Inline Save Group ==========
+.inline-save-group {
+  @apply flex items-center gap-3;
+
+  .input.select {
+    @apply flex-1;
+  }
+
+  &.toggle-row {
+    @apply justify-between;
+  }
+}
+
+.btn-inline-save {
+  @apply inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium text-white rounded-lg transition-all min-w-[80px];
+  background-color: var(--accent-primary);
+
+  &:hover:not(:disabled) {
+    background-color: var(--accent-hover);
+  }
+
+  &:disabled {
+    @apply opacity-70 cursor-not-allowed;
+  }
+
+  &.success {
+    @apply bg-green-600;
+  }
+
+  .btn-spinner-small {
+    @apply w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin;
+  }
+
+  .icon-check {
+    @apply w-5 h-5;
+  }
+}
+
+// ========== Toggle Switch ==========
+.toggle-container {
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+  user-select: none;
+
+  &.small {
+    .toggle-switch {
+      width: 40px;
+      min-width: 40px;
+      height: 20px;
+
+      &::after {
+        width: 16px;
+        height: 16px;
+        top: 2px;
+      }
+    }
+
+    .toggle-input:checked + .toggle-switch::after {
+      left: 22px;
+    }
+  }
+}
+
+.toggle-input {
+  // Ocultar completamente el checkbox nativo
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  width: 48px;
+  min-width: 48px;
+  height: 24px;
+  background-color: #d1d5db;
+  border-radius: 9999px;
+  transition: background-color 0.2s ease;
+  vertical-align: middle;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 2px;
+    top: 2px;
+    width: 20px;
+    height: 20px;
+    background-color: white;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    transition: left 0.2s ease;
+  }
+}
+
+// Dark mode para toggle
+:host-context(.dark) .toggle-switch {
+  background-color: #4b5563;
+}
+
+.toggle-input:checked + .toggle-switch {
+  background-color: var(--accent-primary);
+
+  &::after {
+    left: 26px;
+  }
+}
+
+.toggle-input:focus + .toggle-switch {
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+.toggle-label {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.875rem;
+  line-height: 24px;
+  color: #374151;
+  vertical-align: middle;
+  margin-left: 5px;
+}
+
+:host-context(.dark) .toggle-label {
+  color: #d1d5db;
+}
+
+// ========== Carousel Config ==========
+.carousel-config {
+  @apply p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl space-y-4 border border-gray-200 dark:border-gray-600 transition-all duration-200;
+
+  & + .carousel-config {
+    @apply mt-4;
+  }
+
+  &.disabled {
+    @apply opacity-60;
+
+    .carousel-info h4 {
+      @apply text-gray-500 dark:text-gray-400;
+    }
+  }
+
+  .carousel-header {
+    @apply flex items-center justify-between gap-4;
+  }
+
+  .carousel-info {
+    @apply flex-1;
+
+    h4 {
+      @apply text-sm font-semibold text-gray-900 dark:text-white;
+    }
+
+    .carousel-description {
+      @apply text-xs text-gray-500 dark:text-gray-400 mt-0.5;
+    }
+  }
+}
+
+.slider-group {
+  @apply space-y-3;
+
+  label {
+    @apply block text-sm font-medium text-gray-700 dark:text-gray-300;
+  }
+}
+
+.slider {
+  @apply w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer;
+
+  &::-webkit-slider-thumb {
+    @apply appearance-none w-5 h-5 rounded-full cursor-pointer transition-all shadow-md;
+    background-color: var(--accent-primary);
+
+    &:hover {
+      background-color: var(--accent-hover);
+      transform: scale(1.1);
+    }
+  }
+
+  &::-moz-range-thumb {
+    @apply w-5 h-5 rounded-full cursor-pointer border-0 shadow-md;
+    background-color: var(--accent-primary);
+
+    &:hover {
+      background-color: var(--accent-hover);
+    }
+  }
+
+  &:focus {
+    outline: none;
+
+    &::-webkit-slider-thumb {
+      box-shadow: 0 0 0 3px rgba(var(--accent-primary), 0.2);
+    }
+  }
+}
+
+.slider-labels {
+  @apply flex justify-between text-xs text-gray-500 dark:text-gray-400 font-medium;
+}
+
+// ========== Color Picker ==========
+.color-picker-group {
+  @apply space-y-2;
+
+  label {
+    @apply block text-sm font-medium text-gray-700 dark:text-gray-300;
+  }
+
+  .color-hint {
+    @apply text-xs text-gray-500 dark:text-gray-400 mb-2;
+  }
+}
+
+.color-swatches {
+  @apply flex flex-wrap gap-2;
+}
+
+.color-swatch {
+  @apply w-10 h-10 rounded-lg cursor-pointer border-2 border-transparent hover:scale-110 transition-all duration-150 flex items-center justify-center;
+
+  &.selected {
+    @apply border-white ring-2 ring-offset-2 ring-gray-900 dark:ring-white dark:ring-offset-gray-800;
+  }
+
+  .check-icon {
+    @apply w-5 h-5;
+  }
+}
+
+// ========== Color Preview ==========
+.color-preview {
+  @apply mt-4 p-4 bg-gray-100 dark:bg-gray-700 rounded-lg;
+
+  h4 {
+    @apply text-sm font-medium text-gray-700 dark:text-gray-300 mb-3;
+  }
+}
+
+.preview-card {
+  @apply flex flex-wrap items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-lg;
+
+  .preview-button {
+    @apply px-4 py-2 rounded-lg font-medium text-sm transition-colors;
+
+    &.primary {
+      background-color: var(--preview-primary, #991b1b);
+      @apply text-white hover:opacity-90;
+    }
+
+    &.secondary {
+      background-color: var(--preview-secondary, #dc2626);
+      @apply text-white hover:opacity-90;
+    }
+  }
+
+  .preview-link {
+    color: var(--preview-primary, #991b1b);
+    @apply text-sm font-medium hover:underline cursor-pointer;
+  }
+}
+
+// ========== Alerts ==========
+.alert {
+  @apply p-3 rounded-lg text-sm;
+
+  &.alert-error {
+    @apply bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400;
+  }
+
+  &.alert-success {
+    @apply bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400;
+  }
+}
+
+// ========== Buttons ==========
+.btn-save {
+  @apply inline-flex items-center justify-center gap-2 px-6 py-2.5 text-white font-medium rounded-lg transition-colors disabled:opacity-50;
+  background-color: var(--accent-primary);
+
+  &:hover:not(:disabled) {
+    background-color: var(--accent-hover);
+  }
+
+  .btn-spinner {
+    @apply w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin;
+  }
+}
+
+// ========== Dispatch Modules ==========
+.dispatch-module-item {
+  @apply p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-200 dark:border-gray-600 transition-all duration-200;
+
+  & + .dispatch-module-item {
+    @apply mt-3;
+  }
+
+  .toggle-container {
+    @apply w-full;
+  }
+
+  .toggle-info {
+    @apply flex flex-col;
+
+    .toggle-label {
+      @apply font-medium text-gray-900 dark:text-white m-0;
+    }
+
+    .toggle-hint {
+      @apply text-xs text-gray-500 dark:text-gray-400 mt-0.5 ml-0;
+    }
+  }
+}
+
+// ========== Dispatch Config ==========
+.dispatch-section {
+  @apply p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl space-y-4 border border-gray-200 dark:border-gray-600 transition-all duration-200;
+
+  .dispatch-header {
+    @apply flex items-center justify-between gap-4;
+  }
+
+  .dispatch-info {
+    @apply flex-1;
+
+    h4 {
+      @apply text-sm font-semibold text-gray-900 dark:text-white;
+    }
+
+    .dispatch-description {
+      @apply text-xs text-gray-500 dark:text-gray-400 mt-0.5;
+    }
+  }
+
+  .dispatch-fields {
+    @apply pt-4 border-t border-gray-200 dark:border-gray-600 space-y-4;
+  }
+}
+
+// ========== Empty State ==========
+.empty-state {
+  @apply p-8 text-center bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-dashed border-gray-300 dark:border-gray-600;
+
+  p {
+    @apply text-gray-600 dark:text-gray-400;
+  }
+
+  .hint {
+    @apply text-sm text-gray-500 dark:text-gray-500 mt-2;
+  }
+}
+
+// ========== Métodos de Pago ==========
+.pm-header-row {
+  @apply flex items-center justify-between gap-4 pb-4 border-b border-gray-100 dark:border-gray-700;
+
+  .pm-desc {
+    @apply pb-0 border-0 flex-1;
+  }
+}
+
+.btn-add-method {
+  @apply inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white rounded-lg transition-colors flex-shrink-0;
+  background-color: var(--accent-primary);
+
+  &:hover {
+    background-color: var(--accent-hover);
+  }
+
+  svg {
+    @apply w-4 h-4;
+  }
+}
+
+.pm-loading {
+  @apply flex items-center justify-center gap-3 py-8 text-gray-500 dark:text-gray-400 text-sm;
+}
+
+.spinner-sm-settings {
+  @apply w-5 h-5 border-2 border-gray-200 dark:border-gray-600 border-t-red-600 rounded-full animate-spin;
+}
+
+.pm-empty {
+  @apply flex flex-col items-center justify-center py-8 text-center;
+
+  svg {
+    @apply w-10 h-10 text-gray-300 dark:text-gray-600 mb-2;
+  }
+
+  p {
+    @apply text-sm text-gray-500 dark:text-gray-400;
+  }
+}
+
+.pm-list {
+  @apply divide-y divide-gray-100 dark:divide-gray-700;
+}
+
+.pm-row {
+  @apply flex items-center justify-between gap-3 py-3;
+
+  &:first-child {
+    @apply pt-1;
+  }
+
+  &.pm-inactive {
+    @apply opacity-40;
+  }
+}
+
+.pm-row-left {
+  @apply flex flex-col gap-0.5 min-w-0 flex-1;
+}
+
+.pm-name {
+  @apply text-sm font-medium text-gray-900 dark:text-white truncate;
+}
+
+.pm-meta {
+  @apply text-xs text-gray-400 dark:text-gray-500 truncate;
+}
+
+.pm-row-right {
+  @apply flex items-center gap-1.5 flex-shrink-0;
+}
+
+.pm-dot {
+  @apply w-2 h-2 rounded-full mr-1;
+
+  &.dot-active {
+    @apply bg-green-500;
+  }
+
+  &.dot-inactive {
+    @apply bg-gray-300 dark:bg-gray-600;
+  }
+}
+
+.pm-icon-btn {
+  @apply p-1.5 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors disabled:opacity-50;
+
+  svg {
+    @apply w-3.5 h-3.5;
+  }
+
+  &.pm-icon-delete:hover {
+    @apply text-red-500;
+  }
+}
+
+.spinner-xs {
+  @apply w-3.5 h-3.5 border-2 border-gray-300 dark:border-gray-600 border-t-current rounded-full animate-spin;
+}
+
+// ========== Modal ==========
+.modal-overlay {
+  @apply fixed inset-0 z-50 flex items-center justify-center p-4;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  @apply bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-sm text-center;
+  animation: modal-in 0.2s ease-out;
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.modal-icon {
+  @apply mx-auto w-12 h-12 flex items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30 mb-4;
+
+  svg {
+    @apply w-6 h-6 text-red-600 dark:text-red-400;
+  }
+}
+
+.modal-title {
+  @apply text-lg font-semibold text-gray-900 dark:text-white mb-2;
+}
+
+.modal-message {
+  @apply text-sm text-gray-500 dark:text-gray-400 mb-6;
+
+  strong {
+    @apply text-gray-900 dark:text-white;
+  }
+}
+
+.modal-actions {
+  @apply flex items-center gap-3 justify-center;
+}
+
+.btn-modal-cancel {
+  @apply px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg;
+  @apply hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors;
+}
+
+.btn-modal-delete {
+  @apply inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg;
+  @apply hover:bg-red-700 transition-colors disabled:opacity-50;
+}

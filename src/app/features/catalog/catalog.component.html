@@ -1,0 +1,226 @@
+<div class="catalog-page">
+  <!-- Header -->
+  <header class="catalog-header">
+    <div class="header-content">
+      <div class="header-text">
+        <h1 class="page-title">Catálogo</h1>
+        <p class="page-subtitle">
+          Explora nuestros productos
+          @if (totalProducts() > 0) {
+            <span class="product-count">({{ totalProducts() }} productos)</span>
+          }
+        </p>
+      </div>
+
+      <!-- Búsqueda y ordenar -->
+      <div class="header-actions">
+        <div class="search-box">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Buscar productos..."
+            [ngModel]="filters().search"
+            (ngModelChange)="updateFilter('search', $event)"
+            (keyup.enter)="onSearch()"
+          />
+        </div>
+
+        <button class="btn-filter" (click)="toggleFilters()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
+          </svg>
+          Filtros
+          @if (activeFiltersCount() > 0) {
+            <span class="filter-badge">{{ activeFiltersCount() }}</span>
+          }
+        </button>
+
+        <select
+          class="sort-select"
+          [ngModel]="filters().sortBy"
+          (ngModelChange)="updateFilter('sortBy', $event)"
+        >
+          @for (option of sortOptions; track option.value) {
+            <option [value]="option.value">{{ option.label }}</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    <!-- Panel de filtros -->
+    @if (showFilters()) {
+      <div class="filters-panel">
+        <div class="filters-grid">
+          <!-- Línea -->
+          <div class="filter-group">
+            <label>Línea</label>
+            <select [ngModel]="filters().line" (ngModelChange)="updateFilter('line', $event)">
+              <option value="" selected>Todas las líneas</option>
+              @for (line of lines(); track line.id) {
+                <option [value]="line.id">{{ line.name }}</option>
+              }
+            </select>
+          </div>
+
+          <!-- Categoría -->
+          <div class="filter-group">
+            <label>Categoría</label>
+            <select [ngModel]="filters().category" (ngModelChange)="updateFilter('category', $event)">
+              <option value="" selected>Todas las categorías</option>
+              @for (cat of categories(); track cat.id) {
+                <option [value]="cat.id">{{ cat.name }}</option>
+              }
+            </select>
+          </div>
+
+          <!-- Precio -->
+          <div class="filter-group price-range">
+            <label>Rango de precio</label>
+            <div class="price-inputs">
+              <input
+                type="number"
+                placeholder="Mín"
+                [ngModel]="filters().minPrice"
+                (ngModelChange)="updateFilter('minPrice', $event)"
+              />
+              <span>-</span>
+              <input
+                type="number"
+                placeholder="Máx"
+                [ngModel]="filters().maxPrice"
+                (ngModelChange)="updateFilter('maxPrice', $event)"
+              />
+            </div>
+          </div>
+        </div>
+
+        @if (activeFiltersCount() > 0) {
+          <button class="btn-clear-filters" (click)="clearFilters()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+            </svg>
+            Limpiar filtros
+          </button>
+        }
+      </div>
+    }
+  </header>
+
+  <!-- Banner de filtro por vehículo -->
+  @if (vehicleFilterActive() && vehicleService.selectedVehicle(); as vehicle) {
+    <div class="vehicle-filter-banner">
+      <div class="banner-content">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="banner-icon">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 0 0-.879-2.121l-1.431-1.431A2.999 2.999 0 0 0 17.159 9H14.25m0 0V5.625c0-.621-.504-1.125-1.125-1.125H5.625c-.621 0-1.125.504-1.125 1.125v12.249" />
+        </svg>
+        <span>
+          Mostrando productos compatibles con
+          <strong>{{ vehicle.marca }} {{ vehicle.modelo }} {{ vehicle.year }}</strong>
+          — {{ vehicle.engineType.displacement }} {{ vehicle.engineType.cylinders }} cil.
+        </span>
+      </div>
+      <button class="banner-close" (click)="clearVehicleFilter()">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+        </svg>
+        Quitar filtro
+      </button>
+    </div>
+  }
+
+  <!-- Contenido principal -->
+  <main class="catalog-content">
+    @if (isLoading()) {
+      <!-- Loading -->
+      <div class="loading-grid">
+        @for (i of [1,2,3,4,5,6,7,8]; track i) {
+          <div class="skeleton-card">
+            <div class="skeleton-image"></div>
+            <div class="skeleton-content">
+              <div class="skeleton-line w-1/3"></div>
+              <div class="skeleton-line w-full"></div>
+              <div class="skeleton-line w-2/3"></div>
+              <div class="skeleton-footer">
+                <div class="skeleton-line w-1/4"></div>
+                <div class="skeleton-btn"></div>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    } @else if (products().length === 0) {
+      <!-- Sin resultados -->
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+        </svg>
+        <h3>No se encontraron productos</h3>
+        <p>Intenta con otros filtros o términos de búsqueda</p>
+        @if (activeFiltersCount() > 0) {
+          <button class="btn-primary" (click)="clearFilters()">Limpiar filtros</button>
+        }
+      </div>
+    } @else {
+      <!-- Grid de productos -->
+      <div class="products-grid">
+        @for (product of products(); track product.id) {
+          <app-product-card [product]="product" />
+        }
+      </div>
+
+      <!-- Paginación -->
+      <div class="pagination-wrapper">
+        @if (totalPages() > 1) {
+          <nav class="pagination">
+            <button
+              class="page-btn"
+              [disabled]="currentPage() === 1"
+              (click)="goToPage(currentPage() - 1)"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+              </svg>
+            </button>
+
+            @for (page of getPageNumbers(); track page) {
+              <button
+                class="page-btn"
+                [class.active]="page === currentPage()"
+                (click)="goToPage(page)"
+              >
+                {{ page }}
+              </button>
+            }
+
+            <button
+              class="page-btn"
+              [disabled]="currentPage() === totalPages()"
+              (click)="goToPage(currentPage() + 1)"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+              </svg>
+            </button>
+          </nav>
+        }
+
+        @if (paginationConfig().allowUserCustomization) {
+          <div class="limit-selector">
+            <label for="limitSelect">Mostrar:</label>
+            <select
+              id="limitSelect"
+              [ngModel]="currentLimit()"
+              (ngModelChange)="onLimitChange($event)"
+            >
+              @for (option of paginationOptions; track option) {
+                <option [ngValue]="option">{{ option }}</option>
+              }
+            </select>
+          </div>
+        }
+      </div>
+    }
+  </main>
+</div>

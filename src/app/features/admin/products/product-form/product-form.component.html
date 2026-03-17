@@ -1,0 +1,480 @@
+<div class="product-form-page">
+  <!-- Header -->
+  <div class="page-header">
+    <a routerLink="/admin/products" class="back-link">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+      </svg>
+      <span>Volver</span>
+    </a>
+    <h1 class="page-title">{{ isEditMode() ? 'Editar Producto' : 'Nuevo Producto' }}</h1>
+  </div>
+
+  @if (isLoading()) {
+    <div class="loading-container">
+      <div class="loading-spinner"></div>
+      <span>Cargando...</span>
+    </div>
+  } @else {
+    <!-- Mensajes -->
+    @if (errorMessage()) {
+      <div class="alert error">
+        <span>{{ errorMessage() }}</span>
+        <button type="button" (click)="errorMessage.set(null)">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    }
+
+    <div class="form-layout">
+      <!-- Navegación de secciones (simplificada) -->
+      <nav class="sections-nav">
+        <button type="button" class="nav-item" [class.active]="activeSection() === 'basic'" (click)="setSection('basic')">
+          <span class="nav-number">1</span>
+          <span class="nav-label">Esencial</span>
+        </button>
+        <button type="button" class="nav-item" [class.active]="activeSection() === 'vehicle'" (click)="setSection('vehicle')">
+          <span class="nav-number">2</span>
+          <span class="nav-label">Detalles</span>
+        </button>
+        <button type="button" class="nav-item" [class.active]="activeSection() === 'images'" (click)="setSection('images')">
+          <span class="nav-number">3</span>
+          <span class="nav-label">Imágenes</span>
+        </button>
+      </nav>
+
+      <!-- Formulario -->
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" class="form-container">
+
+        <!-- Sección 1: Información Esencial -->
+        <div class="form-section" [hidden]="activeSection() !== 'basic'">
+            <h2 class="section-title">Información esencial</h2>
+            <p class="section-description">Solo necesitas el nombre, precio y fotos para empezar</p>
+
+            <div class="form-grid">
+              <!-- Nombre -->
+              <div class="form-group col-span-2">
+                <label for="name">Nombre del producto <span class="required">*</span></label>
+                <input
+                  type="text"
+                  id="name"
+                  formControlName="name"
+                  [class.error]="isInvalid('name')"
+                  placeholder="Ej: Producto Premium - Edición Especial"
+                />
+                @if (hasError('name', 'required')) {
+                  <span class="error-text">El nombre es requerido</span>
+                }
+                <span class="help-text">Incluye detalles que lo diferencien de otros productos</span>
+              </div>
+
+              <!-- Precio y Stock -->
+              <div class="form-group">
+                <label for="price">Precio <span class="required">*</span></label>
+                <div class="input-with-prefix">
+                  <span class="prefix">$</span>
+                  <input type="number" id="price" formControlName="price" min="0" step="0.01" />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="stock">Cantidad disponible <span class="required">*</span></label>
+                <input type="number" id="stock" formControlName="stock" min="0" />
+              </div>
+
+              <!-- Línea -->
+              <div class="form-group">
+                <label for="line">Línea <span class="optional">(opcional)</span></label>
+                <select id="line" formControlName="line">
+                  <option value="">Seleccionar</option>
+                  @for (line of lines(); track line.id) {
+                    <option [value]="line.id">{{ line.name }}</option>
+                  }
+                </select>
+              </div>
+
+              <!-- Descripción -->
+              <div class="form-group col-span-2">
+                <label for="description">Descripción <span class="optional">(opcional)</span></label>
+                <textarea
+                  id="description"
+                  formControlName="description"
+                  rows="3"
+                  placeholder="Agrega detalles adicionales si lo deseas..."
+                ></textarea>
+              </div>
+
+              <!-- Toggles -->
+              <div class="form-group col-span-2">
+                <div class="toggle-group">
+                  <div class="toggle-item">
+                    <label class="toggle-control">
+                      <input type="checkbox" formControlName="isActive" />
+                      <div class="toggle-track">
+                        <div class="toggle-thumb"></div>
+                      </div>
+                    </label>
+                    <span class="toggle-text">Publicar (visible en la tienda)</span>
+                  </div>
+
+                  <div class="toggle-item">
+                    <label class="toggle-control">
+                      <input type="checkbox" formControlName="isFeatured" />
+                      <div class="toggle-track">
+                        <div class="toggle-thumb"></div>
+                      </div>
+                    </label>
+                    <span class="toggle-text">Destacar en portada</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+
+        <!-- Sección 2: Detalles adicionales (opcional) -->
+        <div class="form-section" [hidden]="activeSection() !== 'vehicle'">
+          <h2 class="section-title">Detalles adicionales</h2>
+          <p class="section-description">Información adicional del producto (todo opcional)</p>
+
+            <div class="form-grid">
+              <!-- Fila 1: Categorías (ocupa toda la fila) -->
+              <div class="form-group col-span-2">
+                <label>Categorías <span class="optional">(opcional)</span></label>
+                <div class="category-selector">
+                  <!-- Input de búsqueda -->
+                  <div class="category-input-wrapper">
+                    <input
+                      type="text"
+                      class="category-search"
+                      placeholder="Buscar categorías..."
+                      [value]="categorySearchTerm()"
+                      (input)="onCategorySearch($event)"
+                      (focus)="openCategoryDropdown()"
+                    />
+                    <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                    </svg>
+                  </div>
+
+                  <!-- Dropdown de categorías -->
+                  @if (showCategoryDropdown() && filteredCategories().length > 0) {
+                    <div class="category-dropdown">
+                      @for (cat of filteredCategories(); track cat.id) {
+                        <button type="button" class="category-option" (click)="selectCategory(cat)">
+                          {{ cat.name }}
+                        </button>
+                      }
+                    </div>
+                  }
+
+                  <!-- Mensaje si no hay resultados -->
+                  @if (showCategoryDropdown() && categorySearchTerm() && filteredCategories().length === 0) {
+                    <div class="category-dropdown">
+                      <div class="category-no-results">No se encontraron categorías</div>
+                    </div>
+                  }
+                </div>
+
+                <!-- Categorías seleccionadas (badges) -->
+                @if (selectedCategories().length > 0) {
+                  <div class="selected-categories">
+                    @for (cat of selectedCategories(); track cat.id) {
+                      <span class="category-badge">
+                        {{ cat.name }}
+                        <button type="button" class="badge-remove" (click)="removeCategory(cat)">
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </span>
+                    }
+                  </div>
+                }
+
+                <span class="help-text">Selecciona una o más categorías para el producto</span>
+              </div>
+
+              <!-- Fila 2: Marca y Modelo -->
+              <div class="form-group">
+                <label>Marca <span class="optional">(opcional)</span></label>
+                <div class="brand-selector">
+                  <!-- Marca seleccionada o input de búsqueda -->
+                  @if (selectedBrand()) {
+                    <div class="selected-brand">
+                      <span class="brand-badge">
+                        {{ selectedBrand()!.name }}
+                        <button type="button" class="badge-remove" (click)="removeBrand()">
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </span>
+                    </div>
+                  } @else {
+                    <div class="brand-input-wrapper">
+                      <input
+                        type="text"
+                        class="brand-search"
+                        placeholder="Buscar marca..."
+                        [value]="brandSearchTerm()"
+                        (input)="onBrandSearch($event)"
+                        (focus)="openBrandDropdown()"
+                      />
+                      <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                      </svg>
+                    </div>
+
+                    <!-- Dropdown de marcas -->
+                    @if (showBrandDropdown() && filteredBrands().length > 0) {
+                      <div class="brand-dropdown">
+                        @for (brand of filteredBrands(); track brand.id) {
+                          <button type="button" class="brand-option" (click)="selectBrand(brand)">
+                            {{ brand.name }}
+                          </button>
+                        }
+                      </div>
+                    }
+
+                    <!-- Mensaje si no hay resultados -->
+                    @if (showBrandDropdown() && brandSearchTerm() && filteredBrands().length === 0) {
+                      <div class="brand-dropdown">
+                        <div class="brand-no-results">No se encontraron marcas</div>
+                      </div>
+                    }
+                  }
+                </div>
+                <span class="help-text">Fabricante o marca del producto</span>
+              </div>
+
+              <div class="form-group">
+                <label for="productModel">Modelo <span class="optional">(opcional)</span></label>
+                <input type="text" id="productModel" formControlName="productModel" placeholder="Ej: Serie A, Modelo X" />
+              </div>
+
+              <!-- Separador -->
+              <div class="form-group col-span-2">
+                <hr class="section-divider" />
+              </div>
+
+              <!-- Combo Toggle -->
+              <div class="form-group col-span-2">
+                <div class="toggle-item highlight-toggle">
+                  <label class="toggle-control">
+                    <input type="checkbox" formControlName="isCombo" />
+                    <div class="toggle-track combo-track">
+                      <div class="toggle-thumb"></div>
+                    </div>
+                  </label>
+                  <div class="toggle-content">
+                    <span class="toggle-text">Este producto es un Combo</span>
+                    <span class="toggle-hint">Activa esta opción si el producto es un combo o paquete de varios productos</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Regiones -->
+              <div class="form-group col-span-2">
+                <div class="toggle-item highlight-toggle">
+                  <label class="toggle-control">
+                    <input type="checkbox" formControlName="allRegions" />
+                    <div class="toggle-track regions-track">
+                      <div class="toggle-thumb"></div>
+                    </div>
+                  </label>
+                  <div class="toggle-content">
+                    <span class="toggle-text">Disponible en todas las regiones</span>
+                    <span class="toggle-hint">Si está activo, el producto estará disponible en todas las zonas de cobertura</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Selector de regiones (solo si allRegions es false) -->
+              @if (!form.get('allRegions')?.value) {
+                <div class="form-group col-span-2">
+                  <label>Seleccionar regiones <span class="required">*</span></label>
+                  <div class="zone-selector">
+                    <!-- Botón para abrir el dropdown -->
+                    <button
+                      type="button"
+                      class="zone-trigger"
+                      (click)="toggleZoneDropdown()"
+                      [class.active]="showZoneDropdown()"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="zone-icon">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+                      </svg>
+                      <span class="zone-trigger-text">Agregar región</span>
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="chevron-icon" [class.rotated]="showZoneDropdown()">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                      </svg>
+                    </button>
+
+                    <!-- Dropdown de zonas (dos pasos) -->
+                    @if (showZoneDropdown()) {
+                      <div class="zone-dropdown">
+                        <!-- Header del dropdown -->
+                        <div class="zone-dropdown-header">
+                          @if (zoneSelectorStep() === 'city') {
+                            <span>Selecciona una ciudad</span>
+                          } @else {
+                            <button type="button" class="back-btn" (click)="backToCity()">
+                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+                              </svg>
+                            </button>
+                            <span>{{ selectedCityForMunicipality()!.name }} - Municipio</span>
+                          }
+                        </div>
+
+                        <!-- Lista de ciudades (paso 1) -->
+                        @if (zoneSelectorStep() === 'city') {
+                          <div class="zone-dropdown-list">
+                            @for (city of availableCities(); track city.id) {
+                              <button
+                                type="button"
+                                class="zone-option"
+                                (click)="selectCityForRegion(city)"
+                              >
+                                <span class="zone-option-code">{{ city.code }}</span>
+                                <span class="zone-option-name">{{ city.name }}</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="arrow-icon">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                                </svg>
+                              </button>
+                            }
+                            @if (availableCities().length === 0) {
+                              <div class="zone-no-results">No hay ciudades disponibles</div>
+                            }
+                          </div>
+                        }
+
+                        <!-- Lista de municipios (paso 2) -->
+                        @if (zoneSelectorStep() === 'municipality') {
+                          <div class="zone-dropdown-list">
+                            @for (municipality of availableMunicipalities(); track municipality.code) {
+                              <button
+                                type="button"
+                                class="zone-option"
+                                (click)="selectMunicipalityForRegion(municipality)"
+                              >
+                                <span class="zone-option-code">{{ municipality.code }}</span>
+                                <span class="zone-option-name">{{ municipality.name }}</span>
+                              </button>
+                            }
+                            @if (availableMunicipalities().length === 0) {
+                              <div class="zone-no-results">
+                                No hay municipios disponibles o todos ya fueron seleccionados
+                              </div>
+                            }
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+
+                  <!-- Regiones seleccionadas (badges) -->
+                  @if (selectedRegions().length > 0) {
+                    <div class="selected-zones">
+                      @for (region of selectedRegions(); track region.city.id + '-' + region.municipality.code) {
+                        <span class="zone-badge">
+                          <span class="badge-code">{{ region.city.code }}</span>
+                          {{ region.city.name }} - {{ region.municipality.name }}
+                          <button type="button" class="badge-remove" (click)="removeRegion(region)">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </span>
+                      }
+                    </div>
+                  } @else {
+                    <span class="help-text warning">Debes seleccionar al menos una región</span>
+                  }
+
+                  <span class="help-text">Selecciona ciudad y municipio donde estará disponible este producto</span>
+                </div>
+              }
+            </div>
+        </div>
+
+        <!-- Sección 3: Imágenes -->
+        <div class="form-section" [hidden]="activeSection() !== 'images'">
+          <h2 class="section-title">Imágenes del producto</h2>
+          <p class="section-description">Sube fotos del producto (la primera será la principal)</p>
+
+            <!-- Preview del carrusel -->
+            @if (images().length > 0) {
+              <div class="images-preview">
+                <app-image-carousel [images]="images()" [imageFit]="'cover'" height="300px" />
+              </div>
+            }
+
+            <!-- Zona de carga -->
+            <div class="upload-zone">
+              <input type="file" id="images" accept="image/*" multiple (change)="onFilesSelected($event)" [disabled]="isUploading()" />
+              <label for="images" class="upload-label">
+                @if (isUploading()) {
+                  <div class="loading-spinner-sm"></div>
+                  <span>Subiendo...</span>
+                } @else {
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                  </svg>
+                  <span>Haz clic para subir imágenes</span>
+                  <span class="upload-hint">PNG, JPG hasta 5MB</span>
+                }
+              </label>
+            </div>
+
+            <!-- Lista de imágenes -->
+            @if (images().length > 0) {
+              <div class="images-list">
+                @for (img of images(); track $index) {
+                  <div class="image-item" [class.main]="$index === 0">
+                    <img [src]="img" alt="Imagen {{ $index + 1 }}" />
+                    @if ($index === 0) {
+                      <span class="main-badge">Principal</span>
+                    }
+                    <div class="image-actions">
+                      <button type="button" (click)="moveImage($index, $index - 1)" [disabled]="$index === 0">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+                        </svg>
+                      </button>
+                      <button type="button" (click)="moveImage($index, $index + 1)" [disabled]="$index === images().length - 1">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                        </svg>
+                      </button>
+                      <button type="button" class="delete" (click)="removeImage($index)">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+        </div>
+
+        <!-- Acciones del formulario -->
+        <div class="form-actions">
+          <a routerLink="/admin/products" class="btn-cancel">Cancelar</a>
+          <button type="submit" class="btn-submit" [disabled]="isSubmitting()">
+            @if (isSubmitting()) {
+              <span class="loading-spinner-sm"></span>
+              <span>Guardando...</span>
+            } @else {
+              <span>{{ isEditMode() ? 'Actualizar' : 'Crear' }} producto</span>
+            }
+          </button>
+        </div>
+      </form>
+    </div>
+  }
+</div>

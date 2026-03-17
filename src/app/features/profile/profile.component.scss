@@ -1,0 +1,112 @@
+// Profile Page
+.profile-page {
+  @apply min-h-screen bg-gray-100 dark:bg-gray-900 relative;
+}
+
+// Banner
+.profile-banner {
+  @apply relative h-48 md:h-56;
+  background: linear-gradient(135deg, rgb(0, 29, 86) 0%, rgb(0, 62, 153) 50%, rgb(0, 82, 204) 100%);
+
+  .banner-overlay {
+    @apply absolute inset-0 bg-black/20;
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+}
+
+.banner-content {
+  @apply relative h-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8;
+  @apply flex items-end pb-0 translate-y-16;
+}
+
+.avatar-container {
+  @apply flex flex-col md:flex-row items-center gap-4 md:gap-6;
+}
+
+.avatar-wrapper {
+  @apply relative flex-shrink-0;
+}
+
+.avatar-image {
+  @apply w-28 h-28 md:w-36 md:h-36 rounded-full object-cover;
+  @apply border-4 border-white dark:border-gray-800 shadow-xl;
+  @apply bg-gray-200 dark:bg-gray-700;
+}
+
+.user-identity {
+  @apply text-center md:text-left mt-2 md:mt-0;
+}
+
+.user-name {
+  @apply text-2xl md:text-3xl font-bold text-white drop-shadow-lg;
+}
+
+.user-email {
+  @apply text-white/80 text-sm md:text-base mt-1;
+}
+
+.user-badges {
+  @apply flex flex-wrap justify-center md:justify-start gap-2 mt-3;
+}
+
+.role-badge {
+  @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold;
+  @apply bg-white/20 text-white backdrop-blur-sm capitalize;
+}
+
+// Tabs
+.profile-tabs-container {
+  @apply max-w-6xl mx-auto px-4 sm:px-6 lg:px-8;
+  @apply pt-24 md:pt-20;
+}
+
+.profile-tabs {
+  @apply flex gap-1 bg-white dark:bg-gray-800 rounded-xl p-1;
+  @apply border border-gray-200 dark:border-gray-700 shadow-sm;
+}
+
+.tab-btn {
+  @apply flex-1 flex items-center justify-center gap-2;
+  @apply px-4 py-3 rounded-lg text-sm font-medium;
+  @apply text-gray-600 dark:text-gray-400;
+  @apply hover:text-gray-900 dark:hover:text-white;
+  @apply transition-all duration-200;
+
+  svg { @apply w-5 h-5; }
+
+  &.active {
+    @apply text-white shadow-sm;
+    background-color: var(--accent-primary);
+  }
+}
+
+// Content
+.profile-content {
+  @apply max-w-6xl mx-auto px-4 sm:px-6 lg:px-8;
+  @apply pt-6 pb-12;
+}
+
+// Tab placeholder
+.tab-placeholder {
+  @apply flex flex-col items-center justify-center py-20;
+  @apply text-gray-400 dark:text-gray-500;
+
+  .placeholder-icon {
+    @apply w-16 h-16 mb-4;
+  }
+
+  p {
+    @apply text-lg font-medium;
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .banner-content { @apply justify-center; }
+  .avatar-container { @apply flex-col text-center; }
+
+  .tab-btn {
+    @apply text-xs px-2;
+    svg { @apply w-4 h-4; }
+  }
+}

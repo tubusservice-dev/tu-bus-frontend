@@ -1,0 +1,190 @@
+<div class="payment-history">
+  <!-- Loading state -->
+  @if (isLoading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Cargando pagos...</p>
+    </div>
+  } @else if (payments().length === 0) {
+    <!-- Empty state -->
+    <div class="empty-state">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="empty-icon">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" />
+      </svg>
+      <p class="empty-title">No tienes pagos registrados</p>
+      <p class="empty-subtitle">Tus pagos aparecerán aquí una vez que realices una compra</p>
+    </div>
+  } @else {
+    <!-- Payment list -->
+    <div class="payments-table-wrapper">
+      <table class="payments-table">
+        <thead>
+          <tr>
+            <th>Pedido</th>
+            <th>Método</th>
+            <th>Referencia</th>
+            <th>Monto</th>
+            <th>Fecha</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (payment of payments(); track payment.id) {
+            <tr>
+              <td class="order-number">{{ getOrderNumber(payment) }}</td>
+              <td>{{ methodLabels[payment.method] }}</td>
+              <td>{{ payment.referenceNumber || '-' }}</td>
+              <td class="amount">{{ payment.transactionAmount | currency:'USD':'symbol':'1.2-2' }}</td>
+              <td>{{ payment.paymentDate ? (payment.paymentDate | date:'dd/MM/yyyy') : (payment.createdAt | date:'dd/MM/yyyy') }}</td>
+              <td>
+                <span class="status-badge" [ngClass]="statusColors[payment.status]">
+                  {{ statusLabels[payment.status] }}
+                </span>
+              </td>
+              <td>
+                @if (payment.status === PaymentStatus.PENDING) {
+                  <button
+                    type="button"
+                    class="edit-btn"
+                    (click)="startEdit(payment)"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                    </svg>
+                    Editar
+                  </button>
+                }
+              </td>
+            </tr>
+
+            <!-- Inline edit form -->
+            @if (editingPaymentId() === payment.id) {
+              <tr class="edit-row">
+                <td colspan="7">
+                  <div class="edit-form">
+                    <h4 class="edit-form-title">Editar Pago</h4>
+                    <div class="edit-form-grid">
+                      <div class="form-group">
+                        <label for="editRef">Número de Referencia</label>
+                        <input
+                          id="editRef"
+                          type="text"
+                          [(ngModel)]="editReferenceNumber"
+                          placeholder="Ej: 123456789"
+                          class="form-input"
+                        />
+                      </div>
+                      <div class="form-group">
+                        <label for="editAmount">Monto</label>
+                        <input
+                          id="editAmount"
+                          type="number"
+                          [(ngModel)]="editTransactionAmount"
+                          placeholder="0.00"
+                          step="0.01"
+                          class="form-input"
+                        />
+                      </div>
+                      <div class="form-group">
+                        <label for="editDate">Fecha de Pago</label>
+                        <input
+                          id="editDate"
+                          type="date"
+                          [(ngModel)]="editPaymentDate"
+                          class="form-input"
+                        />
+                      </div>
+                      <div class="form-group">
+                        <label>Captura del Pago</label>
+                        <div class="upload-area">
+                          @if (editCaptureUrl) {
+                            <div class="capture-preview">
+                              <img [src]="editCaptureUrl" alt="Captura" />
+                              <button type="button" class="remove-capture" (click)="editCaptureUrl = ''; editCapturePublicId = ''">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            </div>
+                          } @else {
+                            <label class="upload-label" [class.uploading]="isUploading()">
+                              @if (isUploading()) {
+                                <div class="spinner small"></div>
+                                <span>Subiendo...</span>
+                              } @else {
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+                                </svg>
+                                <span>Subir captura</span>
+                              }
+                              <input
+                                type="file"
+                                accept="image/*"
+                                (change)="onFileSelected($event)"
+                                [disabled]="isUploading()"
+                                class="hidden-input"
+                              />
+                            </label>
+                          }
+                        </div>
+                      </div>
+                    </div>
+                    <div class="edit-form-actions">
+                      <button
+                        type="button"
+                        class="btn-cancel"
+                        (click)="cancelEdit()"
+                        [disabled]="isSaving()"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="button"
+                        class="btn-save"
+                        (click)="saveEdit()"
+                        [disabled]="isSaving() || isUploading()"
+                      >
+                        @if (isSaving()) {
+                          <div class="spinner small"></div>
+                          Guardando...
+                        } @else {
+                          Guardar Cambios
+                        }
+                      </button>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    @if (totalPages() > 1) {
+      <div class="pagination">
+        <button
+          type="button"
+          class="page-btn"
+          [disabled]="currentPage() === 1"
+          (click)="goToPage(currentPage() - 1)"
+        >
+          Anterior
+        </button>
+        <span class="page-info">
+          Página {{ currentPage() }} de {{ totalPages() }}
+        </span>
+        <button
+          type="button"
+          class="page-btn"
+          [disabled]="currentPage() === totalPages()"
+          (click)="goToPage(currentPage() + 1)"
+        >
+          Siguiente
+        </button>
+      </div>
+    }
+  }
+</div>

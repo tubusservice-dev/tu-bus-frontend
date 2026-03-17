@@ -1,0 +1,142 @@
+.admin-login-page {
+  @apply min-h-screen flex items-center justify-center;
+  @apply bg-gray-50 dark:bg-gray-900;
+  @apply px-4 py-12;
+}
+
+.login-container {
+  @apply w-full max-w-md;
+}
+
+// Header
+.login-header {
+  @apply text-center mb-8;
+}
+
+.logo {
+  @apply w-16 h-16 mx-auto mb-6 rounded-2xl;
+  @apply flex items-center justify-center shadow-lg;
+  background-color: var(--accent-primary);
+
+  svg {
+    @apply w-8 h-8 text-white;
+  }
+}
+
+.title {
+  @apply text-2xl font-bold text-gray-900 dark:text-white mb-2;
+}
+
+.subtitle {
+  @apply text-gray-500 dark:text-gray-400 text-sm;
+}
+
+// Card
+.login-card {
+  @apply bg-white dark:bg-gray-800 rounded-2xl p-8;
+  @apply border border-gray-200 dark:border-gray-700;
+  @apply shadow-xl shadow-gray-200/50 dark:shadow-none;
+}
+
+// Alert
+.alert {
+  @apply flex items-center gap-3 p-4 rounded-xl text-sm mb-6;
+
+  svg {
+    @apply w-5 h-5 flex-shrink-0;
+  }
+}
+
+.alert-error {
+  @apply bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400;
+  @apply border border-red-200 dark:border-red-800;
+}
+
+// Form
+.login-form {
+  @apply space-y-5;
+}
+
+.form-group {
+  @apply flex flex-col gap-2;
+}
+
+.form-label {
+  @apply text-sm font-medium text-gray-700 dark:text-gray-300;
+}
+
+.input-wrapper {
+  @apply relative;
+}
+
+.input-icon {
+  @apply absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5;
+  @apply text-gray-400 dark:text-gray-500;
+}
+
+.form-input {
+  @apply w-full pl-12 pr-4 py-3 rounded-xl;
+  @apply bg-gray-50 dark:bg-gray-900;
+  @apply border border-gray-300 dark:border-gray-600;
+  @apply text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500;
+  @apply transition-all duration-200;
+  @apply focus:outline-none focus:ring-2 focus:border-transparent;
+  &:focus {
+    --tw-ring-color: var(--accent-primary);
+  }
+  @apply focus:bg-white dark:focus:bg-gray-800;
+
+  &.error {
+    @apply border-red-500 dark:border-red-500;
+  }
+}
+
+.field-error {
+  @apply text-xs text-red-500 dark:text-red-400 font-medium;
+}
+
+// Submit button
+.submit-btn {
+  @apply w-full flex items-center justify-center gap-2;
+  @apply px-6 py-3.5 rounded-xl text-sm font-semibold;
+  @apply text-white;
+  @apply transition-all duration-200;
+  @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  background-color: var(--accent-primary);
+
+  &:hover {
+    background-color: var(--accent-hover);
+  }
+
+  svg {
+    @apply w-5 h-5;
+  }
+
+  &:not(:disabled):hover {
+    @apply transform -translate-y-0.5 shadow-lg;
+  }
+}
+
+.spinner {
+  @apply w-5 h-5 border-2 rounded-full animate-spin;
+  @apply border-white/30 border-t-white;
+}
+
+// Footer
+.login-footer {
+  @apply text-center mt-8;
+}
+
+.back-link {
+  @apply inline-flex items-center gap-2 text-sm;
+  @apply text-gray-500 dark:text-gray-400;
+  @apply transition-colors;
+
+  &:hover {
+    color: var(--accent-primary);
+  }
+
+  svg {
+    @apply w-4 h-4;
+  }
+}

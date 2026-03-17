@@ -1,0 +1,55 @@
+<div class="confirmation-page">
+  @if (isLoading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Cargando confirmación...</p>
+    </div>
+  } @else if (order()) {
+    <div class="confirmation-card">
+      <!-- Ícono de éxito -->
+      <div class="success-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+        </svg>
+      </div>
+
+      <h1 class="confirmation-title">¡Orden Generada!</h1>
+      <p class="confirmation-subtitle">Tu orden ha sido registrada exitosamente</p>
+
+      <div class="order-info">
+        <div class="order-number-display">
+          <span class="label">Número de Orden</span>
+          <span class="value">{{ order()!.orderNumber }}</span>
+        </div>
+
+        <div class="order-details-grid">
+          <div class="detail">
+            <span class="detail-label">Estado</span>
+            <span class="detail-value status-badge">{{ getStatusLabel(order()!.status) }}</span>
+          </div>
+          <div class="detail">
+            <span class="detail-label">Total</span>
+            <span class="detail-value">{{ order()!.total | currency:'USD' }}</span>
+          </div>
+          <div class="detail">
+            <span class="detail-label">Productos</span>
+            <span class="detail-value">{{ order()!.items.length }} artículo(s)</span>
+          </div>
+          <div class="detail">
+            <span class="detail-label">Despacho</span>
+            <span class="detail-value capitalize">{{ order()!.dispatchType.replace('_', ' ') }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="confirmation-actions">
+        <button type="button" class="btn btn-primary" (click)="goToOrders()">
+          Ver Mis Pedidos
+        </button>
+        <button type="button" class="btn btn-secondary" (click)="goToStore()">
+          Seguir Comprando
+        </button>
+      </div>
+    </div>
+  }
+</div>

@@ -1,0 +1,51 @@
+.form-card {
+  @apply bg-white dark:bg-gray-800 rounded-2xl shadow-sm;
+  @apply border border-gray-200 dark:border-gray-700 overflow-hidden;
+}
+
+.form-header {
+  @apply flex items-center justify-between px-6 py-4;
+  @apply border-b border-gray-200 dark:border-gray-700;
+  h3 { @apply text-lg font-semibold text-gray-900 dark:text-white; }
+}
+
+.close-btn {
+  @apply w-8 h-8 rounded-lg flex items-center justify-center;
+  @apply text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200;
+  @apply hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors;
+  svg { @apply w-5 h-5; }
+}
+
+.form-body { @apply p-6; }
+.form-grid { @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4; }
+
+.form-group { @apply flex flex-col gap-1.5; }
+.form-label { @apply text-sm font-medium text-gray-700 dark:text-gray-300; }
+.form-input {
+  @apply w-full px-3 py-2.5 rounded-xl text-sm;
+  @apply bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600;
+  @apply text-gray-900 dark:text-white placeholder-gray-400;
+  @apply focus:outline-none focus:ring-2 focus:border-transparent;
+  &:focus { --tw-ring-color: var(--accent-primary); }
+  &.error { @apply border-red-500; }
+}
+
+.form-actions {
+  @apply flex justify-end gap-3 pt-5 mt-5;
+  @apply border-t border-gray-200 dark:border-gray-700;
+}
+
+.btn {
+  @apply inline-flex items-center justify-center gap-2;
+  @apply px-5 py-2.5 rounded-xl text-sm font-semibold;
+  @apply transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+}
+.btn-primary {
+  @apply text-white;
+  background-color: var(--accent-primary);
+  &:hover { background-color: var(--accent-hover); }
+}
+.btn-secondary {
+  @apply bg-gray-100 hover:bg-gray-200 text-gray-700;
+  @apply dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200;
+}

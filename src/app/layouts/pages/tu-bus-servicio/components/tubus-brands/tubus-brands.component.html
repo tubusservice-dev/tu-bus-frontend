@@ -1,0 +1,27 @@
+<section class="brands-section">
+  <div class="brands-container">
+    <h3 class="brands-title">Nuestras marcas de servicio</h3>
+
+    @if (isLoading()) {
+      <div class="brands-loading">
+        <div class="spinner"></div>
+      </div>
+    } @else if (brands().length === 0) {
+      <p class="brands-empty">No hay marcas disponibles</p>
+    } @else {
+      <div class="brands-grid">
+        @for (brand of brands(); track brand.id) {
+          <div class="brand-item">
+            @if (brand.image) {
+              <img [src]="brand.image" [alt]="brand.name" class="brand-image" />
+            } @else {
+              <div class="brand-placeholder">
+                <span>{{ brand.name.charAt(0) }}</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+  </div>
+</section>

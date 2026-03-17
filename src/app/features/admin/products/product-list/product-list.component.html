@@ -1,0 +1,567 @@
+<div class="product-list-page">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <h1 class="page-title">Productos</h1>
+      <p class="page-subtitle">Gestiona tu catálogo de productos</p>
+    </div>
+    <div class="header-actions">
+      <!-- Toggle vista -->
+      <div class="view-toggle">
+        <button
+          type="button"
+          [class.active]="viewMode() === 'cards'"
+          (click)="viewMode.set('cards')"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          [class.active]="viewMode() === 'table'"
+          (click)="viewMode.set('table')"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 0 1 0 3.75H5.625a1.875 1.875 0 0 1 0-3.75Z" />
+          </svg>
+        </button>
+      </div>
+      <a routerLink="/admin/products/create" class="btn-primary">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+        </svg>
+        <span>Nuevo Producto</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="filters-section">
+    <div class="filters-grid">
+      <!-- Búsqueda -->
+      <div class="filter-group search">
+        <input
+          type="text"
+          placeholder="Buscar por nombre, modelo..."
+          [ngModel]="filters().search"
+          (ngModelChange)="updateFilter('search', $event)"
+          (keyup.enter)="applyFilters()"
+        />
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+        </svg>
+      </div>
+
+      <!-- Línea -->
+      <div class="filter-group">
+        <select
+          [ngModel]="filters().line ?? ''"
+          (ngModelChange)="onFilterChange('line', $event)"
+        >
+          <option value="" selected>Todas las líneas</option>
+          @for (line of lines(); track line.id) {
+            <option [value]="line.id">{{ line.name }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- Categoría -->
+      <div class="filter-group">
+        <select
+          [ngModel]="filters().category ?? ''"
+          (ngModelChange)="onFilterChange('category', $event)"
+        >
+          <option value="" selected>Todas las categorías</option>
+          @for (cat of categories(); track cat.id) {
+            <option [value]="cat.id">{{ cat.name }}</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    <div class="filters-actions">
+      <button type="button" class="btn-clear" (click)="clearFilters()">
+        Limpiar filtros
+      </button>
+    </div>
+  </div>
+
+  <!-- Error -->
+  @if (errorMessage()) {
+    <div class="alert-error">
+      <span>{{ errorMessage() }}</span>
+      <button type="button" (click)="errorMessage.set(null)">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+  }
+
+  <!-- Loading -->
+  @if (isLoading()) {
+    <div class="loading-container">
+      <div class="loading-spinner"></div>
+      <span>Cargando productos...</span>
+    </div>
+  } @else {
+    <!-- Resultados -->
+    <div class="results-info">
+      <span>{{ totalProducts() }} productos encontrados</span>
+    </div>
+
+    <!-- Vista de tarjetas -->
+    @if (viewMode() === 'cards') {
+      <div class="products-grid">
+        @if (products().length === 0) {
+          <div class="empty-state">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m21 7.5-9-5.25L3 7.5m18 0-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
+            </svg>
+            <h3>No hay productos</h3>
+            <p>Comienza agregando tu primer producto</p>
+            <a routerLink="/admin/products/create" class="btn-primary">
+              Crear producto
+            </a>
+          </div>
+        } @else {
+          @for (product of products(); track product.id) {
+            <div class="product-card" (click)="openDetails(product)">
+              <!-- Imagen con carrusel -->
+              <div class="product-image" (click)="$event.stopPropagation()">
+                <app-image-carousel
+                  [images]="product.images"
+                  [showArrows]="true"
+                  [showIndicators]="true"
+                  [imageFit]="'cover'"
+                  height="180px"
+                />
+                <!-- Badges -->
+                <div class="product-badges">
+                  @if (product.isFeatured) {
+                    <span class="badge featured">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z" clip-rule="evenodd" />
+                      </svg>
+                    </span>
+                  }
+                  @if (!product.isActive) {
+                    <span class="badge inactive">Inactivo</span>
+                  }
+                  @if (getTotalStock(product) === 0) {
+                    <span class="badge out-of-stock">Agotado</span>
+                  } @else if (isLowStock(product)) {
+                    <span class="badge low-stock">Bajo stock</span>
+                  }
+                </div>
+              </div>
+
+              <!-- Info -->
+              <div class="product-info">
+                <!-- Header con línea y estado -->
+                <div class="card-header">
+                  @if (product.line) {
+                    <span class="product-line">{{ getLineName(product.line) }}</span>
+                  }
+                </div>
+
+                <!-- Nombre y marca -->
+                <h3 class="product-name">{{ product.name }}</h3>
+                <div class="product-meta">
+                  @if (product.brand) {
+                    <span class="meta-item brand">{{ getBrandName(product.brand) }}</span>
+                  }
+                  @if (product.productModel) {
+                    <span class="meta-divider">|</span>
+                    <span class="meta-item">{{ product.productModel }}</span>
+                  }
+                </div>
+
+                <!-- Categorías -->
+                @if (product.categories && product.categories.length > 0) {
+                  <div class="product-categories">
+                    @for (cat of product.categories.slice(0, 2); track $index) {
+                      <span class="category-tag">{{ getCategoryName(cat) }}</span>
+                    }
+                    @if (product.categories.length > 2) {
+                      <span class="category-more">+{{ product.categories.length - 2 }}</span>
+                    }
+                  </div>
+                }
+
+                <!-- Footer con precio y stock -->
+                <div class="product-footer">
+                  <div class="product-price">
+                    @if (product.comparePrice && product.comparePrice > product.price) {
+                      <span class="price-old">${{ product.comparePrice | number:'1.2-2' }}</span>
+                    }
+                    <span class="price-current">${{ product.price | number:'1.2-2' }}</span>
+                  </div>
+                  <div class="product-stock" [class.low]="isLowStock(product)" [class.out]="getTotalStock(product) === 0">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z" />
+                    </svg>
+                    <span>{{ getTotalStock(product) }}</span>
+                  </div>
+                </div>
+
+                <!-- Acciones -->
+                <div class="product-actions" (click)="$event.stopPropagation()">
+                  <a [routerLink]="['/admin/products/edit', product.id]" class="btn-edit">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
+                    </svg>
+                    Editar
+                  </a>
+                  <button type="button" class="btn-delete" (click)="confirmDelete(product)">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          }
+        }
+      </div>
+    } @else {
+      <!-- Vista de tabla -->
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th>Marca/Modelo</th>
+              <th>Categoría</th>
+              <th>Precio</th>
+              <th>Stock</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (product of products(); track product.id) {
+              <tr>
+                <td>
+                  <div class="table-product">
+                    <img [src]="product.images[0] || 'https://via.placeholder.com/60'" [alt]="product.name" />
+                    <div>
+                      <span class="table-product-name">{{ product.name }}</span>
+                      <span class="table-product-sku">SKU: {{ product.sku }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div class="table-brand">
+                    <span>{{ getBrandName(product.brand) }}</span>
+                    <span class="text-sm text-gray-500">{{ product.productModel }}</span>
+                  </div>
+                </td>
+                <td>
+                  @if (product.categories && product.categories.length > 0) {
+                    @for (cat of product.categories.slice(0, 1); track $index) {
+                      {{ getCategoryName(cat) }}
+                    }
+                    @if (product.categories.length > 1) {
+                      <span class="text-gray-400"> +{{ product.categories.length - 1 }}</span>
+                    }
+                  } @else {
+                    <span class="text-gray-400">-</span>
+                  }
+                </td>
+                <td class="font-semibold">${{ product.price | number:'1.2-2' }}</td>
+                <td>
+                  <span [class.text-red-500]="getTotalStock(product) === 0" [class.text-yellow-500]="isLowStock(product)">
+                    {{ getTotalStock(product) }}
+                  </span>
+                </td>
+                <td>
+                  <span class="status-badge" [class.active]="product.isActive" [class.inactive]="!product.isActive">
+                    {{ product.isActive ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </td>
+                <td>
+                  <div class="table-actions">
+                    <a [routerLink]="['/admin/products/edit', product.id]" class="btn-action edit">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
+                      </svg>
+                    </a>
+                    <button type="button" class="btn-action delete" (click)="confirmDelete(product)">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                      </svg>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <!-- Paginación -->
+    @if (totalPages() > 1) {
+      <div class="pagination">
+        <button
+          type="button"
+          class="pagination-btn"
+          [disabled]="currentPage() === 1"
+          (click)="goToPage(currentPage() - 1)"
+        >
+          Anterior
+        </button>
+        <span class="pagination-info">
+          Página {{ currentPage() }} de {{ totalPages() }}
+        </span>
+        <button
+          type="button"
+          class="pagination-btn"
+          [disabled]="currentPage() === totalPages()"
+          (click)="goToPage(currentPage() + 1)"
+        >
+          Siguiente
+        </button>
+      </div>
+    }
+  }
+
+  <!-- Modal de eliminación -->
+  @if (productToDelete()) {
+    <div class="modal-overlay" (click)="cancelDelete()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+          </svg>
+        </div>
+        <h3 class="modal-title">Eliminar producto</h3>
+        <p class="modal-message">
+          ¿Estás seguro de eliminar <strong>{{ productToDelete()?.name }}</strong>?
+        </p>
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" (click)="cancelDelete()" [disabled]="isDeleting()">
+            Cancelar
+          </button>
+          <button type="button" class="btn-delete-confirm" (click)="deleteProduct()" [disabled]="isDeleting()">
+            @if (isDeleting()) {
+              Eliminando...
+            } @else {
+              Eliminar
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal de detalles del producto (estilo cliente) -->
+  @if (selectedProduct(); as product) {
+    <div class="detail-modal-overlay" (click)="closeDetails()">
+      <div class="detail-modal-container" (click)="$event.stopPropagation()">
+        <!-- Botón cerrar -->
+        <button type="button" class="detail-modal-close" (click)="closeDetails()">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        <!-- Contenido principal -->
+        <div class="detail-modal-content">
+          <!-- Grid principal -->
+          <div class="detail-grid">
+            <!-- Galería de imágenes -->
+            <div class="detail-gallery">
+              <!-- Imagen principal -->
+              <div class="detail-main-image">
+                @if (hasDiscount(product)) {
+                  <div class="detail-discount-badge">-{{ getDiscountPercentage(product) }}%</div>
+                }
+                @if (getTotalStock(product) === 0) {
+                  <div class="detail-out-of-stock-overlay">
+                    <span>Agotado</span>
+                  </div>
+                }
+                @if (product.images && product.images.length > 0) {
+                  <img
+                    [src]="getSelectedImage()"
+                    [alt]="product.name"
+                    class="main-img"
+                  />
+
+                  <!-- Flechas de navegación -->
+                  @if (product.images.length > 1) {
+                    <button class="detail-nav-arrow prev" (click)="prevImage()">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                      </svg>
+                    </button>
+                    <button class="detail-nav-arrow next" (click)="nextImage()">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                      </svg>
+                    </button>
+                  }
+                } @else {
+                  <div class="detail-no-image">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+                    </svg>
+                    <span>Sin imágenes</span>
+                  </div>
+                }
+              </div>
+
+              <!-- Thumbnails -->
+              @if (product.images && product.images.length > 1) {
+                <div class="detail-thumbnails">
+                  @for (img of product.images; track img; let i = $index) {
+                    <button
+                      class="detail-thumbnail"
+                      [class.active]="i === selectedImageIndex()"
+                      (click)="selectImage(i)"
+                    >
+                      <img [src]="img" [alt]="'Imagen ' + (i + 1)" />
+                    </button>
+                  }
+                </div>
+              }
+            </div>
+
+            <!-- Información del producto -->
+            <div class="detail-info">
+              <!-- Estado y badges -->
+              <div class="detail-meta-tags">
+                @if (product.isActive) {
+                  <span class="detail-tag active">Activo</span>
+                } @else {
+                  <span class="detail-tag inactive">Inactivo</span>
+                }
+                @if (product.isFeatured) {
+                  <span class="detail-tag featured">Destacado</span>
+                }
+              </div>
+
+              <!-- Nombre -->
+              <h1 class="detail-product-name">{{ product.name }}</h1>
+
+              <!-- SKU -->
+              @if (product.sku) {
+                <p class="detail-sku">SKU: {{ product.sku }}</p>
+              }
+
+              <!-- Precio -->
+              <div class="detail-price-block">
+                <span class="detail-price-label">Precio</span>
+                <div class="detail-price-section">
+                  @if (hasDiscount(product)) {
+                    <span class="detail-compare-price">${{ product.comparePrice | number:'1.0-0' }}</span>
+                  }
+                  <span class="detail-current-price">${{ product.price | number:'1.0-0' }}</span>
+                  @if (hasDiscount(product)) {
+                    <span class="detail-discount-tag">-{{ getDiscountPercentage(product) }}%</span>
+                  }
+                </div>
+              </div>
+
+              <!-- Stock -->
+              <div class="detail-stock-info">
+                @if (getTotalStock(product) > 5) {
+                  <span class="detail-in-stock">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                    En stock ({{ getTotalStock(product) }} disponibles)
+                  </span>
+                } @else if (getTotalStock(product) > 0) {
+                  <span class="detail-low-stock">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                    </svg>
+                    ¡Solo quedan {{ getTotalStock(product) }}!
+                  </span>
+                } @else {
+                  <span class="detail-out-of-stock">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    Agotado
+                  </span>
+                }
+              </div>
+
+              <!-- Botón editar -->
+              <div class="detail-action-section">
+                <a [routerLink]="['/admin/products/edit', product.id]" class="detail-btn-edit" (click)="closeDetails()">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
+                  </svg>
+                  Editar producto
+                </a>
+              </div>
+
+              <!-- Descripción -->
+              @if (product.description) {
+                <div class="detail-description-section">
+                  <h3>Descripción</h3>
+                  <p>{{ product.description }}</p>
+                </div>
+              }
+
+              <!-- Detalles del producto -->
+              <div class="detail-details-section">
+                <h3>Detalles del producto</h3>
+                <div class="detail-details-grid">
+                  @if (product.brand) {
+                    <div class="detail-detail-item">
+                      <span class="label">Marca</span>
+                      <span class="value">{{ getBrandName(product.brand) }}</span>
+                    </div>
+                  }
+                  @if (product.productModel) {
+                    <div class="detail-detail-item">
+                      <span class="label">Modelo</span>
+                      <span class="value">{{ product.productModel }}</span>
+                    </div>
+                  }
+                  @if (product.line) {
+                    <div class="detail-detail-item">
+                      <span class="label">Línea</span>
+                      <span class="value line-value">{{ getLineName(product.line) }}</span>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <!-- Categorías -->
+              @if (product.categories && product.categories.length > 0) {
+                <div class="detail-categories-section">
+                  <h3>Categorías</h3>
+                  <div class="detail-categories-list">
+                    @for (cat of product.categories; track $index) {
+                      <span class="detail-category-badge">{{ getCategoryName(cat) }}</span>
+                    }
+                  </div>
+                </div>
+              }
+
+              <!-- Tags -->
+              @if (product.tags && product.tags.length > 0) {
+                <div class="detail-tags-section">
+                  <h3>Etiquetas</h3>
+                  <div class="detail-tags-list">
+                    @for (tag of product.tags; track $index) {
+                      <span class="detail-tag-item">#{{ tag }}</span>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>

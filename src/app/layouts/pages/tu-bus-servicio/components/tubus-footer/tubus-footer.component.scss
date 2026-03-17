@@ -1,0 +1,89 @@
+.footer {
+  @apply py-12;
+  background-color: var(--bg-primary);
+  border-top: 1px solid var(--border-color);
+}
+
+.footer-container {
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+.footer-content {
+  @apply flex flex-col sm:flex-row justify-between items-center gap-8 mb-8;
+}
+
+// Brand
+.footer-brand {
+  @apply text-center sm:text-left;
+}
+
+.footer-logo {
+  @apply inline-flex items-center gap-2 mb-3;
+  text-decoration: none;
+}
+
+.logo-icon {
+  @apply w-8 h-8 flex items-center justify-center rounded-lg;
+  background: linear-gradient(135deg, var(--tubus-primary) 0%, var(--tubus-primary-dark) 100%);
+  color: white;
+
+  svg {
+    @apply w-4 h-4;
+  }
+}
+
+.logo-text {
+  @apply text-lg font-bold;
+  color: var(--text-primary);
+}
+
+.logo-accent {
+  color: var(--tubus-text-accent);
+}
+
+.footer-tagline {
+  @apply text-sm max-w-xs;
+  color: var(--text-tertiary);
+}
+
+// Links
+.footer-links {
+  @apply flex flex-wrap justify-center gap-6;
+}
+
+.footer-link {
+  @apply text-sm font-medium;
+  @apply transition-colors duration-200;
+  color: var(--text-secondary);
+  text-decoration: none;
+
+  &:hover {
+    color: var(--tubus-text-accent);
+  }
+}
+
+// Bottom
+.footer-bottom {
+  @apply flex flex-col sm:flex-row justify-between items-center gap-4 pt-8;
+  border-top: 1px solid var(--border-color);
+}
+
+.copyright {
+  @apply text-sm;
+  color: var(--text-tertiary);
+}
+
+.footer-legal {
+  @apply flex gap-6;
+}
+
+.legal-link {
+  @apply text-xs;
+  @apply transition-colors duration-200;
+  color: var(--text-tertiary);
+  text-decoration: none;
+
+  &:hover {
+    color: var(--text-secondary);
+  }
+}

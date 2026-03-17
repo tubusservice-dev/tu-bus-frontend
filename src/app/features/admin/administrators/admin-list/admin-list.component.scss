@@ -1,0 +1,196 @@
+.admin-list-page {
+  @apply space-y-6;
+}
+
+// Header
+.page-header {
+  @apply flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4;
+}
+
+.header-content {
+  @apply space-y-1;
+}
+
+.page-title {
+  @apply text-2xl font-bold text-gray-900 dark:text-white;
+}
+
+.page-subtitle {
+  @apply text-sm text-gray-500 dark:text-gray-400;
+}
+
+.btn-primary {
+  @apply inline-flex items-center gap-2 px-4 py-2.5 bg-red-700 hover:bg-red-800 text-white text-sm font-medium rounded-lg transition-colors;
+
+  svg {
+    @apply w-5 h-5;
+  }
+}
+
+// Alert
+.alert-error {
+  @apply flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-400;
+
+  svg {
+    @apply w-5 h-5 flex-shrink-0;
+  }
+
+  span {
+    @apply flex-1 text-sm;
+  }
+
+  button {
+    @apply p-1 hover:bg-red-100 dark:hover:bg-red-900/40 rounded transition-colors;
+
+    svg {
+      @apply w-4 h-4;
+    }
+  }
+}
+
+// Loading
+.loading-container {
+  @apply flex flex-col items-center justify-center py-12 text-gray-500 dark:text-gray-400;
+
+  span {
+    @apply mt-3 text-sm;
+  }
+}
+
+.loading-spinner {
+  @apply w-8 h-8 border-4 border-gray-200 dark:border-gray-700 border-t-red-700 rounded-full animate-spin;
+}
+
+.loading-spinner-sm {
+  @apply w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin;
+}
+
+// Table
+.table-container {
+  @apply bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden;
+}
+
+.data-table {
+  @apply w-full;
+
+  thead {
+    @apply bg-gray-50 dark:bg-gray-700/50;
+
+    th {
+      @apply px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider;
+    }
+  }
+
+  tbody {
+    @apply divide-y divide-gray-200 dark:divide-gray-700;
+
+    tr {
+      @apply hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors;
+    }
+
+    td {
+      @apply px-6 py-4 whitespace-nowrap;
+    }
+  }
+}
+
+.empty-state {
+  @apply text-center py-12 text-gray-500 dark:text-gray-400;
+
+  svg {
+    @apply w-12 h-12 mx-auto mb-3 opacity-50;
+  }
+
+  span {
+    @apply text-sm;
+  }
+}
+
+.user-cell {
+  @apply flex items-center gap-3;
+}
+
+.user-avatar {
+  @apply w-9 h-9 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 flex items-center justify-center text-sm font-semibold;
+}
+
+.user-name {
+  @apply text-sm font-medium text-gray-900 dark:text-white;
+}
+
+.status-badge {
+  @apply px-2.5 py-1 text-xs font-medium rounded-full transition-colors cursor-pointer;
+
+  &.active {
+    @apply bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50;
+  }
+
+  &.inactive {
+    @apply bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600;
+  }
+}
+
+.date-cell {
+  @apply text-sm text-gray-500 dark:text-gray-400;
+}
+
+.actions-cell {
+  @apply flex items-center gap-2;
+}
+
+.btn-action {
+  @apply p-2 rounded-lg transition-colors;
+
+  svg {
+    @apply w-4 h-4;
+  }
+
+  &.edit {
+    @apply text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20;
+  }
+
+  &.delete {
+    @apply text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20;
+  }
+}
+
+// Modal
+.modal-overlay {
+  @apply fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4;
+}
+
+.modal-content {
+  @apply bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6 text-center;
+}
+
+.modal-icon {
+  @apply w-12 h-12 mx-auto mb-4 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center;
+
+  svg {
+    @apply w-6 h-6 text-red-600 dark:text-red-400;
+  }
+}
+
+.modal-title {
+  @apply text-lg font-semibold text-gray-900 dark:text-white mb-2;
+}
+
+.modal-message {
+  @apply text-sm text-gray-500 dark:text-gray-400 mb-6;
+
+  strong {
+    @apply text-gray-900 dark:text-white;
+  }
+}
+
+.modal-actions {
+  @apply flex gap-3 justify-center;
+}
+
+.btn-cancel {
+  @apply px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors disabled:opacity-50;
+}
+
+.btn-delete {
+  @apply inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50;
+}

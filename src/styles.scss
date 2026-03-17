@@ -1,0 +1,332 @@
+/* ========================================
+   E-COMMERCE - Estilos Globales
+   Tema: TuBus Express - Azul Corporativo
+   ======================================== */
+
+/* Tailwind CSS */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ========================================
+   Variables CSS - Modo Claro (por defecto)
+   ======================================== */
+:root {
+  /* Colores de fondo */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f5f5;
+  --bg-tertiary: #e5e5e5;
+
+  /* Colores de texto */
+  --text-primary: #171717;
+  --text-secondary: #525252;
+  --text-tertiary: #737373;
+  --text-inverse: #ffffff;
+
+  /* Color de acento (Azul TuBus) */
+  --accent-primary: rgb(0, 29, 86);
+  --accent-hover: rgb(0, 20, 60);
+  --accent-light: rgba(0, 29, 86, 0.1);
+
+  /* Bordes */
+  --border-color: #e5e5e5;
+  --border-color-hover: #d4d4d4;
+
+  /* Sombras */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+
+  /* TuBus Express - Colores primarios (Modo Claro - azul oscuro) */
+  --tubus-primary: rgb(0, 29, 86);
+  --tubus-primary-dark: rgb(0, 20, 60);
+  --tubus-primary-light: rgb(0, 45, 112);
+  --tubus-primary-rgb: 0, 29, 86;
+  --tubus-text-accent: rgb(0, 29, 86);
+  --tubus-bg-accent: rgb(0, 29, 86);
+
+  /* Transiciones */
+  --transition-fast: 150ms ease-in-out;
+  --transition-normal: 300ms ease-in-out;
+  --transition-slow: 500ms ease-in-out;
+
+  /* Fuentes */
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-heading: 'Poppins', system-ui, sans-serif;
+}
+
+/* ========================================
+   Variables CSS - Modo Oscuro
+   ======================================== */
+.dark {
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #171717;
+  --bg-tertiary: #262626;
+
+  --text-primary: #fafafa;
+  --text-secondary: #a3a3a3;
+  --text-tertiary: #737373;
+  --text-inverse: #0a0a0a;
+
+  --accent-primary: rgb(0, 62, 153);
+  --accent-hover: rgb(0, 45, 112);
+  --accent-light: rgba(0, 62, 153, 0.15);
+
+  --border-color: #262626;
+  --border-color-hover: #404040;
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+
+  /* TuBus Express - Colores para modo oscuro (azul claro para mejor contraste) */
+  --tubus-primary: rgb(0, 62, 153);
+  --tubus-primary-dark: rgb(0, 45, 112);
+  --tubus-primary-light: rgb(0, 82, 204);
+  --tubus-primary-rgb: 0, 62, 153;
+  --tubus-text-accent: rgb(77, 148, 255);
+  --tubus-bg-accent: rgb(0, 62, 153);
+}
+
+/* ========================================
+   Estilos base
+   ======================================== */
+@layer base {
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    transition: background-color var(--transition-normal), color var(--transition-normal);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  a {
+    color: var(--accent-primary);
+    transition: color var(--transition-fast);
+  }
+
+  a:hover {
+    color: var(--accent-hover);
+  }
+
+  button {
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Scrollbar personalizado */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--text-tertiary);
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
+  }
+}
+
+/* ========================================
+   Componentes reutilizables
+   ======================================== */
+@layer components {
+  /* Botones */
+  .btn {
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
+  }
+
+  .btn-primary {
+    @apply btn text-white;
+    background-color: var(--accent-primary);
+    color: white !important;
+  }
+
+  .btn-primary:hover {
+    background-color: var(--accent-hover);
+    color: white !important;
+  }
+
+  .btn-primary:focus {
+    @apply ring-primary-500;
+  }
+
+  .btn-secondary {
+    @apply btn;
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary) !important;
+  }
+
+  .btn-secondary:hover {
+    background-color: var(--border-color-hover);
+    color: var(--text-primary) !important;
+  }
+
+  .btn-outline {
+    @apply btn border-2;
+    border-color: var(--accent-primary);
+    color: var(--accent-primary) !important;
+    background-color: transparent;
+  }
+
+  .btn-outline:hover {
+    background-color: var(--accent-light);
+    color: var(--accent-primary) !important;
+  }
+
+  .btn-ghost {
+    @apply btn;
+    background-color: transparent;
+    color: var(--text-primary) !important;
+  }
+
+  .btn-ghost:hover {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary) !important;
+  }
+
+  /* Inputs */
+  .input {
+    @apply w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 transition-all duration-200;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+  }
+
+  .input:focus {
+    border-color: var(--accent-primary);
+    @apply ring-primary-500/20;
+  }
+
+  .input::placeholder {
+    color: var(--text-tertiary);
+  }
+
+  /* Cards */
+  .card {
+    @apply rounded-xl overflow-hidden transition-all duration-300;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-md);
+  }
+
+  .card:hover {
+    box-shadow: var(--shadow-lg);
+    border-color: var(--border-color-hover);
+  }
+
+  /* Contenedor principal */
+  .container-app {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  /* Divisor */
+  .divider {
+    @apply w-full h-px;
+    background-color: var(--border-color);
+  }
+
+  /* Badge */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-primary {
+    @apply badge text-white;
+    background-color: var(--accent-primary);
+  }
+
+  /* Link de navegación */
+  .nav-link {
+    @apply px-3 py-2 rounded-lg font-medium transition-all duration-200;
+    color: var(--text-secondary);
+  }
+
+  .nav-link:hover {
+    color: var(--text-primary);
+    background-color: var(--bg-tertiary);
+  }
+
+  .nav-link.active {
+    color: var(--accent-primary);
+    background-color: var(--accent-light);
+  }
+}
+
+/* ========================================
+   Utilidades personalizadas
+   ======================================== */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Colores dinámicos con variables CSS */
+  .bg-surface {
+    background-color: var(--bg-primary);
+  }
+
+  .bg-surface-secondary {
+    background-color: var(--bg-secondary);
+  }
+
+  .bg-surface-tertiary {
+    background-color: var(--bg-tertiary);
+  }
+
+  .text-base-primary {
+    color: var(--text-primary);
+  }
+
+  .text-base-secondary {
+    color: var(--text-secondary);
+  }
+
+  .text-base-tertiary {
+    color: var(--text-tertiary);
+  }
+
+  .text-accent {
+    color: var(--accent-primary);
+  }
+
+  .border-base {
+    border-color: var(--border-color);
+  }
+
+  .shadow-base {
+    box-shadow: var(--shadow-md);
+  }
+}

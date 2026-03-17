@@ -1,0 +1,124 @@
+@if (showModal()) {
+  <div class="zoning-overlay">
+    <div class="zoning-modal">
+      <!-- Logo -->
+      <div class="modal-logo">
+        <img src="assets/icons/autobus.png" alt="TuBus Servicios" class="logo-img" />
+      </div>
+
+      <!-- Step: Selección de ciudad -->
+      @if (step() === 'city') {
+        <div class="modal-body">
+          <h2 class="modal-title">Selecciona tu ciudad</h2>
+          <p class="modal-subtitle">Para mostrarte productos y servicios disponibles en tu zona</p>
+
+          @if (isLoading()) {
+            <div class="loading-state">
+              <div class="spinner"></div>
+              <p>Cargando zonas...</p>
+            </div>
+          } @else {
+            <!-- Ciudades activas -->
+            <div class="cities-grid">
+              @for (city of activeCities(); track city.id) {
+                <button
+                  type="button"
+                  class="zone-btn zone-btn--active"
+                  (click)="selectCity(city)"
+                >
+                  <span class="zone-btn__icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+                    </svg>
+                  </span>
+                  <span class="zone-btn__name">{{ city.name }}</span>
+                  <span class="zone-btn__badge zone-btn__badge--available">Disponible</span>
+                </button>
+              }
+            </div>
+
+            <!-- Separador -->
+            @if (inactiveCities().length > 0) {
+              <div class="separator">
+                <span class="separator__line"></span>
+                <span class="separator__text">Otras ciudades</span>
+                <span class="separator__line"></span>
+              </div>
+
+              <!-- Ciudades inactivas -->
+              <div class="cities-grid cities-grid--inactive">
+                @for (city of inactiveCities(); track city.id) {
+                  <button
+                    type="button"
+                    class="zone-btn zone-btn--inactive"
+                    (click)="selectCity(city)"
+                  >
+                    <span class="zone-btn__name">{{ city.name }}</span>
+                    <span class="zone-btn__badge zone-btn__badge--soon">Pronto</span>
+                  </button>
+                }
+              </div>
+            }
+          }
+        </div>
+      }
+
+      <!-- Step: Selección de municipio -->
+      @if (step() === 'municipality') {
+        <div class="modal-body">
+          <button type="button" class="back-btn" (click)="backToCity()">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+            </svg>
+            Cambiar ciudad
+          </button>
+
+          <h2 class="modal-title">{{ selectedCity()?.name }}</h2>
+          <p class="modal-subtitle">Selecciona tu municipio</p>
+
+          <div class="municipalities-grid">
+            @for (municipality of availableMunicipalities(); track municipality.code) {
+              <button
+                type="button"
+                class="zone-btn zone-btn--municipality"
+                (click)="selectMunicipality(municipality)"
+              >
+                <span class="zone-btn__icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Z" />
+                  </svg>
+                </span>
+                <span class="zone-btn__name">{{ municipality.name }}</span>
+              </button>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- Step: Fuera de cobertura -->
+      @if (step() === 'out-of-coverage') {
+        <div class="modal-body out-of-coverage">
+          <div class="ooc-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+            </svg>
+          </div>
+
+          <h2 class="modal-title">Proximamente en {{ selectedCity()?.name }}</h2>
+          <p class="modal-subtitle">
+            Estamos trabajando para llevar nuestros servicios a tu ciudad.
+            Te notificaremos cuando estemos disponibles.
+          </p>
+
+          <button type="button" class="btn-back-main" (click)="backToCity()">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+            </svg>
+            Seleccionar otra ciudad
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+}

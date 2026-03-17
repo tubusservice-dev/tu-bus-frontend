@@ -1,0 +1,67 @@
+.carousel {
+  @apply relative overflow-hidden rounded-xl bg-gray-100 dark:bg-gray-800;
+}
+
+.carousel-image {
+  @apply w-full h-full flex items-center justify-center overflow-hidden;
+
+  img {
+    @apply w-full h-full;
+  }
+
+  // Modo contain (por defecto) - muestra imagen completa
+  &.fit-contain img {
+    @apply object-contain;
+  }
+
+  // Modo cover - recorta para llenar el contenedor
+  &.fit-cover img {
+    @apply object-cover;
+  }
+}
+
+.carousel-arrow {
+  @apply absolute top-1/2 -translate-y-1/2 z-10;
+  @apply w-10 h-10 rounded-full;
+  @apply bg-black/30 hover:bg-black/50 text-white;
+  @apply flex items-center justify-center;
+  @apply transition-all duration-200;
+  @apply opacity-0;
+
+  svg {
+    @apply w-5 h-5;
+  }
+
+  &.prev {
+    @apply left-2;
+  }
+
+  &.next {
+    @apply right-2;
+  }
+
+  .carousel:hover & {
+    @apply opacity-100;
+  }
+}
+
+.carousel-indicators {
+  @apply absolute bottom-3 left-1/2 -translate-x-1/2;
+  @apply flex items-center gap-1.5;
+}
+
+.indicator {
+  @apply w-2 h-2 rounded-full;
+  @apply bg-white/50 hover:bg-white/80;
+  @apply transition-all duration-200;
+
+  &.active {
+    @apply w-6 bg-white;
+  }
+}
+
+.carousel-counter {
+  @apply absolute top-3 right-3;
+  @apply px-2 py-1 rounded-md;
+  @apply bg-black/50 text-white text-xs font-medium;
+}

@@ -1,0 +1,269 @@
+.payment-form-page {
+  @apply min-h-screen;
+  background-color: var(--bg-secondary);
+}
+
+// ============================================
+// HEADER
+// ============================================
+.page-header {
+  @apply sticky top-0 z-10;
+  background-color: var(--bg-primary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.header-content {
+  @apply max-w-3xl mx-auto px-4 sm:px-6 py-4 sm:py-5;
+}
+
+.page-title {
+  h1 {
+    @apply text-lg sm:text-xl font-bold;
+    color: var(--text-primary);
+  }
+}
+
+.page-subtitle {
+  @apply text-sm mt-1;
+  color: var(--text-secondary);
+}
+
+// ============================================
+// CONTENT
+// ============================================
+.page-content {
+  @apply max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8;
+}
+
+.form-container {
+  @apply rounded-xl overflow-hidden p-5 sm:p-6;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+}
+
+// ============================================
+// FORM
+// ============================================
+.form-group {
+  @apply mb-5;
+}
+
+.form-label {
+  @apply block text-sm font-medium mb-1.5;
+  color: var(--text-primary);
+}
+
+.form-input {
+  @apply w-full px-4 py-3 rounded-xl text-sm transition-all outline-none;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+
+  &::placeholder {
+    color: var(--text-tertiary);
+  }
+
+  &:focus {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(var(--accent-primary-rgb, 37, 99, 235), 0.1);
+  }
+}
+
+.form-error {
+  @apply block text-xs mt-1;
+  color: #ef4444;
+}
+
+.hidden {
+  display: none;
+}
+
+// ============================================
+// FILE UPLOAD
+// ============================================
+.file-upload-area {
+  @apply w-full rounded-xl cursor-pointer transition-all;
+  border: 2px dashed var(--border-color);
+  background-color: var(--bg-secondary);
+
+  &:hover {
+    border-color: var(--accent-primary);
+    background-color: var(--bg-tertiary);
+  }
+}
+
+.upload-placeholder {
+  @apply flex flex-col items-center justify-center gap-2 py-8 px-4;
+  color: var(--text-tertiary);
+
+  svg {
+    @apply w-10 h-10;
+  }
+
+  span {
+    @apply text-sm;
+  }
+
+  .upload-hint {
+    @apply text-xs;
+    color: var(--text-tertiary);
+  }
+}
+
+.upload-loading {
+  @apply flex items-center justify-center gap-3 py-8 text-sm;
+  color: var(--text-secondary);
+}
+
+.uploaded-preview {
+  @apply relative p-3;
+
+  .preview-image {
+    @apply w-full max-h-48 object-contain rounded-lg;
+  }
+
+  .remove-btn {
+    @apply absolute top-1 right-1 w-8 h-8 flex items-center justify-center rounded-full transition-colors;
+    background-color: rgba(239, 68, 68, 0.9);
+    color: white;
+
+    &:hover {
+      background-color: #dc2626;
+    }
+
+    svg {
+      @apply w-4 h-4;
+    }
+  }
+}
+
+// ============================================
+// ERROR
+// ============================================
+.error-alert {
+  @apply flex items-center gap-3 p-4 rounded-xl text-sm mb-5;
+  @apply bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400;
+  @apply border border-red-200 dark:border-red-800;
+  svg { @apply w-5 h-5 flex-shrink-0; }
+}
+
+// ============================================
+// ACTIONS
+// ============================================
+.form-actions {
+  @apply pt-2;
+}
+
+.btn-submit {
+  @apply w-full px-8 py-4 rounded-xl font-semibold text-base transition-all;
+  @apply inline-flex items-center justify-center gap-2;
+  @apply disabled:opacity-60 disabled:cursor-not-allowed;
+  background-color: #25D366;
+  color: white;
+
+  &:hover:not(:disabled) {
+    background-color: #1fa855;
+    transform: translateY(-1px);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+}
+
+.spinner-sm {
+  @apply w-5 h-5 border-2 rounded-full animate-spin;
+  @apply border-white/30 border-t-white;
+}
+
+// ============================================
+// RESPONSIVE
+// ============================================
+@media (max-width: 639px) {
+  .form-container {
+    @apply p-4;
+  }
+
+  .upload-placeholder {
+    @apply py-6;
+
+    svg {
+      @apply w-8 h-8;
+    }
+  }
+}
+
+// ============================================
+// DARK MODE
+// ============================================
+:host-context(.dark) {
+  .payment-form-page {
+    background-color: #111827;
+  }
+
+  .page-header {
+    background-color: #1f2937;
+    border-bottom-color: #374151;
+  }
+
+  .page-title h1 {
+    color: #f9fafb;
+  }
+
+  .page-subtitle {
+    color: #9ca3af;
+  }
+
+  .form-container {
+    background-color: #1f2937;
+    border-color: #374151;
+  }
+
+  .form-label {
+    color: #f3f4f6;
+  }
+
+  .form-input {
+    background-color: #111827;
+    border-color: #374151;
+    color: #f3f4f6;
+
+    &::placeholder {
+      color: #6b7280;
+    }
+
+    &:focus {
+      border-color: var(--tubus-text-accent, #4d94ff);
+      box-shadow: 0 0 0 3px rgba(77, 148, 255, 0.15);
+    }
+  }
+
+  .file-upload-area {
+    border-color: #374151;
+    background-color: #111827;
+
+    &:hover {
+      border-color: var(--tubus-text-accent, #4d94ff);
+      background-color: #1f2937;
+    }
+  }
+
+  .upload-placeholder {
+    color: #6b7280;
+
+    .upload-hint {
+      color: #4b5563;
+    }
+  }
+
+  .upload-loading {
+    color: #9ca3af;
+  }
+
+  .btn-submit {
+    background-color: #22c55e;
+    &:hover:not(:disabled) {
+      background-color: #16a34a;
+    }
+  }
+}

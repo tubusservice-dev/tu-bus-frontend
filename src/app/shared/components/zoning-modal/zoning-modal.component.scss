@@ -1,0 +1,331 @@
+// ========================================
+// Zoning Modal - Selección obligatoria de zona
+// ========================================
+
+.zoning-overlay {
+  @apply fixed inset-0 z-50 flex items-center justify-center p-4;
+  background-color: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.3s ease-out;
+}
+
+.zoning-modal {
+  @apply w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl;
+  background-color: var(--bg-primary);
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideUp 0.3s ease-out;
+
+  // Scrollbar
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--border-primary);
+    border-radius: 4px;
+  }
+}
+
+// Logo
+.modal-logo {
+  @apply flex justify-center pt-8 pb-2;
+
+  .logo-img {
+    @apply w-20 h-20 object-contain;
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.15));
+  }
+}
+
+// Body
+.modal-body {
+  @apply px-6 pb-8;
+}
+
+.modal-title {
+  @apply text-2xl font-bold text-center mb-2;
+  color: var(--text-primary);
+}
+
+.modal-subtitle {
+  @apply text-sm text-center mb-6;
+  color: var(--text-secondary);
+}
+
+// Loading
+.loading-state {
+  @apply flex flex-col items-center gap-3 py-8;
+  color: var(--text-secondary);
+
+  .spinner {
+    @apply w-8 h-8 rounded-full;
+    border-width: 3px;
+    border-color: var(--border-primary);
+    border-top-color: var(--accent-primary);
+    animation: spin 0.8s linear infinite;
+  }
+}
+
+// Cities grid
+.cities-grid {
+  @apply flex flex-col gap-3;
+
+  &--inactive {
+    @apply gap-2;
+  }
+}
+
+// Municipalities grid
+.municipalities-grid {
+  @apply grid grid-cols-2 gap-3;
+
+  @media (max-width: 400px) {
+    @apply grid-cols-1;
+  }
+}
+
+// Zone button
+.zone-btn {
+  @apply flex items-center gap-3 w-full px-4 py-4 rounded-xl
+         border-2 text-left transition-all duration-200;
+  background-color: var(--bg-primary);
+  border-color: var(--border-primary);
+
+  &:active {
+    transform: scale(0.98);
+  }
+
+  &__icon {
+    @apply flex-shrink-0;
+
+    svg {
+      @apply w-6 h-6;
+      color: var(--accent-primary);
+    }
+  }
+
+  &__name {
+    @apply flex-1 font-semibold text-base;
+    color: var(--text-primary);
+  }
+
+  &__badge {
+    @apply text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0;
+
+    &--available {
+      background-color: rgba(16, 185, 129, 0.1);
+      color: rgb(16, 185, 129);
+    }
+
+    &--soon {
+      background-color: rgba(245, 158, 11, 0.1);
+      color: rgb(245, 158, 11);
+    }
+
+  }
+
+  // Active city
+  &--active {
+    &:hover {
+      border-color: var(--accent-primary);
+      background-color: var(--bg-secondary);
+      box-shadow: 0 0 0 1px var(--accent-primary);
+    }
+  }
+
+  // Inactive city
+  &--inactive {
+    @apply py-3;
+    opacity: 0.7;
+    border-style: dashed;
+
+    .zone-btn__name {
+      @apply text-sm;
+    }
+
+    &:hover {
+      opacity: 1;
+      border-color: rgb(245, 158, 11);
+    }
+  }
+
+  // Municipality
+  &--municipality {
+    @apply flex-col items-center text-center py-5;
+
+    .zone-btn__icon svg {
+      @apply w-8 h-8;
+    }
+
+    &:hover {
+      border-color: var(--accent-primary);
+      background-color: var(--bg-secondary);
+      box-shadow: 0 0 0 1px var(--accent-primary);
+    }
+  }
+}
+
+// Separator
+.separator {
+  @apply flex items-center gap-3 my-5;
+
+  &__line {
+    @apply flex-1 h-px;
+    background-color: var(--border-primary);
+  }
+
+  &__text {
+    @apply text-xs font-medium uppercase tracking-wider;
+    color: var(--text-tertiary, var(--text-secondary));
+  }
+}
+
+// Back button
+.back-btn {
+  @apply flex items-center gap-1.5 text-sm font-medium mb-4 px-0 py-1
+         transition-colors duration-200;
+  color: var(--accent-primary);
+  background: none;
+  border: none;
+
+  svg {
+    @apply w-4 h-4;
+  }
+
+  &:hover {
+    opacity: 0.8;
+  }
+}
+
+// Out of coverage
+.out-of-coverage {
+  @apply text-center;
+
+  .ooc-icon {
+    @apply flex justify-center mb-4;
+
+    svg {
+      @apply w-16 h-16;
+      color: rgb(245, 158, 11);
+    }
+  }
+
+  .modal-title {
+    @apply text-xl;
+  }
+
+  .modal-subtitle {
+    @apply mb-8 leading-relaxed;
+  }
+}
+
+.btn-back-main {
+  @apply inline-flex items-center gap-2 px-6 py-3 rounded-xl
+         font-semibold text-sm transition-all duration-200;
+  background-color: var(--accent-primary);
+  color: white;
+
+  svg {
+    @apply w-4 h-4;
+  }
+
+  &:hover {
+    background-color: var(--accent-hover);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+// Animations
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+// ============================================
+// DARK MODE
+// ============================================
+:host-context(.dark) {
+  .zoning-modal {
+    background-color: #1f2937;
+  }
+
+  .modal-title {
+    color: #f9fafb;
+  }
+
+  .modal-subtitle {
+    color: #9ca3af;
+  }
+
+  .loading-state {
+    color: #9ca3af;
+    .spinner {
+      border-color: #374151;
+      border-top-color: var(--tubus-text-accent, #4d94ff);
+    }
+  }
+
+  .zone-btn {
+    background-color: #1f2937;
+    border-color: #374151;
+
+    &__name {
+      color: #f3f4f6;
+    }
+
+    &__badge {
+      &--available {
+        background-color: rgba(16, 185, 129, 0.15);
+        color: #34d399;
+      }
+      &--soon {
+        background-color: rgba(245, 158, 11, 0.15);
+        color: #fbbf24;
+      }
+    }
+
+    &--active:hover {
+      border-color: var(--tubus-text-accent, #4d94ff);
+      background-color: #111827;
+    }
+
+    &--inactive:hover {
+      border-color: #fbbf24;
+    }
+
+    &--municipality:hover {
+      border-color: var(--tubus-text-accent, #4d94ff);
+      background-color: #111827;
+    }
+  }
+
+  .separator {
+    &__line {
+      background-color: #374151;
+    }
+    &__text {
+      color: #6b7280;
+    }
+  }
+
+  .back-btn {
+    color: var(--tubus-text-accent, #4d94ff);
+  }
+}

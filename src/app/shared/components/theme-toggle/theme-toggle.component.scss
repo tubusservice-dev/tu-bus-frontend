@@ -1,0 +1,33 @@
+.theme-toggle-btn {
+  @apply p-2 rounded-lg transition-all duration-200;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+
+  &:hover {
+    background-color: var(--border-color-hover);
+    color: var(--accent-primary);
+  }
+
+  &:focus {
+    @apply outline-none ring-2 ring-offset-2;
+    ring-color: var(--accent-primary);
+  }
+
+  .icon {
+    @apply w-5 h-5;
+  }
+}
+
+// ============================================
+// DARK MODE
+// ============================================
+:host-context(.dark) {
+  .theme-toggle-btn {
+    background-color: #374151;
+    color: #f3f4f6;
+    &:hover {
+      background-color: #4b5563;
+      color: #fbbf24;
+    }
+  }
+}

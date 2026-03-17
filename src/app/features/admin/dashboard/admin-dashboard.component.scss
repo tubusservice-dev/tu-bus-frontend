@@ -1,0 +1,93 @@
+.dashboard-page {
+  @apply space-y-8;
+}
+
+// Welcome section
+.welcome-section {
+  @apply space-y-2;
+}
+
+.welcome-title {
+  @apply text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white;
+}
+
+.welcome-subtitle {
+  @apply text-gray-500 dark:text-gray-400;
+}
+
+// Dashboard grid
+.dashboard-grid {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4;
+}
+
+.dashboard-card {
+  @apply flex items-center gap-4 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200;
+
+  &:hover {
+    @apply border-transparent;
+
+    .card-arrow {
+      @apply text-gray-400 dark:text-gray-500;
+    }
+  }
+
+  &:hover[data-color="red"] {
+    @apply ring-2 ring-red-500/20;
+  }
+  &:hover[data-color="blue"] {
+    @apply ring-2 ring-blue-500/20;
+  }
+  &:hover[data-color="green"] {
+    @apply ring-2 ring-green-500/20;
+  }
+  &:hover[data-color="purple"] {
+    @apply ring-2 ring-purple-500/20;
+  }
+  &:hover[data-color="orange"] {
+    @apply ring-2 ring-orange-500/20;
+  }
+}
+
+.card-icon {
+  @apply w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0;
+
+  svg {
+    @apply w-6 h-6;
+  }
+
+  &[data-color="red"] {
+    @apply bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400;
+  }
+  &[data-color="blue"] {
+    @apply bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400;
+  }
+  &[data-color="green"] {
+    @apply bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400;
+  }
+  &[data-color="purple"] {
+    @apply bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400;
+  }
+  &[data-color="orange"] {
+    @apply bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400;
+  }
+}
+
+.card-content {
+  @apply flex-1 min-w-0;
+}
+
+.card-title {
+  @apply text-sm font-semibold text-gray-900 dark:text-white;
+}
+
+.card-description {
+  @apply text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate;
+}
+
+.card-arrow {
+  @apply text-gray-300 dark:text-gray-600 transition-colors;
+
+  svg {
+    @apply w-5 h-5;
+  }
+}

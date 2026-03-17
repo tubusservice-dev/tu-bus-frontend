@@ -1,0 +1,48 @@
+<div
+  class="carousel"
+  [style.height]="height"
+>
+  <!-- Imagen principal -->
+  <div
+    class="carousel-image"
+    [class.fit-cover]="imageFit === 'cover'"
+    [class.fit-contain]="imageFit === 'contain'"
+  >
+    <img [src]="currentImage()" [alt]="'Imagen ' + (currentIndex() + 1)" />
+  </div>
+
+  <!-- Flechas de navegación -->
+  @if (showArrows && displayImages().length > 1) {
+    <button type="button" class="carousel-arrow prev" (click)="prev()">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+      </svg>
+    </button>
+    <button type="button" class="carousel-arrow next" (click)="next()">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+      </svg>
+    </button>
+  }
+
+  <!-- Indicadores -->
+  @if (showIndicators && displayImages().length > 1) {
+    <div class="carousel-indicators">
+      @for (image of displayImages(); track $index) {
+        <button
+          type="button"
+          class="indicator"
+          [class.active]="$index === currentIndex()"
+          (click)="goTo($index)"
+        ></button>
+      }
+    </div>
+  }
+
+  <!-- Contador -->
+  @if (displayImages().length > 1) {
+    <div class="carousel-counter">
+      {{ currentIndex() + 1 }} / {{ displayImages().length }}
+    </div>
+  }
+</div>

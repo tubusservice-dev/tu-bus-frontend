@@ -1,0 +1,292 @@
+<div class="product-detail-container">
+  <!-- Breadcrumb -->
+  <nav class="breadcrumb">
+    <a routerLink="/">Inicio</a>
+    <span class="separator">/</span>
+    <a routerLink="/catalogo">Catálogo</a>
+    @if (product(); as prod) {
+      <span class="separator">/</span>
+      <span class="current">{{ prod.name }}</span>
+    }
+  </nav>
+
+  <!-- Loading State -->
+  @if (isLoading()) {
+    <div class="loading-container">
+      <div class="loading-grid">
+        <!-- Skeleton galería -->
+        <div class="skeleton-gallery">
+          <div class="skeleton-main"></div>
+          <div class="skeleton-thumbs">
+            @for (i of [1, 2, 3, 4]; track i) {
+              <div class="skeleton-thumb"></div>
+            }
+          </div>
+        </div>
+        <!-- Skeleton info -->
+        <div class="skeleton-info">
+          <div class="skeleton-title"></div>
+          <div class="skeleton-price"></div>
+          <div class="skeleton-text"></div>
+          <div class="skeleton-text short"></div>
+          <div class="skeleton-button"></div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (error()) {
+    <div class="error-container">
+      <div class="error-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+        </svg>
+      </div>
+      <h2>{{ error() }}</h2>
+      <p>El producto que buscas no existe o ha sido eliminado.</p>
+      <button class="btn-primary" (click)="goBack()">
+        Volver al catálogo
+      </button>
+    </div>
+  }
+
+  <!-- Product Content -->
+  @if (!isLoading() && !error() && product(); as prod) {
+    <div class="product-grid">
+      <!-- Galería de imágenes -->
+      <div class="gallery-section">
+        <!-- Imagen principal -->
+        <div class="main-image-container">
+          @if (hasDiscount()) {
+            <div class="discount-badge">-{{ discountPercentage() }}%</div>
+          }
+          @if (isOutOfStock()) {
+            <div class="out-of-stock-overlay">
+              <span>Agotado</span>
+            </div>
+          }
+          <img
+            [src]="selectedImage()"
+            [alt]="prod.name"
+            class="main-image"
+          />
+
+          <!-- Flechas de navegación -->
+          @if (images().length > 1) {
+            <button class="nav-arrow prev" (click)="prevImage()">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+              </svg>
+            </button>
+            <button class="nav-arrow next" (click)="nextImage()">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+              </svg>
+            </button>
+          }
+        </div>
+
+        <!-- Thumbnails -->
+        @if (images().length > 1) {
+          <div class="thumbnails">
+            @for (img of images(); track img; let i = $index) {
+              <button
+                class="thumbnail"
+                [class.active]="i === selectedImageIndex()"
+                (click)="selectImage(i)"
+              >
+                <img [src]="img" [alt]="'Imagen ' + (i + 1)" />
+              </button>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Información del producto -->
+      <div class="info-section">
+        <!-- Categorías y condición -->
+        <div class="meta-tags">
+          @if (prod.categories && prod.categories.length > 0) {
+            @for (cat of prod.categories; track $index) {
+              <span class="tag category">{{ getCategoryName(cat) }}</span>
+            }
+          }
+        </div>
+
+        <!-- Nombre -->
+        <h1 class="product-name">{{ prod.name }}</h1>
+
+        <!-- SKU -->
+        @if (prod.sku) {
+          <p class="sku">SKU: {{ prod.sku }}</p>
+        }
+
+        <!-- Precio -->
+        <div class="price-section">
+          <span class="price-label">Precio</span>
+          <div class="price-values">
+            @if (hasDiscount()) {
+              <span class="compare-price">${{ prod.comparePrice?.toLocaleString() }}</span>
+            }
+            <span class="current-price">${{ prod.price.toLocaleString() }}</span>
+          </div>
+        </div>
+
+        <!-- Stock -->
+        <div class="stock-info" [class.low-stock]="prod.stock > 0 && prod.stock <= 5">
+          @if (prod.stock > 5) {
+            <span class="in-stock">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+              </svg>
+              En stock ({{ prod.stock }} disponibles)
+            </span>
+          } @else if (prod.stock > 0) {
+            <span class="low-stock-text">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+              </svg>
+              ¡Solo quedan {{ prod.stock }}!
+            </span>
+          } @else {
+            <span class="out-of-stock-text">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              Agotado
+            </span>
+          }
+        </div>
+
+        <!-- Info cantidad en carrito -->
+        @if (quantityInCart() > 0) {
+          <div class="cart-info">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+            </svg>
+            <span>Ya tienes {{ quantityInCart() }} en tu carrito</span>
+            @if (availableStock() > 0) {
+              <span class="available-text">({{ availableStock() }} disponibles para agregar)</span>
+            }
+          </div>
+        }
+
+        <!-- Selector de cantidad y botón -->
+        <div class="add-to-cart-section">
+          <div class="quantity-selector" [class.disabled]="availableStock() === 0">
+            <button
+              class="qty-btn"
+              (click)="decrementQuantity()"
+              [disabled]="!canRemove()"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12h-15" />
+              </svg>
+            </button>
+            <span class="qty-value">{{ quantity() }}</span>
+            <button
+              class="qty-btn"
+              (click)="incrementQuantity()"
+              [disabled]="!canAddMore()"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+            </button>
+          </div>
+
+          <div class="add-to-cart-container">
+            <button
+              class="btn-add-to-cart"
+              [class.adding]="isAddingToCart()"
+              [class.added]="justAddedToCart()"
+              [disabled]="isOutOfStock() || !canAddToCart() || isAddingToCart()"
+              (click)="addToCart()"
+            >
+              @if (isAddingToCart()) {
+                <svg class="spinner" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-dasharray="31.4 31.4" />
+                </svg>
+                Agregando...
+              } @else if (justAddedToCart()) {
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+                ¡Agregado!
+              } @else if (isOutOfStock()) {
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Agotado
+              } @else if (availableStock() === 0) {
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+                Máximo en carrito
+              } @else {
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+                </svg>
+                Agregar al carrito
+              }
+            </button>
+            @if (showLoginMessage()) {
+              <div class="login-message">
+                Inicia sesión para agregar productos al carrito
+              </div>
+            }
+            @if (showStockError()) {
+              <div class="stock-error-message">
+                {{ stockErrorMessage() }}
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Descripción -->
+        @if (prod.description) {
+          <div class="description-section">
+            <h3>Descripción</h3>
+            <p>{{ prod.description }}</p>
+          </div>
+        }
+
+        <!-- Detalles del producto -->
+        <div class="details-section">
+          <h3>Detalles del producto</h3>
+          <div class="details-grid">
+            @if (prod.brand) {
+              <div class="detail-item">
+                <span class="label">Marca</span>
+                <span class="value">{{ getBrandName(prod.brand) }}</span>
+              </div>
+            }
+            @if (prod.productModel) {
+              <div class="detail-item">
+                <span class="label">Modelo</span>
+                <span class="value">{{ prod.productModel }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Productos relacionados -->
+    @if (relatedProducts().length > 0) {
+      <section class="related-section">
+        <h2>Productos relacionados</h2>
+        <div class="related-grid">
+          @for (relatedProduct of relatedProducts(); track relatedProduct.id) {
+            <app-product-card
+              [product]="relatedProduct"
+              [showAddToCart]="true"
+              [linkToDetail]="true"
+            />
+          }
+        </div>
+      </section>
+    }
+  }
+</div>

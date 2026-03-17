@@ -1,0 +1,223 @@
+.pm-list-page {
+  @apply space-y-6;
+}
+
+// Header
+.page-header {
+  @apply space-y-4;
+}
+
+.header-content {
+  @apply flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4;
+}
+
+.page-title {
+  @apply text-2xl font-bold text-gray-900 dark:text-white;
+}
+
+.page-subtitle {
+  @apply text-sm text-gray-500 dark:text-gray-400;
+}
+
+.btn-primary {
+  @apply inline-flex items-center gap-2 px-4 py-2.5 bg-red-600 text-white text-sm font-medium rounded-lg;
+  @apply hover:bg-red-700 transition-colors;
+
+  svg {
+    @apply w-5 h-5;
+  }
+}
+
+// Estados
+.loading-state {
+  @apply flex flex-col items-center justify-center py-16 text-gray-500 dark:text-gray-400;
+
+  .spinner {
+    @apply w-10 h-10 border-4 border-gray-200 dark:border-gray-700 border-t-red-600 rounded-full animate-spin mb-4;
+  }
+}
+
+.empty-state {
+  @apply flex flex-col items-center justify-center py-16 text-center;
+
+  svg {
+    @apply w-16 h-16 text-gray-300 dark:text-gray-600 mb-4;
+  }
+
+  h3 {
+    @apply text-xl font-semibold text-gray-900 dark:text-white mb-2;
+  }
+
+  p {
+    @apply text-gray-500 dark:text-gray-400 mb-6;
+  }
+}
+
+// Grid de cards
+.methods-grid {
+  @apply grid grid-cols-1 lg:grid-cols-2 gap-4;
+}
+
+.method-card {
+  @apply bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 transition-all duration-200;
+  @apply hover:shadow-md;
+
+  &.inactive-card {
+    @apply opacity-60;
+  }
+}
+
+.card-header {
+  @apply flex items-start gap-3 mb-3;
+}
+
+.card-icon {
+  @apply w-10 h-10 flex items-center justify-center rounded-lg flex-shrink-0;
+  @apply bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400;
+
+  svg {
+    @apply w-5 h-5;
+  }
+
+  &[data-type='pago_movil'] {
+    @apply bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400;
+  }
+
+  &[data-type='transferencia'] {
+    @apply bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400;
+  }
+
+  &[data-type='efectivo_divisas'] {
+    @apply bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400;
+  }
+
+  &[data-type='tarjeta'] {
+    @apply bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400;
+  }
+}
+
+.card-title-group {
+  @apply flex-1 min-w-0;
+}
+
+.card-title {
+  @apply text-base font-semibold text-gray-900 dark:text-white truncate;
+}
+
+.card-type {
+  @apply text-xs text-gray-500 dark:text-gray-400;
+}
+
+.status-badge {
+  @apply inline-flex px-2.5 py-0.5 text-xs font-medium rounded-full flex-shrink-0;
+
+  &.active {
+    @apply bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400;
+  }
+
+  &.inactive {
+    @apply bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400;
+  }
+}
+
+.card-details {
+  @apply mb-4 py-3 border-t border-b border-gray-100 dark:border-gray-700;
+}
+
+.detail-text {
+  @apply text-sm text-gray-600 dark:text-gray-300 truncate;
+}
+
+// Acciones
+.card-actions {
+  @apply flex items-center gap-2 flex-wrap;
+}
+
+.btn-action {
+  @apply inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors;
+
+  svg {
+    @apply w-3.5 h-3.5;
+  }
+}
+
+.btn-edit {
+  @apply text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600;
+}
+
+.btn-toggle {
+  @apply disabled:opacity-50;
+
+  &.btn-deactivate {
+    @apply text-red-600 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30;
+  }
+
+  &.btn-activate {
+    @apply text-green-600 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30;
+  }
+}
+
+.btn-delete {
+  @apply text-red-600 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-50;
+}
+
+.spinner-sm {
+  @apply w-3.5 h-3.5 border-2 border-gray-300 dark:border-gray-600 border-t-current rounded-full animate-spin;
+}
+
+// Modal
+.modal-overlay {
+  @apply fixed inset-0 z-50 flex items-center justify-center p-4;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  @apply bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-sm text-center;
+  animation: modal-in 0.2s ease-out;
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.modal-icon {
+  @apply mx-auto w-12 h-12 flex items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30 mb-4;
+
+  svg {
+    @apply w-6 h-6 text-red-600 dark:text-red-400;
+  }
+}
+
+.modal-title {
+  @apply text-lg font-semibold text-gray-900 dark:text-white mb-2;
+}
+
+.modal-message {
+  @apply text-sm text-gray-500 dark:text-gray-400 mb-6;
+
+  strong {
+    @apply text-gray-900 dark:text-white;
+  }
+}
+
+.modal-actions {
+  @apply flex items-center gap-3 justify-center;
+}
+
+.btn-modal-cancel {
+  @apply px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg;
+  @apply hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors;
+}
+
+.btn-modal-delete {
+  @apply inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg;
+  @apply hover:bg-red-700 transition-colors disabled:opacity-50;
+}

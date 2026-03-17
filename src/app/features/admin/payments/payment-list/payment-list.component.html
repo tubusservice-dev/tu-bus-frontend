@@ -1,0 +1,294 @@
+<div class="admin-payment-list">
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Gestión de Pagos</h1>
+      <p class="page-subtitle">{{ total() }} pago(s) {{ showAll() ? 'en total' : 'pendientes' }}</p>
+    </div>
+    <div class="header-actions">
+      <label class="toggle-label">
+        <input
+          type="checkbox"
+          [checked]="showAll()"
+          (change)="toggleShowAll()"
+          class="toggle-input"
+        />
+        <span class="toggle-switch"></span>
+        <span class="toggle-text">Mostrar todos</span>
+      </label>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  @if (isLoading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Cargando pagos...</p>
+    </div>
+  } @else if (payments().length === 0) {
+    <!-- Empty -->
+    <div class="empty-state">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="empty-icon">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+      </svg>
+      <p class="empty-title">No hay pagos {{ showAll() ? '' : 'pendientes' }}</p>
+      <p class="empty-subtitle">Los pagos aparecerán aquí cuando los clientes los registren</p>
+    </div>
+  } @else {
+    <!-- Table -->
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Pedido</th>
+            <th>Cliente</th>
+            <th>Método</th>
+            <th>Referencia</th>
+            <th>Monto</th>
+            <th>Fecha</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (payment of payments(); track payment.id) {
+            <tr>
+              <td class="order-number">{{ getOrderNumber(payment) }}</td>
+              <td>
+                <div class="client-info">
+                  <span class="client-name">{{ getClientName(payment) }}</span>
+                  <span class="client-email">{{ getClientEmail(payment) }}</span>
+                </div>
+              </td>
+              <td>{{ methodLabels[payment.method] }}</td>
+              <td class="reference">{{ payment.referenceNumber || '-' }}</td>
+              <td class="amount">{{ payment.transactionAmount | currency:'USD':'symbol':'1.2-2' }}</td>
+              <td>{{ payment.paymentDate ? (payment.paymentDate | date:'dd/MM/yyyy') : (payment.createdAt | date:'dd/MM/yyyy') }}</td>
+              <td>
+                <span class="status-badge" [ngClass]="statusColors[payment.status]">
+                  {{ statusLabels[payment.status] }}
+                </span>
+              </td>
+              <td>
+                <div class="action-buttons">
+                  <!-- Ver Detalles -->
+                  <button
+                    type="button"
+                    class="action-btn detail-btn"
+                    title="Ver Detalles"
+                    (click)="openDetail(payment)"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                    </svg>
+                  </button>
+                  @if (payment.status === PaymentStatus.PENDING) {
+                    <!-- Aprobar -->
+                    <button
+                      type="button"
+                      class="action-btn approve-btn"
+                      title="Aprobar"
+                      (click)="openApproveDialog(payment.id)"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                      </svg>
+                    </button>
+                    <!-- Rechazar -->
+                    <button
+                      type="button"
+                      class="action-btn reject-btn"
+                      title="Rechazar"
+                      (click)="openRejectDialog(payment.id)"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    @if (totalPages() > 1) {
+      <div class="pagination">
+        <button
+          type="button"
+          class="page-btn"
+          [disabled]="currentPage() === 1"
+          (click)="goToPage(currentPage() - 1)"
+        >
+          Anterior
+        </button>
+        @for (page of [].constructor(totalPages()); track $index) {
+          <button
+            type="button"
+            class="page-btn"
+            [class.active]="currentPage() === $index + 1"
+            (click)="goToPage($index + 1)"
+          >
+            {{ $index + 1 }}
+          </button>
+        }
+        <button
+          type="button"
+          class="page-btn"
+          [disabled]="currentPage() === totalPages()"
+          (click)="goToPage(currentPage() + 1)"
+        >
+          Siguiente
+        </button>
+      </div>
+    }
+  }
+
+  <!-- Detail Modal -->
+  @if (showDetailModal() && selectedPayment()) {
+    <div class="modal-overlay" (click)="closeDetail()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2 class="modal-title">Detalle del Pago</h2>
+          <button type="button" class="modal-close" (click)="closeDetail()">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">Pedido</span>
+              <span class="detail-value order-number">{{ getOrderNumber(selectedPayment()!) }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Cliente</span>
+              <span class="detail-value">{{ getClientName(selectedPayment()!) }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Email</span>
+              <span class="detail-value">{{ getClientEmail(selectedPayment()!) }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Método</span>
+              <span class="detail-value">{{ methodLabels[selectedPayment()!.method] }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Referencia</span>
+              <span class="detail-value">{{ selectedPayment()!.referenceNumber || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Monto</span>
+              <span class="detail-value font-semibold">{{ selectedPayment()!.transactionAmount | currency:'USD':'symbol':'1.2-2' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Fecha de Pago</span>
+              <span class="detail-value">{{ selectedPayment()!.paymentDate ? (selectedPayment()!.paymentDate | date:'dd/MM/yyyy HH:mm') : '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Estado</span>
+              <span class="status-badge" [ngClass]="statusColors[selectedPayment()!.status]">
+                {{ statusLabels[selectedPayment()!.status] }}
+              </span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Creado</span>
+              <span class="detail-value">{{ selectedPayment()!.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
+            </div>
+            @if (selectedPayment()!.rejectionReason) {
+              <div class="detail-item full-width">
+                <span class="detail-label">Motivo de Rechazo</span>
+                <span class="detail-value text-red-600 dark:text-red-400">{{ selectedPayment()!.rejectionReason }}</span>
+              </div>
+            }
+          </div>
+          @if (selectedPayment()!.captureUrl) {
+            <div class="capture-section">
+              <span class="detail-label">Captura del Pago</span>
+              <img [src]="selectedPayment()!.captureUrl" alt="Captura de pago" class="capture-image" />
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Approve Dialog -->
+  @if (showApproveDialog()) {
+    <div class="modal-overlay" (click)="closeApproveDialog()">
+      <div class="modal-content modal-sm" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2 class="modal-title">Aprobar Pago</h2>
+          <button type="button" class="modal-close" (click)="closeApproveDialog()">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p class="confirm-text">¿Estás seguro de que deseas aprobar este pago? Esta acción no se puede deshacer.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-cancel" (click)="closeApproveDialog()" [disabled]="isApproving()">
+            Cancelar
+          </button>
+          <button type="button" class="btn-approve" (click)="confirmApprove()" [disabled]="isApproving()">
+            @if (isApproving()) {
+              <div class="spinner small"></div>
+              Aprobando...
+            } @else {
+              Confirmar Aprobación
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Reject Dialog -->
+  @if (showRejectDialog()) {
+    <div class="modal-overlay" (click)="closeRejectDialog()">
+      <div class="modal-content modal-sm" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2 class="modal-title">Rechazar Pago</h2>
+          <button type="button" class="modal-close" (click)="closeRejectDialog()">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p class="confirm-text">¿Estás seguro de que deseas rechazar este pago?</p>
+          <div class="form-group mt-4">
+            <label for="rejectionReason">Motivo del rechazo (opcional)</label>
+            <textarea
+              id="rejectionReason"
+              [(ngModel)]="rejectionReason"
+              rows="3"
+              class="form-textarea"
+              placeholder="Ingresa el motivo del rechazo..."
+            ></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-cancel" (click)="closeRejectDialog()" [disabled]="isRejecting()">
+            Cancelar
+          </button>
+          <button type="button" class="btn-reject" (click)="confirmReject()" [disabled]="isRejecting()">
+            @if (isRejecting()) {
+              <div class="spinner small"></div>
+              Rechazando...
+            } @else {
+              Confirmar Rechazo
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

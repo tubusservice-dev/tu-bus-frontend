@@ -1,0 +1,151 @@
+.footer {
+  @apply mt-auto;
+  background-color: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+  transition: background-color var(--transition-normal), border-color var(--transition-normal);
+}
+
+.footer-container {
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12;
+}
+
+.footer-top {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12;
+}
+
+.footer-brand {
+  @apply sm:col-span-2 lg:col-span-1;
+}
+
+.footer-logo {
+  @apply flex items-center gap-2 text-lg font-bold mb-4;
+  color: var(--text-primary);
+  text-decoration: none;
+
+  &:hover {
+    color: var(--accent-primary);
+  }
+}
+
+.logo-icon {
+  @apply w-8 h-8 flex items-center justify-center rounded-lg;
+  background-color: var(--accent-primary);
+  color: white;
+
+  svg {
+    @apply w-5 h-5;
+  }
+}
+
+.logo-text {
+  @apply font-heading;
+}
+
+.footer-description {
+  @apply text-sm leading-relaxed;
+  color: var(--text-secondary);
+}
+
+.footer-title {
+  @apply text-sm font-semibold uppercase tracking-wider mb-4;
+  color: var(--text-primary);
+}
+
+.footer-links {
+  @apply space-y-3;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.footer-link {
+  @apply text-sm transition-colors duration-200;
+  color: var(--text-secondary);
+  text-decoration: none;
+
+  &:hover {
+    color: var(--accent-primary);
+  }
+}
+
+.social-links {
+  @apply flex items-center gap-4;
+}
+
+.social-link {
+  @apply w-10 h-10 flex items-center justify-center rounded-lg transition-all duration-200;
+  background-color: var(--bg-tertiary);
+  color: var(--text-secondary);
+
+  &:hover {
+    background-color: var(--accent-primary);
+    color: white;
+  }
+
+  svg {
+    @apply w-5 h-5;
+  }
+}
+
+.footer-divider {
+  @apply my-8 h-px;
+  background-color: var(--border-color);
+}
+
+.footer-bottom {
+  @apply text-center;
+}
+
+.copyright {
+  @apply text-sm;
+  color: var(--text-tertiary);
+}
+
+// ============================================
+// DARK MODE
+// ============================================
+:host-context(.dark) {
+  .footer {
+    background-color: #111827;
+    border-top-color: #374151;
+  }
+
+  .footer-logo {
+    color: #f3f4f6;
+    &:hover {
+      color: var(--tubus-text-accent, #4d94ff);
+    }
+  }
+
+  .footer-description {
+    color: #9ca3af;
+  }
+
+  .footer-title {
+    color: #f3f4f6;
+  }
+
+  .footer-link {
+    color: #9ca3af;
+    &:hover {
+      color: var(--tubus-text-accent, #4d94ff);
+    }
+  }
+
+  .social-link {
+    background-color: #1f2937;
+    color: #9ca3af;
+    &:hover {
+      background-color: var(--tubus-text-accent, #4d94ff);
+      color: white;
+    }
+  }
+
+  .footer-divider {
+    background-color: #374151;
+  }
+
+  .copyright {
+    color: #6b7280;
+  }
+}

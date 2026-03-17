@@ -1,0 +1,108 @@
+/* ========================================
+   TuBus Express - Configuración de Colores
+   ======================================== */
+
+/* ----------------------------------------
+   Colores Primarios - Modo Claro
+   (Azul oscuro para fondos blancos)
+   ---------------------------------------- */
+
+$tubus-primary-light-mode: rgb(0, 29, 86);         // #001d56 - Principal
+$tubus-primary-dark-light-mode: rgb(0, 20, 60);    // #00143c - Más oscuro
+$tubus-primary-light-light-mode: rgb(0, 45, 112);  // #002d70 - Más claro
+
+/* ----------------------------------------
+   Colores Primarios - Modo Oscuro
+   (Azul claro para fondos negros)
+   ---------------------------------------- */
+
+$tubus-primary-dark-mode: rgb(0, 62, 153);         // #003e99 - Principal
+$tubus-primary-dark-dark-mode: rgb(0, 45, 112);    // #002d70 - Más oscuro
+$tubus-primary-light-dark-mode: rgb(0, 82, 204);   // #0052cc - Más claro
+
+/* ----------------------------------------
+   Colores de Texto Acento
+   (Para textos sobre fondos oscuros/claros)
+   ---------------------------------------- */
+
+$tubus-text-accent-light-mode: rgb(0, 29, 86);     // Igual al primario en modo claro
+$tubus-text-accent-dark-mode: rgb(77, 148, 255);   // #4d94ff - Azul brillante para legibilidad
+
+/* ----------------------------------------
+   Colores Secundarios
+   ---------------------------------------- */
+
+// Éxito / Confirmación
+$tubus-success: rgb(34, 197, 94);                  // #22c55e
+$tubus-success-light: rgb(74, 222, 128);           // #4ade80
+$tubus-success-dark: rgb(22, 163, 74);             // #16a34a
+
+// Error / Peligro
+$tubus-error: rgb(239, 68, 68);                    // #ef4444
+$tubus-error-light: rgb(248, 113, 113);            // #f87171
+$tubus-error-dark: rgb(220, 38, 38);               // #dc2626
+
+// Advertencia
+$tubus-warning: rgb(245, 158, 11);                 // #f59e0b
+$tubus-warning-light: rgb(251, 191, 36);           // #fbbf24
+$tubus-warning-dark: rgb(217, 119, 6);             // #d97706
+
+// Información
+$tubus-info: rgb(59, 130, 246);                    // #3b82f6
+$tubus-info-light: rgb(96, 165, 250);              // #60a5fa
+$tubus-info-dark: rgb(37, 99, 235);                // #2563eb
+
+/* ----------------------------------------
+   Colores Neutros
+   ---------------------------------------- */
+
+$tubus-white: rgb(255, 255, 255);                  // #ffffff
+$tubus-black: rgb(0, 0, 0);                        // #000000
+
+$tubus-gray-50: rgb(250, 250, 250);                // #fafafa
+$tubus-gray-100: rgb(245, 245, 245);               // #f5f5f5
+$tubus-gray-200: rgb(229, 229, 229);               // #e5e5e5
+$tubus-gray-300: rgb(212, 212, 212);               // #d4d4d4
+$tubus-gray-400: rgb(163, 163, 163);               // #a3a3a3
+$tubus-gray-500: rgb(115, 115, 115);               // #737373
+$tubus-gray-600: rgb(82, 82, 82);                  // #525252
+$tubus-gray-700: rgb(64, 64, 64);                  // #404040
+$tubus-gray-800: rgb(38, 38, 38);                  // #262626
+$tubus-gray-900: rgb(23, 23, 23);                  // #171717
+
+/* ----------------------------------------
+   Colores de WhatsApp (para botón de contacto)
+   ---------------------------------------- */
+
+$tubus-whatsapp: rgb(37, 211, 102);                // #25d366
+$tubus-whatsapp-dark: rgb(18, 140, 126);           // #128c7e
+
+/* ----------------------------------------
+   Colores de Redes Sociales
+   ---------------------------------------- */
+
+$tubus-facebook: rgb(24, 119, 242);                // #1877f2
+$tubus-instagram: rgb(225, 48, 108);               // #e1306c
+$tubus-twitter: rgb(29, 161, 242);                 // #1da1f2
+
+/* ----------------------------------------
+   Variables CSS (referencia)
+   Estas se definen en styles.scss
+   ----------------------------------------
+
+   :root (Modo Claro):
+   --tubus-primary: rgb(0, 29, 86);
+   --tubus-primary-dark: rgb(0, 20, 60);
+   --tubus-primary-light: rgb(0, 45, 112);
+   --tubus-primary-rgb: 0, 29, 86;
+   --tubus-text-accent: rgb(0, 29, 86);
+   --tubus-bg-accent: rgb(0, 29, 86);
+
+   .dark (Modo Oscuro):
+   --tubus-primary: rgb(0, 62, 153);
+   --tubus-primary-dark: rgb(0, 45, 112);
+   --tubus-primary-light: rgb(0, 82, 204);
+   --tubus-primary-rgb: 0, 62, 153;
+   --tubus-text-accent: rgb(77, 148, 255);
+   --tubus-bg-accent: rgb(0, 62, 153);
+*/

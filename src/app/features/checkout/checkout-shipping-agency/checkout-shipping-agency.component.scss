@@ -1,0 +1,411 @@
+.agency-page {
+  @apply min-h-screen;
+  background-color: var(--bg-secondary);
+}
+
+// ============================================
+// HEADER
+// ============================================
+.page-header {
+  @apply sticky top-0 z-10;
+  background-color: var(--bg-primary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.header-content {
+  @apply max-w-3xl mx-auto px-4 sm:px-6 py-3 sm:py-4;
+  @apply flex items-center justify-between gap-4;
+}
+
+.back-btn {
+  @apply flex items-center gap-1.5 text-sm font-medium transition-colors p-1 -ml-1 rounded-lg;
+  color: var(--text-secondary);
+
+  &:hover {
+    color: var(--accent-primary);
+    background-color: var(--bg-tertiary);
+  }
+
+  svg {
+    @apply w-5 h-5;
+  }
+
+  .back-text {
+    @apply hidden sm:inline;
+  }
+}
+
+.page-title {
+  h1 {
+    @apply text-lg sm:text-xl font-bold;
+    color: var(--text-primary);
+  }
+}
+
+// ============================================
+// CONTENT
+// ============================================
+.page-content {
+  @apply max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8;
+}
+
+.agency-container {
+  @apply flex flex-col gap-6 sm:gap-8;
+}
+
+// ============================================
+// QUESTION
+// ============================================
+.agency-question {
+  @apply text-center;
+
+  h2 {
+    @apply text-xl sm:text-2xl font-bold mb-2;
+    color: var(--text-primary);
+  }
+
+  p {
+    @apply text-sm sm:text-base;
+    color: var(--text-secondary);
+  }
+}
+
+// ============================================
+// LOADING & ERROR & EMPTY
+// ============================================
+.loading-container,
+.error-container,
+.empty-container {
+  @apply flex flex-col items-center justify-center py-16;
+  color: var(--text-secondary);
+
+  svg {
+    @apply w-12 h-12 mb-4;
+  }
+
+  p {
+    @apply text-center;
+  }
+}
+
+.loading-container .spinner {
+  @apply w-10 h-10 border-4 rounded-full animate-spin mb-4;
+  border-color: var(--border-color);
+  border-top-color: var(--accent-primary);
+}
+
+.error-container {
+  color: #ef4444;
+}
+
+.btn-retry {
+  @apply mt-4 px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors;
+  background-color: var(--accent-primary);
+
+  &:hover {
+    background-color: var(--accent-hover);
+  }
+}
+
+// ============================================
+// GRID
+// ============================================
+.agency-grid {
+  @apply grid grid-cols-1 gap-4;
+}
+
+// ============================================
+// CARD
+// ============================================
+.agency-card {
+  @apply relative flex items-center gap-5 p-5 rounded-2xl transition-all duration-200 text-left;
+  background-color: var(--bg-primary);
+  border: 2px solid var(--border-color);
+
+  &:hover {
+    border-color: var(--accent-primary);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &.selected {
+    border-color: var(--accent-primary);
+    background-color: var(--accent-light);
+
+    .agency-name {
+      color: var(--accent-primary);
+    }
+
+    .agency-logo-container {
+      border-color: var(--accent-primary);
+    }
+  }
+}
+
+// ============================================
+// LOGO
+// ============================================
+.agency-logo-container {
+  @apply flex-shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden flex items-center justify-center transition-colors;
+  background-color: white;
+  border: 2px solid var(--border-color);
+}
+
+.agency-logo {
+  @apply w-full h-full object-contain p-2;
+}
+
+.agency-logo-placeholder {
+  @apply flex items-center justify-center w-full h-full;
+  color: var(--text-tertiary);
+
+  svg {
+    @apply w-10 h-10;
+  }
+}
+
+// ============================================
+// INFO
+// ============================================
+.agency-info {
+  @apply flex-1 min-w-0;
+}
+
+.agency-name {
+  @apply text-lg sm:text-xl font-bold mb-1 transition-colors;
+  color: var(--text-primary);
+}
+
+.agency-description {
+  @apply text-sm line-clamp-2;
+  color: var(--text-secondary);
+}
+
+// ============================================
+// COST BADGE
+// ============================================
+.agency-cost {
+  @apply flex-shrink-0 px-4 py-2 text-sm font-semibold rounded-full text-center;
+
+  &.cost-free {
+    background-color: rgba(34, 197, 94, 0.15);
+    color: #16a34a;
+  }
+
+  &.cost-extra {
+    background-color: rgba(59, 130, 246, 0.15);
+    color: #2563eb;
+  }
+
+  &.cost-destination {
+    background-color: rgba(245, 158, 11, 0.15);
+    color: #d97706;
+  }
+}
+
+// ============================================
+// SELECTED CHECK
+// ============================================
+.selected-check {
+  @apply absolute top-3 right-3 w-7 h-7 flex items-center justify-center rounded-full;
+  background-color: var(--accent-primary);
+  color: white;
+  animation: scaleIn 0.2s ease-out;
+
+  svg {
+    @apply w-4 h-4;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+// ============================================
+// ACTIONS
+// ============================================
+.agency-actions {
+  @apply flex justify-center pt-4;
+}
+
+.btn-continue {
+  @apply w-full sm:w-auto sm:min-w-[200px] px-8 py-4 rounded-xl font-semibold text-base transition-all;
+  background-color: #25D366;
+  color: white;
+
+  &:hover:not(:disabled) {
+    background-color: #1fa855;
+    transform: translateY(-1px);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    @apply opacity-50 cursor-not-allowed;
+    background-color: var(--text-tertiary);
+
+    &:hover {
+      transform: none;
+    }
+  }
+}
+
+// ============================================
+// RESPONSIVE
+// ============================================
+@media (max-width: 639px) {
+  .agency-card {
+    @apply p-4 gap-4;
+  }
+
+  .agency-logo-container {
+    @apply w-16 h-16;
+  }
+
+  .agency-logo-placeholder svg {
+    @apply w-8 h-8;
+  }
+
+  .agency-name {
+    @apply text-base;
+  }
+
+  .agency-description {
+    @apply text-xs;
+  }
+
+  .agency-cost {
+    @apply absolute bottom-4 right-4 px-3 py-1.5 text-xs;
+  }
+
+  .selected-check {
+    @apply top-2 right-2 w-6 h-6;
+
+    svg {
+      @apply w-3.5 h-3.5;
+    }
+  }
+}
+
+// ============================================
+// DARK MODE
+// ============================================
+:host-context(.dark) {
+  .agency-page {
+    background-color: #111827;
+  }
+
+  .page-header {
+    background-color: #1f2937;
+    border-bottom-color: #374151;
+  }
+
+  .back-btn {
+    color: #9ca3af;
+    &:hover {
+      color: var(--tubus-text-accent, #4d94ff);
+      background-color: #374151;
+    }
+  }
+
+  .page-title h1 {
+    color: #f9fafb;
+  }
+
+  .agency-question {
+    h2 { color: #f3f4f6; }
+    p { color: #9ca3af; }
+  }
+
+  .loading-container,
+  .empty-container {
+    color: #9ca3af;
+  }
+
+  .loading-container .spinner {
+    border-color: #374151;
+    border-top-color: var(--tubus-text-accent, #4d94ff);
+  }
+
+  .error-container {
+    color: #f87171;
+  }
+
+  .agency-card {
+    background-color: #1f2937;
+    border-color: #374151;
+
+    &:hover {
+      border-color: var(--tubus-text-accent, #4d94ff);
+      box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.3);
+    }
+
+    &.selected {
+      border-color: var(--tubus-text-accent, #4d94ff);
+      background-color: rgba(77, 148, 255, 0.08);
+
+      .agency-name {
+        color: var(--tubus-text-accent, #4d94ff);
+      }
+
+      .agency-logo-container {
+        border-color: var(--tubus-text-accent, #4d94ff);
+      }
+    }
+  }
+
+  .agency-logo-container {
+    background-color: #374151;
+    border-color: #4b5563;
+  }
+
+  .agency-logo-placeholder {
+    color: #6b7280;
+  }
+
+  .agency-name {
+    color: #f3f4f6;
+  }
+
+  .agency-description {
+    color: #9ca3af;
+  }
+
+  .agency-cost {
+    &.cost-free {
+      background-color: rgba(34, 197, 94, 0.15);
+      color: #4ade80;
+    }
+    &.cost-extra {
+      background-color: rgba(96, 165, 250, 0.15);
+      color: #93c5fd;
+    }
+    &.cost-destination {
+      background-color: rgba(251, 191, 36, 0.15);
+      color: #fbbf24;
+    }
+  }
+
+  .btn-continue {
+    background-color: #22c55e;
+    &:hover:not(:disabled) {
+      background-color: #16a34a;
+    }
+    &:disabled {
+      background-color: #4b5563;
+    }
+  }
+}

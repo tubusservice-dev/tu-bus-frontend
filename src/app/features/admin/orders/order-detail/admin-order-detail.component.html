@@ -1,0 +1,405 @@
+<div class="order-detail-page">
+  <!-- Header -->
+  <header class="page-header">
+    <div class="header-left">
+      <button type="button" class="btn-back" (click)="goBack()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+        </svg>
+        Volver
+      </button>
+      @if (order()) {
+        <div class="header-info">
+          <h1 class="page-title">Orden #{{ order()!.orderNumber }}</h1>
+          <span class="status-badge" [ngClass]="getStatusColor(order()!.status)">
+            {{ getStatusLabel(order()!.status) }}
+          </span>
+        </div>
+      }
+    </div>
+    @if (order()) {
+      <div class="header-actions">
+        @if (order()!.status === 'pending') {
+          <button type="button" class="btn-approve" [disabled]="isChangingStatus()" (click)="approveOrder()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+            </svg>
+            Aprobar
+          </button>
+          <button type="button" class="btn-reject" (click)="openRejectModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+            </svg>
+            Rechazar
+          </button>
+        } @else {
+          <button type="button" class="btn-change-status" (click)="openStatusModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182" />
+            </svg>
+            Cambiar Estado
+          </button>
+        }
+        <button type="button" class="btn-dispatch" (click)="openDispatchModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 0 0 4.486-6.336l-3.276 3.277a3.004 3.004 0 0 1-2.25-2.25l3.276-3.276a4.5 4.5 0 0 0-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437 1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008Z" />
+          </svg>
+          Asignar Despacho
+        </button>
+      </div>
+    }
+  </header>
+
+  <!-- Loading -->
+  @if (isLoading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <span>Cargando orden...</span>
+    </div>
+  }
+
+  <!-- Error -->
+  @else if (error()) {
+    <div class="error-state">
+      <p>{{ error() }}</p>
+      <button type="button" class="btn-back-link" (click)="goBack()">Volver a ordenes</button>
+    </div>
+  }
+
+  <!-- Content -->
+  @else if (order(); as o) {
+    <div class="detail-grid">
+      <!-- Col Left: Order info -->
+      <div class="detail-column">
+        <!-- Cliente -->
+        <section class="detail-card">
+          <h3 class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+            </svg>
+            Cliente
+          </h3>
+          <div class="info-rows">
+            <div class="info-row">
+              <span class="info-label">Nombre</span>
+              <span class="info-value">{{ getClientName(o) }}</span>
+            </div>
+            @if (getClientEmail(o)) {
+              <div class="info-row">
+                <span class="info-label">Email</span>
+                <span class="info-value">{{ getClientEmail(o) }}</span>
+              </div>
+            }
+            @if (o.vehicle) {
+              <div class="info-row">
+                <span class="info-label">Vehículo</span>
+                <span class="info-value">{{ getVehicleInfo(o) }}</span>
+              </div>
+            }
+          </div>
+        </section>
+
+        <!-- Productos -->
+        <section class="detail-card">
+          <h3 class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m21 7.5-9-5.25L3 7.5m18 0-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
+            </svg>
+            Productos ({{ o.items.length }})
+          </h3>
+          <div class="products-list">
+            @for (item of o.items; track item.product) {
+              <div class="product-row">
+                @if (item.image) {
+                  <img [src]="item.image" [alt]="item.name" class="product-img" />
+                }
+                <div class="product-info">
+                  <span class="product-name">{{ item.name }}</span>
+                  <span class="product-qty">x{{ item.quantity }} &middot; ${{ item.price | number:'1.2-2' }} c/u</span>
+                </div>
+                <span class="product-total">${{ item.price * item.quantity | number:'1.2-2' }}</span>
+              </div>
+            }
+          </div>
+          <div class="totals-section">
+            <div class="total-row">
+              <span>Subtotal</span>
+              <span>${{ o.subtotal | number:'1.2-2' }}</span>
+            </div>
+            <div class="total-row">
+              <span>Envío</span>
+              <span>{{ o.shippingCost === 0 ? 'Gratis' : '$' + (o.shippingCost | number:'1.2-2') }}</span>
+            </div>
+            <div class="total-row total-final">
+              <span>Total</span>
+              <span>${{ o.total | number:'1.2-2' }}</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Despacho -->
+        <section class="detail-card">
+          <h3 class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 0 0-3.213-9.193 2.056 2.056 0 0 0-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 0 0-10.026 0 1.106 1.106 0 0 0-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+            </svg>
+            Despacho
+          </h3>
+          <div class="info-rows">
+            <div class="info-row">
+              <span class="info-label">Tipo</span>
+              <span class="info-value">{{ getDispatchLabel(o.dispatchType) }}</span>
+            </div>
+            @if (o.dispatchStatus) {
+              <div class="info-row">
+                <span class="info-label">Estado</span>
+                <span class="status-badge sm" [ngClass]="getDispatchStatusColor(o.dispatchStatus)">
+                  {{ getDispatchStatusLabel(o.dispatchStatus) }}
+                </span>
+              </div>
+            }
+            @if (o.dispatchDetails) {
+              @if (o.dispatchDetails.storeAddress) {
+                <div class="info-row">
+                  <span class="info-label">Dirección tienda</span>
+                  <span class="info-value">{{ o.dispatchDetails.storeAddress }}</span>
+                </div>
+              }
+              @if (o.dispatchDetails.agencyName) {
+                <div class="info-row">
+                  <span class="info-label">Agencia</span>
+                  <span class="info-value">{{ o.dispatchDetails.agencyName }}</span>
+                </div>
+              }
+              @if (o.dispatchDetails.recipientName) {
+                <div class="info-row">
+                  <span class="info-label">Destinatario</span>
+                  <span class="info-value">{{ o.dispatchDetails.recipientName }}</span>
+                </div>
+              }
+              @if (o.dispatchDetails.recipientDocument) {
+                <div class="info-row">
+                  <span class="info-label">Documento</span>
+                  <span class="info-value">{{ o.dispatchDetails.recipientDocument }}</span>
+                </div>
+              }
+              @if (o.dispatchDetails.recipientPhone) {
+                <div class="info-row">
+                  <span class="info-label">Teléfono</span>
+                  <span class="info-value">{{ o.dispatchDetails.recipientPhone }}</span>
+                </div>
+              }
+              @if (o.dispatchDetails.recipientAddress) {
+                <div class="info-row">
+                  <span class="info-label">Dirección</span>
+                  <span class="info-value">{{ o.dispatchDetails.recipientAddress }}</span>
+                </div>
+              }
+              @if (o.dispatchDetails.recipientState || o.dispatchDetails.recipientCity) {
+                <div class="info-row">
+                  <span class="info-label">Ubicación</span>
+                  <span class="info-value">{{ o.dispatchDetails.recipientCity }}, {{ o.dispatchDetails.recipientState }}</span>
+                </div>
+              }
+              @if (o.dispatchDetails.agencyOfficeCode) {
+                <div class="info-row">
+                  <span class="info-label">Oficina destino</span>
+                  <span class="info-value">{{ o.dispatchDetails.agencyOfficeCode }}</span>
+                </div>
+              }
+              @if (o.dispatchDetails.referencePoint) {
+                <div class="info-row">
+                  <span class="info-label">Punto de referencia</span>
+                  <span class="info-value" style="font-size:0.75rem">{{ o.dispatchDetails.referencePoint }}</span>
+                </div>
+              }
+            }
+          </div>
+        </section>
+      </div>
+
+      <!-- Col Right: Payment + Status History -->
+      <div class="detail-column">
+        <!-- Pago -->
+        <section class="detail-card">
+          <h3 class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" />
+            </svg>
+            Datos del Pago
+          </h3>
+          @if (o.paymentSubmission) {
+            <div class="info-rows">
+              <div class="info-row">
+                <span class="info-label">Método</span>
+                <span class="info-value" style="font-weight:600">{{ o.paymentSubmission.methodLabel || getPaymentMethodLabel(o.paymentSubmission.methodType) }}</span>
+              </div>
+              @if (o.paymentSubmission.referenceNumber) {
+                <div class="info-row">
+                  <span class="info-label">Referencia</span>
+                  <span class="info-value mono">{{ o.paymentSubmission.referenceNumber }}</span>
+                </div>
+              }
+              @if (o.paymentSubmission.amount) {
+                <div class="info-row">
+                  <span class="info-label">Monto reportado</span>
+                  <span class="info-value" style="font-weight:600">{{ formatPaymentAmount(o.paymentSubmission.amount, o.paymentSubmission.methodType) }}</span>
+                </div>
+              }
+              @if (o.paymentSubmission.sourceBank) {
+                <div class="info-row">
+                  <span class="info-label">Banco emisor</span>
+                  <span class="info-value">{{ o.paymentSubmission.sourceBank }}</span>
+                </div>
+              }
+              @if (o.paymentSubmission.paymentDate) {
+                <div class="info-row">
+                  <span class="info-label">Fecha del pago</span>
+                  <span class="info-value">{{ o.paymentSubmission.paymentDate }}</span>
+                </div>
+              }
+              @if (o.paymentSubmission.proofUrl) {
+                <div class="proof-section">
+                  <span class="info-label">Comprobante</span>
+                  <img [src]="o.paymentSubmission.proofUrl" alt="Comprobante de pago" class="proof-image" />
+                </div>
+              }
+            </div>
+          } @else if (o.paymentMethod) {
+            <div class="info-rows">
+              <div class="info-row">
+                <span class="info-label">Método</span>
+                <span class="info-value">{{ getPaymentMethodLabel(o.paymentMethod) }}</span>
+              </div>
+            </div>
+          } @else {
+            <p class="no-data">Sin datos de pago registrados</p>
+          }
+        </section>
+
+        <!-- Info general -->
+        <section class="detail-card">
+          <h3 class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
+            </svg>
+            Información General
+          </h3>
+          <div class="info-rows">
+            <div class="info-row">
+              <span class="info-label">Fecha de creación</span>
+              <span class="info-value">{{ formatDate(o.createdAt) }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Disclaimer</span>
+              <span class="info-value" [class.text-green-600]="o.disclaimerAccepted" [class.text-red-500]="!o.disclaimerAccepted">
+                {{ o.disclaimerAccepted ? 'Aceptado' : 'No aceptado' }}
+              </span>
+            </div>
+            @if (o.notes) {
+              <div class="info-row">
+                <span class="info-label">Notas</span>
+                <span class="info-value" style="font-size:0.75rem">{{ o.notes }}</span>
+              </div>
+            }
+          </div>
+        </section>
+
+        <!-- Historial de estados -->
+        @if (o.statusHistory && o.statusHistory.length > 0) {
+          <section class="detail-card">
+            <h3 class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+              </svg>
+              Historial de Estados
+            </h3>
+            <div class="timeline">
+              @for (entry of o.statusHistory; track $index) {
+                <div class="timeline-item">
+                  <div class="timeline-dot" [ngClass]="getStatusColor(entry.status)"></div>
+                  <div class="timeline-content">
+                    <span class="timeline-status">{{ getStatusLabel(entry.status) }}</span>
+                    @if (entry.note) {
+                      <span class="timeline-note">{{ entry.note }}</span>
+                    }
+                    <span class="timeline-date">{{ formatDate(entry.timestamp) }}</span>
+                  </div>
+                </div>
+              }
+            </div>
+          </section>
+        }
+      </div>
+    </div>
+  }
+</div>
+
+<!-- Reject Modal -->
+@if (showRejectModal()) {
+  <div class="modal-overlay" (click)="closeRejectModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Rechazar Orden</h3>
+        <button type="button" class="btn-modal-close" (click)="closeRejectModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>¿Estás seguro de rechazar la orden <strong>#{{ order()?.orderNumber }}</strong>?</p>
+        <div class="form-group">
+          <label for="reject-reason">Razón (opcional)</label>
+          <textarea id="reject-reason" [(ngModel)]="rejectReason" rows="3" placeholder="Escribe la razón del rechazo..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" (click)="closeRejectModal()">Cancelar</button>
+        <button type="button" class="btn-reject-confirm" [disabled]="isRejecting()" (click)="confirmReject()">
+          @if (isRejecting()) { Rechazando... } @else { Confirmar Rechazo }
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Status Change Modal -->
+@if (showStatusModal()) {
+  <div class="modal-overlay" (click)="closeStatusModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Cambiar Estado</h3>
+        <button type="button" class="btn-modal-close" (click)="closeStatusModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="new-status">Nuevo Estado</label>
+          <select id="new-status" [(ngModel)]="newStatus">
+            @for (status of orderStatuses; track status) {
+              <option [value]="status">{{ ORDER_STATUS_LABELS[status] }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="status-note">Nota (opcional)</label>
+          <textarea id="status-note" [(ngModel)]="statusNote" rows="3" placeholder="Agrega una nota..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" (click)="closeStatusModal()">Cancelar</button>
+        <button type="button" class="btn-confirm" [disabled]="isChangingStatus()" (click)="confirmStatusChange()">
+          @if (isChangingStatus()) { Cambiando... } @else { Confirmar }
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Dispatch Modal -->
+<app-order-dispatch-modal
+  [order]="order()"
+  [isOpen]="dispatchModalOpen()"
+  (close)="closeDispatchModal()"
+  (assigned)="onMechanicAssigned($event)"
+/>

@@ -1,0 +1,179 @@
+.shipping-form-page {
+  @apply min-h-screen bg-gray-50 dark:bg-gray-900;
+}
+
+// ========== Header ==========
+.page-header {
+  @apply sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm;
+}
+
+.header-content {
+  @apply max-w-4xl mx-auto px-4 py-4 flex items-center gap-4;
+}
+
+.back-btn {
+  @apply flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors;
+
+  svg {
+    @apply w-5 h-5;
+  }
+
+  .back-text {
+    @apply text-sm font-medium;
+  }
+}
+
+.page-title {
+  @apply flex-1;
+
+  h1 {
+    @apply text-xl font-bold text-gray-900 dark:text-white;
+  }
+}
+
+// ========== Content ==========
+.page-content {
+  @apply max-w-4xl mx-auto px-4 py-8;
+}
+
+.form-container {
+  @apply space-y-6;
+}
+
+// ========== Selected Agency Banner ==========
+.selected-agency-banner {
+  @apply flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700;
+}
+
+.agency-info {
+  @apply flex items-center gap-4;
+}
+
+.agency-logo {
+  @apply w-12 h-12 rounded-lg object-contain bg-gray-100 dark:bg-gray-700 p-1;
+}
+
+.agency-logo-placeholder {
+  @apply w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-400;
+
+  svg {
+    @apply w-6 h-6;
+  }
+}
+
+.agency-text {
+  @apply flex flex-col;
+
+  .agency-label {
+    @apply text-xs text-gray-500 dark:text-gray-400;
+  }
+
+  .agency-name {
+    @apply font-semibold text-gray-900 dark:text-white;
+  }
+}
+
+.change-btn {
+  @apply text-sm font-medium transition-colors;
+  color: var(--accent-primary);
+
+  &:hover {
+    color: var(--accent-hover);
+  }
+}
+
+// ========== Form ==========
+.shipping-form {
+  @apply space-y-6;
+}
+
+.form-section {
+  @apply bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6;
+}
+
+.section-title {
+  @apply flex items-center gap-3 text-lg font-semibold text-gray-900 dark:text-white mb-6 pb-4 border-b border-gray-100 dark:border-gray-700;
+
+  svg {
+    @apply w-5 h-5;
+    color: var(--accent-primary);
+  }
+}
+
+.form-grid {
+  @apply grid grid-cols-1 md:grid-cols-2 gap-4;
+}
+
+.form-group {
+  @apply space-y-2;
+
+  &.full-width {
+    @apply md:col-span-2;
+  }
+
+  label {
+    @apply block text-sm font-medium text-gray-700 dark:text-gray-300;
+
+    .required {
+      @apply text-red-500;
+    }
+  }
+}
+
+.input {
+  @apply w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-red-500 focus:border-transparent transition-colors;
+
+  &.error {
+    @apply border-red-500 focus:ring-red-500;
+  }
+
+  &.textarea {
+    @apply resize-none;
+  }
+}
+
+select.input {
+  @apply cursor-pointer appearance-none bg-no-repeat;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+  background-position: right 12px center;
+  background-size: 20px;
+  padding-right: 44px;
+}
+
+.error-message {
+  @apply text-xs text-red-500 dark:text-red-400;
+}
+
+.hint {
+  @apply text-xs text-gray-500 dark:text-gray-400;
+}
+
+// ========== Actions ==========
+.form-actions {
+  @apply flex justify-center pt-4;
+}
+
+.btn-continue {
+  @apply w-full max-w-md py-3 px-6 text-white font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed;
+  background-color: var(--accent-primary);
+
+  &:hover:not(:disabled) {
+    background-color: var(--accent-hover);
+    transform: translateY(-1px);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+}
+
+// ========== Responsive ==========
+@media (max-width: 640px) {
+  .selected-agency-banner {
+    @apply flex-col gap-4 text-center;
+  }
+
+  .agency-info {
+    @apply flex-col;
+  }
+}

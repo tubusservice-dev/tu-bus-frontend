@@ -1,0 +1,124 @@
+<article
+  class="product-card"
+  [class.out-of-stock]="isOutOfStock"
+  [class.clickable]="linkToDetail"
+  (click)="navigateToDetail()"
+>
+  <!-- Imagen -->
+  <div class="card-image">
+    <app-image-carousel
+      [images]="product.images"
+      [height]="'220px'"
+      [showArrows]="false"
+      [showIndicators]="product.images.length > 1"
+      [imageFit]="'cover'"
+    />
+
+    <!-- Badges superiores -->
+    <div class="card-badges top-left">
+      @if (showFeaturedBadge || product.isFeatured) {
+        <span class="badge featured">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+            <path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z" clip-rule="evenodd" />
+          </svg>
+        </span>
+      }
+      @if (hasDiscount) {
+        <span class="badge discount">-{{ discountPercentage }}%</span>
+      }
+      @if (isOutOfStock) {
+        <span class="badge sold-out">Agotado</span>
+      }
+    </div>
+
+
+  </div>
+
+  <!-- Contenido -->
+  <div class="card-content">
+    <!-- Header: Marca y Categoría -->
+    <div class="card-header">
+      @if (brandName) {
+        <span class="brand-name">{{ brandName }}</span>
+      }
+      @if (firstCategoryName) {
+        <span class="category-name">{{ firstCategoryName }}</span>
+      }
+    </div>
+
+    <!-- Línea -->
+    @if (lineName) {
+      <span class="line-badge">{{ lineName }}</span>
+    }
+
+    <!-- Nombre -->
+    <h3 class="card-title">{{ product.name }}</h3>
+
+    <!-- Modelo y detalles -->
+    @if (product.productModel) {
+      <p class="card-model">{{ product.productModel }}</p>
+    }
+
+    <!-- Footer: Precio y botón -->
+    <div class="card-footer">
+      <div class="price-block">
+        @if (hasDiscount) {
+          <span class="price-old">${{ product.comparePrice | number:'1.0-0' }}</span>
+        }
+        <span class="price" [class.discount]="hasDiscount">${{ product.price | number:'1.0-0' }}</span>
+        @if (product.stock !== undefined && product.stock > 0 && product.stock <= 5) {
+          <span class="stock-low">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+            </svg>
+            {{ product.stock }} disponibles
+          </span>
+        }
+      </div>
+
+      @if (showAddToCart) {
+        <div class="cart-btn-container">
+          <button
+            class="btn-cart"
+            [class.adding]="isAdding()"
+            [class.added]="justAdded()"
+            [class.max-reached]="!canAddToCart() && !isOutOfStock"
+            [disabled]="!canAddToCart() || isAdding()"
+            (click)="addToCart($event)"
+          >
+            @if (isAdding()) {
+              <svg class="spinner" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-dasharray="31.4 31.4" />
+              </svg>
+            } @else if (justAdded()) {
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            } @else if (!canAddToCart() && !isOutOfStock) {
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            } @else {
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
+              </svg>
+            }
+          </button>
+          @if (quantityInCart() > 0) {
+            <span class="cart-quantity-badge">{{ quantityInCart() }}</span>
+          }
+          @if (showLoginMessage()) {
+            <div class="login-tooltip">
+              Inicia sesión para agregar productos
+            </div>
+          }
+          @if (showStockError()) {
+            <div class="stock-tooltip">
+              {{ stockErrorMessage() }}
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+</article>

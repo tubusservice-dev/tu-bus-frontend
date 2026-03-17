@@ -1,0 +1,62 @@
+.benefits-section {
+  @apply py-16 sm:py-20 lg:py-24;
+  background-color: var(--bg-primary);
+}
+
+.benefits-container {
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+// Section Header
+.section-header {
+  @apply text-center mb-12 lg:mb-16;
+}
+
+.section-badge {
+  @apply inline-block px-4 py-1.5 rounded-full mb-4;
+  @apply text-sm font-semibold;
+  background-color: rgba(var(--tubus-primary-rgb), 0.15);
+  color: var(--tubus-text-accent);
+}
+
+.section-title {
+  @apply text-3xl sm:text-4xl font-bold;
+  color: var(--text-primary);
+}
+
+// Benefits Grid
+.benefits-grid {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8;
+}
+
+.benefit-card {
+  @apply text-center;
+}
+
+.benefit-icon {
+  @apply w-16 h-16 mx-auto mb-5;
+  @apply flex items-center justify-center rounded-2xl;
+  @apply transition-all duration-300;
+  background: linear-gradient(135deg, rgba(var(--tubus-primary-rgb), 0.15) 0%, rgba(var(--tubus-primary-rgb), 0.08) 100%);
+  color: var(--tubus-text-accent);
+
+  svg {
+    @apply w-8 h-8;
+  }
+
+  .benefit-card:hover & {
+    background: linear-gradient(135deg, var(--tubus-primary) 0%, var(--tubus-primary-dark) 100%);
+    color: #fff;
+    transform: scale(1.1);
+  }
+}
+
+.benefit-title {
+  @apply text-lg font-bold mb-2;
+  color: var(--text-primary);
+}
+
+.benefit-description {
+  @apply text-sm leading-relaxed;
+  color: var(--text-secondary);
+}

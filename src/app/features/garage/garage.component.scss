@@ -1,0 +1,76 @@
+.garage-container {
+  @apply space-y-6;
+}
+
+.garage-header {
+  @apply flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4;
+}
+
+.garage-title {
+  @apply text-2xl font-bold text-gray-900 dark:text-white;
+}
+
+.garage-subtitle {
+  @apply text-sm text-gray-500 dark:text-gray-400 mt-1;
+}
+
+.btn {
+  @apply inline-flex items-center justify-center gap-2;
+  @apply px-5 py-2.5 rounded-xl text-sm font-semibold;
+  @apply transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+  svg { @apply w-5 h-5; }
+}
+
+.btn-primary {
+  @apply text-white shadow-sm hover:shadow-md;
+  background-color: var(--accent-primary);
+  &:hover { background-color: var(--accent-hover); }
+}
+
+.alert {
+  @apply flex items-center gap-3 p-4 rounded-xl text-sm;
+  @apply shadow-sm border;
+  svg { @apply w-5 h-5 flex-shrink-0; }
+}
+.alert-success {
+  @apply bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400;
+  @apply border-green-200 dark:border-green-800;
+}
+.alert-error {
+  @apply bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400;
+  @apply border-red-200 dark:border-red-800;
+}
+
+.vehicles-grid {
+  @apply grid grid-cols-1 md:grid-cols-2 gap-4;
+}
+
+.empty-state {
+  @apply flex flex-col items-center justify-center py-16 text-center;
+
+  .empty-icon {
+    @apply w-20 h-20 text-gray-300 dark:text-gray-600 mb-4;
+  }
+
+  h3 {
+    @apply text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2;
+  }
+
+  p {
+    @apply text-sm text-gray-500 dark:text-gray-400 mb-6;
+  }
+}
+
+.loading-state {
+  @apply flex flex-col items-center justify-center py-16;
+
+  .spinner {
+    @apply w-8 h-8 border-2 rounded-full animate-spin mb-4;
+    @apply border-gray-300;
+    border-top-color: var(--accent-primary);
+  }
+
+  p {
+    @apply text-sm text-gray-500 dark:text-gray-400;
+  }
+}

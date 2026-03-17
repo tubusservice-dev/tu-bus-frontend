@@ -1,0 +1,369 @@
+.order-detail-page {
+  @apply p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto;
+}
+
+// ============================================
+// HEADER
+// ============================================
+.page-header {
+  @apply flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6;
+}
+
+.header-left {
+  @apply flex flex-col gap-2;
+}
+
+.btn-back {
+  @apply inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors;
+
+  svg {
+    @apply w-4 h-4;
+  }
+}
+
+.header-info {
+  @apply flex items-center gap-3 flex-wrap;
+}
+
+.page-title {
+  @apply text-xl sm:text-2xl font-bold text-gray-900 dark:text-white;
+}
+
+.header-actions {
+  @apply flex items-center gap-2;
+}
+
+.btn-approve {
+  @apply inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all;
+  background-color: #16a34a;
+
+  &:hover:not(:disabled) {
+    background-color: #15803d;
+  }
+
+  &:disabled {
+    @apply opacity-60 cursor-not-allowed;
+  }
+
+  svg {
+    @apply w-4 h-4;
+  }
+}
+
+.btn-reject {
+  @apply inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all;
+  background-color: #dc2626;
+
+  &:hover {
+    background-color: #b91c1c;
+  }
+
+  svg {
+    @apply w-4 h-4;
+  }
+}
+
+.btn-change-status {
+  @apply inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium border transition-all;
+  @apply border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800;
+
+  &:hover {
+    @apply bg-gray-50 dark:bg-gray-700;
+  }
+
+  svg {
+    @apply w-4 h-4;
+  }
+}
+
+.btn-dispatch {
+  @apply inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium border transition-all;
+  @apply border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800;
+
+  &:hover {
+    @apply bg-gray-50 dark:bg-gray-700;
+  }
+
+  svg {
+    @apply w-4 h-4;
+  }
+}
+
+// ============================================
+// STATUS BADGES
+// ============================================
+.status-badge {
+  @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold;
+
+  &.sm {
+    @apply px-2 py-0.5 text-[0.6875rem];
+  }
+}
+
+// ============================================
+// GRID LAYOUT
+// ============================================
+.detail-grid {
+  @apply grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6;
+}
+
+.detail-column {
+  @apply flex flex-col gap-4 sm:gap-6;
+}
+
+// ============================================
+// CARDS
+// ============================================
+.detail-card {
+  @apply rounded-xl border bg-white dark:bg-gray-800 dark:border-gray-700 overflow-hidden;
+  border-color: #e5e7eb;
+}
+
+.card-title {
+  @apply flex items-center gap-2 px-4 sm:px-5 py-3 text-sm font-semibold border-b;
+  @apply text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700;
+
+  svg {
+    @apply w-5 h-5 text-blue-600 dark:text-blue-400;
+  }
+}
+
+// ============================================
+// INFO ROWS
+// ============================================
+.info-rows {
+  @apply flex flex-col;
+}
+
+.info-row {
+  @apply flex items-start justify-between gap-4 px-4 sm:px-5 py-2.5;
+  @apply border-b border-gray-100 dark:border-gray-700/50;
+
+  &:last-child {
+    @apply border-b-0;
+  }
+}
+
+.info-label {
+  @apply text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex-shrink-0;
+}
+
+.info-value {
+  @apply text-xs sm:text-sm text-gray-900 dark:text-gray-100 text-right;
+
+  &.mono {
+    font-family: monospace;
+  }
+}
+
+.no-data {
+  @apply px-5 py-4 text-sm text-gray-400 dark:text-gray-500 text-center;
+}
+
+// ============================================
+// PRODUCTS
+// ============================================
+.products-list {
+  @apply flex flex-col;
+}
+
+.product-row {
+  @apply flex items-center gap-3 px-4 sm:px-5 py-3 border-b border-gray-100 dark:border-gray-700/50;
+
+  &:last-child {
+    @apply border-b-0;
+  }
+}
+
+.product-img {
+  @apply w-10 h-10 rounded-lg object-cover flex-shrink-0 bg-gray-100 dark:bg-gray-700;
+}
+
+.product-info {
+  @apply flex-1 min-w-0 flex flex-col;
+}
+
+.product-name {
+  @apply text-sm font-medium text-gray-900 dark:text-gray-100 truncate;
+}
+
+.product-qty {
+  @apply text-xs text-gray-500 dark:text-gray-400;
+}
+
+.product-total {
+  @apply text-sm font-semibold text-gray-900 dark:text-gray-100 flex-shrink-0;
+}
+
+// ============================================
+// TOTALS
+// ============================================
+.totals-section {
+  @apply border-t border-gray-200 dark:border-gray-700;
+}
+
+.total-row {
+  @apply flex items-center justify-between px-4 sm:px-5 py-2 text-sm;
+  @apply text-gray-600 dark:text-gray-400;
+
+  span:last-child {
+    @apply font-medium text-gray-900 dark:text-gray-100;
+  }
+
+  &.total-final {
+    @apply bg-gray-50 dark:bg-gray-900/50 py-3;
+
+    span:first-child {
+      @apply font-semibold text-gray-900 dark:text-gray-100;
+    }
+
+    span:last-child {
+      @apply text-lg font-bold text-blue-600 dark:text-blue-400;
+    }
+  }
+}
+
+// ============================================
+// PROOF IMAGE
+// ============================================
+.proof-section {
+  @apply flex flex-col gap-2 px-4 sm:px-5 py-3;
+}
+
+.proof-image {
+  @apply max-w-full max-h-64 rounded-lg border border-gray-200 dark:border-gray-700 object-contain;
+}
+
+// ============================================
+// TIMELINE
+// ============================================
+.timeline {
+  @apply flex flex-col px-4 sm:px-5 py-3;
+}
+
+.timeline-item {
+  @apply flex gap-3 pb-4 last:pb-0;
+  position: relative;
+
+  &:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 14px;
+    bottom: -4px;
+    width: 2px;
+    @apply bg-gray-200 dark:bg-gray-700;
+  }
+}
+
+.timeline-dot {
+  @apply w-3 h-3 rounded-full mt-1 flex-shrink-0 ring-2 ring-white dark:ring-gray-800;
+  @apply bg-gray-300 dark:bg-gray-600;
+}
+
+.timeline-content {
+  @apply flex flex-col gap-0.5;
+}
+
+.timeline-status {
+  @apply text-sm font-medium text-gray-900 dark:text-gray-100;
+}
+
+.timeline-note {
+  @apply text-xs text-gray-500 dark:text-gray-400 italic;
+}
+
+.timeline-date {
+  @apply text-xs text-gray-400 dark:text-gray-500;
+}
+
+// ============================================
+// LOADING & ERROR
+// ============================================
+.loading-state {
+  @apply flex items-center justify-center gap-3 py-20 text-gray-500 dark:text-gray-400;
+}
+
+.spinner {
+  @apply w-6 h-6 border-2 border-gray-300 dark:border-gray-600 border-t-blue-600 dark:border-t-blue-400 rounded-full animate-spin;
+}
+
+.error-state {
+  @apply flex flex-col items-center gap-4 py-20 text-gray-500 dark:text-gray-400;
+}
+
+.btn-back-link {
+  @apply text-blue-600 dark:text-blue-400 text-sm font-medium hover:underline;
+}
+
+// ============================================
+// MODALS
+// ============================================
+.modal-overlay {
+  @apply fixed inset-0 z-50 flex items-center justify-center p-4;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  @apply w-full max-w-md rounded-xl overflow-hidden;
+  @apply bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header {
+  @apply flex items-center justify-between px-5 py-3 border-b border-gray-200 dark:border-gray-700;
+
+  h3 {
+    @apply text-base font-semibold text-gray-900 dark:text-white;
+  }
+}
+
+.btn-modal-close {
+  @apply w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors;
+
+  svg {
+    @apply w-5 h-5;
+  }
+}
+
+.modal-body {
+  @apply px-5 py-4 flex flex-col gap-4;
+
+  p {
+    @apply text-sm text-gray-600 dark:text-gray-300;
+  }
+}
+
+.form-group {
+  @apply flex flex-col gap-1.5;
+
+  label {
+    @apply text-sm font-medium text-gray-700 dark:text-gray-300;
+  }
+
+  select,
+  textarea {
+    @apply w-full px-3 py-2 rounded-lg border text-sm;
+    @apply border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100;
+    @apply focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500;
+  }
+}
+
+.modal-footer {
+  @apply flex justify-end gap-3 px-5 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50;
+}
+
+.btn-cancel {
+  @apply px-4 py-2 rounded-lg text-sm font-medium border;
+  @apply border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800;
+  @apply hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors;
+}
+
+.btn-confirm {
+  @apply px-4 py-2 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors;
+}
+
+.btn-reject-confirm {
+  @apply px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors;
+}

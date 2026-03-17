@@ -1,0 +1,139 @@
+<div class="mechanic-form-page">
+  <!-- Header -->
+  <header class="page-header">
+    <a routerLink="/admin/mechanics" class="back-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+      </svg>
+      Volver a mecanicos
+    </a>
+    <h1 class="page-title">
+      {{ isEditMode() ? 'Editar Mecanico' : 'Nuevo Mecanico' }}
+    </h1>
+  </header>
+
+  <!-- Loading -->
+  @if (isLoading()) {
+    <div class="loading-container">
+      <div class="loading-spinner"></div>
+      <span>Cargando mecanico...</span>
+    </div>
+  } @else {
+    <!-- Error -->
+    @if (errorMessage()) {
+      <div class="alert error">
+        <span>{{ errorMessage() }}</span>
+        <button (click)="errorMessage.set(null)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    }
+
+    <!-- Formulario -->
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="form-container">
+      <div class="form-grid">
+        <!-- Columna principal -->
+        <div class="form-main">
+          <section class="form-section">
+            <h2 class="section-title">Informacion del Mecanico</h2>
+
+            <!-- Nombre -->
+            <div class="form-group">
+              <label for="name">
+                Nombre <span class="required">*</span>
+              </label>
+              <input
+                type="text"
+                id="name"
+                formControlName="name"
+                placeholder="Nombre completo del mecanico"
+                [class.error]="isInvalid('name')"
+              />
+              @if (hasError('name', 'required')) {
+                <span class="error-text">El nombre es requerido</span>
+              }
+              @if (hasError('name', 'minlength')) {
+                <span class="error-text">Minimo 2 caracteres</span>
+              }
+            </div>
+
+            <!-- WhatsApp -->
+            <div class="form-group">
+              <label for="whatsapp">
+                WhatsApp <span class="required">*</span>
+              </label>
+              <input
+                type="tel"
+                id="whatsapp"
+                formControlName="whatsapp"
+                placeholder="Ej: 584121234567"
+                [class.error]="isInvalid('whatsapp')"
+              />
+              @if (hasError('whatsapp', 'required')) {
+                <span class="error-text">El WhatsApp es requerido</span>
+              }
+            </div>
+
+            <!-- Email -->
+            <div class="form-group">
+              <label for="email">Email</label>
+              <input
+                type="email"
+                id="email"
+                formControlName="email"
+                placeholder="correo@ejemplo.com"
+                [class.error]="isInvalid('email')"
+              />
+              @if (hasError('email', 'email')) {
+                <span class="error-text">Formato de email invalido</span>
+              }
+            </div>
+          </section>
+        </div>
+
+        <!-- Columna lateral -->
+        <div class="form-sidebar">
+          <!-- Zona -->
+          <section class="form-section">
+            <h2 class="section-title">Zona de Cobertura</h2>
+
+            <div class="form-group">
+              <label for="zone">Ciudad</label>
+              <select id="zone" formControlName="zone" (change)="onZoneChange($event)">
+                <option value="">Seleccionar ciudad...</option>
+                @for (zone of zones(); track zone.id) {
+                  <option [value]="zone.id">{{ zone.name }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="municipality">Municipio</label>
+              <select id="municipality" formControlName="municipality" [disabled]="!selectedZoneId()">
+                <option value="">Seleccionar municipio...</option>
+                @for (mun of availableMunicipalities(); track mun.code) {
+                  <option [value]="mun.name">{{ mun.name }}</option>
+                }
+              </select>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <!-- Acciones -->
+      <div class="form-actions">
+        <a routerLink="/admin/mechanics" class="btn-cancel">Cancelar</a>
+        <button type="submit" class="btn-submit" [disabled]="isSubmitting()">
+          @if (isSubmitting()) {
+            <span class="loading-spinner-sm"></span>
+            Guardando...
+          } @else {
+            {{ isEditMode() ? 'Actualizar' : 'Crear' }} Mecanico
+          }
+        </button>
+      </div>
+    </form>
+  }
+</div>

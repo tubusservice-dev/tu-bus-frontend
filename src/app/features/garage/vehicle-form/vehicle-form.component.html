@@ -1,0 +1,88 @@
+<div class="form-card">
+  <div class="form-header">
+    <h3>{{ vehicle() ? 'Editar Vehículo' : 'Agregar Vehículo' }}</h3>
+    <button type="button" class="close-btn" (click)="onCancel()">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+    </button>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" class="form-body">
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Placa</label>
+        <input type="text" formControlName="placa" class="form-input" [class.error]="hasError('placa')" placeholder="ABC123" style="text-transform: uppercase" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Marca</label>
+        <select formControlName="marca" class="form-input" [class.error]="hasError('marca')">
+          <option value="">Seleccionar...</option>
+          @for (m of marcas; track m) {
+            <option [value]="m">{{ m }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Modelo</label>
+        <input type="text" formControlName="modelo" class="form-input" [class.error]="hasError('modelo')" placeholder="Corolla, Aveo, etc." />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Año</label>
+        <input type="number" formControlName="year" class="form-input" [class.error]="hasError('year')" placeholder="2020" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Kilometraje</label>
+        <input type="number" formControlName="kilometraje" class="form-input" placeholder="0" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Combustible</label>
+        <select formControlName="fuelType" class="form-input">
+          @for (c of combustibles; track c.value) {
+            <option [value]="c.value">{{ c.label }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Cilindrada</label>
+        <select formControlName="displacement" class="form-input" [class.error]="hasError('displacement')">
+          <option value="">Seleccionar...</option>
+          @for (d of cilindradas; track d) {
+            <option [value]="d">{{ d }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Cilindros</label>
+        <input type="number" formControlName="cylinders" class="form-input" [class.error]="hasError('cylinders')" placeholder="4" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Capacidad de Aceite (L)</label>
+        <input type="number" step="0.1" formControlName="oilCapacityLiters" class="form-input" [class.error]="hasError('oilCapacityLiters')" placeholder="4.0" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Tipo de Aceite</label>
+        <select formControlName="oilType" class="form-input" [class.error]="hasError('oilType')">
+          <option value="">Seleccionar...</option>
+          @for (t of tiposAceite; track t.value) {
+            <option [value]="t.value">{{ t.label }}</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" class="btn btn-secondary" (click)="onCancel()">Cancelar</button>
+      <button type="submit" class="btn btn-primary" [disabled]="form.invalid">
+        {{ vehicle() ? 'Guardar Cambios' : 'Agregar Vehículo' }}
+      </button>
+    </div>
+  </form>
+</div>

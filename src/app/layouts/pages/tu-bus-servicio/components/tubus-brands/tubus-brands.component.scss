@@ -1,0 +1,84 @@
+.brands-section {
+  @apply py-12 sm:py-16;
+  background-color: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.brands-container {
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+.brands-title {
+  @apply text-center text-sm font-semibold uppercase tracking-wider mb-8;
+  color: var(--text-tertiary);
+}
+
+// Loading state
+.brands-loading {
+  @apply flex justify-center py-8;
+
+  .spinner {
+    @apply w-8 h-8 border-2 border-gray-200 rounded-full animate-spin;
+    border-top-color: var(--tubus-primary);
+  }
+}
+
+.brands-empty {
+  @apply text-center text-sm py-8;
+  color: var(--text-tertiary);
+}
+
+// Grid responsive
+.brands-grid {
+  @apply flex flex-wrap justify-center items-center gap-8 sm:gap-10 lg:gap-12;
+}
+
+.brand-item {
+  @apply flex items-center justify-center;
+  @apply transition-all duration-300 cursor-default;
+
+  &:hover {
+    transform: translateY(-4px);
+
+    .brand-image {
+      transform: scale(1.08);
+      filter: grayscale(0);
+    }
+
+    .brand-placeholder {
+      background-color: var(--tubus-primary);
+      color: #fff;
+    }
+  }
+}
+
+.brand-image {
+  @apply w-28 h-28 sm:w-32 sm:h-32 lg:w-36 lg:h-36 object-contain;
+  @apply transition-all duration-300;
+  filter: grayscale(0.2);
+}
+
+.brand-placeholder {
+  @apply w-28 h-28 sm:w-32 sm:h-32 lg:w-36 lg:h-36 flex items-center justify-center rounded-xl;
+  @apply text-3xl sm:text-4xl font-bold;
+  @apply transition-all duration-300;
+  background-color: var(--bg-tertiary);
+  color: var(--text-tertiary);
+}
+
+// Responsive adjustments
+@media (max-width: 480px) {
+  .brands-grid {
+    @apply gap-6;
+  }
+
+  .brand-image,
+  .brand-placeholder {
+    @apply w-20 h-20;
+  }
+
+  .brand-placeholder {
+    @apply text-2xl;
+  }
+}

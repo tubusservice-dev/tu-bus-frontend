@@ -1,0 +1,96 @@
+.header {
+  @apply sticky top-0 z-50;
+  background-color: var(--bg-primary);
+  border-bottom: 1px solid var(--border-color);
+  transition: background-color var(--transition-normal), border-color var(--transition-normal);
+}
+
+.header-container {
+  @apply flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto;
+}
+
+.header-left {
+  @apply flex items-center;
+}
+
+.back-arrow {
+  @apply flex items-center justify-center w-8 h-8 mr-5;
+  @apply text-gray-600 dark:text-gray-400;
+  @apply transition-colors duration-200;
+
+  &:hover {
+    color: var(--accent-primary);
+  }
+
+  svg {
+    @apply w-5 h-5;
+  }
+}
+
+.logo-link {
+  @apply flex items-center gap-2 text-lg font-bold transition-colors duration-200;
+  color: var(--text-primary);
+  text-decoration: none;
+
+  &:hover {
+    color: var(--accent-primary);
+  }
+}
+
+.logo-icon {
+  @apply w-8 h-8 flex items-center justify-center rounded-lg;
+  background-color: var(--accent-primary);
+  color: white;
+
+  svg {
+    @apply w-5 h-5;
+  }
+}
+
+.logo-text {
+  @apply hidden sm:block font-heading;
+}
+
+.header-right {
+  @apply flex items-center gap-2 sm:gap-4;
+}
+
+.login-btn {
+  @apply flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200;
+  background-color: var(--accent-primary);
+  color: white;
+
+  &:hover {
+    background-color: var(--accent-hover);
+  }
+
+  &:focus {
+    @apply outline-none ring-2 ring-offset-2;
+    ring-color: var(--accent-primary);
+  }
+}
+
+.login-icon {
+  @apply w-5 h-5;
+}
+
+.login-text {
+  @apply hidden sm:block text-sm;
+}
+
+// ============================================
+// DARK MODE
+// ============================================
+:host-context(.dark) {
+  .header {
+    background-color: #1f2937;
+    border-bottom-color: #374151;
+  }
+
+  .logo-link {
+    color: #f3f4f6;
+    &:hover {
+      color: var(--tubus-text-accent, #4d94ff);
+    }
+  }
+}

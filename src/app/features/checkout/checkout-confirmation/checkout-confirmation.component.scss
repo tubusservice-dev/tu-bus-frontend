@@ -1,0 +1,96 @@
+.confirmation-page {
+  @apply min-h-[60vh] flex items-center justify-center px-4 py-12;
+}
+
+.loading-state {
+  @apply flex flex-col items-center justify-center;
+
+  .spinner {
+    @apply w-10 h-10 border-2 rounded-full animate-spin mb-4 border-gray-300;
+    border-top-color: var(--accent-primary);
+  }
+
+  p { @apply text-gray-500 dark:text-gray-400; }
+}
+
+.confirmation-card {
+  @apply w-full max-w-lg text-center;
+  @apply bg-white dark:bg-gray-800 rounded-2xl shadow-lg;
+  @apply border border-gray-200 dark:border-gray-700;
+  @apply p-8;
+  animation: slideUp 0.4s ease-out;
+}
+
+.success-icon {
+  @apply mx-auto w-20 h-20 rounded-full;
+  @apply bg-green-100 dark:bg-green-900/30;
+  @apply flex items-center justify-center mb-6;
+
+  svg {
+    @apply w-12 h-12 text-green-500;
+  }
+}
+
+.confirmation-title {
+  @apply text-2xl font-bold text-gray-900 dark:text-white mb-2;
+}
+
+.confirmation-subtitle {
+  @apply text-gray-500 dark:text-gray-400 mb-8;
+}
+
+.order-info {
+  @apply bg-gray-50 dark:bg-gray-900/50 rounded-xl p-6 mb-8;
+}
+
+.order-number-display {
+  @apply flex flex-col items-center mb-4 pb-4;
+  @apply border-b border-gray-200 dark:border-gray-700;
+
+  .label { @apply text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide; }
+  .value { @apply text-xl font-bold text-gray-900 dark:text-white font-mono mt-1; }
+}
+
+.order-details-grid {
+  @apply grid grid-cols-2 gap-4;
+}
+
+.detail {
+  @apply flex flex-col items-center;
+
+  .detail-label { @apply text-xs text-gray-500 dark:text-gray-400; }
+  .detail-value { @apply text-sm font-semibold text-gray-900 dark:text-white mt-0.5; }
+}
+
+.status-badge {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs;
+  @apply bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300;
+}
+
+.capitalize { text-transform: capitalize; }
+
+.confirmation-actions {
+  @apply flex flex-col sm:flex-row gap-3 justify-center;
+}
+
+.btn {
+  @apply inline-flex items-center justify-center gap-2;
+  @apply px-6 py-3 rounded-xl text-sm font-semibold;
+  @apply transition-all duration-200;
+}
+
+.btn-primary {
+  @apply text-white shadow-sm hover:shadow-md;
+  background-color: var(--accent-primary);
+  &:hover { background-color: var(--accent-hover); }
+}
+
+.btn-secondary {
+  @apply bg-gray-100 hover:bg-gray-200 text-gray-700;
+  @apply dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
