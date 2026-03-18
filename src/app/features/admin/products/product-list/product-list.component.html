@@ -53,15 +53,15 @@
         </svg>
       </div>
 
-      <!-- Línea -->
+      <!-- Marca -->
       <div class="filter-group">
         <select
-          [ngModel]="filters().line ?? ''"
-          (ngModelChange)="onFilterChange('line', $event)"
+          [ngModel]="filters().brand ?? ''"
+          (ngModelChange)="onFilterChange('brand', $event)"
         >
-          <option value="" selected>Todas las líneas</option>
-          @for (line of lines(); track line.id) {
-            <option [value]="line.id">{{ line.name }}</option>
+          <option value="" selected>Todas las marcas</option>
+          @for (brand of brands(); track brand.id) {
+            <option [value]="brand.id">{{ brand.name }}</option>
           }
         </select>
       </div>

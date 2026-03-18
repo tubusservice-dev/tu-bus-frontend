@@ -472,6 +472,11 @@
   background-color: #f97316 !important; // orange-500
 }
 
+// Track de servicio de cambio de aceite gratis (verde)
+.toggle-control input[type="checkbox"]:checked + .delivery-track {
+  background-color: #22c55e !important; // green-500
+}
+
 // Track de regiones (azul)
 .toggle-control input[type="checkbox"]:checked + .regions-track {
   background-color: #3b82f6 !important; // blue-500

@@ -1,60 +1,62 @@
+// ============================================
+// PRODUCT CARD
+// ============================================
 .product-card {
-  @apply bg-white dark:bg-gray-800 rounded-xl overflow-hidden;
-  @apply border border-gray-200 dark:border-gray-700;
-  @apply flex flex-col w-full h-full;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
+  @apply rounded-2xl overflow-hidden flex flex-col w-full;
+  height: 420px;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 
   &.clickable {
     @apply cursor-pointer;
 
     &:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+      transform: translateY(-6px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
 
-      // Efecto zoom en la imagen
       .card-image app-image-carousel ::ng-deep img {
-        transform: scale(1.08);
+        transform: scale(1.06);
       }
     }
   }
 
   &.out-of-stock {
     .card-image {
-      @apply grayscale opacity-60;
+      @apply grayscale;
+      opacity: 0.5;
     }
   }
 }
 
 // ===== IMAGEN =====
 .card-image {
-  @apply relative overflow-hidden;
-  @apply bg-gray-100 dark:bg-gray-900;
-  min-height: 220px;
+  @apply relative overflow-hidden flex-shrink-0;
+  height: 200px;
+  background-color: var(--bg-secondary);
 
-  // Transición suave para el zoom de la imagen
   app-image-carousel ::ng-deep img {
-    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   }
 }
 
 .card-badges {
-  @apply absolute flex flex-col gap-1 z-10;
+  @apply absolute flex flex-col gap-1.5 z-10;
 
   &.top-left {
-    @apply top-2 left-2;
-  }
-
-  &.top-right {
-    @apply top-2 right-2;
+    @apply top-3 left-3;
   }
 }
 
 .badge {
-  @apply px-2 py-0.5 text-xs font-semibold rounded-full;
+  @apply px-2.5 py-1 text-xs font-bold rounded-full;
+  letter-spacing: 0.02em;
 
   &.featured {
-    @apply inline-flex items-center justify-center w-7 h-7 p-0 bg-yellow-400 text-yellow-900 rounded-full;
+    @apply inline-flex items-center justify-center w-8 h-8 p-0 rounded-full;
+    background-color: #fbbf24;
+    color: #78350f;
 
     svg {
       @apply w-4 h-4;
@@ -66,97 +68,99 @@
   }
 
   &.sold-out {
-    @apply bg-black text-white;
+    background-color: #111827;
+    color: #ffffff;
   }
 
   &.exclusive {
     @apply bg-purple-600 text-white text-[10px];
   }
-
-}
-
-// Badge de línea en contenido
-.line-badge {
-  @apply inline-block px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide rounded;
-  @apply text-white;
-  background-color: var(--accent-primary);
 }
 
 // ===== CONTENIDO =====
 .card-content {
-  @apply p-3 flex flex-col gap-1.5 flex-1;
+  @apply p-4 flex flex-col flex-1;
+  min-height: 0;
 }
 
 .card-header {
-  @apply flex items-center justify-between gap-2;
+  @apply flex items-center justify-between gap-2 mb-1;
 }
 
 .brand-name {
-  @apply text-xs font-bold uppercase tracking-wide;
-  color: var(--accent-primary);
+  @apply text-xs font-bold uppercase tracking-wider;
+  color: var(--tubus-text-accent, #4d94ff);
 }
 
 .category-name {
-  @apply text-[10px] text-gray-500 dark:text-gray-400 truncate;
+  @apply text-[10px] font-medium uppercase tracking-wide;
+  color: var(--text-tertiary);
 }
 
 .card-title {
-  @apply text-sm font-bold text-gray-900 dark:text-white leading-tight;
-  @apply line-clamp-2;
+  @apply text-sm font-bold leading-snug mb-1;
+  color: var(--text-primary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card-description {
+  @apply text-xs leading-relaxed mb-1;
+  color: var(--text-secondary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .card-model {
-  @apply text-xs text-gray-500 dark:text-gray-400 truncate;
+  @apply text-[11px] truncate;
+  color: var(--text-tertiary);
 }
 
-// Info rápida
-.card-quick-info {
-  @apply flex flex-wrap items-center gap-2 text-[10px] text-gray-500 dark:text-gray-400;
-}
-
-.quick-item {
-  @apply inline-flex items-center gap-0.5;
-
-  svg {
-    @apply w-3 h-3;
-  }
-
-  &.condition {
-    @apply px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded font-medium;
-  }
+.card-spacer {
+  @apply flex-1;
 }
 
 // ===== FOOTER =====
 .card-footer {
-  @apply flex items-end justify-between gap-2 mt-auto pt-2;
-  @apply border-t border-gray-100 dark:border-gray-700;
+  @apply flex items-center justify-between gap-2 pt-3 mt-2;
+  border-top: 1px solid var(--border-color);
 }
 
 .price-block {
-  @apply flex flex-col;
+  @apply flex items-baseline gap-2;
 }
 
 .price-old {
-  @apply text-xs text-gray-400 line-through;
+  @apply text-xs line-through;
+  color: var(--text-tertiary);
 }
 
 .price {
-  @apply text-lg font-black text-gray-900 dark:text-white;
+  @apply text-xl font-black;
+  color: var(--text-primary);
 
   &.discount {
-    @apply text-red-600;
+    color: #dc2626;
   }
 }
 
-.stock-low {
-  @apply inline-flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-500 font-medium;
+// Stock bajo
+.stock-low-bar {
+  @apply flex items-center justify-center gap-1.5 mt-2 py-1.5 rounded-lg;
+  @apply text-[11px] font-semibold;
+  background-color: rgba(245, 158, 11, 0.08);
+  color: #d97706;
 
   svg {
-    @apply w-3 h-3;
+    @apply w-3.5 h-3.5;
   }
 }
 
-// ===== BOTÓN =====
+// ===== BOTÓN CARRITO =====
 .cart-btn-container {
   @apply relative;
 }
@@ -164,13 +168,13 @@
 .btn-cart {
   @apply inline-flex items-center justify-center w-10 h-10;
   @apply text-white rounded-full;
-  @apply disabled:bg-gray-400 disabled:cursor-not-allowed;
+  @apply disabled:opacity-40 disabled:cursor-not-allowed;
   @apply transition-all duration-200;
   background-color: var(--accent-primary);
 
   &:hover:not(:disabled) {
     background-color: var(--accent-hover);
-    transform: scale(1.05);
+    transform: scale(1.1);
   }
 
   svg {
@@ -194,7 +198,7 @@
   @apply absolute -top-2 -right-2 w-5 h-5;
   @apply flex items-center justify-center;
   @apply text-[10px] font-bold text-white rounded-full;
-  background-color: var(--accent-primary);
+  background-color: #dc2626;
   z-index: 10;
 }
 
@@ -202,7 +206,7 @@
 .stock-tooltip {
   @apply absolute bottom-full right-0 mb-2 px-3 py-2;
   @apply text-xs font-medium text-white whitespace-nowrap rounded-lg;
-  @apply bg-gray-900 dark:bg-gray-700;
+  background-color: #1f2937;
   animation: fadeInUp 0.2s ease-out;
   z-index: 50;
 
@@ -210,18 +214,18 @@
     content: '';
     @apply absolute top-full right-4;
     border: 6px solid transparent;
-    border-top-color: theme('colors.gray.900');
+    border-top-color: #1f2937;
   }
 }
 
 .stock-tooltip {
-  @apply bg-amber-600 dark:bg-amber-700;
+  background-color: #d97706;
   white-space: normal;
   max-width: 200px;
   text-align: center;
 
   &::after {
-    border-top-color: theme('colors.amber.600');
+    border-top-color: #d97706;
   }
 }
 
@@ -245,27 +249,101 @@
     border-color: #374151;
 
     &.clickable:hover {
-      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
     }
   }
 
-  .card-image { background-color: #111827; }
-
-  .category-name { color: #9ca3af; }
-  .card-title { color: #ffffff; }
-  .card-model { color: #9ca3af; }
-  .card-quick-info { color: #9ca3af; }
-
-  .quick-item.condition {
-    background-color: rgba(34, 197, 94, 0.15);
-    color: #4ade80;
+  .card-image {
+    background-color: #111827;
   }
 
-  .card-footer { border-top-color: #374151; }
-  .price-old { color: #6b7280; }
-  .price { color: #ffffff; }
-  .stock-low { color: #f59e0b; }
+  .badge.sold-out {
+    background-color: #374151;
+  }
 
-  .login-tooltip { background-color: #374151; }
-  .stock-tooltip { background-color: #b45309; }
+  .brand-name {
+    color: #4d94ff;
+  }
+
+  .category-name {
+    color: #6b7280;
+  }
+
+  .card-title {
+    color: #f3f4f6;
+  }
+
+  .card-description {
+    color: #9ca3af;
+  }
+
+  .card-model {
+    color: #6b7280;
+  }
+
+  .card-footer {
+    border-top-color: #374151;
+  }
+
+  .price-old {
+    color: #6b7280;
+  }
+
+  .price {
+    color: #f3f4f6;
+
+    &.discount {
+      color: #ef4444;
+    }
+  }
+
+  .stock-low-bar {
+    background-color: rgba(245, 158, 11, 0.1);
+    color: #fbbf24;
+  }
+
+  .btn-cart {
+    &:disabled {
+      background-color: #4b5563;
+    }
+  }
+
+  .cart-quantity-badge {
+    background-color: #ef4444;
+  }
+
+  .login-tooltip {
+    background-color: #374151;
+    &::after {
+      border-top-color: #374151;
+    }
+  }
+
+  .stock-tooltip {
+    background-color: #b45309;
+    &::after {
+      border-top-color: #b45309;
+    }
+  }
+}
+
+// ============================================
+// RESPONSIVE
+// ============================================
+@media (max-width: 640px) {
+  .product-card {
+    height: 380px;
+  }
+
+  .card-image {
+    height: 170px;
+  }
+
+  .card-content {
+    @apply p-3;
+  }
+
+  .price {
+    @apply text-lg;
+  }
 }

@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { ProductService } from '../../core/services/product.service';
-import { LineService } from '../../core/services/line.service';
+import { BrandService } from '../../core/services/brand.service';
 import { CategoryService } from '../../core/services/category.service';
 import { SettingsService } from '../../core/services/settings.service';
 import { ZoneService } from '../../core/services/zone.service';
@@ -11,14 +11,14 @@ import { VehicleService } from '../../core/services/vehicle.service';
 import { ProductCardComponent, ProductCardData } from '../../shared/components/product-card/product-card.component';
 import {
   Product,
-  Line,
+  Brand,
   Category,
 } from '../../models';
 import { PAGINATION_OPTIONS } from '../../models/settings.model';
 
 interface FilterState {
   search: string;
-  line: string;
+  brand: string;
   category: string;
   minPrice: number | null;
   maxPrice: number | null;
@@ -34,7 +34,7 @@ interface FilterState {
 })
 export class CatalogComponent implements OnInit {
   private readonly productService = inject(ProductService);
-  private readonly lineService = inject(LineService);
+  private readonly brandService = inject(BrandService);
   private readonly categoryService = inject(CategoryService);
   private readonly settingsService = inject(SettingsService);
 
@@ -58,7 +58,7 @@ export class CatalogComponent implements OnInit {
   protected readonly showFilters = signal(false);
 
   // Datos
-  protected readonly lines = signal<Line[]>([]);
+  protected readonly brands = signal<Brand[]>([]);
   protected readonly categories = signal<Category[]>([]);
 
   // Configuración de paginación
@@ -70,7 +70,7 @@ export class CatalogComponent implements OnInit {
   // Filtros
   protected readonly filters = signal<FilterState>({
     search: '',
-    line: '',
+    brand: '',
     category: '',
     minPrice: null,
     maxPrice: null,
@@ -93,7 +93,7 @@ export class CatalogComponent implements OnInit {
   protected readonly activeFiltersCount = computed(() => {
     const f = this.filters();
     let count = 0;
-    if (f.line) count++;
+    if (f.brand) count++;
     if (f.category) count++;
     if (f.minPrice !== null) count++;
     if (f.maxPrice !== null) count++;
@@ -107,15 +107,15 @@ export class CatalogComponent implements OnInit {
       this.vehicleFilterActive.set(true);
     }
 
-    this.loadLines();
+    this.loadBrands();
     this.loadCategories();
     this.loadProducts();
   }
 
-  loadLines(): void {
-    this.lineService.getAll().subscribe({
+  loadBrands(): void {
+    this.brandService.getAll().subscribe({
       next: (response) => {
-        this.lines.set(response.data);
+        this.brands.set(response.data);
       },
       error: () => {},
     });
@@ -156,7 +156,7 @@ export class CatalogComponent implements OnInit {
       page: this.currentPage(),
       limit: this.currentLimit(),
       search: f.search || undefined,
-      line: f.line || undefined,
+      brand: f.brand || undefined,
       category: f.category || undefined,
       minPrice: f.minPrice ?? undefined,
       maxPrice: f.maxPrice ?? undefined,
@@ -190,7 +190,7 @@ export class CatalogComponent implements OnInit {
   clearFilters(): void {
     this.filters.set({
       search: '',
-      line: '',
+      brand: '',
       category: '',
       minPrice: null,
       maxPrice: null,

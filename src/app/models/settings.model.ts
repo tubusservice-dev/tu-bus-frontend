@@ -76,9 +76,9 @@ export const DEFAULT_SETTINGS: Settings = {
     homeCarousel: { isEnabled: true, interval: 5000 },
   },
   homeHero: {
-    title: 'Colección de',
-    titleAccent: 'Hot Wheels',
-    description: 'Descubre nuestra increíble selección de autos coleccionables. Modelos exclusivos, series limitadas y clásicos que todo coleccionista desea.',
+    title: 'Mantenimiento',
+    titleAccent: 'Automotriz',
+    description: 'Descubre nuestra selección de productos automotrices. Aceites, filtros, repuestos y combos para el mantenimiento de tu vehículo.',
   },
   pagination: {
     catalogLimit: 20,

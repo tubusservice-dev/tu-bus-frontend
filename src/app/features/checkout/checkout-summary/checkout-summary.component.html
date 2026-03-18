@@ -497,3 +497,57 @@
     </div>
   </div>
 }
+
+<!-- ============================================ -->
+<!-- MODAL: Confirmación de Orden -->
+<!-- ============================================ -->
+@if (showConfirmModal()) {
+  <div class="modal-overlay confirm-overlay" (click)="onCancelOrder()">
+    <div class="confirm-modal" (click)="$event.stopPropagation()">
+      <div class="confirm-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+        </svg>
+      </div>
+      <h3 class="confirm-title">Confirmar Orden</h3>
+      <p class="confirm-text">
+        Estás a punto de procesar tu orden por un total de
+        <strong>{{ total | currency:'USD':'symbol':'1.2-2' }}</strong>.
+        ¿Deseas continuar?
+      </p>
+
+      <div class="confirm-details">
+        <div class="confirm-detail-row">
+          <span class="confirm-label">Productos</span>
+          <span class="confirm-value">{{ cartService.totalItems() }} artículo{{ cartService.totalItems() > 1 ? 's' : '' }}</span>
+        </div>
+        <div class="confirm-detail-row">
+          <span class="confirm-label">Subtotal</span>
+          <span class="confirm-value">{{ cartService.subtotal() | currency:'USD':'symbol':'1.2-2' }}</span>
+        </div>
+        @if (shippingCost > 0) {
+          <div class="confirm-detail-row">
+            <span class="confirm-label">Envío</span>
+            <span class="confirm-value">{{ shippingCost | currency:'USD':'symbol':'1.2-2' }}</span>
+          </div>
+        }
+        <div class="confirm-detail-row total-row">
+          <span class="confirm-label">Total</span>
+          <span class="confirm-value">{{ total | currency:'USD':'symbol':'1.2-2' }}</span>
+        </div>
+      </div>
+
+      <div class="confirm-actions">
+        <button type="button" class="confirm-btn-cancel" (click)="onCancelOrder()">
+          Cancelar
+        </button>
+        <button type="button" class="confirm-btn-submit" (click)="onConfirmOrder()">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+          </svg>
+          Confirmar y Procesar
+        </button>
+      </div>
+    </div>
+  </div>
+}

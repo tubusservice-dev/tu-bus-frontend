@@ -15,6 +15,7 @@ export interface ProductQueryParams {
   page?: number;
   limit?: number;
   line?: string;
+  brand?: string;
   category?: string;
   minPrice?: number;
   maxPrice?: number;

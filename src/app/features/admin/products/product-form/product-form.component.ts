@@ -144,8 +144,9 @@ export class ProductFormComponent implements OnInit {
     isActive: [true],
     isFeatured: [false],
 
-    // Combo y Regiones
+    // Combo, Delivery y Regiones
     isCombo: [false],
+    freeOilChangeService: [false],
     allRegions: [false],
   });
 
@@ -263,6 +264,7 @@ export class ProductFormComponent implements OnInit {
           isActive: product.isActive,
           isFeatured: product.isFeatured,
           isCombo: product.isCombo || false,
+          freeOilChangeService: product.freeOilChangeService || false,
           allRegions: product.allRegions || false,
         });
         this.images.set(product.images || []);
@@ -427,6 +429,7 @@ export class ProductFormComponent implements OnInit {
       line: formValue.line || undefined,
       brand: this.selectedBrand()?.id || undefined,
       isCombo: formValue.isCombo || false,
+      freeOilChangeService: formValue.freeOilChangeService || false,
       allRegions: formValue.allRegions || false,
       regions: formValue.allRegions ? [] : this.selectedRegions().map(r => ({
         city: r.city.id,

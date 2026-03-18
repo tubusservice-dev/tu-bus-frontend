@@ -36,6 +36,34 @@ export class PaymentMethodFormComponent implements OnInit {
   // Exponer enum al template
   protected readonly PaymentMethodType = PaymentMethodType;
 
+  // Lista de bancos de Venezuela
+  protected readonly venezuelanBanks: string[] = [
+    'Banco de Venezuela (BDV)',
+    'Banco Nacional de Crédito (BNC)',
+    'Banco Mercantil',
+    'Banco Provincial (BBVA)',
+    'Banesco',
+    'Banco del Tesoro',
+    'Banco Bicentenario',
+    'Banco Exterior',
+    'Banco Caroní',
+    'Banco Venezolano de Crédito',
+    'Banco Plaza',
+    'Banco Fondo Común (BFC)',
+    'Banco Sofitasa',
+    'Banco del Caribe (Bancaribe)',
+    'Banco Activo',
+    'Bancrecer',
+    'Mi Banco',
+    'Banco Agrícola de Venezuela',
+    'Banplus',
+    'Banco Internacional de Desarrollo',
+    'Bancamiga',
+    'Banco de la Fuerza Armada Nacional Bolivariana (BANFANB)',
+    '100% Banco',
+    'Banco de la Gente Emprendedora (Bangente)',
+  ];
+
   ngOnInit(): void {
     this.initForm();
 

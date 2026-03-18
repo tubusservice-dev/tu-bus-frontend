@@ -53,13 +53,13 @@
     @if (showFilters()) {
       <div class="filters-panel">
         <div class="filters-grid">
-          <!-- Línea -->
+          <!-- Marca -->
           <div class="filter-group">
-            <label>Línea</label>
-            <select [ngModel]="filters().line" (ngModelChange)="updateFilter('line', $event)">
-              <option value="" selected>Todas las líneas</option>
-              @for (line of lines(); track line.id) {
-                <option [value]="line.id">{{ line.name }}</option>
+            <label>Marca</label>
+            <select [ngModel]="filters().brand" (ngModelChange)="updateFilter('brand', $event)">
+              <option value="" selected>Todas las marcas</option>
+              @for (brand of brands(); track brand.id) {
+                <option [value]="brand.id">{{ brand.name }}</option>
               }
             </select>
           </div>

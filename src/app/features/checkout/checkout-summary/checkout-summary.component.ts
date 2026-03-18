@@ -36,6 +36,7 @@ export class CheckoutSummaryComponent implements OnInit {
   protected readonly isGenerating = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly disclaimerAccepted = signal(false);
+  protected readonly showConfirmModal = signal(false);
 
   // Payment methods from API
   protected readonly paymentMethods = signal<PaymentMethodConfig[]>([]);
@@ -316,7 +317,15 @@ export class CheckoutSummaryComponent implements OnInit {
 
   onGenerateOrder(): void {
     if (!this.canGenerateOrder()) return;
+    this.showConfirmModal.set(true);
+  }
 
+  onCancelOrder(): void {
+    this.showConfirmModal.set(false);
+  }
+
+  onConfirmOrder(): void {
+    this.showConfirmModal.set(false);
     this.isGenerating.set(true);
     this.errorMessage.set(null);
 

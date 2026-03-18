@@ -351,7 +351,7 @@ export class CartService {
     const items = this._items();
     const subtotal = this.subtotal();
 
-    let message = `🧾 *PEDIDO - Hot Wheels Store*\n`;
+    let message = `🧾 *PEDIDO - TuBus Express*\n`;
     message += `━━━━━━━━━━━━━━━━━━━━━━\n\n`;
 
     // Datos del cliente

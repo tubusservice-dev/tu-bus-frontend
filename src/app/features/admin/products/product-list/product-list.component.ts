@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ProductService, ProductQueryParams } from '../../../../core/services/product.service';
-import { LineService } from '../../../../core/services/line.service';
+import { BrandService } from '../../../../core/services/brand.service';
 import { CategoryService } from '../../../../core/services/category.service';
 import { SettingsService } from '../../../../core/services/settings.service';
 import {
@@ -23,13 +23,13 @@ import { ImageCarouselComponent } from '../../../../shared/components/image-caro
 })
 export class ProductListComponent implements OnInit {
   private readonly productService = inject(ProductService);
-  private readonly lineService = inject(LineService);
+  private readonly brandService = inject(BrandService);
   private readonly categoryService = inject(CategoryService);
   private readonly settingsService = inject(SettingsService);
 
   // Datos
   protected readonly products = signal<Product[]>([]);
-  protected readonly lines = signal<Line[]>([]);
+  protected readonly brands = signal<Brand[]>([]);
   protected readonly categories = signal<Category[]>([]);
 
   // Estados
@@ -52,7 +52,7 @@ export class ProductListComponent implements OnInit {
     limit: this.adminLimit,
     sortBy: 'createdAt',
     sortOrder: 'desc',
-    line: '',
+    brand: '',
     category: '',
   });
 
@@ -69,18 +69,18 @@ export class ProductListComponent implements OnInit {
   protected readonly viewMode = signal<'cards' | 'table'>('cards');
 
   ngOnInit(): void {
-    this.loadLines();
+    this.loadBrands();
     this.loadCategories();
     this.loadProducts();
   }
 
   /**
-   * Cargar líneas
+   * Cargar marcas
    */
-  loadLines(): void {
-    this.lineService.getAllAdmin().subscribe({
+  loadBrands(): void {
+    this.brandService.getAllAdmin().subscribe({
       next: (response) => {
-        this.lines.set(response.data);
+        this.brands.set(response.data);
       },
       error: () => {},
     });
@@ -137,7 +137,7 @@ export class ProductListComponent implements OnInit {
       limit: this.adminLimit,
       sortBy: 'createdAt',
       sortOrder: 'desc',
-      line: '',
+      brand: '',
       category: '',
     });
     this.loadProducts();

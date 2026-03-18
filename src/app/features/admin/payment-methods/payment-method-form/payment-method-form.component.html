@@ -81,13 +81,16 @@
 
           <div class="form-group">
             <label for="pm_bankName">Banco destino</label>
-            <input
-              type="text"
+            <select
               id="pm_bankName"
               formControlName="pm_bankName"
-              placeholder="Ej: Banesco, Mercantil, Provincial..."
               class="input"
-            />
+            >
+              <option value="">Seleccionar banco...</option>
+              @for (bank of venezuelanBanks; track bank) {
+                <option [value]="bank">{{ bank }}</option>
+              }
+            </select>
             @if (isFieldInvalid('pm_bankName')) {
               <small class="error">El banco es requerido</small>
             }
@@ -135,13 +138,16 @@
 
           <div class="form-group">
             <label for="tr_bankName">Banco destino</label>
-            <input
-              type="text"
+            <select
               id="tr_bankName"
               formControlName="tr_bankName"
-              placeholder="Ej: Banesco, Mercantil, Provincial..."
               class="input"
-            />
+            >
+              <option value="">Seleccionar banco...</option>
+              @for (bank of venezuelanBanks; track bank) {
+                <option [value]="bank">{{ bank }}</option>
+              }
+            </select>
             @if (isFieldInvalid('tr_bankName')) {
               <small class="error">El banco es requerido</small>
             }
