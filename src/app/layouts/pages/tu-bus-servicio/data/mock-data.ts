@@ -188,7 +188,7 @@ export interface ContactInfo {
 export const CONTACT_INFO: ContactInfo = {
   phone: '+58 412-1234567',
   whatsapp: '584121234567',
-  email: 'contacto@tubusservicio.com',
+  email: 'contacto@tubusexpress.com',
   address: 'Caracas, Venezuela',
   schedule: 'Lunes a Sábado: 8:00 AM - 6:00 PM',
 };

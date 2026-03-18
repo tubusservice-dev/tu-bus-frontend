@@ -7,8 +7,7 @@ export const environment = {
   production: true,
 
   // === URL del Backend ===
-  // Desarrollo local (cambiar cuando se despliegue el backend)
-  apiUrl: 'http://localhost:3003/api',
+  apiUrl: 'https://tu-bus-backend-production.up.railway.app/api',
 
   appName: 'TuBus Express',
   version: '1.0.0',
