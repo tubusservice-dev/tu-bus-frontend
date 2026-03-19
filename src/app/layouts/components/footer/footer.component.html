@@ -23,19 +23,7 @@
         <ul class="footer-links">
           @for (link of navLinks; track link.label) {
             <li>
-              <a [href]="link.href" class="footer-link">{{ link.label }}</a>
-            </li>
-          }
-        </ul>
-      </div>
-
-      <!-- Links legales -->
-      <div class="footer-legal">
-        <h3 class="footer-title">Legal</h3>
-        <ul class="footer-links">
-          @for (link of legalLinks; track link.label) {
-            <li>
-              <a [href]="link.href" class="footer-link">{{ link.label }}</a>
+              <a [routerLink]="link.route" class="footer-link">{{ link.label }}</a>
             </li>
           }
         </ul>

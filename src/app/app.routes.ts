@@ -282,11 +282,6 @@ export const routes: Routes = [
       ),
     children: [
       {
-        path: 'tienda',
-        loadComponent: () =>
-          import('./features/home/home.component').then((m) => m.HomeComponent),
-      },
-      {
         path: 'catalogo',
         loadComponent: () =>
           import('./features/catalog/catalog.component').then((m) => m.CatalogComponent),
@@ -315,6 +310,13 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/checkout/checkout-shipping-form/checkout-shipping-form.component').then(
             (m) => m.CheckoutShippingFormComponent
+          ),
+      },
+      {
+        path: 'checkout/delivery',
+        loadComponent: () =>
+          import('./features/checkout/checkout-local-delivery-form/checkout-local-delivery-form.component').then(
+            (m) => m.CheckoutLocalDeliveryFormComponent
           ),
       },
       {

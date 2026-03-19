@@ -1,4 +1,4 @@
-.shipping-form-page {
+.delivery-form-page {
   @apply min-h-screen;
   background-color: var(--bg-secondary);
 }
@@ -49,55 +49,6 @@
   @apply space-y-6;
 }
 
-// ========== Selected Agency Banner ==========
-.selected-agency-banner {
-  @apply flex items-center justify-between p-4 rounded-xl;
-  background-color: var(--bg-primary);
-  border: 1px solid var(--border-color);
-}
-
-.agency-info {
-  @apply flex items-center gap-4;
-}
-
-.agency-logo {
-  @apply w-12 h-12 rounded-lg object-contain p-1;
-  background-color: #f3f4f6;
-}
-
-.agency-logo-placeholder {
-  @apply w-12 h-12 rounded-lg flex items-center justify-center;
-  background-color: #f3f4f6;
-  color: var(--text-tertiary);
-
-  svg {
-    @apply w-6 h-6;
-  }
-}
-
-.agency-text {
-  @apply flex flex-col;
-
-  .agency-label {
-    @apply text-xs;
-    color: var(--text-secondary);
-  }
-
-  .agency-name {
-    @apply font-semibold;
-    color: var(--text-primary);
-  }
-}
-
-.change-btn {
-  @apply text-sm font-medium transition-colors;
-  color: var(--accent-primary);
-
-  &:hover {
-    color: var(--accent-hover);
-  }
-}
-
 // ========== Form ==========
 .shipping-form {
   @apply space-y-6;
@@ -117,6 +68,16 @@
   svg {
     @apply w-5 h-5;
     color: var(--accent-primary);
+  }
+}
+
+.zone-notice {
+  @apply flex items-center gap-2 px-4 py-3 rounded-lg mb-4 text-sm;
+  background-color: rgba(59, 130, 246, 0.08);
+  color: #2563eb;
+
+  svg {
+    @apply w-5 h-5 flex-shrink-0;
   }
 }
 
@@ -156,7 +117,7 @@
   }
 
   &.error {
-    @apply border-red-500 ring-red-500;
+    @apply border-red-500;
   }
 
   &.textarea {
@@ -170,6 +131,15 @@ select.input {
   background-position: right 12px center;
   background-size: 20px;
   padding-right: 44px;
+
+  &:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+
+  option {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+  }
 }
 
 .error-message {
@@ -204,7 +174,7 @@ select.input {
 // DARK MODE
 // ============================================
 :host-context(.dark) {
-  .shipping-form-page { background-color: #111827; }
+  .delivery-form-page { background-color: #111827; }
 
   .page-header {
     background-color: #1f2937;
@@ -218,23 +188,6 @@ select.input {
 
   .page-title h1 { color: #ffffff; }
 
-  .selected-agency-banner {
-    background-color: #1f2937;
-    border-color: #374151;
-  }
-
-  .agency-logo { background-color: #374151; }
-  .agency-logo-placeholder { background-color: #374151; color: #6b7280; }
-  .agency-text {
-    .agency-label { color: #9ca3af; }
-    .agency-name { color: #f3f4f6; }
-  }
-
-  .change-btn {
-    color: var(--tubus-text-accent, #4d94ff);
-    &:hover { color: #93c5fd; }
-  }
-
   .form-section {
     background-color: #1f2937;
     border-color: #374151;
@@ -245,6 +198,11 @@ select.input {
     border-bottom-color: #374151;
 
     svg { color: var(--tubus-text-accent, #4d94ff); }
+  }
+
+  .zone-notice {
+    background-color: rgba(77, 148, 255, 0.1);
+    color: #93c5fd;
   }
 
   .form-group label { color: #d1d5db; }
@@ -263,6 +221,11 @@ select.input {
 
   select.input {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+
+    option {
+      background-color: #1f2937;
+      color: #f3f4f6;
+    }
   }
 
   .error-message { color: #f87171; }
@@ -281,11 +244,11 @@ select.input {
 
 // ========== Responsive ==========
 @media (max-width: 640px) {
-  .selected-agency-banner {
-    @apply flex-col gap-4 text-center;
+  .page-content {
+    @apply px-3 py-4;
   }
 
-  .agency-info {
-    @apply flex-col;
+  .form-section {
+    @apply p-4;
   }
 }

@@ -5,6 +5,7 @@ import { CheckoutService } from '../services/checkout.service';
 import { CartService } from '../../../core/services/cart.service';
 import { OrderService } from '../../../core/services/order.service';
 import { VehicleService } from '../../../core/services/vehicle.service';
+import { ZoneService } from '../../../core/services/zone.service';
 import { PaymentMethodService } from '../../../core/services/payment-method.service';
 import { CreateOrderRequest, PaymentSubmission } from '../../../models/order.model';
 import {
@@ -30,6 +31,7 @@ export class CheckoutSummaryComponent implements OnInit {
   private readonly orderService = inject(OrderService);
   private readonly vehicleService = inject(VehicleService);
   private readonly paymentMethodService = inject(PaymentMethodService);
+  private readonly zoneService = inject(ZoneService);
   private readonly router = inject(Router);
 
   // State signals
@@ -65,6 +67,34 @@ export class CheckoutSummaryComponent implements OnInit {
   protected readonly selectedGroup = signal<PaymentMethodGroup | null>(null);
   protected readonly selectedMethodInModal = signal<PaymentMethodConfig | null>(null);
 
+  // Lista de bancos de Venezuela
+  protected readonly venezuelanBanks: string[] = [
+    'Banco de Venezuela (BDV)',
+    'Banco Nacional de Crédito (BNC)',
+    'Banco Mercantil',
+    'Banco Provincial (BBVA)',
+    'Banesco',
+    'Banco del Tesoro',
+    'Banco Bicentenario',
+    'Banco Exterior',
+    'Banco Caroní',
+    'Banco Venezolano de Crédito',
+    'Banco Plaza',
+    'Banco Fondo Común (BFC)',
+    'Banco Sofitasa',
+    'Banco del Caribe (Bancaribe)',
+    'Banco Activo',
+    'Bancrecer',
+    'Mi Banco',
+    'Banco Agrícola de Venezuela',
+    'Banplus',
+    'Banco Internacional de Desarrollo',
+    'Bancamiga',
+    'Banco de la Fuerza Armada Nacional Bolivariana (BANFANB)',
+    '100% Banco',
+    'Banco de la Gente Emprendedora (Bangente)',
+  ];
+
   // Payment form state
   protected readonly formReferenceNumber = signal('');
   protected readonly formSourceBank = signal('');
@@ -98,6 +128,13 @@ export class CheckoutSummaryComponent implements OnInit {
       }
       if (!this.checkoutService.hasShippingRecipientInfo()) {
         this.router.navigate(['/checkout/envio']);
+        return;
+      }
+    }
+
+    if (dispatchType === 'local_delivery') {
+      if (!this.checkoutService.hasLocalDeliveryRecipientInfo()) {
+        this.router.navigate(['/checkout/delivery']);
         return;
       }
     }
@@ -147,9 +184,20 @@ export class CheckoutSummaryComponent implements OnInit {
     return this.checkoutService.shippingRecipientInfo();
   }
 
+  get localDeliveryInfo() {
+    return this.checkoutService.localDeliveryRecipientInfo();
+  }
+
   get shippingCostLabel(): string {
     if (this.dispatchType === 'shipping_agency') {
       return this.checkoutService.getShippingCostLabel();
+    }
+    if (this.dispatchType === 'local_delivery') {
+      const deliveryConfig = this.getLocalDeliveryConfig();
+      if (deliveryConfig?.additionalCharge) {
+        return `+$${deliveryConfig.additionalChargeAmount.toFixed(2)}`;
+      }
+      return 'Delivery gratis';
     }
     return 'Gratis';
   }
@@ -158,7 +206,22 @@ export class CheckoutSummaryComponent implements OnInit {
     if (this.dispatchType === 'shipping_agency') {
       return this.checkoutService.getShippingCost() ?? 0;
     }
+    if (this.dispatchType === 'local_delivery') {
+      const deliveryConfig = this.getLocalDeliveryConfig();
+      if (deliveryConfig?.additionalCharge) {
+        return deliveryConfig.additionalChargeAmount;
+      }
+      return 0;
+    }
     return 0;
+  }
+
+  private getLocalDeliveryConfig() {
+    const localDelivery = this.localDeliveryInfo;
+    if (!localDelivery) return null;
+    const cities = this.zoneService?.activeCities() || [];
+    const city = cities.find(c => c.code === localDelivery.cityCode);
+    return city?.deliveryConfig || null;
   }
 
   get isPayOnDelivery(): boolean {
@@ -338,6 +401,7 @@ export class CheckoutSummaryComponent implements OnInit {
     }));
 
     const recipient = this.recipientInfo;
+    const localDelivery = this.localDeliveryInfo;
     const agency = this.shippingAgency;
     const store = this.storeInfo;
     const selectedVehicle = this.vehicleService.selectedVehicle();
@@ -359,7 +423,7 @@ export class CheckoutSummaryComponent implements OnInit {
         ...(this.dispatchType === 'shipping_agency' && agency
           ? { agencyName: agency.name, agencyId: agency.id }
           : {}),
-        ...(recipient
+        ...(this.dispatchType === 'shipping_agency' && recipient
           ? {
               recipientName: recipient.fullName,
               recipientDocument: `${recipient.documentType}-${recipient.documentNumber}`,
@@ -369,6 +433,17 @@ export class CheckoutSummaryComponent implements OnInit {
               recipientCity: recipient.city,
               agencyOfficeCode: recipient.agencyOfficeCode,
               referencePoint: recipient.referencePoint,
+            }
+          : {}),
+        ...(this.dispatchType === 'local_delivery' && localDelivery
+          ? {
+              recipientName: localDelivery.fullName,
+              recipientDocument: `${localDelivery.documentType}-${localDelivery.documentNumber}`,
+              recipientPhone: localDelivery.phone,
+              recipientAddress: localDelivery.address,
+              recipientCity: localDelivery.cityName,
+              recipientMunicipality: localDelivery.municipalityName,
+              referencePoint: localDelivery.referencePoint,
             }
           : {}),
       },
@@ -398,6 +473,8 @@ export class CheckoutSummaryComponent implements OnInit {
     const dispatchType = this.checkoutService.dispatchType();
     if (dispatchType === 'shipping_agency') {
       this.router.navigate(['/checkout/envio']);
+    } else if (dispatchType === 'local_delivery') {
+      this.router.navigate(['/checkout/delivery']);
     } else {
       this.router.navigate(['/checkout/despacho']);
     }

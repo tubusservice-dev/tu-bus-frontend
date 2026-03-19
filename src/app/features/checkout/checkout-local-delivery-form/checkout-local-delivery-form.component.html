@@ -1,0 +1,170 @@
+<div class="delivery-form-page">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <button type="button" class="back-btn" (click)="goBack()">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+        </svg>
+        <span class="back-text">Volver</span>
+      </button>
+      <div class="page-title">
+        <h1>Datos de Entrega</h1>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contenido -->
+  <div class="page-content">
+    <div class="form-container">
+      <form [formGroup]="deliveryForm" (ngSubmit)="onSubmit()" class="shipping-form">
+
+        <!-- Sección: Datos del Destinatario -->
+        <div class="form-section">
+          <h2 class="section-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+            </svg>
+            Datos del Destinatario
+          </h2>
+
+          <div class="form-grid">
+            <div class="form-group full-width">
+              <label for="fullName">Nombre completo <span class="required">*</span></label>
+              <input type="text" id="fullName" formControlName="fullName" placeholder="Nombre y apellido" class="input" [class.error]="hasError('fullName')" />
+              @if (hasError('fullName')) {
+                <span class="error-message">{{ getErrorMessage('fullName') }}</span>
+              }
+            </div>
+
+            <div class="form-group">
+              <label for="documentType">Tipo doc. <span class="required">*</span></label>
+              <select id="documentType" formControlName="documentType" class="input">
+                @for (type of documentTypes; track type.code) {
+                  <option [value]="type.code">{{ type.name }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="documentNumber">N° de documento <span class="required">*</span></label>
+              <input type="text" id="documentNumber" formControlName="documentNumber" placeholder="Ej: 12345678" class="input" [class.error]="hasError('documentNumber')" />
+              @if (hasError('documentNumber')) {
+                <span class="error-message">{{ getErrorMessage('documentNumber') }}</span>
+              }
+            </div>
+
+            <div class="form-group">
+              <label for="phone">Teléfono <span class="required">*</span></label>
+              <input type="text" id="phone" formControlName="phone" placeholder="04XX-XXXXXXX" class="input" [class.error]="hasError('phone')" />
+              @if (hasError('phone')) {
+                <span class="error-message">{{ getErrorMessage('phone') }}</span>
+              }
+            </div>
+
+            <div class="form-group">
+              <label for="alternativePhone">Teléfono alternativo</label>
+              <input type="text" id="alternativePhone" formControlName="alternativePhone" placeholder="04XX-XXXXXXX" class="input" [class.error]="hasError('alternativePhone')" />
+              @if (hasError('alternativePhone')) {
+                <span class="error-message">{{ getErrorMessage('alternativePhone') }}</span>
+              }
+            </div>
+
+            <div class="form-group full-width">
+              <label for="email">Correo electrónico</label>
+              <input type="email" id="email" formControlName="email" placeholder="correo@ejemplo.com" class="input" [class.error]="hasError('email')" />
+              @if (hasError('email')) {
+                <span class="error-message">{{ getErrorMessage('email') }}</span>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- Sección: Zona de Entrega -->
+        <div class="form-section">
+          <h2 class="section-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+            </svg>
+            Zona de Entrega
+          </h2>
+
+          <div class="zone-notice">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
+            </svg>
+            <span>Solo realizamos entregas en las zonas de cobertura disponibles</span>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="cityCode">Ciudad <span class="required">*</span></label>
+              <select id="cityCode" formControlName="cityCode" class="input" [class.error]="hasError('cityCode')" (change)="onCityChange($any($event.target).value)">
+                <option value="">Seleccionar ciudad...</option>
+                @for (city of activeCities(); track city.id) {
+                  <option [value]="city.code">{{ city.name }}</option>
+                }
+              </select>
+              @if (hasError('cityCode')) {
+                <span class="error-message">{{ getErrorMessage('cityCode') }}</span>
+              }
+            </div>
+
+            <div class="form-group">
+              <label for="municipalityCode">Municipio <span class="required">*</span></label>
+              <select id="municipalityCode" formControlName="municipalityCode" class="input" [class.error]="hasError('municipalityCode')" [attr.disabled]="availableMunicipalities().length === 0 ? '' : null">
+                <option value="">Seleccionar municipio...</option>
+                @for (mun of availableMunicipalities(); track mun.code) {
+                  <option [value]="mun.code">{{ mun.name }}</option>
+                }
+              </select>
+              @if (hasError('municipalityCode')) {
+                <span class="error-message">{{ getErrorMessage('municipalityCode') }}</span>
+              }
+              @if (availableMunicipalities().length === 0 && deliveryForm.get('cityCode')?.value) {
+                <span class="hint">No hay municipios disponibles en esta ciudad</span>
+              }
+            </div>
+
+            <div class="form-group full-width">
+              <label for="address">Dirección de entrega <span class="required">*</span></label>
+              <textarea id="address" formControlName="address" placeholder="Dirección completa: calle, avenida, edificio, piso, apartamento..." class="input textarea" rows="3" [class.error]="hasError('address')"></textarea>
+              @if (hasError('address')) {
+                <span class="error-message">{{ getErrorMessage('address') }}</span>
+              }
+            </div>
+
+            <div class="form-group full-width">
+              <label for="referencePoint">Punto de referencia</label>
+              <input type="text" id="referencePoint" formControlName="referencePoint" placeholder="Ej: Cerca del centro comercial, frente a la plaza..." class="input" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Sección: Notas Adicionales -->
+        <div class="form-section">
+          <h2 class="section-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+            </svg>
+            Notas Adicionales
+          </h2>
+
+          <div class="form-group">
+            <label for="notes">Instrucciones especiales (opcional)</label>
+            <textarea id="notes" formControlName="notes" placeholder="Indicaciones para el repartidor, horario preferido de entrega..." class="input textarea" rows="3"></textarea>
+            <span class="hint">Máximo 500 caracteres</span>
+          </div>
+        </div>
+
+        <!-- Acciones -->
+        <div class="form-actions">
+          <button type="submit" class="btn-continue" [disabled]="deliveryForm.invalid">
+            Continuar al resumen
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

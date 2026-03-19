@@ -50,6 +50,12 @@ export interface Municipality {
   isActive: boolean;
 }
 
+export interface DeliveryConfig {
+  freeDelivery: boolean;
+  additionalCharge: boolean;
+  additionalChargeAmount: number;
+}
+
 /**
  * Interface para Ciudad
  */
@@ -58,6 +64,7 @@ export interface City {
   code: string;
   name: string;
   isActive: boolean;
+  deliveryConfig?: DeliveryConfig;
   municipalities: Municipality[];
 }
 
