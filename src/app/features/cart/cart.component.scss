@@ -351,15 +351,14 @@
 // QUANTITY CONTROLS
 // ============================================
 .quantity-controls {
-  @apply inline-flex items-center gap-0 rounded-xl overflow-hidden;
-  background-color: var(--bg-tertiary);
+  @apply inline-flex items-stretch gap-0 rounded-xl overflow-hidden;
   border: 1px solid var(--border-color);
 }
 
 .qty-btn {
   @apply w-10 h-10 flex items-center justify-center transition-all;
   color: var(--text-primary);
-  background-color: var(--bg-secondary);
+  background-color: #e5e7eb;
 
   &:hover:not(:disabled) {
     background-color: var(--accent-primary);
@@ -372,7 +371,7 @@
 
   &:disabled {
     @apply opacity-40 cursor-not-allowed;
-    background-color: var(--bg-tertiary);
+    background-color: #e5e7eb;
   }
 
   svg {
@@ -381,9 +380,9 @@
 }
 
 .qty-value {
-  @apply w-12 text-center text-base font-bold;
+  @apply w-12 text-center text-base font-bold flex items-center justify-center;
   color: var(--text-primary);
-  background-color: var(--bg-primary);
+  background-color: #ffffff;
 }
 
 .max-badge {
@@ -458,7 +457,7 @@
 }
 
 .btn-checkout {
-  @apply w-full flex items-center justify-center py-4 rounded-xl font-semibold text-base transition-all;
+  @apply w-full flex items-center justify-center py-4 rounded-xl font-semibold text-base transition-all mt-4;
   background-color: #25D366;
   color: white;
 
@@ -478,7 +477,7 @@
 }
 
 .continue-shopping {
-  @apply flex items-center justify-center gap-2 py-3 text-sm font-medium rounded-xl transition-colors;
+  @apply flex items-center justify-center gap-2 py-3 mt-2 text-sm font-medium rounded-xl transition-colors;
   color: var(--text-secondary);
   border: 1px solid var(--border-color);
 
@@ -706,7 +705,6 @@
 
   // Quantity controls
   .quantity-controls {
-    background-color: #374151;
     border-color: #4b5563;
   }
 
@@ -720,7 +718,7 @@
     }
 
     &:disabled {
-      background-color: #374151;
+      background-color: #1f2937;
       color: #4b5563;
     }
   }

@@ -13,7 +13,7 @@
 }
 
 .header-content {
-  @apply max-w-3xl mx-auto px-4 sm:px-6 py-3 sm:py-4;
+  @apply max-w-2xl mx-auto px-4 sm:px-6 py-3 sm:py-4;
   @apply flex items-center justify-between gap-4;
 }
 
@@ -29,10 +29,6 @@
   svg {
     @apply w-5 h-5;
   }
-
-  .back-text {
-    @apply hidden sm:inline;
-  }
 }
 
 .page-title {
@@ -46,7 +42,7 @@
 // CONTENT
 // ============================================
 .page-content {
-  @apply max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8;
+  @apply max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-8;
 }
 
 .dispatch-container {
@@ -59,13 +55,23 @@
 .dispatch-question {
   @apply text-center;
 
+  .question-icon {
+    @apply w-14 h-14 mx-auto mb-4 rounded-2xl flex items-center justify-center;
+    background-color: var(--accent-light);
+    color: var(--accent-primary);
+
+    svg {
+      @apply w-7 h-7;
+    }
+  }
+
   h2 {
-    @apply text-xl sm:text-2xl font-bold mb-2;
+    @apply text-xl sm:text-2xl font-bold mb-1;
     color: var(--text-primary);
   }
 
   p {
-    @apply text-sm sm:text-base;
+    @apply text-sm;
     color: var(--text-secondary);
   }
 }
@@ -74,116 +80,128 @@
 // GRID
 // ============================================
 .dispatch-grid {
-  @apply grid grid-cols-1 sm:grid-cols-2 gap-4;
+  @apply flex flex-col gap-3;
 }
 
 // ============================================
 // CARD
 // ============================================
 .dispatch-card {
-  @apply relative flex flex-col items-center text-center p-6 rounded-2xl transition-all duration-200;
+  @apply relative flex items-start gap-4 p-5 rounded-xl transition-all duration-200 text-left;
   background-color: var(--bg-primary);
-  border: 2px solid var(--border-color);
+  border: 1.5px solid var(--border-color);
 
   &:hover:not(:disabled) {
-    border-color: var(--accent-primary);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1);
+    border-color: rgba(34, 197, 94, 0.5);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
   }
 
   &:active:not(:disabled) {
-    transform: translateY(0);
+    transform: scale(0.995);
   }
 
   &.selected {
-    border-color: var(--accent-primary);
-    background-color: var(--accent-light);
+    border-color: #16a34a;
+    background-color: rgba(34, 197, 94, 0.06);
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.12);
+
+    .card-title {
+      color: #16a34a;
+    }
 
     .card-icon {
-      background-color: var(--accent-primary);
+      background-color: #16a34a;
       color: white;
     }
 
-    .card-title {
-      color: var(--accent-primary);
+    .radio-indicator {
+      border-color: #16a34a;
     }
   }
 
   &.disabled {
-    @apply opacity-60 cursor-not-allowed;
+    @apply opacity-50 cursor-not-allowed;
 
     &:hover {
-      transform: none;
       border-color: var(--border-color);
       box-shadow: none;
     }
   }
 }
 
+// ============================================
+// RADIO
+// ============================================
+.radio-indicator {
+  @apply flex-shrink-0 w-5 h-5 rounded-full mt-1 transition-colors;
+  border: 2px solid var(--border-color);
+
+  .radio-filled {
+    @apply w-full h-full rounded-full;
+    background-color: #16a34a;
+    transform: scale(0.55);
+    animation: radioIn 0.15s ease-out;
+  }
+}
+
+@keyframes radioIn {
+  from { transform: scale(0); }
+  to { transform: scale(0.55); }
+}
+
+// ============================================
+// ICON
+// ============================================
 .card-icon {
-  @apply w-16 h-16 flex items-center justify-center rounded-2xl mb-4 transition-colors;
+  @apply flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded-lg transition-colors;
   background-color: var(--bg-tertiary);
   color: var(--text-secondary);
 
   svg {
-    @apply w-8 h-8;
+    @apply w-6 h-6 sm:w-7 sm:h-7;
   }
 }
 
+// ============================================
+// CONTENT
+// ============================================
 .card-content {
-  @apply flex-1 flex flex-col gap-1 mb-4;
+  @apply flex-1 min-w-0;
+}
+
+.card-header {
+  @apply flex items-center gap-2 flex-wrap mb-1;
 }
 
 .card-title {
-  @apply text-lg font-semibold transition-colors;
+  @apply text-base sm:text-lg font-semibold transition-colors;
   color: var(--text-primary);
 }
 
 .card-description {
-  @apply text-sm;
+  @apply text-xs sm:text-sm;
   color: var(--text-secondary);
 }
 
-.card-footer {
-  @apply mt-auto;
-}
+// ============================================
+// PRICE BADGE
+// ============================================
+.price-badge {
+  @apply flex-shrink-0 px-2.5 py-1 text-xs font-semibold rounded-md;
 
-.price-free {
-  @apply inline-block px-3 py-1 text-sm font-semibold rounded-full;
-  background-color: rgba(34, 197, 94, 0.1);
-  color: #16a34a;
-}
-
-.price-value {
-  @apply text-lg font-bold;
-  color: var(--accent-primary);
-}
-
-.coming-soon {
-  @apply inline-block px-3 py-1 text-xs font-medium rounded-full;
-  background-color: var(--bg-tertiary);
-  color: var(--text-tertiary);
-}
-
-.selected-check {
-  @apply absolute top-3 right-3 w-7 h-7 flex items-center justify-center rounded-full;
-  background-color: var(--accent-primary);
-  color: white;
-  animation: scaleIn 0.2s ease-out;
-
-  svg {
-    @apply w-4 h-4;
+  &.free {
+    background-color: rgba(34, 197, 94, 0.12);
+    color: #16a34a;
   }
-}
 
-@keyframes scaleIn {
-  from {
-    transform: scale(0);
-    opacity: 0;
+  &.extra {
+    background-color: rgba(59, 130, 246, 0.12);
+    color: #2563eb;
   }
-  to {
-    transform: scale(1);
-    opacity: 1;
+
+  &.soon {
+    background-color: var(--bg-tertiary);
+    color: var(--text-tertiary);
   }
 }
 
@@ -191,17 +209,23 @@
 // ACTIONS
 // ============================================
 .dispatch-actions {
-  @apply flex justify-center pt-4;
+  @apply flex justify-center pt-2;
 }
 
 .btn-continue {
-  @apply w-full sm:w-auto sm:min-w-[200px] px-8 py-4 rounded-xl font-semibold text-base transition-all;
-  background-color: #25D366;
+  @apply w-full sm:w-auto sm:min-w-[280px] px-8 py-3.5 rounded-xl font-semibold text-sm transition-all;
+  @apply flex items-center justify-center gap-2;
+  background-color: #16a34a;
   color: white;
 
+  svg {
+    @apply w-4 h-4;
+  }
+
   &:hover:not(:disabled) {
-    background-color: #1fa855;
+    background-color: #15803d;
     transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
   }
 
   &:active:not(:disabled) {
@@ -209,58 +233,14 @@
   }
 
   &:disabled {
-    @apply opacity-50 cursor-not-allowed;
+    @apply cursor-not-allowed;
     background-color: var(--text-tertiary);
+    opacity: 0.6;
 
     &:hover {
       transform: none;
+      box-shadow: none;
     }
-  }
-}
-
-// ============================================
-// RESPONSIVE
-// ============================================
-@media (max-width: 639px) {
-  .dispatch-card {
-    @apply flex-row items-start text-left p-4 gap-4;
-
-    .card-icon {
-      @apply w-12 h-12 mb-0 flex-shrink-0;
-
-      svg {
-        @apply w-6 h-6;
-      }
-    }
-
-    .card-content {
-      @apply mb-0;
-    }
-
-    .card-title {
-      @apply text-base;
-    }
-
-    .card-description {
-      @apply text-xs;
-    }
-
-    .card-footer {
-      @apply absolute bottom-4 right-4;
-    }
-
-    .selected-check {
-      @apply top-2 right-2 w-6 h-6;
-
-      svg {
-        @apply w-3.5 h-3.5;
-      }
-    }
-  }
-
-  .price-free,
-  .coming-soon {
-    @apply text-xs px-2 py-0.5;
   }
 }
 
@@ -290,6 +270,10 @@
   }
 
   .dispatch-question {
+    .question-icon {
+      background-color: rgba(77, 148, 255, 0.12);
+      color: var(--tubus-text-accent, #4d94ff);
+    }
     h2 { color: #f3f4f6; }
     p { color: #9ca3af; }
   }
@@ -299,22 +283,40 @@
     border-color: #374151;
 
     &:hover:not(:disabled) {
-      border-color: var(--tubus-text-accent, #4d94ff);
-      box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.3);
+      border-color: rgba(34, 197, 94, 0.4);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     }
 
     &.selected {
-      border-color: var(--tubus-text-accent, #4d94ff);
-      background-color: rgba(77, 148, 255, 0.08);
+      border-color: #22c55e;
+      background-color: rgba(34, 197, 94, 0.08);
+      box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.12);
 
       .card-title {
-        color: var(--tubus-text-accent, #4d94ff);
+        color: #4ade80;
+      }
+
+      .card-icon {
+        background-color: #22c55e;
+        color: white;
+      }
+
+      .radio-indicator {
+        border-color: #22c55e;
+      }
+
+      .radio-filled {
+        background-color: #22c55e;
       }
     }
 
     &.disabled {
-      opacity: 0.4;
+      opacity: 0.35;
     }
+  }
+
+  .radio-indicator {
+    border-color: #4b5563;
   }
 
   .card-icon {
@@ -330,20 +332,26 @@
     color: #9ca3af;
   }
 
-  .price-free {
-    background-color: rgba(34, 197, 94, 0.15);
-    color: #4ade80;
-  }
-
-  .coming-soon {
-    background-color: #374151;
-    color: #6b7280;
+  .price-badge {
+    &.free {
+      background-color: rgba(34, 197, 94, 0.12);
+      color: #4ade80;
+    }
+    &.extra {
+      background-color: rgba(96, 165, 250, 0.12);
+      color: #93c5fd;
+    }
+    &.soon {
+      background-color: #374151;
+      color: #6b7280;
+    }
   }
 
   .btn-continue {
     background-color: #22c55e;
     &:hover:not(:disabled) {
       background-color: #16a34a;
+      box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
     }
     &:disabled {
       background-color: #4b5563;

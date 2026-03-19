@@ -95,7 +95,7 @@
 }
 
 .zone-text {
-  @apply hidden sm:block max-w-40 truncate;
+  @apply block max-w-40 truncate text-xs sm:text-sm;
 }
 
 .chevron-icon {
@@ -117,6 +117,7 @@
 
   @media (max-width: 639px) {
     @apply fixed left-4 right-4 w-auto;
+    top: 72px;
   }
 }
 

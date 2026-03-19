@@ -43,7 +43,7 @@ export class CheckoutConfirmationComponent implements OnInit {
   }
 
   goToOrders(): void {
-    this.router.navigate(['/perfil'], { queryParams: { tab: 'orders' } });
+    this.router.navigate(['/perfil'], { fragment: 'orders' });
   }
 
   goToStore(): void {

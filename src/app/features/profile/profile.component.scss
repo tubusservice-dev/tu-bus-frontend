@@ -61,22 +61,40 @@
 }
 
 .profile-tabs {
-  @apply flex gap-1 bg-white dark:bg-gray-800 rounded-xl p-1;
-  @apply border border-gray-200 dark:border-gray-700 shadow-sm;
+  @apply flex gap-1 rounded-xl p-1;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 .tab-btn {
   @apply flex-1 flex items-center justify-center gap-2;
   @apply px-4 py-3 rounded-lg text-sm font-medium;
-  @apply text-gray-600 dark:text-gray-400;
-  @apply hover:text-gray-900 dark:hover:text-white;
+  color: var(--text-secondary);
   @apply transition-all duration-200;
+
+  &:hover {
+    color: var(--text-primary);
+  }
 
   svg { @apply w-5 h-5; }
 
   &.active {
     @apply text-white shadow-sm;
     background-color: var(--accent-primary);
+  }
+}
+
+// Mobile: icono arriba, texto abajo
+@media (max-width: 639px) {
+  .profile-tabs {
+    @apply gap-0.5 p-1;
+  }
+
+  .tab-btn {
+    @apply flex-col gap-1 px-2 py-2.5 text-[10px] rounded-lg;
+
+    svg { @apply w-5 h-5; }
   }
 }
 
@@ -129,9 +147,4 @@
 @media (max-width: 768px) {
   .banner-content { @apply justify-center; }
   .avatar-container { @apply flex-col text-center; }
-
-  .tab-btn {
-    @apply text-xs px-2;
-    svg { @apply w-4 h-4; }
-  }
 }

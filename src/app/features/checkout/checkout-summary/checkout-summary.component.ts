@@ -39,6 +39,7 @@ export class CheckoutSummaryComponent implements OnInit {
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly disclaimerAccepted = signal(false);
   protected readonly showConfirmModal = signal(false);
+  protected readonly isProcessingConfirm = signal(false);
 
   // Payment methods from API
   protected readonly paymentMethods = signal<PaymentMethodConfig[]>([]);
@@ -139,6 +140,13 @@ export class CheckoutSummaryComponent implements OnInit {
       }
     }
 
+    if (dispatchType === 'seller_agreement') {
+      if (!this.checkoutService.hasSellerAgreementInfo()) {
+        this.router.navigate(['/checkout/vendedor']);
+        return;
+      }
+    }
+
     if (this.cartService.isEmpty()) {
       this.router.navigate(['/carrito']);
       return;
@@ -186,6 +194,10 @@ export class CheckoutSummaryComponent implements OnInit {
 
   get localDeliveryInfo() {
     return this.checkoutService.localDeliveryRecipientInfo();
+  }
+
+  get sellerAgreementInfo() {
+    return this.checkoutService.sellerAgreementInfo();
   }
 
   get shippingCostLabel(): string {
@@ -276,6 +288,7 @@ export class CheckoutSummaryComponent implements OnInit {
     }
     this.resetForm();
     this.showModal.set(true);
+    document.body.style.overflow = 'hidden';
   }
 
   closeModal(): void {
@@ -283,6 +296,7 @@ export class CheckoutSummaryComponent implements OnInit {
     this.selectedGroup.set(null);
     this.selectedMethodInModal.set(null);
     this.resetForm();
+    document.body.style.overflow = '';
   }
 
   selectMethodInModal(method: PaymentMethodConfig): void {
@@ -388,9 +402,19 @@ export class CheckoutSummaryComponent implements OnInit {
   }
 
   onConfirmOrder(): void {
-    this.showConfirmModal.set(false);
-    this.isGenerating.set(true);
-    this.errorMessage.set(null);
+    if (this.isProcessingConfirm()) return;
+    this.isProcessingConfirm.set(true);
+
+    setTimeout(() => {
+      this.isProcessingConfirm.set(false);
+      this.showConfirmModal.set(false);
+      this.isGenerating.set(true);
+      this.errorMessage.set(null);
+      this.executeOrder();
+    }, 2000);
+  }
+
+  private executeOrder(): void {
 
     const items = this.cartService.items().map((item) => ({
       product: item.id,
@@ -402,6 +426,7 @@ export class CheckoutSummaryComponent implements OnInit {
 
     const recipient = this.recipientInfo;
     const localDelivery = this.localDeliveryInfo;
+    const sellerAgreement = this.sellerAgreementInfo;
     const agency = this.shippingAgency;
     const store = this.storeInfo;
     const selectedVehicle = this.vehicleService.selectedVehicle();
@@ -446,6 +471,13 @@ export class CheckoutSummaryComponent implements OnInit {
               referencePoint: localDelivery.referencePoint,
             }
           : {}),
+        ...(this.dispatchType === 'seller_agreement' && sellerAgreement
+          ? {
+              recipientName: sellerAgreement.fullName,
+              recipientDocument: `${sellerAgreement.documentType}-${sellerAgreement.documentNumber}`,
+              recipientPhone: sellerAgreement.phone,
+            }
+          : {}),
       },
     };
 
@@ -475,6 +507,8 @@ export class CheckoutSummaryComponent implements OnInit {
       this.router.navigate(['/checkout/envio']);
     } else if (dispatchType === 'local_delivery') {
       this.router.navigate(['/checkout/delivery']);
+    } else if (dispatchType === 'seller_agreement') {
+      this.router.navigate(['/checkout/vendedor']);
     } else {
       this.router.navigate(['/checkout/despacho']);
     }

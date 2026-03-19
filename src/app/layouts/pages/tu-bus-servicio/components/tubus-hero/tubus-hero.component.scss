@@ -1,9 +1,28 @@
+// Banner promocional
+.hero-banner {
+  @apply w-full overflow-hidden;
+  aspect-ratio: 4 / 3;
+  background-color: var(--bg-tertiary);
+
+  @media (min-width: 768px) {
+    aspect-ratio: 16 / 9;
+  }
+
+  @media (min-width: 1024px) {
+    aspect-ratio: 18 / 5;
+  }
+}
+
+.hero-banner-img {
+  @apply w-full h-full object-cover;
+}
+
 .hero {
   @apply relative overflow-hidden;
-  @apply py-16 sm:py-20 lg:py-24;
-  min-height: calc(100vh - 64px);
+  @apply pt-8 pb-16 sm:pt-12 sm:pb-20 lg:pt-16 lg:pb-24;
+  min-height: calc(76vh - 64px);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
 }
 
 // Background
@@ -24,7 +43,7 @@
 .hero-container {
   @apply relative z-10;
   @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
-  @apply grid lg:grid-cols-2 gap-12 lg:gap-16 items-center;
+  @apply grid lg:grid-cols-2 gap-12 lg:gap-16 items-start;
 }
 
 // Content

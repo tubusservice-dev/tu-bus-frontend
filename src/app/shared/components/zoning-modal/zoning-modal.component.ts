@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ZoneService, City, Municipality } from '../../../core/services/zone.service';
 
@@ -28,6 +28,16 @@ export class ZoningModalComponent implements OnInit {
   });
 
   protected readonly showModal = computed(() => !this.zoneService.hasSelection());
+
+  constructor() {
+    // Resetear el step cada vez que el modal se abre
+    effect(() => {
+      if (this.showModal()) {
+        this.step.set('city');
+        this.selectedCity.set(null);
+      }
+    });
+  }
 
   ngOnInit(): void {
     if (this.zoneService.cities().length === 0) {

@@ -53,12 +53,23 @@ export interface LocalDeliveryRecipientInfo {
   notes?: string;
 }
 
+/** Información de contacto para acordar con vendedor */
+export interface SellerAgreementInfo {
+  fullName: string;
+  documentType: 'V' | 'E' | 'J' | 'P';
+  documentNumber: string;
+  phone: string;
+  email?: string;
+  notes?: string;
+}
+
 export interface CheckoutState {
   dispatchType: DispatchType;
   storePickupInfo: StorePickupInfo | null;
   selectedShippingAgency: ShippingAgency | null;
   shippingRecipientInfo: ShippingRecipientInfo | null;
   localDeliveryRecipientInfo: LocalDeliveryRecipientInfo | null;
+  sellerAgreementInfo: SellerAgreementInfo | null;
   paymentMethod: string | null;
   disclaimerAccepted: boolean;
 }
@@ -69,6 +80,7 @@ const INITIAL_STATE: CheckoutState = {
   selectedShippingAgency: null,
   shippingRecipientInfo: null,
   localDeliveryRecipientInfo: null,
+  sellerAgreementInfo: null,
   paymentMethod: null,
   disclaimerAccepted: false,
 };
@@ -153,7 +165,7 @@ export class CheckoutService {
         description: 'Coordina directamente con nosotros el método de entrega',
         icon: 'chat',
         price: null,
-        isAvailable: false,
+        isAvailable: true,
       });
     }
 
@@ -178,6 +190,12 @@ export class CheckoutService {
   /** Verificar si hay información de destinatario completa (delivery local) */
   readonly hasLocalDeliveryRecipientInfo = computed(() => this._state().localDeliveryRecipientInfo !== null);
 
+  /** Información de contacto (acordar con vendedor) */
+  readonly sellerAgreementInfo = computed(() => this._state().sellerAgreementInfo);
+
+  /** Verificar si hay información de contacto (acordar con vendedor) */
+  readonly hasSellerAgreementInfo = computed(() => this._state().sellerAgreementInfo !== null);
+
   /** Método de pago seleccionado */
   readonly paymentMethod = computed(() => this._state().paymentMethod);
 
@@ -199,6 +217,7 @@ export class CheckoutService {
       selectedShippingAgency: type === 'shipping_agency' ? state.selectedShippingAgency : null,
       shippingRecipientInfo: type === 'shipping_agency' ? state.shippingRecipientInfo : null,
       localDeliveryRecipientInfo: type === 'local_delivery' ? state.localDeliveryRecipientInfo : null,
+      sellerAgreementInfo: type === 'seller_agreement' ? state.sellerAgreementInfo : null,
     }));
   }
 
@@ -229,6 +248,16 @@ export class CheckoutService {
     this._state.update((state) => ({
       ...state,
       localDeliveryRecipientInfo: info,
+    }));
+  }
+
+  /**
+   * Establecer información de contacto (acordar con vendedor)
+   */
+  setSellerAgreementInfo(info: SellerAgreementInfo): void {
+    this._state.update((state) => ({
+      ...state,
+      sellerAgreementInfo: info,
     }));
   }
 
@@ -268,6 +297,7 @@ export class CheckoutService {
       selectedShippingAgency: null,
       shippingRecipientInfo: null,
       localDeliveryRecipientInfo: null,
+      sellerAgreementInfo: null,
     }));
   }
 

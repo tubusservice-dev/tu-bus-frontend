@@ -1,13 +1,12 @@
 import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { CurrencyPipe } from '@angular/common';
 import { CheckoutService, DispatchOption } from '../services/checkout.service';
 import { CartService } from '../../../core/services/cart.service';
 
 @Component({
   selector: 'app-checkout-dispatch',
   standalone: true,
-  imports: [CurrencyPipe],
+  imports: [],
   templateUrl: './checkout-dispatch.component.html',
   styleUrl: './checkout-dispatch.component.scss',
 })
@@ -52,6 +51,9 @@ export class CheckoutDispatchComponent {
         break;
       case 'local_delivery':
         this.router.navigate(['/checkout/delivery']);
+        break;
+      case 'seller_agreement':
+        this.router.navigate(['/checkout/vendedor']);
         break;
     }
   }

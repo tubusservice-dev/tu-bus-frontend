@@ -320,10 +320,10 @@ export const routes: Routes = [
           ),
       },
       {
-        path: 'checkout/pago',
+        path: 'checkout/vendedor',
         loadComponent: () =>
-          import('./features/checkout/checkout-payment/checkout-payment.component').then(
-            (m) => m.CheckoutPaymentComponent
+          import('./features/checkout/checkout-seller-agreement-form/checkout-seller-agreement-form.component').then(
+            (m) => m.CheckoutSellerAgreementFormComponent
           ),
       },
       {
