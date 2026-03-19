@@ -74,7 +74,8 @@ export class AdminOrderDetailComponent implements OnInit {
 
   getClientName(order: Order): string {
     if (typeof order.user === 'object' && order.user) {
-      return `${order.user.firstName} ${order.user.lastName}`;
+      const name = `${order.user.firstName || ''} ${order.user.lastName || ''}`.trim();
+      return name || order.user.email || '-';
     }
     return String(order.user || '-');
   }

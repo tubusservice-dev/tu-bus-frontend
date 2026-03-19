@@ -43,6 +43,9 @@ export class ZoneFormComponent implements OnInit {
     code: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(5)]],
     name: ['', [Validators.required, Validators.minLength(2)]],
     isActive: [true],
+    freeDelivery: [true],
+    additionalCharge: [false],
+    additionalChargeAmount: [0],
   });
 
   // Formulario de municipio
@@ -70,6 +73,9 @@ export class ZoneFormComponent implements OnInit {
           code: city.code,
           name: city.name,
           isActive: city.isActive,
+          freeDelivery: city.deliveryConfig?.freeDelivery ?? true,
+          additionalCharge: city.deliveryConfig?.additionalCharge ?? false,
+          additionalChargeAmount: city.deliveryConfig?.additionalChargeAmount ?? 0,
         });
         this.municipalities.set(city.municipalities || []);
         this.isLoading.set(false);
@@ -94,6 +100,11 @@ export class ZoneFormComponent implements OnInit {
       code: this.form.value.code.toUpperCase(),
       name: this.form.value.name,
       isActive: this.form.value.isActive,
+      deliveryConfig: {
+        freeDelivery: this.form.value.freeDelivery,
+        additionalCharge: this.form.value.additionalCharge,
+        additionalChargeAmount: this.form.value.additionalCharge ? Number(this.form.value.additionalChargeAmount) || 0 : 0,
+      },
     };
 
     const request$ = this.isEditMode()
@@ -230,6 +241,22 @@ export class ZoneFormComponent implements OnInit {
         this.isDeletingMunicipality.set(false);
       },
     });
+  }
+
+  // ==================== DELIVERY CONFIG ====================
+
+  onFreeDeliveryChange(checked: boolean): void {
+    if (checked) {
+      this.form.patchValue({ additionalCharge: false, additionalChargeAmount: 0 });
+    }
+  }
+
+  onAdditionalChargeChange(checked: boolean): void {
+    if (checked) {
+      this.form.patchValue({ freeDelivery: false });
+    } else {
+      this.form.patchValue({ additionalChargeAmount: 0 });
+    }
   }
 
   // ==================== HELPERS ====================

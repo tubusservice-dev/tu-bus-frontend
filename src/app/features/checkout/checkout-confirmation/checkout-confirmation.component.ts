@@ -22,7 +22,7 @@ export class CheckoutConfirmationComponent implements OnInit {
   ngOnInit(): void {
     const orderId = this.route.snapshot.paramMap.get('orderId');
     if (!orderId) {
-      this.router.navigate(['/tienda']);
+      this.router.navigate(['/catalogo']);
       return;
     }
 
@@ -33,7 +33,7 @@ export class CheckoutConfirmationComponent implements OnInit {
       },
       error: () => {
         this.isLoading.set(false);
-        this.router.navigate(['/tienda']);
+        this.router.navigate(['/catalogo']);
       },
     });
   }
@@ -47,6 +47,6 @@ export class CheckoutConfirmationComponent implements OnInit {
   }
 
   goToStore(): void {
-    this.router.navigate(['/tienda']);
+    this.router.navigate(['/catalogo']);
   }
 }

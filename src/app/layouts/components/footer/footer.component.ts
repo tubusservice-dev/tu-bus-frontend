@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { environment } from '../../../../environments/environment';
 
 interface FooterLink {
@@ -15,7 +16,7 @@ interface SocialLink {
 @Component({
   selector: 'app-footer',
   standalone: true,
-  imports: [],
+  imports: [RouterLink],
   templateUrl: './footer.component.html',
   styleUrl: './footer.component.scss'
 })
@@ -27,11 +28,10 @@ export class FooterComponent {
   protected readonly currentYear = new Date().getFullYear();
 
   /** Links de navegación */
-  protected readonly navLinks: FooterLink[] = [
-    { label: 'Inicio', href: '#' },
-    { label: 'Productos', href: '#' },
-    { label: 'Nosotros', href: '#' },
-    { label: 'Contacto', href: '#' },
+  protected readonly navLinks = [
+    { label: 'Inicio', route: '/' },
+    { label: 'Catálogo', route: '/catalogo' },
+    { label: 'Carrito', route: '/carrito' },
   ];
 
   /** Links legales */

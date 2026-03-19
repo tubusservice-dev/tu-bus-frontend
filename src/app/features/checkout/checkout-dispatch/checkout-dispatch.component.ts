@@ -50,7 +50,9 @@ export class CheckoutDispatchComponent {
       case 'shipping_agency':
         this.router.navigate(['/checkout/agencia']);
         break;
-      // Otros tipos se agregarán después
+      case 'local_delivery':
+        this.router.navigate(['/checkout/delivery']);
+        break;
     }
   }
 

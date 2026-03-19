@@ -32,6 +32,7 @@ export interface DispatchDetails {
   recipientAddress?: string;
   recipientState?: string;
   recipientCity?: string;
+  recipientMunicipality?: string;
   agencyOfficeCode?: string;
   referencePoint?: string;
 }

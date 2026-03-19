@@ -168,6 +168,31 @@
   }
 }
 
+// Delivery config
+.delivery-options {
+  @apply space-y-3;
+}
+
+.delivery-divider {
+  @apply border-t border-gray-200 dark:border-gray-700;
+}
+
+.charge-amount {
+  @apply mt-2 pl-14;
+
+  label {
+    @apply text-xs font-medium text-gray-500 dark:text-gray-400 mb-1;
+  }
+
+  input {
+    @apply w-full px-3 py-2 text-sm rounded-lg;
+    @apply border border-gray-300 dark:border-gray-600;
+    @apply bg-white dark:bg-gray-700;
+    @apply text-gray-900 dark:text-white;
+    @apply focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none;
+  }
+}
+
 // Municipalities section
 .municipalities-section {
   @apply lg:col-span-3;

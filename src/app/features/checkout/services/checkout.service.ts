@@ -36,11 +36,29 @@ export interface ShippingRecipientInfo {
   notes?: string;
 }
 
+/** Información del destinatario para delivery local */
+export interface LocalDeliveryRecipientInfo {
+  fullName: string;
+  documentType: 'V' | 'E' | 'J' | 'P';
+  documentNumber: string;
+  phone: string;
+  alternativePhone?: string;
+  email?: string;
+  cityCode: string;
+  cityName: string;
+  municipalityCode: string;
+  municipalityName: string;
+  address: string;
+  referencePoint?: string;
+  notes?: string;
+}
+
 export interface CheckoutState {
   dispatchType: DispatchType;
   storePickupInfo: StorePickupInfo | null;
   selectedShippingAgency: ShippingAgency | null;
   shippingRecipientInfo: ShippingRecipientInfo | null;
+  localDeliveryRecipientInfo: LocalDeliveryRecipientInfo | null;
   paymentMethod: string | null;
   disclaimerAccepted: boolean;
 }
@@ -50,6 +68,7 @@ const INITIAL_STATE: CheckoutState = {
   storePickupInfo: null,
   selectedShippingAgency: null,
   shippingRecipientInfo: null,
+  localDeliveryRecipientInfo: null,
   paymentMethod: null,
   disclaimerAccepted: false,
 };
@@ -114,15 +133,15 @@ export class CheckoutService {
       });
     }
 
-    // Delivery Local - solo si está habilitado en módulos (próximamente funcional)
+    // Delivery Local - solo si está habilitado en módulos
     if (modules.localDelivery) {
       options.push({
         id: 'local_delivery',
         name: 'Delivery Local',
-        description: 'Entrega a domicilio en tu ciudad',
+        description: 'Entrega a domicilio en tu zona de cobertura',
         icon: 'bike',
         price: null,
-        isAvailable: false,
+        isAvailable: true,
       });
     }
 
@@ -144,14 +163,20 @@ export class CheckoutService {
   /** Agencia de envío seleccionada */
   readonly selectedShippingAgency = computed(() => this._state().selectedShippingAgency);
 
-  /** Información del destinatario */
+  /** Información del destinatario (envío por agencia) */
   readonly shippingRecipientInfo = computed(() => this._state().shippingRecipientInfo);
+
+  /** Información del destinatario (delivery local) */
+  readonly localDeliveryRecipientInfo = computed(() => this._state().localDeliveryRecipientInfo);
 
   /** Verificar si hay una agencia seleccionada */
   readonly hasShippingAgency = computed(() => this._state().selectedShippingAgency !== null);
 
-  /** Verificar si hay información de destinatario completa */
+  /** Verificar si hay información de destinatario completa (envío por agencia) */
   readonly hasShippingRecipientInfo = computed(() => this._state().shippingRecipientInfo !== null);
+
+  /** Verificar si hay información de destinatario completa (delivery local) */
+  readonly hasLocalDeliveryRecipientInfo = computed(() => this._state().localDeliveryRecipientInfo !== null);
 
   /** Método de pago seleccionado */
   readonly paymentMethod = computed(() => this._state().paymentMethod);
@@ -173,6 +198,7 @@ export class CheckoutService {
       // Limpiar datos de envío si cambia el tipo
       selectedShippingAgency: type === 'shipping_agency' ? state.selectedShippingAgency : null,
       shippingRecipientInfo: type === 'shipping_agency' ? state.shippingRecipientInfo : null,
+      localDeliveryRecipientInfo: type === 'local_delivery' ? state.localDeliveryRecipientInfo : null,
     }));
   }
 
@@ -187,12 +213,22 @@ export class CheckoutService {
   }
 
   /**
-   * Establecer información del destinatario
+   * Establecer información del destinatario (envío por agencia)
    */
   setShippingRecipientInfo(info: ShippingRecipientInfo): void {
     this._state.update((state) => ({
       ...state,
       shippingRecipientInfo: info,
+    }));
+  }
+
+  /**
+   * Establecer información del destinatario (delivery local)
+   */
+  setLocalDeliveryRecipientInfo(info: LocalDeliveryRecipientInfo): void {
+    this._state.update((state) => ({
+      ...state,
+      localDeliveryRecipientInfo: info,
     }));
   }
 
@@ -231,6 +267,7 @@ export class CheckoutService {
       storePickupInfo: null,
       selectedShippingAgency: null,
       shippingRecipientInfo: null,
+      localDeliveryRecipientInfo: null,
     }));
   }
 

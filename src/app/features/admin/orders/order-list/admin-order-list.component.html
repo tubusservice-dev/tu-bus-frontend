@@ -62,7 +62,6 @@
               <th>Cliente</th>
               <th>Total</th>
               <th>Estado</th>
-              <th>Despacho</th>
               <th>Fecha</th>
             </tr>
           </thead>
@@ -82,15 +81,6 @@
                   <span class="status-badge" [ngClass]="getStatusColor(order.status)">
                     {{ getStatusLabel(order.status) }}
                   </span>
-                </td>
-                <td>
-                  @if (order.dispatchStatus) {
-                    <span class="status-badge" [ngClass]="getDispatchStatusColor(order.dispatchStatus)">
-                      {{ getDispatchStatusLabel(order.dispatchStatus) }}
-                    </span>
-                  } @else {
-                    <span class="text-gray-400 text-xs">-</span>
-                  }
                 </td>
                 <td>
                   <span class="order-date">{{ formatDate(order.createdAt) }}</span>
