@@ -30,6 +30,18 @@ export class AuthService {
   /** Indica si la sesión expiró (para mostrar mensaje) */
   private readonly sessionExpiredSignal = signal(false);
 
+  /** Controla la visibilidad del modal de auth desde cualquier componente */
+  private readonly authModalOpenSignal = signal(false);
+  readonly authModalOpen = this.authModalOpenSignal.asReadonly();
+
+  openAuthModal(): void {
+    this.authModalOpenSignal.set(true);
+  }
+
+  closeAuthModal(): void {
+    this.authModalOpenSignal.set(false);
+  }
+
   /** Usuario actual (solo lectura) */
   readonly currentUser = this.currentUserSignal.asReadonly();
 

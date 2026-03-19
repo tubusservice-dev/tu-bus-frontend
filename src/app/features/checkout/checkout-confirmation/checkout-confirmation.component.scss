@@ -69,6 +69,33 @@
 
 .capitalize { text-transform: capitalize; }
 
+// Seller agreement banner
+.seller-agreement-banner {
+  @apply text-center p-5 rounded-xl mb-2;
+  background-color: rgba(34, 197, 94, 0.08);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+
+  .banner-icon {
+    @apply w-10 h-10 mx-auto mb-3 flex items-center justify-center rounded-full;
+    background-color: rgba(37, 211, 102, 0.15);
+
+    svg {
+      @apply w-5 h-5;
+      color: #25D366;
+    }
+  }
+
+  .banner-title {
+    @apply text-sm font-bold mb-1;
+    color: var(--text-primary);
+  }
+
+  .banner-text {
+    @apply text-xs leading-relaxed;
+    color: var(--text-secondary);
+  }
+}
+
 .confirmation-actions {
   @apply flex flex-col sm:flex-row gap-3 justify-center;
 }
@@ -135,5 +162,17 @@
     background-color: #374151;
     color: #e5e7eb;
     &:hover { background-color: #4b5563; }
+  }
+
+  .seller-agreement-banner {
+    background-color: rgba(34, 197, 94, 0.06);
+    border-color: rgba(34, 197, 94, 0.15);
+
+    .banner-icon {
+      background-color: rgba(37, 211, 102, 0.12);
+    }
+
+    .banner-title { color: #f3f4f6; }
+    .banner-text { color: #9ca3af; }
   }
 }

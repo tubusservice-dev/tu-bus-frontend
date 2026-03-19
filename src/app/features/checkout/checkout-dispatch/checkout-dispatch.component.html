@@ -6,7 +6,6 @@
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
         </svg>
-        <span class="back-text">Volver al carrito</span>
       </button>
       <div class="page-title">
         <h1>Tipo de Despacho</h1>
@@ -19,11 +18,16 @@
     <div class="dispatch-container">
       <!-- Pregunta principal -->
       <div class="dispatch-question">
+        <div class="question-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 0 0-3.213-9.193 2.056 2.056 0 0 0-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 0 0-10.026 0 1.106 1.106 0 0 0-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+          </svg>
+        </div>
         <h2>¿Cómo deseas recibir tu pedido?</h2>
         <p>Selecciona el método de entrega que prefieras</p>
       </div>
 
-      <!-- Grid de opciones -->
+      <!-- Opciones -->
       <div class="dispatch-grid">
         @for (option of dispatchOptions(); track option.id) {
           <button
@@ -34,6 +38,13 @@
             [disabled]="!option.isAvailable"
             (click)="selectOption(option)"
           >
+            <!-- Radio indicator -->
+            <div class="radio-indicator">
+              @if (isSelected(option)) {
+                <div class="radio-filled"></div>
+              }
+            </div>
+
             <!-- Icono -->
             <div class="card-icon">
               @switch (option.icon) {
@@ -49,7 +60,8 @@
                 }
                 @case ('bike') {
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 0 0-3.213-9.193 2.056 2.056 0 0 0-1.58-.86H14.25m-2.25 0h-2.25m0 0v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 0 0-10.026 0 1.106 1.106 0 0 0-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
                   </svg>
                 }
                 @case ('chat') {
@@ -62,31 +74,16 @@
 
             <!-- Contenido -->
             <div class="card-content">
-              <h3 class="card-title">{{ option.name }}</h3>
+              <div class="card-header">
+                <h3 class="card-title">{{ option.name }}</h3>
+                @if (!option.isAvailable) {
+                  <span class="price-badge soon">Próximamente</span>
+                } @else if (option.id === 'store_pickup') {
+                  <span class="price-badge free">Gratis</span>
+                }
+              </div>
               <p class="card-description">{{ option.description }}</p>
             </div>
-
-            <!-- Precio / Estado -->
-            <div class="card-footer">
-              @if (option.isAvailable) {
-                @if (option.price === null) {
-                  <span class="price-free">Gratis</span>
-                } @else {
-                  <span class="price-value">{{ option.price | currency:'USD' }}</span>
-                }
-              } @else {
-                <span class="coming-soon">Próximamente</span>
-              }
-            </div>
-
-            <!-- Check de selección -->
-            @if (isSelected(option)) {
-              <div class="selected-check">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-                </svg>
-              </div>
-            }
           </button>
         }
       </div>
@@ -100,6 +97,9 @@
           (click)="onContinue()"
         >
           Continuar
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+          </svg>
         </button>
       </div>
     </div>

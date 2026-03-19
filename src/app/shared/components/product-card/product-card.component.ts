@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { ImageCarouselComponent } from '../image-carousel/image-carousel.component';
 import { CartService } from '../../../core/services/cart.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { Line, Category, Brand } from '../../../models';
 
 export interface ProductCardData {
@@ -35,6 +36,7 @@ export interface ProductCardData {
 export class ProductCardComponent {
   private readonly router = inject(Router);
   private readonly cartService = inject(CartService);
+  private readonly authService = inject(AuthService);
 
   @Input({ required: true }) product!: ProductCardData;
   @Input() showAddToCart = true;
@@ -101,6 +103,12 @@ export class ProductCardComponent {
     event.preventDefault();
     event.stopPropagation();
 
+    // Verificar autenticación primero
+    if (!this.authService.isAuthenticated()) {
+      this.authService.openAuthModal();
+      return;
+    }
+
     // Verificar stock antes de proceder
     if (this.isOutOfStock || this.isAdding() || !this.canAddToCart()) {
       // Si ya está en el máximo, mostrar mensaje
@@ -134,8 +142,7 @@ export class ProductCardComponent {
       this.isAdding.set(false);
 
       if (result.error === 'not_authenticated') {
-        this.showLoginMessage.set(true);
-        setTimeout(() => this.showLoginMessage.set(false), 3000);
+        this.authService.openAuthModal();
       } else if (result.error === 'stock_exceeded' || result.error === 'out_of_stock') {
         this.stockErrorMessage.set(result.message || 'Stock insuficiente');
         this.showStockError.set(true);

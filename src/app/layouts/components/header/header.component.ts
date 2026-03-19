@@ -22,7 +22,7 @@ import { environment } from '../../../../environments/environment';
   styleUrl: './header.component.scss'
 })
 export class HeaderComponent implements OnInit, OnDestroy {
-  private readonly authService = inject(AuthService);
+  protected readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private routerSub?: Subscription;
 
@@ -35,14 +35,14 @@ export class HeaderComponent implements OnInit, OnDestroy {
   /** Estado de autenticación desde el servicio */
   protected readonly isLoggedIn = this.authService.isAuthenticated;
 
-  /** Controla la visibilidad del modal de autenticación */
-  protected readonly isAuthModalOpen = signal(false);
+  /** Modal de auth controlado por el AuthService */
+  protected readonly isAuthModalOpen = this.authService.authModalOpen;
 
   constructor() {
     // Abrir modal automáticamente cuando la sesión expira
     effect(() => {
       if (this.authService.sessionExpired()) {
-        this.isAuthModalOpen.set(true);
+        this.authService.openAuthModal();
       }
     });
   }
@@ -67,13 +67,13 @@ export class HeaderComponent implements OnInit, OnDestroy {
    * Abre el modal de autenticación
    */
   onLoginClick(): void {
-    this.isAuthModalOpen.set(true);
+    this.authService.openAuthModal();
   }
 
   /**
    * Cierra el modal de autenticación
    */
   closeAuthModal(): void {
-    this.isAuthModalOpen.set(false);
+    this.authService.closeAuthModal();
   }
 }

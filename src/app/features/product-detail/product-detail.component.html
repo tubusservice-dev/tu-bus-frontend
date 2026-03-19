@@ -231,11 +231,6 @@
                 Agregar al carrito
               }
             </button>
-            @if (showLoginMessage()) {
-              <div class="login-message">
-                Inicia sesión para agregar productos al carrito
-              </div>
-            }
             @if (showStockError()) {
               <div class="stock-error-message">
                 {{ stockErrorMessage() }}

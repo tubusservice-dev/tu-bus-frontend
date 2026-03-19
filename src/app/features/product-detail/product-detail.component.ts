@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ProductService } from '../../core/services/product.service';
 import { CartService } from '../../core/services/cart.service';
+import { AuthService } from '../../core/services/auth.service';
 import { Product, Category, Brand } from '../../models/product.model';
 import {
   ProductCardComponent,
@@ -21,6 +22,7 @@ export class ProductDetailComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly productService = inject(ProductService);
   private readonly cartService = inject(CartService);
+  private readonly authService = inject(AuthService);
 
   // Estado principal
   protected readonly isLoading = signal(true);
@@ -229,6 +231,11 @@ export class ProductDetailComponent implements OnInit {
 
   // Agregar al carrito
   addToCart(): void {
+    if (!this.authService.isAuthenticated()) {
+      this.authService.openAuthModal();
+      return;
+    }
+
     const prod = this.product();
     if (!prod || this.isOutOfStock() || !this.canAddToCart()) return;
 
@@ -259,8 +266,7 @@ export class ProductDetailComponent implements OnInit {
       this.isAddingToCart.set(false);
 
       if (result.error === 'not_authenticated') {
-        this.showLoginMessage.set(true);
-        setTimeout(() => this.showLoginMessage.set(false), 3000);
+        this.authService.openAuthModal();
       } else if (result.error === 'stock_exceeded' || result.error === 'out_of_stock') {
         this.stockErrorMessage.set(result.message || 'Stock insuficiente');
         this.showStockError.set(true);

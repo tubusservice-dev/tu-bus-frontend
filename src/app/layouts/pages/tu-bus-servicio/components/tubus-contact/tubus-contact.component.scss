@@ -13,7 +13,7 @@
 
 // Contact Info
 .contact-info {
-  @apply text-center lg:text-left;
+  @apply text-left;
 }
 
 .section-badge {
@@ -39,7 +39,7 @@
 
 .contact-item {
   @apply flex items-center gap-4;
-  @apply justify-center lg:justify-start;
+  @apply justify-start;
 }
 
 .item-icon {

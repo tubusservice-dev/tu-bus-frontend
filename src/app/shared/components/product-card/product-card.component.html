@@ -100,11 +100,6 @@
           @if (quantityInCart() > 0) {
             <span class="cart-quantity-badge">{{ quantityInCart() }}</span>
           }
-          @if (showLoginMessage()) {
-            <div class="login-tooltip">
-              Inicia sesión para agregar productos
-            </div>
-          }
           @if (showStockError()) {
             <div class="stock-tooltip">
               {{ stockErrorMessage() }}

@@ -35,7 +35,7 @@
 }
 
 .service-card {
-  @apply relative p-6 rounded-2xl;
+  @apply relative p-6 rounded-2xl text-center sm:text-left;
   @apply transition-all duration-300;
   background-color: var(--bg-primary);
   border: 1px solid var(--border-color);
@@ -53,7 +53,7 @@
 }
 
 .service-icon {
-  @apply w-14 h-14 flex items-center justify-center rounded-xl mb-5;
+  @apply w-14 h-14 flex items-center justify-center rounded-xl mb-5 mx-auto sm:mx-0;
   @apply transition-all duration-300;
   background-color: rgba(var(--tubus-primary-rgb), 0.15);
   color: var(--tubus-text-accent);
