@@ -6,7 +6,7 @@
 }
 
 .footer-container {
-  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12;
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-12 sm:py-12;
 }
 
 
@@ -103,11 +103,18 @@
       display: none;
     }
   }
+
+  &.minimal-divider {
+    @media (max-width: 639px) {
+      @apply my-3;
+    }
+  }
 }
 
 .footer-container.minimal-mobile {
   @media (max-width: 639px) {
-    @apply py-4;
+    padding-top: 2rem;
+    padding-bottom: 2rem;
   }
 }
 

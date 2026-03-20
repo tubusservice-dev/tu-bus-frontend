@@ -1,5 +1,5 @@
 .product-detail-container {
-  @apply max-w-7xl mx-auto px-4 py-6 sm:py-8;
+  @apply max-w-7xl mx-auto px-4 pt-6 pb-2 sm:py-8;
 }
 
 // Breadcrumb
@@ -448,8 +448,13 @@
   @apply mt-12 pt-8;
   border-top: 1px solid var(--border-color);
 
+  @media (max-width: 640px) {
+    margin-top: 16px;
+    padding-top: 16px;
+  }
+
   h2 {
-    @apply text-2xl font-bold mb-6;
+    @apply text-2xl font-bold mb-4;
     color: var(--text-primary);
   }
 }
@@ -459,6 +464,10 @@
   @apply flex gap-3 overflow-x-auto pb-3;
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
+  margin-left: -1rem;
+  margin-right: -1rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
 
   // Ocultar scrollbar
   scrollbar-width: none;
@@ -467,6 +476,10 @@
   // Ocultar en desktop
   @media (min-width: 640px) {
     @apply hidden;
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 0;
+    padding-right: 0;
   }
 }
 

@@ -1,9 +1,12 @@
 // ============================================
 // PRODUCT CARD
 // ============================================
+:host {
+  @apply block h-full;
+}
+
 .product-card {
-  @apply rounded-2xl overflow-hidden flex flex-col w-full;
-  height: 420px;
+  @apply rounded-2xl overflow-hidden flex flex-col w-full h-full;
   background-color: var(--bg-primary);
   border: 1px solid var(--border-color);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
@@ -126,12 +129,12 @@
 
 // ===== FOOTER =====
 .card-footer {
-  @apply flex items-center justify-between gap-2 pt-3 mt-2;
+  @apply flex items-stretch gap-3 pt-4 mt-1 pb-1;
   border-top: 1px solid var(--border-color);
 }
 
 .price-block {
-  @apply flex items-baseline gap-2;
+  @apply flex items-baseline gap-2 self-center;
 }
 
 .price-old {
@@ -140,7 +143,8 @@
 }
 
 .price {
-  @apply text-xl font-black;
+  @apply font-black;
+  font-size: 24px;
   color: var(--text-primary);
 
   &.discount {
@@ -162,23 +166,28 @@
 
 // ===== BOTÓN CARRITO =====
 .cart-btn-container {
-  @apply relative;
+  @apply relative flex-1;
 }
 
 .btn-cart {
-  @apply inline-flex items-center justify-center w-10 h-10;
-  @apply text-white rounded-full;
+  @apply inline-flex items-center justify-center gap-1.5 w-full;
+  @apply text-white rounded-lg;
+  @apply text-sm font-semibold;
   @apply disabled:opacity-40 disabled:cursor-not-allowed;
   @apply transition-all duration-200;
+  padding: 10px 12px;
   background-color: var(--accent-primary);
 
   &:hover:not(:disabled) {
     background-color: var(--accent-hover);
-    transform: scale(1.1);
   }
 
   svg {
-    @apply w-5 h-5;
+    @apply w-5 h-5 flex-shrink-0;
+  }
+
+  .btn-cart-text {
+    @apply truncate;
   }
 
   &.adding .spinner {
@@ -332,18 +341,32 @@
 // ============================================
 @media (max-width: 640px) {
   .product-card {
-    height: 380px;
+    height: auto;
+    min-height: 0;
   }
 
   .card-image {
-    height: 170px;
+    height: 240px;
   }
 
   .card-content {
     @apply p-3;
   }
 
+  .card-spacer {
+    display: none;
+  }
+
   .price {
-    @apply text-lg;
+    @apply text-2xl;
+  }
+
+  .btn-cart {
+    @apply text-sm;
+    padding: 10px 14px;
+
+    svg {
+      @apply w-5 h-5;
+    }
   }
 }

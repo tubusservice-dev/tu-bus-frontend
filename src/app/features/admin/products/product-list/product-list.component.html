@@ -457,9 +457,9 @@
                 <span class="detail-price-label">Precio</span>
                 <div class="detail-price-section">
                   @if (hasDiscount(product)) {
-                    <span class="detail-compare-price">${{ product.comparePrice | number:'1.0-0' }}</span>
+                    <span class="detail-compare-price">${{ product.comparePrice | number:'1.2-2' }}</span>
                   }
-                  <span class="detail-current-price">${{ product.price | number:'1.0-0' }}</span>
+                  <span class="detail-current-price">${{ product.price | number:'1.2-2' }}</span>
                   @if (hasDiscount(product)) {
                     <span class="detail-discount-tag">-{{ getDiscountPercentage(product) }}%</span>
                   }

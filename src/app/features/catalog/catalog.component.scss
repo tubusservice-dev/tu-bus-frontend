@@ -137,13 +137,21 @@
   @apply min-h-[400px];
 }
 
-// Grid de productos - centrado para cuando hay pocos productos
+// Grid de productos
 .products-grid {
-  @apply flex flex-wrap justify-center gap-6;
+  @apply grid gap-6;
+  grid-template-columns: 1fr;
 
-  app-product-card {
-    @apply w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] xl:w-[calc(25%-18px)];
-    @apply max-w-[300px];
+  @media (min-width: 640px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  @media (min-width: 1280px) {
+    grid-template-columns: repeat(4, 1fr);
   }
 }
 
@@ -362,5 +370,45 @@
         color: #d1d5db;
       }
     }
+  }
+}
+
+// Scroll to top button
+.scroll-top-btn {
+  @apply fixed z-40 flex items-center justify-center rounded-full shadow-lg;
+  @apply transition-all duration-300;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  width: 40px;
+  height: 40px;
+  background-color: var(--tubus-primary, #1e3a8a);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  animation: fadeInUp 0.3s ease-out;
+
+  &:hover {
+    background-color: var(--tubus-primary-dark, #1e3070);
+    transform: translateY(-2px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

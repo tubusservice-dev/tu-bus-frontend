@@ -4,7 +4,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ProductService } from '../../core/services/product.service';
 import { CartService } from '../../core/services/cart.service';
 import { AuthService } from '../../core/services/auth.service';
-import { Product, Category, Brand } from '../../models/product.model';
+import { Product, Category, Brand, Line } from '../../models/product.model';
 import {
   ProductCardComponent,
   ProductCardData,
@@ -293,6 +293,12 @@ export class ProductDetailComponent implements OnInit {
     if (!brand) return '';
     if (typeof brand === 'string') return brand;
     return brand?.name || '';
+  }
+
+  getLineName(line: string | Line | undefined): string {
+    if (!line) return '';
+    if (typeof line === 'string') return line;
+    return line?.name || '';
   }
 
 }

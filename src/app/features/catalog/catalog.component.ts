@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, computed, effect } from '@angular/core';
+import { Component, inject, signal, OnInit, computed, effect, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -81,6 +81,16 @@ export class CatalogComponent implements OnInit {
   protected readonly currentPage = signal(1);
   protected readonly totalPages = signal(1);
   protected readonly totalProducts = signal(0);
+  protected readonly showScrollTop = signal(false);
+
+  @HostListener('window:scroll')
+  onScroll(): void {
+    this.showScrollTop.set(window.scrollY > 400);
+  }
+
+  scrollToTop(): void {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 
   protected readonly sortOptions = [
     { value: 'createdAt', label: 'Más recientes' },
