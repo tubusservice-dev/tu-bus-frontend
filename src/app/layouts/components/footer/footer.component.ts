@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { environment } from '../../../../environments/environment';
 
@@ -21,6 +21,9 @@ interface SocialLink {
   styleUrl: './footer.component.scss'
 })
 export class FooterComponent {
+  /** En modo minimal solo muestra copyright (checkout mobile) */
+  readonly minimal = input(false);
+
   /** Nombre de la aplicación */
   protected readonly appName = environment.appName;
 

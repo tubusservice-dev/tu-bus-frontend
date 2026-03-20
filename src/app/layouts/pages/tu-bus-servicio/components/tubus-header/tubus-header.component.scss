@@ -95,7 +95,12 @@
 }
 
 .zone-text {
-  @apply block max-w-40 truncate text-xs sm:text-sm;
+  @apply block truncate text-xs sm:text-sm;
+  max-width: 100px;
+
+  @media (min-width: 640px) {
+    max-width: 10rem;
+  }
 }
 
 .chevron-icon {
@@ -265,4 +270,117 @@
 
 .login-text {
   @apply hidden sm:block text-sm font-semibold;
+}
+
+// ============================================
+// MODAL CONFIRMACIÓN CAMBIO DE ZONA
+// ============================================
+.zone-confirm-backdrop {
+  @apply fixed inset-0 z-[60] flex items-center justify-center p-4;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  animation: zoneConfirmFadeIn 0.2s ease-out;
+}
+
+.zone-confirm-modal {
+  @apply w-full max-w-sm p-6 rounded-2xl text-center;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  animation: zoneConfirmScaleIn 0.2s ease-out;
+}
+
+.zone-confirm-icon {
+  @apply w-14 h-14 mx-auto mb-4 flex items-center justify-center rounded-full;
+  background-color: rgba(245, 158, 11, 0.1);
+
+  svg {
+    @apply w-7 h-7;
+    color: #f59e0b;
+  }
+}
+
+.zone-confirm-title {
+  @apply text-lg font-bold mb-2;
+  color: var(--text-primary);
+}
+
+.zone-confirm-text {
+  @apply text-sm mb-6 leading-relaxed;
+  color: var(--text-secondary);
+
+  strong {
+    color: var(--text-primary);
+  }
+}
+
+.zone-confirm-actions {
+  @apply flex flex-col gap-2;
+}
+
+.zone-confirm-btn {
+  @apply w-full py-2.5 px-4 rounded-xl text-sm font-semibold transition-all;
+
+  &.confirm {
+    background-color: #f59e0b;
+    color: #ffffff;
+
+    &:hover {
+      background-color: #d97706;
+    }
+  }
+
+  &.cancel {
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+
+    &:hover {
+      background-color: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+  }
+}
+
+@keyframes zoneConfirmFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes zoneConfirmScaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+// Dark mode
+:host-context(.dark) {
+  .zone-confirm-modal {
+    background-color: #1f2937;
+    border-color: #374151;
+  }
+
+  .zone-confirm-icon {
+    background-color: rgba(245, 158, 11, 0.15);
+  }
+
+  .zone-confirm-title {
+    color: #f3f4f6;
+  }
+
+  .zone-confirm-text {
+    color: #9ca3af;
+
+    strong {
+      color: #f3f4f6;
+    }
+  }
+
+  .zone-confirm-btn.cancel {
+    border-color: #374151;
+    color: #9ca3af;
+
+    &:hover {
+      background-color: #374151;
+      color: #f3f4f6;
+    }
+  }
 }

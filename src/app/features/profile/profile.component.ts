@@ -43,4 +43,10 @@ export class ProfileComponent implements OnInit {
   setTab(tab: ProfileTab): void {
     this.activeTab.set(tab);
   }
+
+  onAvatarError(event: Event): void {
+    const img = event.target as HTMLImageElement;
+    const name = `${this.user()?.firstName || ''} ${this.user()?.lastName || ''}`.trim();
+    img.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=001d56&color=fff&size=128`;
+  }
 }

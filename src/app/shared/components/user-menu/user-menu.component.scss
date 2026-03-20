@@ -99,6 +99,15 @@
   }
 }
 
+// Theme toggle solo visible en mobile
+.mobile-theme-toggle {
+  @apply block sm:hidden;
+
+  .theme-toggle-item {
+    @apply w-full text-left;
+  }
+}
+
 // ============================================
 // DARK MODE
 // ============================================

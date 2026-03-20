@@ -190,6 +190,7 @@ export class ProductDetailComponent implements OnInit {
       id: product.id,
       name: product.name,
       slug: product.slug,
+      description: product.description,
       price: product.price,
       comparePrice: product.comparePrice,
       images: product.images || [],

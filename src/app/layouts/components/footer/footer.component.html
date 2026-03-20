@@ -1,7 +1,7 @@
 <footer class="footer">
-  <div class="footer-container">
-    <!-- Sección superior -->
-    <div class="footer-top">
+  <div class="footer-container" [class.minimal-mobile]="minimal()">
+    <!-- Sección superior (oculta en checkout en móvil) -->
+    <div class="footer-top" [class.hide-on-mobile]="minimal()">
       <!-- Logo y descripción -->
       <div class="footer-brand">
         <a href="/" class="footer-logo">
@@ -63,7 +63,7 @@
     </div>
 
     <!-- Divisor -->
-    <div class="footer-divider"></div>
+    <div class="footer-divider" [class.hide-on-mobile]="minimal()"></div>
 
     <!-- Sección inferior - Copyright -->
     <div class="footer-bottom">

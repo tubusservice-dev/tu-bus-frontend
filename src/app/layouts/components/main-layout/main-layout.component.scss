@@ -8,6 +8,13 @@
   @apply flex-1;
 }
 
+/* Ocultar header y footer en flujo de checkout solo en móvil */
+@media (max-width: 639px) {
+  .hide-on-checkout-mobile {
+    display: none !important;
+  }
+}
+
 // ============================================
 // DARK MODE
 // ============================================

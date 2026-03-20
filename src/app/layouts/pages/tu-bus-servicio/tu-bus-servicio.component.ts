@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, signal, HostListener } from '@angular/core';
 import { TubusHeaderComponent } from './components/tubus-header/tubus-header.component';
 import { TubusHeroComponent } from './components/tubus-hero/tubus-hero.component';
 import { TubusServicesComponent } from './components/tubus-services/tubus-services.component';
@@ -26,4 +26,15 @@ import { ZoningModalComponent } from '../../../shared/components';
   templateUrl: './tu-bus-servicio.component.html',
   styleUrl: './tu-bus-servicio.component.scss'
 })
-export class TuBusServicioComponent {}
+export class TuBusServicioComponent {
+  protected readonly showScrollTop = signal(false);
+
+  @HostListener('window:scroll')
+  onScroll(): void {
+    this.showScrollTop.set(window.scrollY > 400);
+  }
+
+  scrollToTop(): void {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}

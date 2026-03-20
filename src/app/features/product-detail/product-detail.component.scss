@@ -454,8 +454,82 @@
   }
 }
 
+// Vista móvil: scroll horizontal con mini cards
+.related-scroll {
+  @apply flex gap-3 overflow-x-auto pb-3;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+
+  // Ocultar scrollbar
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+
+  // Ocultar en desktop
+  @media (min-width: 640px) {
+    @apply hidden;
+  }
+}
+
+.related-mini-card {
+  @apply flex-shrink-0 flex gap-3 p-3 rounded-xl;
+  width: 260px;
+  scroll-snap-align: start;
+  background-color: var(--bg-secondary, #f9fafb);
+  border: 1px solid var(--border-color);
+  text-decoration: none;
+  transition: transform 0.2s, box-shadow 0.2s;
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+.mini-card-image {
+  @apply flex-shrink-0 rounded-lg overflow-hidden;
+  width: 80px;
+  height: 80px;
+  background-color: #ffffff;
+
+  img {
+    @apply w-full h-full object-contain p-1;
+  }
+}
+
+.mini-card-info {
+  @apply flex flex-col justify-center gap-0.5 min-w-0;
+}
+
+.mini-card-brand {
+  @apply text-[10px] font-bold uppercase tracking-wider;
+  color: var(--accent-primary);
+}
+
+.mini-card-name {
+  @apply text-sm font-semibold leading-tight;
+  color: var(--text-primary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.mini-card-desc {
+  @apply text-xs leading-snug mt-0.5;
+  color: var(--text-secondary, #6b7280);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.mini-card-price {
+  @apply text-base font-bold mt-1;
+  color: var(--accent-primary);
+}
+
+// Vista desktop: grid con product cards
 .related-grid {
-  @apply flex flex-wrap justify-center gap-6;
+  @apply hidden sm:flex flex-wrap justify-center gap-6;
 
   app-product-card {
     @apply w-full sm:w-[calc(50%-12px)] lg:w-[calc(25%-18px)];
@@ -599,6 +673,31 @@
     border-top-color: #374151;
 
     h2 { color: #ffffff; }
+  }
+
+  .related-mini-card {
+    background-color: #1f2937;
+    border-color: #374151;
+  }
+
+  .mini-card-image {
+    background-color: #111827;
+  }
+
+  .mini-card-brand {
+    color: var(--tubus-text-accent, #4d94ff);
+  }
+
+  .mini-card-name {
+    color: #f3f4f6;
+  }
+
+  .mini-card-desc {
+    color: #9ca3af;
+  }
+
+  .mini-card-price {
+    color: var(--tubus-text-accent, #4d94ff);
   }
 }
 

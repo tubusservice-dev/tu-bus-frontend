@@ -1,6 +1,6 @@
 <div class="main-layout">
-  <!-- Header TuBus (con selector de zonas) -->
-  <app-tubus-header />
+  <!-- Header TuBus (oculto en checkout flow en móvil) -->
+  <app-tubus-header [class.hide-on-checkout-mobile]="isCheckoutFlow()" />
 
   <!-- Contenido principal -->
   <main class="main-content">
@@ -8,7 +8,7 @@
   </main>
 
   <!-- Footer -->
-  <app-footer />
+  <app-footer [minimal]="isCheckoutFlow()" />
 </div>
 
 <!-- Modal de zonificación obligatorio -->

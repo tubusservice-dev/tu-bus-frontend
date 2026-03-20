@@ -9,8 +9,15 @@
   @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12;
 }
 
+
 .footer-top {
   @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12;
+
+  &.hide-on-mobile {
+    @media (max-width: 639px) {
+      display: none;
+    }
+  }
 }
 
 .footer-brand {
@@ -90,6 +97,18 @@
 .footer-divider {
   @apply my-8 h-px;
   background-color: var(--border-color);
+
+  &.hide-on-mobile {
+    @media (max-width: 639px) {
+      display: none;
+    }
+  }
+}
+
+.footer-container.minimal-mobile {
+  @media (max-width: 639px) {
+    @apply py-4;
+  }
 }
 
 .footer-bottom {

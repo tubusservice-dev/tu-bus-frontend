@@ -272,6 +272,27 @@
     @if (relatedProducts().length > 0) {
       <section class="related-section">
         <h2>Productos relacionados</h2>
+
+        <!-- Vista móvil: scroll horizontal con mini cards -->
+        <div class="related-scroll">
+          @for (relatedProduct of relatedProducts(); track relatedProduct.id) {
+            <a class="related-mini-card" [routerLink]="['/producto', relatedProduct.id]">
+              <div class="mini-card-image">
+                <img [src]="relatedProduct.images[0]" [alt]="relatedProduct.name" />
+              </div>
+              <div class="mini-card-info">
+                <span class="mini-card-brand">{{ $any(relatedProduct.brand)?.name || '' }}</span>
+                <h4 class="mini-card-name">{{ relatedProduct.name }}</h4>
+                @if (relatedProduct.description) {
+                  <p class="mini-card-desc">{{ relatedProduct.description }}</p>
+                }
+                <span class="mini-card-price">${{ relatedProduct.price | number:'1.0-0' }}</span>
+              </div>
+            </a>
+          }
+        </div>
+
+        <!-- Vista desktop: grid con product cards -->
         <div class="related-grid">
           @for (relatedProduct of relatedProducts(); track relatedProduct.id) {
             <app-product-card

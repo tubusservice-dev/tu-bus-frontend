@@ -9,6 +9,7 @@
             [src]="userAvatar()"
             [alt]="user()?.firstName"
             class="avatar-image"
+            (error)="onAvatarError($event)"
           />
         </div>
         <div class="user-identity">

@@ -40,8 +40,10 @@
 
     <!-- Acciones (Derecha) -->
     <div class="header-right">
-      <!-- Botón de cambio de tema -->
-      <app-theme-toggle />
+      <!-- Botón de cambio de tema (solo desktop) -->
+      <span class="hidden sm:inline-flex">
+        <app-theme-toggle />
+      </span>
 
       <!-- Carrito de compras (solo si está logueado y tiene zona seleccionada) -->
       @if (isLoggedIn() && zoneService.hasSelection()) {
@@ -66,6 +68,32 @@
     </div>
   </div>
 </header>
+
+<!-- Modal de confirmación cambio de zona -->
+@if (showZoneConfirm()) {
+  <div class="zone-confirm-backdrop" (click)="cancelZoneChange()">
+    <div class="zone-confirm-modal" (click)="$event.stopPropagation()">
+      <div class="zone-confirm-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+        </svg>
+      </div>
+      <h3 class="zone-confirm-title">¿Cambiar de zona?</h3>
+      <p class="zone-confirm-text">
+        Tienes <strong>{{ cartService.totalItems() }}</strong> producto{{ cartService.totalItems() > 1 ? 's' : '' }} en tu carrito.
+        Al cambiar de zona se vaciará tu carrito y tendrás que volver a agregar los productos.
+      </p>
+      <div class="zone-confirm-actions">
+        <button type="button" class="zone-confirm-btn confirm" (click)="confirmZoneChange()">
+          Sí, cambiar zona
+        </button>
+        <button type="button" class="zone-confirm-btn cancel" (click)="cancelZoneChange()">
+          Cancelar
+        </button>
+      </div>
+    </div>
+  </div>
+}
 
 <!-- Modal de Autenticación -->
 @if (isAuthModalOpen()) {

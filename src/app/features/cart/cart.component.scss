@@ -14,7 +14,8 @@
 
 .header-content {
   @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4;
-  @apply flex items-center justify-between gap-3;
+  @apply flex items-center gap-3;
+  justify-content: flex-start !important;
 }
 
 .back-link {
@@ -43,14 +44,18 @@
   @apply flex items-center gap-2 sm:gap-3;
 
   h1 {
-    @apply text-lg sm:text-2xl font-bold;
+    @apply text-lg sm:text-2xl font-bold text-left;
     color: var(--text-primary);
   }
 }
 
 .title-icon {
-  @apply w-5 h-5 sm:w-7 sm:h-7 hidden sm:block;
+  @apply w-5 h-5 sm:w-7 sm:h-7;
   color: var(--accent-primary);
+}
+
+:host-context(.dark) .title-icon {
+  color: var(--tubus-text-accent, #4d94ff);
 }
 
 .items-badge {
@@ -328,7 +333,9 @@
 }
 
 .td-quantity {
-  @apply text-center;
+  .quantity-controls {
+    justify-content: space-between;
+  }
 }
 
 .td-actions {
@@ -351,14 +358,19 @@
 // QUANTITY CONTROLS
 // ============================================
 .quantity-controls {
-  @apply inline-flex items-stretch gap-0 rounded-xl overflow-hidden;
-  border: 1px solid var(--border-color);
+  @apply flex items-center gap-0 rounded-lg p-1;
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+}
+
+.card-quantity .quantity-controls {
+  @apply self-start;
 }
 
 .qty-btn {
-  @apply w-10 h-10 flex items-center justify-center transition-all;
+  @apply w-9 h-9 flex items-center justify-center rounded-md transition-colors duration-200;
   color: var(--text-primary);
-  background-color: #e5e7eb;
+  background-color: var(--bg-tertiary);
 
   &:hover:not(:disabled) {
     background-color: var(--accent-primary);
@@ -371,18 +383,16 @@
 
   &:disabled {
     @apply opacity-40 cursor-not-allowed;
-    background-color: #e5e7eb;
   }
 
   svg {
-    @apply w-4 h-4;
+    @apply w-5 h-5;
   }
 }
 
 .qty-value {
-  @apply w-12 text-center text-base font-bold flex items-center justify-center;
+  @apply w-10 h-9 text-center text-base font-semibold flex items-center justify-center;
   color: var(--text-primary);
-  background-color: #ffffff;
 }
 
 .max-badge {
@@ -457,7 +467,7 @@
 }
 
 .btn-checkout {
-  @apply w-full flex items-center justify-center py-4 rounded-xl font-semibold text-base transition-all mt-4;
+  @apply w-full flex items-center justify-center py-3 rounded-xl font-semibold text-base transition-all mt-4;
   background-color: #25D366;
   color: white;
 
@@ -705,27 +715,22 @@
 
   // Quantity controls
   .quantity-controls {
-    border-color: #4b5563;
+    background-color: #1f2937;
+    border-color: #374151;
   }
 
   .qty-btn {
     color: #d1d5db;
-    background-color: #1f2937;
+    background-color: #374151;
 
     &:hover:not(:disabled) {
       background-color: var(--tubus-text-accent, #4d94ff);
       color: white;
     }
-
-    &:disabled {
-      background-color: #1f2937;
-      color: #4b5563;
-    }
   }
 
   .qty-value {
     color: #f3f4f6;
-    background-color: #111827;
   }
 
   // Order summary

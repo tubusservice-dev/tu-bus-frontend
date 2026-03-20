@@ -6,6 +6,7 @@ import { UserMenuComponent } from '../../../../../shared/components/user-menu/us
 import { CartPopoverComponent } from '../../../../../shared/components/cart-popover/cart-popover.component';
 import { AuthModalComponent } from '../../../../../shared/components/auth-modal/auth-modal.component';
 import { AuthService, ZoneService } from '../../../../../core/services';
+import { CartService } from '../../../../../core/services/cart.service';
 
 @Component({
   selector: 'app-tubus-header',
@@ -24,6 +25,7 @@ export class TubusHeaderComponent implements OnInit, OnDestroy {
   protected readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   protected readonly zoneService = inject(ZoneService);
+  protected readonly cartService = inject(CartService);
   private routerSub?: Subscription;
 
   /** Verifica si estamos en la página de perfil */
@@ -34,6 +36,9 @@ export class TubusHeaderComponent implements OnInit, OnDestroy {
 
   /** Modal de auth controlado por el AuthService */
   protected readonly isAuthModalOpen = this.authService.authModalOpen;
+
+  /** Modal de confirmación de cambio de zona */
+  protected readonly showZoneConfirm = signal(false);
 
   constructor() {
     // Abrir modal automáticamente cuando la sesión expira
@@ -65,9 +70,26 @@ export class TubusHeaderComponent implements OnInit, OnDestroy {
 
   /**
    * Abre el modal de selección de zona
+   * Si hay items en el carrito, muestra confirmación primero
    */
   openZoneModal(): void {
+    if (this.cartService.totalItems() > 0) {
+      this.showZoneConfirm.set(true);
+    } else {
+      this.zoneService.clearSelection();
+    }
+  }
+
+  /** Confirma cambio de zona y limpia carrito */
+  confirmZoneChange(): void {
+    this.cartService.clearCart();
+    this.showZoneConfirm.set(false);
     this.zoneService.clearSelection();
+  }
+
+  /** Cancela el cambio de zona */
+  cancelZoneChange(): void {
+    this.showZoneConfirm.set(false);
   }
 
   /**
