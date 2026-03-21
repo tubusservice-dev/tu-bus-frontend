@@ -249,6 +249,7 @@ export class ProductDetailComponent implements OnInit {
         price: prod.price,
         image: prod.images?.[0] || '',
         stock: prod.stock || 0,
+        freeOilChangeService: prod.freeOilChangeService || false,
       },
       this.quantity()
     );

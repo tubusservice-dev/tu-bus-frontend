@@ -147,6 +147,13 @@ export class CheckoutSummaryComponent implements OnInit {
       }
     }
 
+    if (dispatchType === 'oil_change_service') {
+      if (!this.checkoutService.hasOilChangeServiceInfo()) {
+        this.router.navigate(['/checkout/cambio-aceite']);
+        return;
+      }
+    }
+
     if (this.cartService.isEmpty()) {
       this.router.navigate(['/carrito']);
       return;
@@ -198,6 +205,10 @@ export class CheckoutSummaryComponent implements OnInit {
 
   get sellerAgreementInfo() {
     return this.checkoutService.sellerAgreementInfo();
+  }
+
+  get oilChangeServiceInfo() {
+    return this.checkoutService.oilChangeServiceInfo();
   }
 
   get shippingCostLabel(): string {
@@ -478,6 +489,17 @@ export class CheckoutSummaryComponent implements OnInit {
               recipientPhone: sellerAgreement.phone,
             }
           : {}),
+        ...(this.dispatchType === 'oil_change_service' && this.oilChangeServiceInfo
+          ? {
+              recipientName: this.oilChangeServiceInfo.fullName,
+              recipientDocument: `${this.oilChangeServiceInfo.documentType}-${this.oilChangeServiceInfo.documentNumber}`,
+              recipientPhone: this.oilChangeServiceInfo.phone,
+              recipientAddress: this.oilChangeServiceInfo.address,
+              recipientCity: this.oilChangeServiceInfo.cityName,
+              recipientMunicipality: this.oilChangeServiceInfo.municipalityName,
+              referencePoint: this.oilChangeServiceInfo.referencePoint,
+            }
+          : {}),
       },
     };
 
@@ -509,6 +531,8 @@ export class CheckoutSummaryComponent implements OnInit {
       this.router.navigate(['/checkout/delivery']);
     } else if (dispatchType === 'seller_agreement') {
       this.router.navigate(['/checkout/vendedor']);
+    } else if (dispatchType === 'oil_change_service') {
+      this.router.navigate(['/checkout/cambio-aceite']);
     } else {
       this.router.navigate(['/checkout/despacho']);
     }

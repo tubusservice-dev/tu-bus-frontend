@@ -327,6 +327,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'checkout/cambio-aceite',
+        loadComponent: () =>
+          import('./features/checkout/checkout-oil-change-form/checkout-oil-change-form.component').then(
+            (m) => m.CheckoutOilChangeFormComponent
+          ),
+      },
+      {
         path: 'checkout/resumen',
         loadComponent: () =>
           import('./features/checkout/checkout-summary/checkout-summary.component').then(

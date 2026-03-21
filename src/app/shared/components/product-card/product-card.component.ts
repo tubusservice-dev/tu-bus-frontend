@@ -21,6 +21,7 @@ export interface ProductCardData {
   isActive?: boolean;
   isFeatured?: boolean;
   stock?: number;
+  freeOilChangeService?: boolean;
 }
 
 @Component({
@@ -129,6 +130,7 @@ export class ProductCardComponent {
       price: this.product.price,
       image: this.product.images[0] || '',
       stock: this.product.stock || 0,
+      freeOilChangeService: this.product.freeOilChangeService || false,
     });
 
     if (result.success) {

@@ -1,8 +1,9 @@
 import { Injectable, computed, signal, inject } from '@angular/core';
 import { SettingsService } from '../../../core/services/settings.service';
+import { CartService } from '../../../core/services/cart.service';
 import { ShippingAgency } from '../../../models/product.model';
 
-export type DispatchType = 'store_pickup' | 'shipping_agency' | 'local_delivery' | 'seller_agreement' | null;
+export type DispatchType = 'store_pickup' | 'shipping_agency' | 'local_delivery' | 'seller_agreement' | 'oil_change_service' | null;
 
 export interface DispatchOption {
   id: DispatchType;
@@ -63,6 +64,23 @@ export interface SellerAgreementInfo {
   notes?: string;
 }
 
+/** Información para servicio de cambio de aceite a domicilio */
+export interface OilChangeServiceInfo {
+  fullName: string;
+  documentType: 'V' | 'E' | 'J' | 'P';
+  documentNumber: string;
+  phone: string;
+  email?: string;
+  cityCode: string;
+  cityName: string;
+  municipalityCode: string;
+  municipalityName: string;
+  address: string;
+  referencePoint?: string;
+  vehicleInfo?: string;
+  notes?: string;
+}
+
 export interface CheckoutState {
   dispatchType: DispatchType;
   storePickupInfo: StorePickupInfo | null;
@@ -70,6 +88,7 @@ export interface CheckoutState {
   shippingRecipientInfo: ShippingRecipientInfo | null;
   localDeliveryRecipientInfo: LocalDeliveryRecipientInfo | null;
   sellerAgreementInfo: SellerAgreementInfo | null;
+  oilChangeServiceInfo: OilChangeServiceInfo | null;
   paymentMethod: string | null;
   disclaimerAccepted: boolean;
 }
@@ -81,6 +100,7 @@ const INITIAL_STATE: CheckoutState = {
   shippingRecipientInfo: null,
   localDeliveryRecipientInfo: null,
   sellerAgreementInfo: null,
+  oilChangeServiceInfo: null,
   paymentMethod: null,
   disclaimerAccepted: false,
 };
@@ -90,6 +110,7 @@ const INITIAL_STATE: CheckoutState = {
 })
 export class CheckoutService {
   private readonly settingsService = inject(SettingsService);
+  private readonly cartService = inject(CartService);
   private readonly _state = signal<CheckoutState>(INITIAL_STATE);
 
   /** Estado público de solo lectura */
@@ -120,6 +141,18 @@ export class CheckoutService {
     const config = this.dispatchConfig();
     const modules = config.modules;
     const options: DispatchOption[] = [];
+
+    // Servicio de cambio de aceite gratis - primero si aplica
+    if (this.cartService.hasOilChangeService()) {
+      options.push({
+        id: 'oil_change_service',
+        name: 'Servicio de Cambio de Aceite',
+        description: 'Cambio de aceite a domicilio gratis incluido con tu compra',
+        icon: 'oil',
+        price: null,
+        isAvailable: true,
+      });
+    }
 
     // Retiro en Tienda - solo si está habilitado en módulos
     if (modules.storePickup) {
@@ -196,6 +229,12 @@ export class CheckoutService {
   /** Verificar si hay información de contacto (acordar con vendedor) */
   readonly hasSellerAgreementInfo = computed(() => this._state().sellerAgreementInfo !== null);
 
+  /** Información del servicio de cambio de aceite */
+  readonly oilChangeServiceInfo = computed(() => this._state().oilChangeServiceInfo);
+
+  /** Verificar si hay información del servicio de cambio de aceite */
+  readonly hasOilChangeServiceInfo = computed(() => this._state().oilChangeServiceInfo !== null);
+
   /** Método de pago seleccionado */
   readonly paymentMethod = computed(() => this._state().paymentMethod);
 
@@ -218,6 +257,7 @@ export class CheckoutService {
       shippingRecipientInfo: type === 'shipping_agency' ? state.shippingRecipientInfo : null,
       localDeliveryRecipientInfo: type === 'local_delivery' ? state.localDeliveryRecipientInfo : null,
       sellerAgreementInfo: type === 'seller_agreement' ? state.sellerAgreementInfo : null,
+      oilChangeServiceInfo: type === 'oil_change_service' ? state.oilChangeServiceInfo : null,
     }));
   }
 
@@ -262,6 +302,16 @@ export class CheckoutService {
   }
 
   /**
+   * Establecer información del servicio de cambio de aceite
+   */
+  setOilChangeServiceInfo(info: OilChangeServiceInfo): void {
+    this._state.update((state) => ({
+      ...state,
+      oilChangeServiceInfo: info,
+    }));
+  }
+
+  /**
    * Seleccionar método de pago
    */
   selectPaymentMethod(method: string): void {
@@ -298,6 +348,7 @@ export class CheckoutService {
       shippingRecipientInfo: null,
       localDeliveryRecipientInfo: null,
       sellerAgreementInfo: null,
+      oilChangeServiceInfo: null,
     }));
   }
 

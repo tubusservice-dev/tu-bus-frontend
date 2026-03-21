@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { CheckoutService, DispatchOption } from '../services/checkout.service';
 import { CartService } from '../../../core/services/cart.service';
@@ -10,7 +10,7 @@ import { CartService } from '../../../core/services/cart.service';
   templateUrl: './checkout-dispatch.component.html',
   styleUrl: './checkout-dispatch.component.scss',
 })
-export class CheckoutDispatchComponent {
+export class CheckoutDispatchComponent implements OnInit {
   protected readonly checkoutService = inject(CheckoutService);
   protected readonly cartService = inject(CartService);
   private readonly router = inject(Router);
@@ -20,6 +20,13 @@ export class CheckoutDispatchComponent {
 
   /** Tipo seleccionado */
   protected readonly selectedType = this.checkoutService.dispatchType;
+
+  ngOnInit(): void {
+    // Auto-seleccionar cambio de aceite si aplica y no hay selección previa
+    if (!this.selectedType() && this.cartService.hasOilChangeService()) {
+      this.checkoutService.selectDispatchType('oil_change_service');
+    }
+  }
 
   /**
    * Seleccionar una opción de despacho
@@ -54,6 +61,9 @@ export class CheckoutDispatchComponent {
         break;
       case 'seller_agreement':
         this.router.navigate(['/checkout/vendedor']);
+        break;
+      case 'oil_change_service':
+        this.router.navigate(['/checkout/cambio-aceite']);
         break;
     }
   }

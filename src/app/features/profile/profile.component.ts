@@ -5,7 +5,7 @@ import { AuthService } from '../../core';
 import { ProfileInfoComponent } from './profile-info/profile-info.component';
 import { GarageComponent } from '../garage/garage.component';
 import { OrderListComponent } from '../orders/order-list/order-list.component';
-import { PaymentHistoryComponent } from './components/payment-history/payment-history.component';
+// import { PaymentHistoryComponent } from './components/payment-history/payment-history.component';
 
 type ProfileTab = 'profile' | 'garage' | 'orders' | 'payments';
 
@@ -21,7 +21,7 @@ const FRAGMENT_TAB_MAP: Record<string, ProfileTab> = {
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, ProfileInfoComponent, GarageComponent, OrderListComponent, PaymentHistoryComponent],
+  imports: [CommonModule, ProfileInfoComponent, GarageComponent, OrderListComponent],
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.scss',
 })

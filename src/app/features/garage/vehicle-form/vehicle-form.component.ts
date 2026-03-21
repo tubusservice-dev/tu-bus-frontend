@@ -1,7 +1,11 @@
 import { Component, inject, input, output, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors } from '@angular/forms';
 import { Vehicle, MARCAS_VEHICULOS_VE, CILINDRADAS, TIPOS_COMBUSTIBLE, TIPOS_ACEITE } from '../../../models/vehicle.model';
+import { VehicleService } from '../../../core/services/vehicle.service';
+
+// Formato placas Venezuela: 1-3 letras, guión opcional, 1-4 alfanuméricos (ej: DFY-H37, ABC123, AB123CD)
+const PLACA_VE_REGEX = /^[A-Za-z]{1,3}-?[A-Za-z0-9]{1,5}$/;
 
 @Component({
   selector: 'app-vehicle-form',
@@ -12,6 +16,7 @@ import { Vehicle, MARCAS_VEHICULOS_VE, CILINDRADAS, TIPOS_COMBUSTIBLE, TIPOS_ACE
 })
 export class VehicleFormComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
+  private readonly vehicleService = inject(VehicleService);
 
   vehicle = input<Vehicle | null>(null);
   save = output<any>();
@@ -28,7 +33,7 @@ export class VehicleFormComponent implements OnInit {
   ngOnInit(): void {
     const v = this.vehicle();
     this.form = this.fb.group({
-      placa: [v?.placa || '', [Validators.required, Validators.pattern(/^[A-Za-z0-9]{5,8}$/)]],
+      placa: [v?.placa || '', [Validators.required, Validators.pattern(PLACA_VE_REGEX), this.duplicatePlacaValidator.bind(this)]],
       marca: [v?.marca || '', [Validators.required]],
       modelo: [v?.modelo || '', [Validators.required]],
       year: [v?.year || '', [Validators.required, Validators.min(1960), Validators.max(this.currentYear + 1)]],
@@ -39,6 +44,17 @@ export class VehicleFormComponent implements OnInit {
       oilCapacityLiters: [v?.engineType?.oilCapacityLiters || '', [Validators.required, Validators.min(0.5)]],
       oilType: [v?.engineType?.oilType || '', [Validators.required]],
     });
+  }
+
+  private duplicatePlacaValidator(control: AbstractControl): ValidationErrors | null {
+    if (!control.value) return null;
+    const placa = control.value.toUpperCase().replace(/-/g, '');
+    const editing = this.vehicle();
+    const exists = this.vehicleService.vehicles().some(v => {
+      if (editing && v.id === editing.id) return false;
+      return v.placa.toUpperCase().replace(/-/g, '') === placa;
+    });
+    return exists ? { duplicatePlaca: true } : null;
   }
 
   onSubmit(): void {
@@ -71,5 +87,37 @@ export class VehicleFormComponent implements OnInit {
   hasError(field: string): boolean {
     const control = this.form.get(field);
     return !!control && control.invalid && control.touched;
+  }
+
+  getErrorMessage(field: string): string {
+    const control = this.form.get(field);
+    if (!control || !control.errors || !control.touched) return '';
+
+    if (control.errors['required']) {
+      const labels: Record<string, string> = {
+        placa: 'La placa', marca: 'La marca', modelo: 'El modelo',
+        year: 'El año', displacement: 'La cilindrada', oilType: 'El tipo de aceite',
+        oilCapacityLiters: 'La capacidad de aceite',
+      };
+      return `${labels[field] || 'Este campo'} es requerido`;
+    }
+    if (control.errors['pattern'] && field === 'placa') {
+      return 'Formato inválido. Ej: DFY-H37, ABC-123';
+    }
+    if (control.errors['duplicatePlaca']) {
+      return 'Ya tienes un vehículo con esta placa';
+    }
+    if (control.errors['min']) {
+      if (field === 'year') return `El año mínimo es 1960`;
+      if (field === 'oilCapacityLiters') return 'Mínimo 0.5 litros';
+      if (field === 'cylinders') return 'Mínimo 1 cilindro';
+      return `Valor mínimo: ${control.errors['min'].min}`;
+    }
+    if (control.errors['max']) {
+      if (field === 'year') return `El año máximo es ${this.currentYear + 1}`;
+      if (field === 'cylinders') return 'Máximo 16 cilindros';
+      return `Valor máximo: ${control.errors['max'].max}`;
+    }
+    return 'Campo inválido';
   }
 }

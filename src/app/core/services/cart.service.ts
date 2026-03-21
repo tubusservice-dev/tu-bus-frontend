@@ -9,6 +9,7 @@ export interface CartItem {
   quantity: number;
   image: string;
   stock: number;
+  freeOilChangeService?: boolean;
 }
 
 export interface AddToCartResult {
@@ -49,6 +50,11 @@ export class CartService {
 
   /** Verificar si el carrito está vacío */
   readonly isEmpty = computed(() => this._items().length === 0);
+
+  /** Verificar si algún item tiene servicio de cambio de aceite gratis */
+  readonly hasOilChangeService = computed(() =>
+    this._items().some(item => item.freeOilChangeService === true)
+  );
 
   constructor() {
     // Inicializar el estado de autenticación

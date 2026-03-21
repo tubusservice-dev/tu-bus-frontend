@@ -96,6 +96,33 @@
   }
 }
 
+// Oil change service banner
+.oil-change-banner {
+  @apply text-center p-5 rounded-xl mb-2;
+  background-color: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+
+  .banner-icon {
+    @apply w-10 h-10 mx-auto mb-3 flex items-center justify-center rounded-full;
+    background-color: rgba(59, 130, 246, 0.15);
+
+    svg {
+      @apply w-5 h-5;
+      color: #3B82F6;
+    }
+  }
+
+  .banner-title {
+    @apply text-sm font-bold mb-1;
+    color: var(--text-primary);
+  }
+
+  .banner-text {
+    @apply text-xs leading-relaxed;
+    color: var(--text-secondary);
+  }
+}
+
 .confirmation-actions {
   @apply flex flex-col sm:flex-row gap-3 justify-center;
 }
@@ -170,6 +197,18 @@
 
     .banner-icon {
       background-color: rgba(37, 211, 102, 0.12);
+    }
+
+    .banner-title { color: #f3f4f6; }
+    .banner-text { color: #9ca3af; }
+  }
+
+  .oil-change-banner {
+    background-color: rgba(59, 130, 246, 0.06);
+    border-color: rgba(59, 130, 246, 0.15);
+
+    .banner-icon {
+      background-color: rgba(59, 130, 246, 0.12);
     }
 
     .banner-title { color: #f3f4f6; }

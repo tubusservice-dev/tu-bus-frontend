@@ -156,6 +156,7 @@
 .product-card {
   @apply bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden cursor-pointer;
   @apply hover:shadow-lg hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200;
+  @apply h-full flex flex-col;
 
   // Efecto zoom en la imagen al hover
   &:hover {
@@ -203,7 +204,7 @@
 }
 
 .product-info {
-  @apply p-4 flex flex-col gap-2;
+  @apply p-4 flex flex-col gap-2 flex-1;
 }
 
 .card-header {
@@ -239,6 +240,10 @@
   }
 }
 
+.product-description {
+  @apply text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2 leading-snug;
+}
+
 .product-quick-info {
   @apply flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400;
 
@@ -264,7 +269,7 @@
 }
 
 .product-footer {
-  @apply flex items-center justify-between mt-2 pt-3 border-t border-gray-100 dark:border-gray-700;
+  @apply flex items-center justify-between mt-auto pt-3 border-t border-gray-100 dark:border-gray-700;
 }
 
 .product-price {

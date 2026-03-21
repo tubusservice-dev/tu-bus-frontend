@@ -178,6 +178,11 @@
                   }
                 </div>
 
+                <!-- Descripción -->
+                @if (product.description) {
+                  <p class="product-description">{{ product.description }}</p>
+                }
+
                 <!-- Categorías -->
                 @if (product.categories && product.categories.length > 0) {
                   <div class="product-categories">
