@@ -55,7 +55,7 @@
 
           <!-- Vista móvil: Cards -->
           <div class="cart-items-mobile">
-            @for (item of cartService.items(); track item.id + '-' + item.quantity) {
+            @for (item of cartService.items(); track item.id) {
               <div class="cart-card">
                 <!-- Imagen del producto -->
                 <div class="card-image-container">
@@ -137,7 +137,7 @@
                 </tr>
               </thead>
               <tbody>
-                @for (item of cartService.items(); track item.id + '-' + item.quantity) {
+                @for (item of cartService.items(); track item.id) {
                   <tr class="cart-row">
                     <td class="td-product">
                       <div class="product-info">

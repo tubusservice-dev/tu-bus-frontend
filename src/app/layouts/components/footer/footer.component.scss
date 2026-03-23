@@ -11,7 +11,7 @@
 
 
 .footer-top {
-  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12;
+  @apply grid grid-cols-1 sm:grid-cols-2 gap-8 lg:gap-12;
 
   &.hide-on-mobile {
     @media (max-width: 639px) {
@@ -21,7 +21,10 @@
 }
 
 .footer-brand {
-  @apply sm:col-span-2 lg:col-span-1;
+}
+
+.footer-nav {
+  @apply sm:pl-12 lg:pl-24;
 }
 
 .footer-logo {
@@ -76,7 +79,7 @@
 }
 
 .social-links {
-  @apply flex items-center gap-4;
+  @apply flex items-center gap-4 mt-4;
 }
 
 .social-link {
@@ -119,12 +122,26 @@
 }
 
 .footer-bottom {
-  @apply text-center;
+  @apply flex flex-col sm:flex-row items-center sm:justify-between gap-2;
 }
 
 .copyright {
   @apply text-sm;
   color: var(--text-tertiary);
+}
+
+.footer-legal {
+  @apply flex gap-6;
+}
+
+.legal-link {
+  @apply text-xs transition-colors duration-200;
+  color: var(--text-tertiary);
+  text-decoration: none;
+
+  &:hover {
+    color: var(--text-secondary);
+  }
 }
 
 // ============================================
@@ -173,5 +190,12 @@
 
   .copyright {
     color: #6b7280;
+  }
+
+  .legal-link {
+    color: #6b7280;
+    &:hover {
+      color: #9ca3af;
+    }
   }
 }

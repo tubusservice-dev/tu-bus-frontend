@@ -15,23 +15,7 @@
         <p class="footer-description">
           Tu tienda en línea de confianza. Ofrecemos los mejores productos con la mejor calidad.
         </p>
-      </div>
-
-      <!-- Links de navegación -->
-      <div class="footer-nav">
-        <h3 class="footer-title">Navegación</h3>
-        <ul class="footer-links">
-          @for (link of navLinks; track link.label) {
-            <li>
-              <a [routerLink]="link.route" class="footer-link">{{ link.label }}</a>
-            </li>
-          }
-        </ul>
-      </div>
-
-      <!-- Redes sociales -->
-      <div class="footer-social">
-        <h3 class="footer-title">Síguenos</h3>
+        <!-- Redes sociales -->
         <div class="social-links">
           @for (social of socialLinks; track social.name) {
             <a
@@ -60,16 +44,40 @@
           }
         </div>
       </div>
+
+      <!-- Links de navegación -->
+      <div class="footer-nav">
+        <h3 class="footer-title">Navegación</h3>
+        <ul class="footer-links">
+          @if (landingMode()) {
+            @for (link of landingLinks; track link.label) {
+              <li>
+                <a class="footer-link" (click)="scrollToSection(link.sectionId)">{{ link.label }}</a>
+              </li>
+            }
+          } @else {
+            @for (link of navLinks; track link.label) {
+              <li>
+                <a [routerLink]="link.route" class="footer-link">{{ link.label }}</a>
+              </li>
+            }
+          }
+        </ul>
+      </div>
     </div>
 
     <!-- Divisor -->
     <div class="footer-divider" [class.hide-on-mobile]="minimal()"></div>
 
-    <!-- Sección inferior - Copyright -->
+    <!-- Sección inferior - Copyright y legales -->
     <div class="footer-bottom">
       <p class="copyright">
         &copy; {{ currentYear }} {{ appName }}. Todos los derechos reservados.
       </p>
+      <div class="footer-legal">
+        <a href="#" class="legal-link">Términos y Condiciones</a>
+        <a href="#" class="legal-link">Política de Privacidad</a>
+      </div>
     </div>
   </div>
 </footer>

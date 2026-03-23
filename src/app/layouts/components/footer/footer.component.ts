@@ -2,11 +2,6 @@ import { Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { environment } from '../../../../environments/environment';
 
-interface FooterLink {
-  label: string;
-  href: string;
-}
-
 interface SocialLink {
   name: string;
   href: string;
@@ -24,24 +19,28 @@ export class FooterComponent {
   /** En modo minimal solo muestra copyright (checkout mobile) */
   readonly minimal = input(false);
 
+  /** En modo landing los links de nav hacen scroll en vez de routerLink */
+  readonly landingMode = input(false);
+
   /** Nombre de la aplicación */
   protected readonly appName = environment.appName;
 
   /** Año actual para el copyright */
   protected readonly currentYear = new Date().getFullYear();
 
-  /** Links de navegación */
+  /** Links de navegación (tienda) */
   protected readonly navLinks = [
     { label: 'Inicio', route: '/' },
     { label: 'Catálogo', route: '/catalogo' },
     { label: 'Carrito', route: '/carrito' },
   ];
 
-  /** Links legales */
-  protected readonly legalLinks: FooterLink[] = [
-    { label: 'Términos y Condiciones', href: '#' },
-    { label: 'Política de Privacidad', href: '#' },
-    { label: 'Política de Cookies', href: '#' },
+  /** Links de navegación (landing - scroll) */
+  protected readonly landingLinks = [
+    { label: 'Servicios', sectionId: 'servicios' },
+    { label: 'Combos', sectionId: 'combos' },
+    { label: 'Beneficios', sectionId: 'beneficios' },
+    { label: 'Contacto', sectionId: 'contacto' },
   ];
 
   /** Redes sociales */
@@ -50,4 +49,12 @@ export class FooterComponent {
     { name: 'Instagram', href: '#', icon: 'instagram' },
     { name: 'Twitter', href: '#', icon: 'twitter' },
   ];
+
+  /** Scroll suave a sección (landing mode) */
+  scrollToSection(sectionId: string): void {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  }
 }

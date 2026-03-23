@@ -28,7 +28,7 @@
 
   <!-- Popover -->
   @if (isOpen()) {
-    <div class="cart-popover" role="dialog" aria-label="Carrito de compras">
+    <div class="cart-popover" role="dialog" aria-label="Carrito de compras" (click)="$event.stopPropagation()">
       <!-- Header del popover -->
       <div class="popover-header">
         <h3 class="popover-title">
@@ -62,7 +62,7 @@
       } @else {
         <!-- Lista de items -->
         <div class="cart-items">
-          @for (item of cartService.items(); track item.id + '-' + item.quantity) {
+          @for (item of cartService.items(); track item.id) {
             <div class="cart-item">
               <img
                 [src]="item.image"
