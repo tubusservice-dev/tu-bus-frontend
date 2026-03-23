@@ -6,4 +6,3 @@ export * from './components/tubus-combos/tubus-combos.component';
 export * from './components/tubus-brands/tubus-brands.component';
 export * from './components/tubus-benefits/tubus-benefits.component';
 export * from './components/tubus-contact/tubus-contact.component';
-export * from './components/tubus-footer/tubus-footer.component';

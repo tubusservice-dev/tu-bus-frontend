@@ -133,6 +133,11 @@
   border-top: 1px solid var(--border-color);
 }
 
+.stock-hint {
+  @apply text-[10px] font-medium mb-0;
+  color: #d97706;
+}
+
 .price-block {
   @apply flex items-baseline gap-2 self-center;
 }
@@ -149,18 +154,6 @@
 
   &.discount {
     color: #dc2626;
-  }
-}
-
-// Stock bajo
-.stock-low-bar {
-  @apply flex items-center justify-center gap-1.5 mt-2 py-1.5 rounded-lg;
-  @apply text-[11px] font-semibold;
-  background-color: rgba(245, 158, 11, 0.08);
-  color: #d97706;
-
-  svg {
-    @apply w-3.5 h-3.5;
   }
 }
 
@@ -306,8 +299,7 @@
     }
   }
 
-  .stock-low-bar {
-    background-color: rgba(245, 158, 11, 0.1);
+  .stock-hint {
     color: #fbbf24;
   }
 

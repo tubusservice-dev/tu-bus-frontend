@@ -27,13 +27,13 @@ export class CartPopoverComponent {
 
   /** Navegar a la página del carrito */
   goToCart(): void {
-    this.closePopover();
     this.router.navigate(['/carrito']);
+    this.closePopover();
   }
 
   onContinue(): void {
-    this.closePopover();
     this.router.navigate(['/carrito']);
+    this.closePopover();
   }
 
   /** Verificar si un item puede incrementarse */
