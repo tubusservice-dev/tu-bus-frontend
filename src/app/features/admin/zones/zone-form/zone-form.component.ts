@@ -4,6 +4,13 @@ import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ZoneService, City, Municipality } from '../../../../core/services/zone.service';
 
+interface StateItem {
+  id: string;
+  code: string;
+  name: string;
+  isActive: boolean;
+}
+
 @Component({
   selector: 'app-zone-form',
   standalone: true,
@@ -24,6 +31,10 @@ export class ZoneFormComponent implements OnInit {
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly successMessage = signal<string | null>(null);
 
+  // Estados
+  protected readonly states = signal<StateItem[]>([]);
+  protected readonly isLoadingStates = signal(false);
+
   // Datos de la ciudad
   protected readonly currentCity = signal<City | null>(null);
 
@@ -40,22 +51,20 @@ export class ZoneFormComponent implements OnInit {
 
   // Formulario principal
   protected readonly form: FormGroup = this.fb.group({
-    code: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(5)]],
+    stateCode: ['', [Validators.required]],
     name: ['', [Validators.required, Validators.minLength(2)]],
     isActive: [true],
-    freeDelivery: [true],
-    additionalCharge: [false],
-    additionalChargeAmount: [0],
   });
 
   // Formulario de municipio
   protected readonly municipalityForm: FormGroup = this.fb.group({
-    code: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(5)]],
     name: ['', [Validators.required, Validators.minLength(2)]],
     isActive: [true],
   });
 
   ngOnInit(): void {
+    this.loadStates();
+
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       this.cityId.set(id);
@@ -64,18 +73,28 @@ export class ZoneFormComponent implements OnInit {
     }
   }
 
+  private loadStates(): void {
+    this.isLoadingStates.set(true);
+    this.zoneService.getAllStates().subscribe({
+      next: (response) => {
+        this.states.set(response.data || []);
+        this.isLoadingStates.set(false);
+      },
+      error: () => {
+        this.isLoadingStates.set(false);
+      },
+    });
+  }
+
   private loadCity(id: string): void {
     this.isLoading.set(true);
     this.zoneService.getById(id).subscribe({
       next: (city) => {
         this.currentCity.set(city);
         this.form.patchValue({
-          code: city.code,
+          stateCode: city.stateCode || '',
           name: city.name,
           isActive: city.isActive,
-          freeDelivery: city.deliveryConfig?.freeDelivery ?? true,
-          additionalCharge: city.deliveryConfig?.additionalCharge ?? false,
-          additionalChargeAmount: city.deliveryConfig?.additionalChargeAmount ?? 0,
         });
         this.municipalities.set(city.municipalities || []);
         this.isLoading.set(false);
@@ -87,6 +106,13 @@ export class ZoneFormComponent implements OnInit {
     });
   }
 
+  getSelectedStateName(): string {
+    const stateCode = this.form.get('stateCode')?.value;
+    if (!stateCode) return '';
+    const state = this.states().find(s => s.code === stateCode);
+    return state?.name || '';
+  }
+
   onSubmit(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -96,15 +122,13 @@ export class ZoneFormComponent implements OnInit {
     this.isSubmitting.set(true);
     this.errorMessage.set(null);
 
-    const data = {
-      code: this.form.value.code.toUpperCase(),
+    const stateName = this.getSelectedStateName();
+
+    const data: any = {
       name: this.form.value.name,
+      stateCode: this.form.value.stateCode,
+      stateName: stateName,
       isActive: this.form.value.isActive,
-      deliveryConfig: {
-        freeDelivery: this.form.value.freeDelivery,
-        additionalCharge: this.form.value.additionalCharge,
-        additionalChargeAmount: this.form.value.additionalCharge ? Number(this.form.value.additionalChargeAmount) || 0 : 0,
-      },
     };
 
     const request$ = this.isEditMode()
@@ -114,12 +138,9 @@ export class ZoneFormComponent implements OnInit {
     request$.subscribe({
       next: (city) => {
         if (!this.isEditMode()) {
-          // Si es creacion, redirigir a edicion para poder agregar municipios
           this.router.navigate(['/admin/zones/edit', city.id]);
         } else {
-          this.successMessage.set('Zona actualizada correctamente');
-          this.currentCity.set(city);
-          setTimeout(() => this.successMessage.set(null), 3000);
+          this.router.navigate(['/admin/zones']);
         }
         this.isSubmitting.set(false);
       },
@@ -167,7 +188,6 @@ export class ZoneFormComponent implements OnInit {
     this.errorMessage.set(null);
 
     const data = {
-      code: this.municipalityForm.value.code.toUpperCase(),
       name: this.municipalityForm.value.name,
       isActive: this.municipalityForm.value.isActive,
     };
@@ -241,22 +261,6 @@ export class ZoneFormComponent implements OnInit {
         this.isDeletingMunicipality.set(false);
       },
     });
-  }
-
-  // ==================== DELIVERY CONFIG ====================
-
-  onFreeDeliveryChange(checked: boolean): void {
-    if (checked) {
-      this.form.patchValue({ additionalCharge: false, additionalChargeAmount: 0 });
-    }
-  }
-
-  onAdditionalChargeChange(checked: boolean): void {
-    if (checked) {
-      this.form.patchValue({ freeDelivery: false });
-    } else {
-      this.form.patchValue({ additionalChargeAmount: 0 });
-    }
   }
 
   // ==================== HELPERS ====================

@@ -1,5 +1,7 @@
 .admin-layout {
-  @apply flex min-h-screen bg-gray-100 dark:bg-gray-900;
+  @apply flex bg-gray-100 dark:bg-gray-900;
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 // Overlay para móvil
@@ -9,7 +11,7 @@
 
 // Sidebar
 .sidebar {
-  @apply fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out;
+  @apply fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out;
 
   &.open {
     @apply translate-x-0;
@@ -17,7 +19,7 @@
 }
 
 .sidebar-header {
-  @apply p-4 border-b border-gray-200 dark:border-gray-700;
+  @apply px-4 h-16 flex items-center border-b border-gray-200 dark:border-gray-700;
 }
 
 .logo {
@@ -98,7 +100,9 @@
 
 // Contenido principal
 .main-wrapper {
-  @apply flex-1 flex flex-col min-h-screen lg:ml-0;
+  @apply flex-1 flex flex-col lg:ml-64;
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .main-header {

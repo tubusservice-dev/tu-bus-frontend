@@ -99,6 +99,12 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
       exact: false,
     },
     {
+      label: 'Sucursales',
+      icon: 'branch',
+      route: '/admin/branches',
+      exact: false,
+    },
+    {
       label: 'Mecanicos',
       icon: 'wrench',
       route: '/admin/mechanics',
@@ -118,12 +124,27 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     },
   ];
 
+  private originalBodyBg = '';
+
   ngOnInit(): void {
     this.notificationService.startPolling();
+    this.originalBodyBg = document.body.style.backgroundColor;
+    this.updateBodyBg();
+    this.mutationObserver = new MutationObserver(() => this.updateBodyBg());
+    this.mutationObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+  }
+
+  private mutationObserver?: MutationObserver;
+
+  private updateBodyBg(): void {
+    const isDark = document.documentElement.classList.contains('dark');
+    document.body.style.backgroundColor = isDark ? '#111827' : '#f3f4f6';
   }
 
   ngOnDestroy(): void {
     this.notificationService.stopPolling();
+    document.body.style.backgroundColor = this.originalBodyBg;
+    this.mutationObserver?.disconnect();
   }
 
   /** Toggle del sidebar en móvil */

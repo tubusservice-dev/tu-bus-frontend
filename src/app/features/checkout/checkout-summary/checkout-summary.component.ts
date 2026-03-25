@@ -6,6 +6,8 @@ import { CartService } from '../../../core/services/cart.service';
 import { OrderService } from '../../../core/services/order.service';
 import { VehicleService } from '../../../core/services/vehicle.service';
 import { ZoneService } from '../../../core/services/zone.service';
+import { BranchService } from '../../../core/services/branch.service';
+import { Branch, ServiceMunicipality } from '../../../models/branch.model';
 import { PaymentMethodService } from '../../../core/services/payment-method.service';
 import { CreateOrderRequest, PaymentSubmission } from '../../../models/order.model';
 import {
@@ -32,7 +34,11 @@ export class CheckoutSummaryComponent implements OnInit {
   private readonly vehicleService = inject(VehicleService);
   private readonly paymentMethodService = inject(PaymentMethodService);
   private readonly zoneService = inject(ZoneService);
+  private readonly branchService = inject(BranchService);
   private readonly router = inject(Router);
+
+  // Branches for delivery config
+  private readonly activeBranches = signal<Branch[]>([]);
 
   // State signals
   protected readonly isGenerating = signal(false);
@@ -161,6 +167,12 @@ export class CheckoutSummaryComponent implements OnInit {
 
     // Load active payment methods from API
     this.loadPaymentMethods();
+
+    // Load active branches for delivery config
+    this.branchService.getActive().subscribe({
+      next: (res) => this.activeBranches.set(res.data || []),
+      error: () => this.activeBranches.set([]),
+    });
   }
 
   private loadPaymentMethods(): void {
@@ -239,12 +251,27 @@ export class CheckoutSummaryComponent implements OnInit {
     return 0;
   }
 
-  private getLocalDeliveryConfig() {
+  private getLocalDeliveryConfig(): { freeDelivery: boolean; additionalCharge: boolean; additionalChargeAmount: number } | null {
     const localDelivery = this.localDeliveryInfo;
     if (!localDelivery) return null;
-    const cities = this.zoneService?.activeCities() || [];
-    const city = cities.find(c => c.code === localDelivery.cityCode);
-    return city?.deliveryConfig || null;
+
+    // Search in active branches for the municipality's delivery config
+    const branches = this.activeBranches();
+    for (const branch of branches) {
+      const sm = branch.serviceMunicipalities.find(
+        m => m.municipalityCode === localDelivery.municipalityCode && m.hasDelivery
+      );
+      if (sm) {
+        return {
+          freeDelivery: sm.freeDelivery,
+          additionalCharge: !sm.freeDelivery && sm.deliveryCharge > 0,
+          additionalChargeAmount: sm.deliveryCharge,
+        };
+      }
+    }
+
+    // Default: free delivery if no branch config found
+    return { freeDelivery: true, additionalCharge: false, additionalChargeAmount: 0 };
   }
 
   get isPayOnDelivery(): boolean {

@@ -18,19 +18,23 @@ export interface CityListResponse {
 }
 
 export interface CreateCityDto {
-  code: string;
+  code?: string;
   name: string;
+  stateCode?: string;
+  stateName?: string;
   isActive?: boolean;
 }
 
 export interface UpdateCityDto {
   code?: string;
   name?: string;
+  stateCode?: string;
+  stateName?: string;
   isActive?: boolean;
 }
 
 export interface CreateMunicipalityDto {
-  code: string;
+  code?: string;
   name: string;
   isActive?: boolean;
 }
@@ -63,6 +67,8 @@ export interface City {
   id: string;
   code: string;
   name: string;
+  stateCode?: string;
+  stateName?: string;
   isActive: boolean;
   deliveryConfig?: DeliveryConfig;
   municipalities: Municipality[];
@@ -293,6 +299,20 @@ export class ZoneService {
    */
   removeMunicipality(cityId: string, code: string): Observable<City> {
     return this.http.delete<City>(`${this.adminUrl}/${cityId}/municipalities/${code}`);
+  }
+
+  // ==================== MÉTODOS ESTADOS ====================
+
+  getAllStates(): Observable<{ success: boolean; data: { id: string; code: string; name: string; isActive: boolean }[] }> {
+    return this.http.get<{ success: boolean; data: { id: string; code: string; name: string; isActive: boolean }[] }>(`${this.apiUrl}/states`);
+  }
+
+  getActiveStates(): Observable<{ success: boolean; data: { id: string; code: string; name: string; isActive: boolean }[] }> {
+    return this.http.get<{ success: boolean; data: { id: string; code: string; name: string; isActive: boolean }[] }>(`${this.apiUrl}/states/active`);
+  }
+
+  getCitiesByState(stateCode: string): Observable<{ success: boolean; data: City[] }> {
+    return this.http.get<{ success: boolean; data: City[] }>(`${this.apiUrl}/states/${stateCode}/cities`);
   }
 
   /**

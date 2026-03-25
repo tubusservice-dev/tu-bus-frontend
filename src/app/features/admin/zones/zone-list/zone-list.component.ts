@@ -17,6 +17,7 @@ export class ZoneListComponent implements OnInit {
   protected readonly isLoading = signal(true);
   protected readonly cities = signal<City[]>([]);
   protected readonly searchTerm = signal('');
+  protected readonly stateFilter = signal('');
 
   // Modal de detalles
   protected readonly detailModalOpen = signal(false);
@@ -44,14 +45,37 @@ export class ZoneListComponent implements OnInit {
     });
   }
 
+  get uniqueStates(): { code: string; name: string }[] {
+    const stateMap = new Map<string, string>();
+    for (const city of this.cities()) {
+      if (city.stateCode && city.stateName) {
+        stateMap.set(city.stateCode, city.stateName);
+      }
+    }
+    return Array.from(stateMap.entries())
+      .map(([code, name]) => ({ code, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
   get filteredCities(): City[] {
+    let result = this.cities();
+
+    const state = this.stateFilter();
+    if (state) {
+      result = result.filter(c => c.stateCode === state);
+    }
+
     const term = this.searchTerm().toLowerCase();
-    if (!term) return this.cities();
-    return this.cities().filter(
-      (c) =>
-        c.name.toLowerCase().includes(term) ||
-        c.code.toLowerCase().includes(term)
-    );
+    if (term) {
+      result = result.filter(
+        (c) =>
+          c.name.toLowerCase().includes(term) ||
+          c.code.toLowerCase().includes(term) ||
+          (c.stateName || '').toLowerCase().includes(term)
+      );
+    }
+
+    return result;
   }
 
   getMunicipalityCount(city: City): number {

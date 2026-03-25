@@ -195,6 +195,28 @@ export const routes: Routes = [
                 (m) => m.ZoneFormComponent
               ),
           },
+          // Sucursales
+          {
+            path: 'branches',
+            loadComponent: () =>
+              import('./features/admin/branches/branch-list/branch-list.component').then(
+                (m) => m.BranchListComponent
+              ),
+          },
+          {
+            path: 'branches/create',
+            loadComponent: () =>
+              import('./features/admin/branches/branch-form/branch-form.component').then(
+                (m) => m.BranchFormComponent
+              ),
+          },
+          {
+            path: 'branches/edit/:id',
+            loadComponent: () =>
+              import('./features/admin/branches/branch-form/branch-form.component').then(
+                (m) => m.BranchFormComponent
+              ),
+          },
           // Mecanicos
           {
             path: 'mechanics',
