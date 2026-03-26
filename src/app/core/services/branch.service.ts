@@ -37,4 +37,12 @@ export class BranchService {
   delete(id: string): Observable<{ success: boolean; message: string }> {
     return this.http.delete<{ success: boolean; message: string }>(`${this.adminUrl}/${id}`);
   }
+
+  getByZone(cityCode: string, municipalityCode?: string): Observable<BranchListResponse> {
+    let params = `?cityCode=${cityCode}`;
+    if (municipalityCode) {
+      params += `&municipalityCode=${municipalityCode}`;
+    }
+    return this.http.get<BranchListResponse>(`${this.publicUrl}/by-zone${params}`);
+  }
 }

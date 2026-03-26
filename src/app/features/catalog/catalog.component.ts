@@ -8,6 +8,7 @@ import { CategoryService } from '../../core/services/category.service';
 import { SettingsService } from '../../core/services/settings.service';
 import { ZoneService } from '../../core/services/zone.service';
 import { VehicleService } from '../../core/services/vehicle.service';
+import { BranchService } from '../../core/services/branch.service';
 import { ProductCardComponent, ProductCardData } from '../../shared/components/product-card/product-card.component';
 import {
   Product,
@@ -40,10 +41,15 @@ export class CatalogComponent implements OnInit {
 
   protected readonly zoneService = inject(ZoneService);
   protected readonly vehicleService = inject(VehicleService);
+  private readonly branchService = inject(BranchService);
   private readonly route = inject(ActivatedRoute);
 
   // Filtro de vehículo (activo cuando se navega desde el garaje)
   protected readonly vehicleFilterActive = signal(false);
+
+  // Branch IDs para filtrar por zona
+  private readonly branchIds = signal<string[]>([]);
+  private zoneInitialized = false;
 
   // Estado
   protected readonly isLoading = signal(true);
@@ -110,6 +116,21 @@ export class CatalogComponent implements OnInit {
     return count;
   });
 
+  constructor() {
+    // Recargar productos cuando cambia la zona seleccionada
+    effect(() => {
+      const zone = this.zoneService.selectedZone();
+      if (zone) {
+        this.loadBranchesByZone(zone.city.code, zone.municipality.code);
+      } else if (this.zoneInitialized) {
+        // Si se limpia la zona, cargar sin filtro de sucursal
+        this.branchIds.set([]);
+        this.currentPage.set(1);
+        this.loadProducts();
+      }
+    });
+  }
+
   ngOnInit(): void {
     // Activar filtro de vehículo si se navega desde el garaje
     const fromGarage = this.route.snapshot.queryParamMap.get('fromGarage');
@@ -119,7 +140,12 @@ export class CatalogComponent implements OnInit {
 
     this.loadBrands();
     this.loadCategories();
-    this.loadProducts();
+
+    // Si ya hay zona seleccionada, el effect la cargará. Si no, cargar todos.
+    if (!this.zoneService.selectedZone()) {
+      this.loadProducts();
+    }
+    this.zoneInitialized = true;
   }
 
   loadBrands(): void {
@@ -137,6 +163,26 @@ export class CatalogComponent implements OnInit {
         this.categories.set(response.data);
       },
       error: () => {},
+    });
+  }
+
+  private loadBranchesByZone(cityCode: string, municipalityCode: string): void {
+    this.branchService.getByZone(cityCode, municipalityCode).subscribe({
+      next: (response) => {
+        if (response.success && response.data.length > 0) {
+          const ids = response.data.map(b => b.id);
+          this.branchIds.set(ids);
+        } else {
+          this.branchIds.set([]);
+        }
+        this.currentPage.set(1);
+        this.loadProducts();
+      },
+      error: () => {
+        this.branchIds.set([]);
+        this.currentPage.set(1);
+        this.loadProducts();
+      }
     });
   }
 
@@ -162,6 +208,10 @@ export class CatalogComponent implements OnInit {
       sortOrder = 'desc';
     }
 
+    // Incluir branchIds si hay zona seleccionada
+    const ids = this.branchIds();
+    const branchIds = ids.length > 0 ? ids.join(',') : undefined;
+
     this.productService.getAll({
       page: this.currentPage(),
       limit: this.currentLimit(),
@@ -173,6 +223,7 @@ export class CatalogComponent implements OnInit {
       sortBy,
       sortOrder,
       isActive: true,
+      branchIds,
     }).subscribe({
       next: (response) => {
         this.allProducts.set(response.data);
@@ -274,19 +325,8 @@ export class CatalogComponent implements OnInit {
    * Si no hay zona o la zona es "all", muestra todos.
    */
   private filterByZone(products: ProductCardData[]): ProductCardData[] {
-    const zone = this.zoneService.selectedZone();
-    if (!zone) return products;
-
-    return products.filter(p => {
-      const product = p as unknown as Product;
-      if (product.allRegions) return true;
-      if (!product.regions || product.regions.length === 0) return true;
-
-      return product.regions.some(r => {
-        const cityId = typeof r.city === 'string' ? r.city : r.city?.id;
-        return cityId === zone.city.id && r.municipalityCode === zone.municipality.code;
-      });
-    });
+    // Filtrado por zona se hace ahora a través de sucursales en el backend
+    return products;
   }
 
   getPageNumbers(): number[] {

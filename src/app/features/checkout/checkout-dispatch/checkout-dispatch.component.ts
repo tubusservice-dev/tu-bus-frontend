@@ -22,6 +22,9 @@ export class CheckoutDispatchComponent implements OnInit {
   protected readonly selectedType = this.checkoutService.dispatchType;
 
   ngOnInit(): void {
+    // Cargar configuración de delivery desde la sucursal para la zona del usuario
+    this.checkoutService.loadDeliveryConfigForZone();
+
     // Auto-seleccionar cambio de aceite si aplica y no hay selección previa
     if (!this.selectedType() && this.cartService.hasOilChangeService()) {
       this.checkoutService.selectDispatchType('oil_change_service');

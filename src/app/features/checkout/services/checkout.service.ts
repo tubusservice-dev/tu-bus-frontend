@@ -1,7 +1,10 @@
 import { Injectable, computed, signal, inject } from '@angular/core';
 import { SettingsService } from '../../../core/services/settings.service';
 import { CartService } from '../../../core/services/cart.service';
+import { ZoneService } from '../../../core/services/zone.service';
+import { BranchService } from '../../../core/services/branch.service';
 import { ShippingAgency } from '../../../models/product.model';
+import { Branch, ServiceMunicipality } from '../../../models/branch.model';
 
 export type DispatchType = 'store_pickup' | 'shipping_agency' | 'local_delivery' | 'seller_agreement' | 'oil_change_service' | null;
 
@@ -111,7 +114,18 @@ const INITIAL_STATE: CheckoutState = {
 export class CheckoutService {
   private readonly settingsService = inject(SettingsService);
   private readonly cartService = inject(CartService);
+  private readonly zoneService = inject(ZoneService);
+  private readonly branchService = inject(BranchService);
   private readonly _state = signal<CheckoutState>(INITIAL_STATE);
+
+  /** Sucursal que atiende la zona del usuario */
+  private readonly _zoneBranch = signal<Branch | null>(null);
+  readonly zoneBranch = this._zoneBranch.asReadonly();
+
+  /** Configuración de delivery del municipio seleccionado (desde la sucursal) */
+  private readonly _deliveryConfig = signal<ServiceMunicipality | null>(null);
+  readonly deliveryConfig = this._deliveryConfig.asReadonly();
+  private readonly _deliveryConfigLoaded = signal(false);
 
   /** Estado público de solo lectura */
   readonly state = this._state.asReadonly();
@@ -125,8 +139,20 @@ export class CheckoutService {
   /** Configuración de dispatch desde settings */
   private readonly dispatchConfig = computed(() => this.settingsService.dispatchConfig());
 
-  /** Información de la tienda para retiro (desde configuración) */
+  /** Información de la tienda para retiro (desde la sucursal que atiende la zona) */
   readonly storeInfo = computed<StorePickupInfo>(() => {
+    const branch = this._zoneBranch();
+    if (branch) {
+      // Construir horario legible desde el schedule de la sucursal
+      const schedule = this.buildScheduleString(branch.schedule);
+      return {
+        address: branch.address,
+        schedule,
+        phone: branch.whatsappPhone,
+        additionalInfo: branch.name,
+      };
+    }
+    // Fallback a la configuración del admin settings
     const config = this.dispatchConfig();
     return {
       address: config.storePickup.address,
@@ -178,14 +204,19 @@ export class CheckoutService {
       });
     }
 
-    // Delivery Local - solo si está habilitado en módulos
-    if (modules.localDelivery) {
+    // Delivery Local - habilitado si la sucursal tiene delivery para el municipio del usuario
+    const deliveryMuni = this._deliveryConfig();
+    if (deliveryMuni && deliveryMuni.hasDelivery) {
+      const isFree = deliveryMuni.freeDelivery;
+      const charge = deliveryMuni.deliveryCharge || 0;
       options.push({
         id: 'local_delivery',
         name: 'Delivery Local',
-        description: 'Entrega a domicilio en tu zona de cobertura',
+        description: isFree
+          ? 'Entrega a domicilio gratis en tu zona de cobertura'
+          : `Entrega a domicilio en tu zona (costo: $${charge.toFixed(2)})`,
         icon: 'bike',
-        price: null,
+        price: isFree ? null : charge,
         isAvailable: true,
       });
     }
@@ -243,6 +274,81 @@ export class CheckoutService {
 
   /** Disclaimer aceptado */
   readonly disclaimerAccepted = computed(() => this._state().disclaimerAccepted);
+
+  /**
+   * Cargar configuración de delivery desde la sucursal que atiende la zona del usuario
+   */
+  loadDeliveryConfigForZone(): void {
+    const zone = this.zoneService.selectedZone();
+    if (!zone) {
+      this._zoneBranch.set(null);
+      this._deliveryConfig.set(null);
+      this._deliveryConfigLoaded.set(true);
+      return;
+    }
+
+    this.branchService.getByZone(zone.city.code, zone.municipality.code).subscribe({
+      next: (response) => {
+        if (response.success && response.data.length > 0) {
+          const branch = response.data[0];
+          this._zoneBranch.set(branch);
+          let municipalityConfig: ServiceMunicipality | null = null;
+
+          for (const sz of (branch.serviceZones || [])) {
+            if (sz.cityCode === zone.city.code) {
+              const muni = sz.municipalities.find(
+                m => m.municipalityCode === zone.municipality.code
+              );
+              if (muni) {
+                municipalityConfig = muni;
+                break;
+              }
+            }
+          }
+
+          this._deliveryConfig.set(municipalityConfig);
+        } else {
+          this._zoneBranch.set(null);
+          this._deliveryConfig.set(null);
+        }
+        this._deliveryConfigLoaded.set(true);
+      },
+      error: () => {
+        this._zoneBranch.set(null);
+        this._deliveryConfig.set(null);
+        this._deliveryConfigLoaded.set(true);
+      }
+    });
+  }
+
+  /**
+   * Construir string de horario legible desde el schedule de la sucursal
+   */
+  private buildScheduleString(schedule: { dayName: string; openTime: string; closeTime: string; isClosed: boolean }[]): string {
+    if (!schedule || schedule.length === 0) return '';
+
+    const openDays = schedule.filter(d => !d.isClosed);
+    if (openDays.length === 0) return 'Cerrado';
+
+    // Agrupar días consecutivos con el mismo horario
+    const groups: { days: string[]; time: string }[] = [];
+    for (const day of openDays) {
+      const time = `${day.openTime} - ${day.closeTime}`;
+      const lastGroup = groups[groups.length - 1];
+      if (lastGroup && lastGroup.time === time) {
+        lastGroup.days.push(day.dayName);
+      } else {
+        groups.push({ days: [day.dayName], time });
+      }
+    }
+
+    return groups.map(g => {
+      const dayRange = g.days.length > 1
+        ? `${g.days[0].substring(0, 3)} a ${g.days[g.days.length - 1].substring(0, 3)}`
+        : g.days[0].substring(0, 3);
+      return `${dayRange}: ${g.time}`;
+    }).join(' | ');
+  }
 
   /**
    * Seleccionar tipo de despacho

@@ -9,6 +9,8 @@ import { CategoryService } from '../../../../core/services/category.service';
 import { BrandService } from '../../../../core/services/brand.service';
 import { UploadService } from '../../../../core/services/upload.service';
 import { ZoneService, City, Municipality } from '../../../../core/services/zone.service';
+import { BranchService } from '../../../../core/services/branch.service';
+import { Branch } from '../../../../models/branch.model';
 import {
   Line,
   Category,
@@ -33,6 +35,7 @@ export class ProductFormComponent implements OnInit {
   private readonly brandService = inject(BrandService);
   private readonly uploadService = inject(UploadService);
   private readonly zoneService = inject(ZoneService);
+  private readonly branchService = inject(BranchService);
   private readonly elementRef = inject(ElementRef);
 
   // Estado
@@ -94,26 +97,25 @@ export class ProductFormComponent implements OnInit {
     return filtered;
   });
 
-  // Zonas/Regiones - Selector de dos pasos (Ciudad -> Municipio)
-  protected readonly zones = signal<City[]>([]);
-  protected readonly selectedRegions = signal<Array<{ city: City; municipality: Municipality }>>([]);
-  protected readonly showZoneDropdown = signal(false);
-  protected readonly zoneSelectorStep = signal<'city' | 'municipality'>('city');
-  protected readonly selectedCityForMunicipality = signal<City | null>(null);
+  // Sucursales
+  protected readonly branches = signal<Branch[]>([]);
+  protected readonly selectedBranches = signal<Branch[]>([]);
+  protected readonly branchSearchTerm = signal('');
+  protected readonly showBranchDropdown = signal(false);
 
-  // Ciudades disponibles para seleccionar
-  protected readonly availableCities = computed(() => {
-    return this.zones().filter(z => z.isActive);
-  });
-
-  // Municipios disponibles de la ciudad seleccionada
-  protected readonly availableMunicipalities = computed(() => {
-    const city = this.selectedCityForMunicipality();
-    if (!city) return [];
-    const selectedMuniCodes = this.selectedRegions()
-      .filter(r => r.city.id === city.id)
-      .map(r => r.municipality.code);
-    return city.municipalities.filter(m => m.isActive && !selectedMuniCodes.includes(m.code));
+  // Sucursales filtradas (computed)
+  protected readonly filteredBranches = computed(() => {
+    const search = this.branchSearchTerm().toLowerCase().trim();
+    const selectedIds = this.selectedBranches().map(b => b.id);
+    let filtered = this.branches().filter(b => b.isActive && !selectedIds.includes(b.id));
+    if (search) {
+      filtered = filtered.filter(b =>
+        b.name.toLowerCase().includes(search) ||
+        b.cityName?.toLowerCase().includes(search) ||
+        b.stateName?.toLowerCase().includes(search)
+      );
+    }
+    return filtered;
   });
 
   // Sección activa (simplificado a 3 secciones)
@@ -144,10 +146,9 @@ export class ProductFormComponent implements OnInit {
     isActive: [true],
     isFeatured: [false],
 
-    // Combo, Delivery y Regiones
+    // Combo y Delivery
     isCombo: [false],
     freeOilChangeService: [false],
-    allRegions: [false],
   });
 
   ngOnInit(): void {
@@ -163,13 +164,13 @@ export class ProductFormComponent implements OnInit {
         lines: this.lineService.getAllAdmin(),
         categories: this.categoryService.getAllAdmin(),
         brands: this.brandService.getAllAdmin(),
-        zones: this.zoneService.getAllAdmin()
+        branches: this.branchService.getAll()
       }).subscribe({
         next: (responses) => {
           this.lines.set(responses.lines.data);
           this.categories.set(responses.categories.data);
           this.brands.set(responses.brands.data);
-          this.zones.set(responses.zones);
+          this.branches.set(responses.branches.data);
           // Ahora cargar el producto con las categorías y marcas ya disponibles
           this.loadProduct(id);
         },
@@ -183,7 +184,7 @@ export class ProductFormComponent implements OnInit {
       this.loadLines();
       this.loadCategories();
       this.loadBrands();
-      this.loadZones();
+      this.loadBranches();
     }
   }
 
@@ -224,12 +225,12 @@ export class ProductFormComponent implements OnInit {
   }
 
   /**
-   * Cargar zonas/regiones
+   * Cargar sucursales
    */
-  private loadZones(): void {
-    this.zoneService.getAllAdmin().subscribe({
-      next: (zones) => {
-        this.zones.set(zones);
+  private loadBranches(): void {
+    this.branchService.getAll().subscribe({
+      next: (response) => {
+        this.branches.set(response.data);
       },
       error: () => {},
     });
@@ -265,43 +266,22 @@ export class ProductFormComponent implements OnInit {
           isFeatured: product.isFeatured,
           isCombo: product.isCombo || false,
           freeOilChangeService: product.freeOilChangeService || false,
-          allRegions: product.allRegions || false,
         });
         this.images.set(product.images || []);
 
-        // Cargar regiones seleccionadas (ciudad + municipio)
-        if (product.regions && Array.isArray(product.regions)) {
-          const regs: Array<{ city: City; municipality: Municipality }> = [];
-          for (const r of product.regions) {
-            // r tiene { city: {...}, municipalityCode: string }
-            const cityData: any = r.city;
-            const muniCode = r.municipalityCode;
-
-            if (cityData && muniCode) {
-              // Buscar la ciudad en las zonas cargadas o usar la del producto
-              let city: City;
-              if (typeof cityData === 'string') {
-                const found = this.zones().find(z => z.id === cityData);
-                if (found) city = found;
-                else continue;
-              } else {
-                city = {
-                  id: cityData.id || cityData._id,
-                  code: cityData.code || '',
-                  name: cityData.name || '',
-                  isActive: cityData.isActive !== false,
-                  municipalities: cityData.municipalities || []
-                };
-              }
-
-              // Buscar el municipio en la ciudad
-              const municipality = city.municipalities.find(m => m.code === muniCode);
-              if (municipality) {
-                regs.push({ city, municipality });
+        // Cargar sucursales seleccionadas
+        if (product.branches && Array.isArray(product.branches)) {
+          const selectedBranches: Branch[] = [];
+          for (const b of product.branches) {
+            const branchData: any = typeof b === 'string' ? b : (b.id || b._id);
+            if (branchData) {
+              const found = this.branches().find(br => br.id === branchData);
+              if (found) {
+                selectedBranches.push(found);
               }
             }
           }
-          this.selectedRegions.set(regs);
+          this.selectedBranches.set(selectedBranches);
         }
 
         // Cargar categorías seleccionadas
@@ -430,11 +410,7 @@ export class ProductFormComponent implements OnInit {
       brand: this.selectedBrand()?.id || undefined,
       isCombo: formValue.isCombo || false,
       freeOilChangeService: formValue.freeOilChangeService || false,
-      allRegions: formValue.allRegions || false,
-      regions: formValue.allRegions ? [] : this.selectedRegions().map(r => ({
-        city: r.city.id,
-        municipalityCode: r.municipality.code
-      })),
+      branches: this.selectedBranches().map(b => b.id),
     };
 
     const request$ = this.isEditMode()
@@ -526,9 +502,9 @@ export class ProductFormComponent implements OnInit {
     if (brandSelector && !brandSelector.contains(target)) {
       this.showBrandDropdown.set(false);
     }
-    const zoneSelector = this.elementRef.nativeElement.querySelector('.zone-selector');
-    if (zoneSelector && !zoneSelector.contains(target)) {
-      this.showZoneDropdown.set(false);
+    const branchSelector = this.elementRef.nativeElement.querySelector('.branch-selector');
+    if (branchSelector && !branchSelector.contains(target)) {
+      this.showBranchDropdown.set(false);
     }
   }
 
@@ -566,63 +542,50 @@ export class ProductFormComponent implements OnInit {
     this.selectedBrand.set(null);
   }
 
-  // ==================== ZONAS/REGIONES ====================
+  // ==================== SUCURSALES ====================
 
   /**
-   * Abrir/cerrar dropdown de zonas
+   * Abrir/cerrar dropdown de sucursales
    */
-  toggleZoneDropdown(): void {
-    if (this.showZoneDropdown()) {
-      this.closeZoneDropdown();
-    } else {
-      this.zoneSelectorStep.set('city');
-      this.selectedCityForMunicipality.set(null);
-      this.showZoneDropdown.set(true);
+  toggleBranchDropdown(): void {
+    this.showBranchDropdown.update(v => !v);
+    if (this.showBranchDropdown()) {
+      this.branchSearchTerm.set('');
     }
   }
 
   /**
-   * Cerrar dropdown de zonas
+   * Cerrar dropdown de sucursales
    */
-  closeZoneDropdown(): void {
-    this.showZoneDropdown.set(false);
-    this.zoneSelectorStep.set('city');
-    this.selectedCityForMunicipality.set(null);
+  closeBranchDropdown(): void {
+    this.showBranchDropdown.set(false);
+    this.branchSearchTerm.set('');
   }
 
   /**
-   * Seleccionar una ciudad (paso 1)
+   * Buscar sucursales
    */
-  selectCityForRegion(city: City): void {
-    this.selectedCityForMunicipality.set(city);
-    this.zoneSelectorStep.set('municipality');
+  onBranchSearch(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.branchSearchTerm.set(value);
+    if (!this.showBranchDropdown()) {
+      this.showBranchDropdown.set(true);
+    }
   }
 
   /**
-   * Volver a selección de ciudad
+   * Seleccionar una sucursal
    */
-  backToCity(): void {
-    this.zoneSelectorStep.set('city');
-    this.selectedCityForMunicipality.set(null);
+  selectBranch(branch: Branch): void {
+    this.selectedBranches.update(branches => [...branches, branch]);
+    this.branchSearchTerm.set('');
+    this.showBranchDropdown.set(false);
   }
 
   /**
-   * Seleccionar un municipio (paso 2) - agrega la región
+   * Eliminar una sucursal seleccionada
    */
-  selectMunicipalityForRegion(municipality: Municipality): void {
-    const city = this.selectedCityForMunicipality();
-    if (!city) return;
-
-    this.selectedRegions.update(regions => [...regions, { city, municipality }]);
-    this.closeZoneDropdown();
-  }
-
-  /**
-   * Eliminar una región seleccionada
-   */
-  removeRegion(region: { city: City; municipality: Municipality }): void {
-    this.selectedRegions.update(regions =>
-      regions.filter(r => !(r.city.id === region.city.id && r.municipality.code === region.municipality.code))
-    );
+  removeBranchSelection(branch: Branch): void {
+    this.selectedBranches.update(branches => branches.filter(b => b.id !== branch.id));
   }
 }

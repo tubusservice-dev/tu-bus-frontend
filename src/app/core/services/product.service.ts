@@ -27,6 +27,8 @@ export interface ProductQueryParams {
   sortOrder?: 'asc' | 'desc';
   cityId?: string;
   municipalityCode?: string;
+  branchId?: string;
+  branchIds?: string;
   // Filtros de compatibilidad de motor
   engineDisplacement?: string;
   engineFuelType?: FuelType;

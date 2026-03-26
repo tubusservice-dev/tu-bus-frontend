@@ -82,14 +82,6 @@
   @apply text-lg font-semibold text-gray-900 dark:text-white mb-4;
 }
 
-.section-header {
-  @apply flex items-center justify-between mb-4;
-
-  .section-title {
-    @apply mb-0;
-  }
-}
-
 .form-group {
   @apply mb-4 last:mb-0;
 
@@ -105,10 +97,6 @@
     &.error {
       @apply border-red-500 focus:ring-red-500;
     }
-  }
-
-  textarea {
-    @apply resize-none;
   }
 }
 
@@ -143,20 +131,6 @@
   span:last-child {
     @apply text-sm text-gray-700 dark:text-gray-300;
   }
-
-  &.small {
-    .toggle-switch {
-      @apply w-9 h-5;
-
-      &::after {
-        @apply w-4 h-4;
-      }
-    }
-
-    input[type="checkbox"]:checked + .toggle-switch::after {
-      @apply translate-x-4;
-    }
-  }
 }
 
 .toggle-switch {
@@ -168,124 +142,67 @@
   }
 }
 
-// Municipalities section
-.municipalities-section {
-  @apply lg:col-span-3;
+// Custom select dropdowns (Estado, Ciudad) - matches branch-form pattern
+.custom-select-wrapper { @apply relative; }
+.custom-select-input-wrapper {
+  @apply relative;
+  .custom-select-search {
+    @apply w-full px-4 py-2.5 pl-10 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg;
+    @apply text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-sm;
+    @apply focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-colors;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+    &.error { @apply border-red-500; }
+  }
+  .search-icon { @apply absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400; }
 }
-
-.btn-add {
-  @apply inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors;
-
-  svg {
-    @apply w-4 h-4;
+.custom-select-dropdown {
+  @apply absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto;
+}
+.custom-select-option {
+  @apply w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300;
+  @apply hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors;
+  &:first-child { @apply rounded-t-lg; }
+  &:last-child { @apply rounded-b-lg; }
+}
+.selected-badge-full {
+  @apply inline-flex items-center gap-2 px-4 py-2.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-sm font-medium rounded-lg w-full justify-between;
+  .badge-remove {
+    @apply p-0.5 hover:bg-green-200 dark:hover:bg-green-800 rounded-full transition-colors cursor-pointer;
+    svg { @apply w-4 h-4; }
   }
 }
 
-// Municipality form
-.municipality-form {
-  @apply mb-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600;
-}
-
-.form-subtitle {
-  @apply text-sm font-semibold text-gray-900 dark:text-white mb-3;
-}
-
-.municipality-form-row {
-  @apply grid grid-cols-2 gap-4 items-start;
-}
-
-.municipality-name-field {
-  @apply col-span-1;
-}
-
-.municipality-toggle-field {
-  @apply col-span-1 flex items-center pt-7;
-}
-
-.municipality-form-actions {
-  @apply flex justify-end gap-2 mt-4 pt-3 border-t border-gray-200 dark:border-gray-600;
-}
-
-.btn-cancel-sm {
-  @apply px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors;
-}
-
-.btn-save-sm {
-  @apply inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50;
-}
-
-// Municipalities list
-.municipalities-list {
-  @apply space-y-2;
-}
-
-.municipality-item {
-  @apply flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600;
-
-  &.inactive {
-    @apply opacity-60;
+// Municipality multi-select (category-style chips)
+.selected-municipalities { @apply flex flex-wrap gap-2 mb-3; }
+.municipality-badge {
+  @apply inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-sm font-medium rounded-full;
+  .badge-remove {
+    @apply p-0.5 hover:bg-green-200 dark:hover:bg-green-800 rounded-full transition-colors cursor-pointer;
+    svg { @apply w-3.5 h-3.5; }
   }
 }
 
-.municipality-info {
-  @apply flex items-center gap-3;
-}
-
-.municipality-code {
-  @apply text-sm font-mono font-bold text-gray-500 dark:text-gray-400 bg-gray-200 dark:bg-gray-600 px-2 py-0.5 rounded;
-}
-
-.municipality-name {
-  @apply text-sm font-medium text-gray-900 dark:text-white;
-}
-
-.municipality-actions {
-  @apply flex items-center gap-1;
-}
-
-.btn-toggle,
-.btn-edit-sm,
-.btn-delete-sm {
-  @apply p-1.5 rounded transition-colors;
-
-  svg {
-    @apply w-4 h-4;
+.municipality-selector { @apply relative mt-1; }
+.municipality-input-wrapper {
+  @apply relative;
+  .municipality-search {
+    @apply w-full px-4 py-2.5 pl-10 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg;
+    @apply text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500;
+    @apply focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-colors;
   }
+  .search-icon { @apply absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400; }
 }
-
-.btn-toggle {
-  @apply text-gray-400 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20;
-
-  &.active {
-    @apply text-green-600;
-  }
+.municipality-dropdown {
+  @apply absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto;
 }
-
-.btn-edit-sm {
-  @apply text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20;
+.municipality-option {
+  @apply w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 flex items-center justify-between;
+  @apply hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors;
+  &:first-child { @apply rounded-t-lg; }
+  &:last-child { @apply rounded-b-lg; }
+  .add-icon { @apply w-4 h-4 text-green-500; }
 }
-
-.btn-delete-sm {
-  @apply text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20;
-}
-
-// Empty municipalities
-.empty-municipalities {
-  @apply flex flex-col items-center justify-center py-8 text-center;
-
-  svg {
-    @apply w-12 h-12 text-gray-300 dark:text-gray-600 mb-3;
-  }
-
-  p {
-    @apply text-sm text-gray-500 dark:text-gray-400 mb-4;
-  }
-}
-
-.btn-add-first {
-  @apply px-4 py-2 text-sm font-medium text-red-600 border border-red-200 dark:border-red-800 rounded-lg;
-  @apply hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors;
-}
+.municipality-no-results { @apply px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center; }
 
 // Actions
 .form-actions {
@@ -299,57 +216,4 @@
 .btn-submit {
   @apply inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-red-700 hover:bg-red-800 rounded-lg transition-colors;
   @apply disabled:opacity-50 disabled:cursor-not-allowed;
-}
-
-// Modal
-.modal-overlay {
-  @apply fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4;
-}
-
-.modal-content {
-  @apply bg-white dark:bg-gray-800 rounded-xl p-6 max-w-sm w-full text-center;
-}
-
-.modal-icon {
-  @apply w-12 h-12 mx-auto mb-4 rounded-full flex items-center justify-center;
-
-  &.danger {
-    @apply bg-red-100 dark:bg-red-900/30 text-red-600;
-  }
-
-  svg {
-    @apply w-6 h-6;
-  }
-}
-
-.modal-title {
-  @apply text-lg font-semibold text-gray-900 dark:text-white mb-2;
-}
-
-.modal-message {
-  @apply text-sm text-gray-500 dark:text-gray-400 mb-6;
-
-  strong {
-    @apply text-gray-900 dark:text-white;
-  }
-}
-
-.modal-actions {
-  @apply flex gap-3 justify-center;
-}
-
-.btn-modal-cancel {
-  @apply px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg;
-  @apply hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors;
-  @apply disabled:opacity-50;
-}
-
-.btn-danger {
-  @apply inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg;
-  @apply hover:bg-red-700 transition-colors;
-  @apply disabled:opacity-50;
-}
-
-.spinner-sm {
-  @apply w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin;
 }

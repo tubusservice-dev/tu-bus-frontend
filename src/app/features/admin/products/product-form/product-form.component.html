@@ -291,129 +291,58 @@
                 </div>
               </div>
 
-              <!-- Regiones -->
+              <!-- Sucursales -->
               <div class="form-group col-span-2">
-                <div class="toggle-item highlight-toggle">
-                  <label class="toggle-control">
-                    <input type="checkbox" formControlName="allRegions" />
-                    <div class="toggle-track regions-track">
-                      <div class="toggle-thumb"></div>
-                    </div>
-                  </label>
-                  <div class="toggle-content">
-                    <span class="toggle-text">Disponible en todas las regiones</span>
-                    <span class="toggle-hint">Si está activo, el producto estará disponible en todas las zonas de cobertura</span>
-                  </div>
-                </div>
-              </div>
+                <label>Sucursales <span class="required">*</span></label>
 
-              <!-- Selector de regiones (solo si allRegions es false) -->
-              @if (!form.get('allRegions')?.value) {
-                <div class="form-group col-span-2">
-                  <label>Seleccionar regiones <span class="required">*</span></label>
-                  <div class="zone-selector">
-                    <!-- Botón para abrir el dropdown -->
-                    <button
-                      type="button"
-                      class="zone-trigger"
-                      (click)="toggleZoneDropdown()"
-                      [class.active]="showZoneDropdown()"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="zone-icon">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
-                      </svg>
-                      <span class="zone-trigger-text">Agregar región</span>
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="chevron-icon" [class.rotated]="showZoneDropdown()">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-                      </svg>
-                    </button>
-
-                    <!-- Dropdown de zonas (dos pasos) -->
-                    @if (showZoneDropdown()) {
-                      <div class="zone-dropdown">
-                        <!-- Header del dropdown -->
-                        <div class="zone-dropdown-header">
-                          @if (zoneSelectorStep() === 'city') {
-                            <span>Selecciona una ciudad</span>
-                          } @else {
-                            <button type="button" class="back-btn" (click)="backToCity()">
-                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-                              </svg>
-                            </button>
-                            <span>{{ selectedCityForMunicipality()!.name }} - Municipio</span>
-                          }
-                        </div>
-
-                        <!-- Lista de ciudades (paso 1) -->
-                        @if (zoneSelectorStep() === 'city') {
-                          <div class="zone-dropdown-list">
-                            @for (city of availableCities(); track city.id) {
-                              <button
-                                type="button"
-                                class="zone-option"
-                                (click)="selectCityForRegion(city)"
-                              >
-                                <span class="zone-option-code">{{ city.code }}</span>
-                                <span class="zone-option-name">{{ city.name }}</span>
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="arrow-icon">
-                                  <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
-                                </svg>
-                              </button>
-                            }
-                            @if (availableCities().length === 0) {
-                              <div class="zone-no-results">No hay ciudades disponibles</div>
-                            }
-                          </div>
-                        }
-
-                        <!-- Lista de municipios (paso 2) -->
-                        @if (zoneSelectorStep() === 'municipality') {
-                          <div class="zone-dropdown-list">
-                            @for (municipality of availableMunicipalities(); track municipality.code) {
-                              <button
-                                type="button"
-                                class="zone-option"
-                                (click)="selectMunicipalityForRegion(municipality)"
-                              >
-                                <span class="zone-option-code">{{ municipality.code }}</span>
-                                <span class="zone-option-name">{{ municipality.name }}</span>
-                              </button>
-                            }
-                            @if (availableMunicipalities().length === 0) {
-                              <div class="zone-no-results">
-                                No hay municipios disponibles o todos ya fueron seleccionados
-                              </div>
-                            }
-                          </div>
-                        }
-                      </div>
+                <!-- Sucursales seleccionadas (badges) -->
+                @if (selectedBranches().length > 0) {
+                  <div class="selected-zones" style="margin-bottom: 0.5rem;">
+                    @for (branch of selectedBranches(); track branch.id) {
+                      <span class="zone-badge">
+                        {{ branch.name }}
+                        <span style="opacity: 0.7; font-size: 0.75rem; margin-left: 4px;">{{ branch.cityName }}, {{ branch.stateName }}</span>
+                        <button type="button" class="badge-remove" (click)="removeBranchSelection(branch)">
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </span>
                     }
                   </div>
+                }
 
-                  <!-- Regiones seleccionadas (badges) -->
-                  @if (selectedRegions().length > 0) {
-                    <div class="selected-zones">
-                      @for (region of selectedRegions(); track region.city.id + '-' + region.municipality.code) {
-                        <span class="zone-badge">
-                          <span class="badge-code">{{ region.city.code }}</span>
-                          {{ region.city.name }} - {{ region.municipality.name }}
-                          <button type="button" class="badge-remove" (click)="removeRegion(region)">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </span>
+                <!-- Buscador de sucursales -->
+                <div class="category-selector branch-selector">
+                  <div class="category-input-wrapper">
+                    <input
+                      type="text"
+                      class="category-search"
+                      placeholder="Buscar y agregar sucursales..."
+                      [value]="branchSearchTerm()"
+                      (input)="onBranchSearch($event)"
+                      (click)="$event.stopPropagation(); showBranchDropdown.set(true)"
+                      autocomplete="off"
+                    />
+                    <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                    </svg>
+                  </div>
+
+                  @if (showBranchDropdown() && filteredBranches().length > 0) {
+                    <div class="category-dropdown">
+                      @for (branch of filteredBranches(); track branch.id) {
+                        <button type="button" class="category-option" (click)="selectBranch(branch)">
+                          <span>{{ branch.name }}</span>
+                          <span style="opacity: 0.5; font-size: 0.75rem; margin-left: 0.5rem;">{{ branch.cityName }}, {{ branch.stateName }}</span>
+                        </button>
                       }
                     </div>
-                  } @else {
-                    <span class="help-text warning">Debes seleccionar al menos una región</span>
                   }
-
-                  <span class="help-text">Selecciona ciudad y municipio donde estará disponible este producto</span>
                 </div>
-              }
+
+                <span class="help-text">Selecciona las sucursales donde estará disponible este producto</span>
+              </div>
             </div>
         </div>
 

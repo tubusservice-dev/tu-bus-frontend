@@ -20,17 +20,21 @@ export interface CityListResponse {
 export interface CreateCityDto {
   code?: string;
   name: string;
+  zoneName?: string;
   stateCode?: string;
   stateName?: string;
   isActive?: boolean;
+  municipalities?: { code?: string; name: string; isActive?: boolean }[];
 }
 
 export interface UpdateCityDto {
   code?: string;
   name?: string;
+  zoneName?: string;
   stateCode?: string;
   stateName?: string;
   isActive?: boolean;
+  municipalities?: { code?: string; name: string; isActive?: boolean }[];
 }
 
 export interface CreateMunicipalityDto {
@@ -67,6 +71,7 @@ export interface City {
   id: string;
   code: string;
   name: string;
+  zoneName?: string;
   stateCode?: string;
   stateName?: string;
   isActive: boolean;
@@ -80,6 +85,36 @@ export interface City {
 export interface SelectedZone {
   city: City;
   municipality: Municipality;
+}
+
+/**
+ * Municipio de referencia (sin isActive, es dato de referencia puro)
+ */
+export interface ReferenceMunicipality {
+  code: string;
+  name: string;
+}
+
+/**
+ * Ciudad de referencia (datos de Venezuela)
+ */
+export interface ReferenceCity {
+  id: string;
+  code: string;
+  name: string;
+  stateCode: string;
+  stateName: string;
+  municipalities: ReferenceMunicipality[];
+}
+
+export interface ReferenceCityListResponse {
+  success: boolean;
+  data: ReferenceCity[];
+}
+
+export interface ReferenceCityResponse {
+  success: boolean;
+  data: ReferenceCity;
 }
 
 const ZONE_STORAGE_KEY = 'tubus_selected_zone';
@@ -313,6 +348,22 @@ export class ZoneService {
 
   getCitiesByState(stateCode: string): Observable<{ success: boolean; data: City[] }> {
     return this.http.get<{ success: boolean; data: City[] }>(`${this.apiUrl}/states/${stateCode}/cities`);
+  }
+
+  // ==================== REFERENCE DATA (datos de referencia de Venezuela) ====================
+
+  /**
+   * Obtener ciudades de referencia por estado (para poblar selects del formulario de zonas)
+   */
+  getReferenceCities(stateCode: string): Observable<ReferenceCityListResponse> {
+    return this.http.get<ReferenceCityListResponse>(`${this.apiUrl}/reference/cities/${stateCode}`);
+  }
+
+  /**
+   * Obtener una ciudad de referencia por código (con sus municipios)
+   */
+  getReferenceCityByCode(code: string): Observable<ReferenceCityResponse> {
+    return this.http.get<ReferenceCityResponse>(`${this.apiUrl}/reference/city/${code}`);
   }
 
   /**

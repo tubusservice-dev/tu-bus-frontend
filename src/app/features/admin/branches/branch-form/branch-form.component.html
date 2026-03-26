@@ -24,273 +24,10 @@
       </div>
     }
 
-    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="form-container" autocomplete="off">
-      <!-- SECCION 1: Info Básica -->
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="form-container" autocomplete="nope">
+      <!-- SECCION 1: Horarios -->
       <section class="form-section">
-        <h2 class="section-title">Información Básica</h2>
-
-        <div class="form-grid">
-          <div class="form-group col-span-2">
-            <label class="form-label">Nombre de la sucursal <span class="required">*</span></label>
-            <input type="text" formControlName="name" class="form-input" [class.error]="isInvalid('name')" placeholder="Ej: Sucursal Chacao" />
-            @if (hasError('name', 'required')) { <span class="form-error">El nombre es obligatorio</span> }
-          </div>
-
-          <div class="form-group col-span-2">
-            <label class="form-label">Dirección <span class="required">*</span></label>
-            <input type="text" formControlName="address" class="form-input" [class.error]="isInvalid('address')" placeholder="Ej: Av. Principal, Centro Comercial..." />
-            @if (hasError('address', 'required')) { <span class="form-error">La dirección es obligatoria</span> }
-          </div>
-
-          <div class="form-group col-span-2">
-            <label class="form-label">Descripción</label>
-            <textarea formControlName="description" class="form-input form-textarea" rows="3" placeholder="Breve descripción de la sucursal..."></textarea>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Teléfono WhatsApp <span class="required">*</span></label>
-            <input type="text" formControlName="whatsappPhone" class="form-input" [class.error]="isInvalid('whatsappPhone')" placeholder="Ej: 04141234567" />
-            @if (hasError('whatsappPhone', 'required')) { <span class="form-error">El WhatsApp es obligatorio</span> }
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Teléfono Fijo</label>
-            <input type="text" formControlName="landlinePhone" class="form-input" placeholder="Ej: 02121234567" />
-          </div>
-        </div>
-
-        <!-- Coordenadas GPS -->
-        <div class="subsection">
-          <h3 class="subsection-title">Coordenadas GPS</h3>
-          <p class="subsection-hint">Clic derecho en Google Maps → "Copiar coordenadas" y pégalas aquí</p>
-          <div class="form-group" style="max-width: 400px;">
-            <label class="form-label">Coordenadas</label>
-            <input type="text" formControlName="coordinatesRaw" class="form-input" placeholder="Ej: 10.4806, -66.9036" />
-          </div>
-        </div>
-
-        <!-- Toggle Activo -->
-        <div class="toggle-group">
-          <label class="toggle-label">
-            <input type="checkbox" formControlName="isActive" class="toggle-input" />
-            <span class="toggle-switch"></span>
-            <span class="toggle-text">Sucursal activa</span>
-          </label>
-        </div>
-      </section>
-
-      <!-- SECCION 2: Ubicación y Zona de Servicio -->
-      <section class="form-section">
-        <h2 class="section-title">Ubicación y Zona de Servicio</h2>
-
-        <div class="form-grid">
-          <!-- Estado (custom dropdown) -->
-          <div class="form-group">
-            <label class="form-label">Estado <span class="required">*</span></label>
-            @if (selectedStateName()) {
-              <div class="selected-badge-full">
-                <span>{{ selectedStateName() }}</span>
-                <button type="button" class="badge-remove" (click)="clearState()">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            } @else {
-              <div class="custom-select-wrapper">
-                <div class="custom-select-input-wrapper">
-                  <input
-                    type="text"
-                    class="custom-select-search"
-                    [class.error]="isInvalid('stateCode')"
-                    placeholder="Buscar estado..."
-                    autocomplete="off"
-                    [value]="stateSearchTerm()"
-                    (input)="onStateSearch($event)"
-                    (focus)="showStateDropdown.set(true)"
-                    (blur)="closeStateDropdown()"
-                  />
-                  <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-                  </svg>
-                </div>
-                @if (showStateDropdown() && filteredStates().length > 0) {
-                  <div class="custom-select-dropdown" (mousedown)="$event.preventDefault()">
-                    @for (state of filteredStates(); track state.code) {
-                      <button type="button" class="custom-select-option" (click)="selectState(state)">
-                        {{ state.name }}
-                      </button>
-                    }
-                  </div>
-                }
-              </div>
-            }
-            @if (hasError('stateCode', 'required')) { <span class="form-error">Seleccione un estado</span> }
-          </div>
-
-          <!-- Ciudad (custom dropdown) -->
-          <div class="form-group">
-            <label class="form-label">Ciudad <span class="required">*</span></label>
-            @if (selectedCityName()) {
-              <div class="selected-badge-full">
-                <span>{{ selectedCityName() }}</span>
-                <button type="button" class="badge-remove" (click)="clearCity()">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            } @else {
-              <div class="custom-select-wrapper">
-                <div class="custom-select-input-wrapper">
-                  <input
-                    type="text"
-                    class="custom-select-search"
-                    [class.error]="isInvalid('cityCode')"
-                    [placeholder]="isLoadingCities() ? 'Cargando ciudades...' : (selectedStateName() ? 'Buscar ciudad...' : 'Seleccione un estado primero')"
-                    autocomplete="off"
-                    [disabled]="!selectedStateName() || isLoadingCities()"
-                    [value]="citySearchTerm()"
-                    (input)="onCitySearch($event)"
-                    (focus)="showCityDropdown.set(true)"
-                    (blur)="closeCityDropdown()"
-                  />
-                  <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-                  </svg>
-                </div>
-                @if (showCityDropdown() && filteredCities().length > 0) {
-                  <div class="custom-select-dropdown" (mousedown)="$event.preventDefault()">
-                    @for (city of filteredCities(); track city.code) {
-                      <button type="button" class="custom-select-option" (click)="selectCity(city)">
-                        {{ city.name }}
-                      </button>
-                    }
-                  </div>
-                }
-              </div>
-            }
-            @if (hasError('cityCode', 'required')) { <span class="form-error">Seleccione una ciudad</span> }
-          </div>
-        </div>
-
-        <!-- Municipios -->
-        @if (municipalities().length > 0) {
-          <div class="subsection">
-            <h3 class="subsection-title">Municipios de atención</h3>
-
-            <!-- Municipios seleccionados (badges) -->
-            @if (municipalitiesArray.length > 0) {
-              <div class="selected-municipalities">
-                @for (control of municipalitiesArray.controls; track $index) {
-                  <span class="municipality-badge">
-                    {{ control.get('municipalityName')?.value }}
-                    <button type="button" class="badge-remove" (click)="removeMunicipalityByCode(control.get('municipalityCode')?.value)">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </span>
-                }
-              </div>
-            }
-
-            <!-- Selector de municipios (dropdown) -->
-            <div class="municipality-selector">
-              <div class="municipality-input-wrapper">
-                <input
-                  type="text"
-                  class="municipality-search"
-                  placeholder="Buscar y agregar municipios..."
-                  autocomplete="off"
-                  [value]="municipalitySearchTerm()"
-                  (input)="onMunicipalitySearch($event)"
-                  (focus)="showMunicipalityDropdown.set(true)"
-                  (blur)="closeMunicipalityDropdown()"
-                />
-                <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-                </svg>
-              </div>
-
-              @if (showMunicipalityDropdown() && availableMunicipalities().length > 0) {
-                <div class="municipality-dropdown" (mousedown)="$event.preventDefault()">
-                  @for (m of availableMunicipalities(); track m.code) {
-                    <button type="button" class="municipality-option" (click)="addMunicipality(m)">
-                      <span>{{ m.name }}</span>
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="add-icon">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                      </svg>
-                    </button>
-                  }
-                </div>
-              }
-
-              @if (showMunicipalityDropdown() && municipalitySearchTerm() && availableMunicipalities().length === 0) {
-                <div class="municipality-dropdown">
-                  <div class="municipality-no-results">No se encontraron municipios</div>
-                </div>
-              }
-            </div>
-
-            <span class="help-text">Selecciona los municipios donde esta sucursal ofrece servicio</span>
-          </div>
-        }
-      </section>
-
-      <!-- SECCION 3: Configuración por Municipio -->
-      @if (municipalitiesArray.length > 0) {
-        <section class="form-section">
-          <h2 class="section-title">Configuración de Servicios por Municipio</h2>
-
-          @for (control of municipalitiesArray.controls; track $index) {
-            <div class="municipality-config-card">
-              <h3 class="config-card-title">{{ control.get('municipalityName')?.value }}</h3>
-
-              <div class="config-toggles">
-                <!-- Delivery -->
-                <div class="config-row">
-                  <label class="toggle-label">
-                    <input type="checkbox" [formControl]="$any(control.get('hasDelivery'))" class="toggle-input" />
-                    <span class="toggle-switch"></span>
-                    <span class="toggle-text">Delivery disponible</span>
-                  </label>
-                </div>
-
-                @if (control.get('hasDelivery')?.value) {
-                  <div class="config-sub-row">
-                    <label class="toggle-label">
-                      <input type="checkbox" [formControl]="$any(control.get('freeDelivery'))" class="toggle-input" />
-                      <span class="toggle-switch"></span>
-                      <span class="toggle-text">Delivery gratis</span>
-                    </label>
-
-                    @if (!control.get('freeDelivery')?.value) {
-                      <div class="delivery-charge-input">
-                        <label class="form-label">Costo adicional ($)</label>
-                        <input type="number" [formControl]="$any(control.get('deliveryCharge'))" class="form-input form-input-sm" min="0" step="0.01" />
-                      </div>
-                    }
-                  </div>
-                }
-
-                <!-- Cambio de aceite -->
-                <div class="config-row">
-                  <label class="toggle-label">
-                    <input type="checkbox" [formControl]="$any(control.get('hasOilChangeService'))" class="toggle-input" />
-                    <span class="toggle-switch"></span>
-                    <span class="toggle-text">Servicio de cambio de aceite gratis</span>
-                  </label>
-                </div>
-              </div>
-            </div>
-          }
-        </section>
-      }
-
-      <!-- SECCION 4: Horarios -->
-      <section class="form-section">
-        <h2 class="section-title">Horarios de Atención</h2>
+        <h2 class="section-title">Horarios de Atencion</h2>
 
         <div class="schedule-grid">
           @for (dayGroup of scheduleArray.controls; track $index; let i = $index) {
@@ -315,6 +52,293 @@
             </div>
           }
         </div>
+      </section>
+
+      <!-- SECCION 2: Info Basica -->
+      <section class="form-section">
+        <h2 class="section-title">Informacion Basica</h2>
+
+        <div class="form-grid">
+          <div class="form-group col-span-2">
+            <label class="form-label">Nombre de la sucursal <span class="required">*</span></label>
+            <input type="text" formControlName="name" class="form-input" [class.error]="isInvalid('name')" placeholder="Ej: Sucursal Chacao" autocomplete="nope" />
+            @if (hasError('name', 'required')) { <span class="form-error">El nombre es obligatorio</span> }
+          </div>
+
+          <div class="form-group col-span-2">
+            <label class="form-label">Direccion <span class="required">*</span></label>
+            <input type="text" formControlName="address" class="form-input" [class.error]="isInvalid('address')" placeholder="Ej: Av. Principal, Centro Comercial..." autocomplete="nope" />
+            @if (hasError('address', 'required')) { <span class="form-error">La direccion es obligatoria</span> }
+          </div>
+
+          <div class="form-group col-span-2">
+            <label class="form-label">Descripcion</label>
+            <textarea formControlName="description" class="form-input form-textarea" rows="3" placeholder="Breve descripcion de la sucursal..." autocomplete="nope"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Telefono WhatsApp <span class="required">*</span></label>
+            <input type="text" formControlName="whatsappPhone" class="form-input" [class.error]="isInvalid('whatsappPhone')" placeholder="Ej: 04141234567" autocomplete="nope" />
+            @if (hasError('whatsappPhone', 'required')) { <span class="form-error">El WhatsApp es obligatorio</span> }
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Telefono Fijo</label>
+            <input type="text" formControlName="landlinePhone" class="form-input" placeholder="Ej: 02121234567" autocomplete="nope" />
+          </div>
+        </div>
+
+        <!-- Coordenadas GPS -->
+        <div class="subsection">
+          <h3 class="subsection-title">Coordenadas GPS</h3>
+          <p class="subsection-hint">Clic derecho en Google Maps - "Copiar coordenadas" y pegalas aqui</p>
+          <div class="form-group" style="max-width: 400px;">
+            <label class="form-label">Coordenadas</label>
+            <input type="text" formControlName="coordinatesRaw" class="form-input" placeholder="Ej: 10.4806, -66.9036" autocomplete="nope" />
+          </div>
+        </div>
+
+        <!-- Toggle Activo -->
+        <div class="toggle-group">
+          <label class="toggle-label">
+            <input type="checkbox" formControlName="isActive" class="toggle-input" />
+            <span class="toggle-switch"></span>
+            <span class="toggle-text">Sucursal activa</span>
+          </label>
+        </div>
+      </section>
+
+      <!-- SECCION 2: Zonas de Servicio -->
+      <section class="form-section">
+        <div class="section-header-row">
+          <h2 class="section-title">Zonas de Servicio</h2>
+          <button type="button" class="btn-add-zone" (click)="addZone()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            Agregar zona
+          </button>
+        </div>
+
+        @if (serviceZones().length === 0) {
+          <div class="empty-zones-hint">
+            <p>No hay zonas de servicio configuradas. Agrega al menos una zona.</p>
+          </div>
+        }
+
+        @for (zone of serviceZones(); track $index; let zIdx = $index) {
+          <div class="zone-card" [class.zone-collapsed]="zone.collapsed">
+            <!-- Zone header -->
+            <div class="zone-card-header" (click)="toggleZoneCollapse(zIdx)">
+              <div class="zone-card-title-row">
+                <svg class="zone-chevron" [class.rotated]="!zone.collapsed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m9 5 7 7-7 7" />
+                </svg>
+                <span class="zone-card-title">{{ getZoneTitle(zone, zIdx) }}</span>
+                @if (zone.selectedMunicipalities.length > 0) {
+                  <span class="zone-muni-count">{{ zone.selectedMunicipalities.length }} municipio{{ zone.selectedMunicipalities.length > 1 ? 's' : '' }}</span>
+                }
+              </div>
+              <button type="button" class="zone-remove-btn" (click)="$event.stopPropagation(); removeZone(zIdx)" title="Eliminar zona">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                </svg>
+              </button>
+            </div>
+
+            <!-- Zone body (collapsible) -->
+            @if (!zone.collapsed) {
+              <div class="zone-card-body">
+                <!-- State & City on same row -->
+                <div class="zone-location-row">
+                  <!-- Estado -->
+                  <div class="zone-location-col">
+                    <label class="form-label form-label-sm">Estado <span class="required">*</span></label>
+                    @if (zone.stateName) {
+                      <div class="selected-badge-compact">
+                        <span>{{ zone.stateName }}</span>
+                        <button type="button" class="badge-remove-sm" (click)="clearZoneState(zIdx)">
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    } @else {
+                      <div class="custom-select-wrapper">
+                        <div class="custom-select-input-wrapper">
+                          <input
+                            type="text"
+                            class="custom-select-search custom-select-search-sm"
+                            placeholder="Buscar estado..."
+                            autocomplete="nope"
+                            [value]="zone.stateSearchTerm"
+                            (input)="onZoneStateSearch($event, zIdx)"
+                            (focus)="openZoneStateDropdown(zIdx)"
+                            (blur)="closeZoneStateDropdown(zIdx)"
+                          />
+                          <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                          </svg>
+                        </div>
+                        @if (zone.showStateDropdown && filteredStatesForZone(zone).length > 0) {
+                          <div class="custom-select-dropdown" (mousedown)="$event.preventDefault()">
+                            @for (state of filteredStatesForZone(zone); track state.code) {
+                              <button type="button" class="custom-select-option" (mousedown)="$event.preventDefault()" (click)="selectZoneState(state, zIdx)">
+                                {{ state.name }}
+                              </button>
+                            }
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+
+                  <!-- Ciudad -->
+                  <div class="zone-location-col">
+                    <label class="form-label form-label-sm">Ciudad <span class="required">*</span></label>
+                    @if (zone.cityName) {
+                      <div class="selected-badge-compact">
+                        <span>{{ zone.cityName }}</span>
+                        <button type="button" class="badge-remove-sm" (click)="clearZoneCity(zIdx)">
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    } @else {
+                      <div class="custom-select-wrapper">
+                        <div class="custom-select-input-wrapper">
+                          <input
+                            type="text"
+                            class="custom-select-search custom-select-search-sm"
+                            [placeholder]="zone.stateName ? 'Buscar ciudad...' : 'Seleccione estado primero'"
+                            autocomplete="nope"
+                            [disabled]="!zone.stateName"
+                            [value]="zone.citySearchTerm"
+                            (input)="onZoneCitySearch($event, zIdx)"
+                            (focus)="openZoneCityDropdown(zIdx)"
+                            (blur)="closeZoneCityDropdown(zIdx)"
+                          />
+                          <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                          </svg>
+                        </div>
+                        @if (zone.showCityDropdown && filteredCitiesForZone(zone).length > 0) {
+                          <div class="custom-select-dropdown" (mousedown)="$event.preventDefault()">
+                            @for (city of filteredCitiesForZone(zone); track city.code) {
+                              <button type="button" class="custom-select-option" (mousedown)="$event.preventDefault()" (click)="selectZoneCity(city, zIdx)">
+                                {{ city.name }}
+                              </button>
+                            }
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                </div>
+
+                <!-- Municipios -->
+                @if (zone.availableMunicipalities.length > 0 || zone.selectedMunicipalities.length > 0) {
+                  <div class="zone-municipalities-section">
+                    <label class="form-label form-label-sm">Municipios de atencion</label>
+
+                    <!-- Selected municipality chips -->
+                    @if (zone.selectedMunicipalities.length > 0) {
+                      <div class="selected-municipalities-compact">
+                        @for (muni of zone.selectedMunicipalities; track muni.municipalityCode) {
+                          <span class="municipality-badge-sm">
+                            {{ muni.municipalityName }}
+                            <button type="button" class="badge-remove-xs" (click)="removeZoneMunicipality(muni.municipalityCode, zIdx)">
+                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </span>
+                        }
+                      </div>
+                    }
+
+                    <!-- Municipality search dropdown -->
+                    @if (zone.availableMunicipalities.length > 0) {
+                      <div class="municipality-selector-compact">
+                        <div class="municipality-input-wrapper">
+                          <input
+                            type="text"
+                            class="municipality-search municipality-search-sm"
+                            placeholder="Buscar municipios..."
+                            autocomplete="nope"
+                            [value]="zone.municipalitySearchTerm"
+                            (input)="onZoneMunicipalitySearch($event, zIdx)"
+                            (focus)="openZoneMunicipalityDropdown(zIdx)"
+                            (blur)="closeZoneMunicipalityDropdown(zIdx)"
+                          />
+                          <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                          </svg>
+                        </div>
+
+                        @if (zone.showMunicipalityDropdown && availableMunicipalitiesForZone(zone).length > 0) {
+                          <div class="municipality-dropdown" (mousedown)="$event.preventDefault()">
+                            @for (m of availableMunicipalitiesForZone(zone); track m.code) {
+                              <button type="button" class="municipality-option" (mousedown)="$event.preventDefault()" (click)="addZoneMunicipality(m, zIdx)">
+                                <span>{{ m.name }}</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="add-icon">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                </svg>
+                              </button>
+                            }
+                          </div>
+                        }
+
+                        @if (zone.showMunicipalityDropdown && zone.municipalitySearchTerm && availableMunicipalitiesForZone(zone).length === 0) {
+                          <div class="municipality-dropdown">
+                            <div class="municipality-no-results">No se encontraron municipios</div>
+                          </div>
+                        }
+                      </div>
+                    }
+
+                    <!-- Inline config per municipality -->
+                    @if (zone.selectedMunicipalities.length > 0) {
+                      <div class="muni-config-list">
+                        @for (muni of zone.selectedMunicipalities; track muni.municipalityCode) {
+                          <div class="muni-config-row">
+                            <span class="muni-config-name">{{ muni.municipalityName }}</span>
+                            <div class="muni-config-toggles">
+                              <!-- Delivery toggle -->
+                              <label class="toggle-label toggle-inline">
+                                <input type="checkbox" class="toggle-input" [checked]="muni.hasDelivery" (change)="toggleMuniDelivery(zIdx, muni.municipalityCode)" />
+                                <span class="toggle-switch toggle-switch-sm"></span>
+                                <span class="toggle-text-xs">Delivery</span>
+                              </label>
+
+                              @if (muni.hasDelivery) {
+                                <!-- Free delivery toggle -->
+                                <label class="toggle-label toggle-inline">
+                                  <input type="checkbox" class="toggle-input" [checked]="muni.freeDelivery" (change)="toggleMuniFreeDelivery(zIdx, muni.municipalityCode)" />
+                                  <span class="toggle-switch toggle-switch-sm"></span>
+                                  <span class="toggle-text-xs">Gratis</span>
+                                </label>
+
+                                @if (!muni.freeDelivery) {
+                                  <div class="delivery-charge-inline">
+                                    <span class="toggle-text-xs">$</span>
+                                    <input type="number" class="form-input form-input-xs" min="0" step="0.01" [value]="muni.deliveryCharge" (input)="updateMuniDeliveryCharge(zIdx, muni.municipalityCode, $event)" autocomplete="nope" />
+                                  </div>
+                                }
+                              }
+
+                            </div>
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
       </section>
 
       <!-- Submit -->

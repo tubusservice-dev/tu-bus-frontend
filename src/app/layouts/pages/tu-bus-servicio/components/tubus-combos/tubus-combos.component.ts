@@ -1,9 +1,10 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { CategoryService } from '../../../../../core/services/category.service';
 import { ProductService } from '../../../../../core/services/product.service';
 import { ZoneService } from '../../../../../core/services/zone.service';
+import { BranchService } from '../../../../../core/services/branch.service';
 import { Category, Product } from '../../../../../models/product.model';
 
 @Component({
@@ -17,19 +18,18 @@ export class TubusCombosComponent implements OnInit {
   private readonly categoryService = inject(CategoryService);
   private readonly productService = inject(ProductService);
   private readonly zoneService = inject(ZoneService);
+  private readonly branchService = inject(BranchService);
 
   // Signals para datos
   protected readonly categories = signal<Category[]>([]);
-  private readonly allProducts = signal<Product[]>([]);
-  protected readonly products = computed(() => this.filterByZone(this.allProducts()));
-  protected readonly totalCombos = signal<number>(0);
+  protected readonly allProducts = signal<Product[]>([]);
+  protected readonly totalProducts = signal<number>(0);
   protected readonly selectedFilter = signal<string>('all');
   protected readonly isLoading = signal(true);
+  private readonly branchIds = signal<string[]>([]);
+  private hasLoadedProducts = false;
 
-  // Computed para mostrar botón "Ver todo"
-  protected readonly showViewAllButton = computed(() => this.totalCombos() > 4);
-
-  // Computed para filtros dinámicos (Todos + categorías del backend)
+  // Computed para filtros dinámicos (Todos + categorías)
   protected readonly filters = computed(() => {
     const baseFilter = [{ id: 'all', label: 'Todos' }];
     const categoryFilters = this.categories().map(cat => ({
@@ -39,34 +39,57 @@ export class TubusCombosComponent implements OnInit {
     return [...baseFilter, ...categoryFilters];
   });
 
-  // Computed para productos filtrados
+  // Computed para productos filtrados por categoría (máximo 4)
   protected readonly filteredProducts = computed(() => {
     const filter = this.selectedFilter();
-    const allProducts = this.products();
+    const products = this.allProducts();
 
+    let filtered: Product[];
     if (filter === 'all') {
-      return allProducts;
+      filtered = products;
+    } else {
+      filtered = products.filter(product =>
+        product.categories.some(cat => {
+          if (typeof cat === 'string') return cat === filter;
+          return cat.id === filter;
+        })
+      );
     }
 
-    // Filtrar por categoría seleccionada
-    return allProducts.filter(product =>
+    return filtered.slice(0, 4);
+  });
+
+  // Computed para mostrar botón "Ver todo"
+  protected readonly showViewAllButton = computed(() => {
+    const filter = this.selectedFilter();
+    const products = this.allProducts();
+
+    if (filter === 'all') return products.length > 4;
+
+    const filtered = products.filter(product =>
       product.categories.some(cat => {
-        if (typeof cat === 'string') {
-          return cat === filter;
-        }
+        if (typeof cat === 'string') return cat === filter;
         return cat.id === filter;
       })
     );
+    return filtered.length > 4;
   });
 
-  ngOnInit(): void {
-    this.loadData();
+  constructor() {
+    // Recargar productos cuando cambia la zona seleccionada
+    effect(() => {
+      const zone = this.zoneService.selectedZone();
+      if (zone) {
+        this.loadBranchesByZone(zone.city.code, zone.municipality.code);
+      }
+    });
   }
 
-  private loadData(): void {
-    this.isLoading.set(true);
+  ngOnInit(): void {
+    this.loadCategories();
+  }
 
-    // Cargar categorías
+  private loadCategories(): void {
     this.categoryService.getAll().subscribe({
       next: (response) => {
         if (response.success) {
@@ -75,40 +98,48 @@ export class TubusCombosComponent implements OnInit {
       },
       error: (err) => console.error('Error cargando categorías:', err)
     });
+  }
 
-    // Cargar productos (combos destacados, límite 4)
-    this.productService.getAll({
-      isCombo: true,
-      isFeatured: true,
-      isActive: true,
-      limit: 4,
-    }).subscribe({
+  private loadBranchesByZone(cityCode: string, municipalityCode: string): void {
+    this.isLoading.set(true);
+    this.branchService.getByZone(cityCode, municipalityCode).subscribe({
       next: (response) => {
-        if (response.success) {
-          this.allProducts.set(response.data);
-          this.totalCombos.set(response.pagination?.total || response.data.length);
+        if (response.success && response.data.length > 0) {
+          const ids = response.data.map(b => b.id);
+          this.branchIds.set(ids);
+          this.loadProducts(ids);
+        } else {
+          this.branchIds.set([]);
+          this.allProducts.set([]);
+          this.isLoading.set(false);
         }
-        this.isLoading.set(false);
       },
-      error: (err) => {
-        console.error('Error cargando productos:', err);
+      error: () => {
+        this.branchIds.set([]);
+        this.allProducts.set([]);
         this.isLoading.set(false);
       }
     });
   }
 
-  private filterByZone(products: Product[]): Product[] {
-    const zone = this.zoneService.selectedZone();
-    if (!zone) return products;
-
-    return products.filter(product => {
-      if (product.allRegions) return true;
-      if (!product.regions || product.regions.length === 0) return true;
-
-      return product.regions.some(r => {
-        const cityId = typeof r.city === 'string' ? r.city : r.city?.id;
-        return cityId === zone.city.id && r.municipalityCode === zone.municipality.code;
-      });
+  private loadProducts(branchIds: string[]): void {
+    this.productService.getAll({
+      isFeatured: true,
+      isActive: true,
+      branchIds: branchIds.join(','),
+      limit: 50,
+    }).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.allProducts.set(response.data);
+          this.totalProducts.set(response.pagination?.total || response.data.length);
+        }
+        this.isLoading.set(false);
+      },
+      error: () => {
+        this.allProducts.set([]);
+        this.isLoading.set(false);
+      }
     });
   }
 

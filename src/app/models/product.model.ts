@@ -135,8 +135,7 @@ export interface Product {
   isFeatured: boolean;
   isCombo: boolean;
   freeOilChangeService: boolean;
-  allRegions: boolean;
-  regions?: ProductRegion[];
+  branches?: any[];
   createdAt: Date;
 }
 
@@ -165,8 +164,7 @@ export interface CreateProductRequest {
   isFeatured?: boolean;
   isCombo?: boolean;
   freeOilChangeService?: boolean;
-  allRegions?: boolean;
-  regions?: Array<{ city: string; municipalityCode: string }>;
+  branches?: string[];
 }
 
 /**

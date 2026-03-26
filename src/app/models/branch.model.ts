@@ -15,6 +15,14 @@ export interface ServiceMunicipality {
   hasOilChangeService: boolean;
 }
 
+export interface ServiceZone {
+  stateCode: string;
+  stateName: string;
+  cityCode: string;
+  cityName: string;
+  municipalities: ServiceMunicipality[];
+}
+
 export interface Coordinates {
   latitude: number;
   longitude: number;
@@ -28,12 +36,15 @@ export interface Branch {
   whatsappPhone: string;
   landlinePhone?: string;
   schedule: ScheduleDay[];
+  // Legacy flat fields (kept for backward compat)
   stateCode: string;
   stateName: string;
   cityCode: string;
   cityName: string;
-  coordinates?: Coordinates;
   serviceMunicipalities: ServiceMunicipality[];
+  // New multi-zone field
+  serviceZones?: ServiceZone[];
+  coordinates?: Coordinates;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -46,12 +57,8 @@ export interface CreateBranchRequest {
   whatsappPhone: string;
   landlinePhone?: string;
   schedule: ScheduleDay[];
-  stateCode: string;
-  stateName: string;
-  cityCode: string;
-  cityName: string;
+  serviceZones: ServiceZone[];
   coordinates?: Coordinates;
-  serviceMunicipalities: ServiceMunicipality[];
   isActive?: boolean;
 }
 

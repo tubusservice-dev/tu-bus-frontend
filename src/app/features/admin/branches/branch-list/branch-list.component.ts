@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { BranchService } from '../../../../core/services/branch.service';
-import { Branch, ScheduleDay, ServiceMunicipality } from '../../../../models/branch.model';
+import { Branch, ScheduleDay, ServiceMunicipality, ServiceZone } from '../../../../models/branch.model';
 
 @Component({
   selector: 'app-branch-list',
@@ -46,26 +46,91 @@ export class BranchListComponent implements OnInit {
     return this.branches().filter(
       (b) =>
         b.name.toLowerCase().includes(term) ||
-        b.cityName.toLowerCase().includes(term) ||
-        b.stateName.toLowerCase().includes(term) ||
+        this.getLocationText(b).toLowerCase().includes(term) ||
         b.address.toLowerCase().includes(term)
     );
+  }
+
+  // ==================== ZONE HELPERS ====================
+
+  /**
+   * Get all service zones for a branch, handling both new and legacy format.
+   */
+  getServiceZones(branch: Branch): ServiceZone[] {
+    if (branch.serviceZones && branch.serviceZones.length > 0) {
+      return branch.serviceZones;
+    }
+    // Legacy flat format fallback
+    if (branch.stateCode && branch.cityCode) {
+      return [{
+        stateCode: branch.stateCode,
+        stateName: branch.stateName || '',
+        cityCode: branch.cityCode,
+        cityName: branch.cityName || '',
+        municipalities: branch.serviceMunicipalities || [],
+      }];
+    }
+    return [];
+  }
+
+  /**
+   * Get location text for table display.
+   * Shows first zone's city/state, and "+N zonas" if more.
+   */
+  getLocationText(branch: Branch): string {
+    const zones = this.getServiceZones(branch);
+    if (zones.length === 0) return 'Sin ubicacion';
+    const first = zones[0];
+    const base = `${first.cityName}, ${first.stateName}`;
+    if (zones.length > 1) {
+      return `${base} +${zones.length - 1} zona${zones.length - 1 > 1 ? 's' : ''}`;
+    }
+    return base;
+  }
+
+  getLocationCity(branch: Branch): string {
+    const zones = this.getServiceZones(branch);
+    if (zones.length === 0) return '';
+    return zones[0].cityName;
+  }
+
+  getLocationState(branch: Branch): string {
+    const zones = this.getServiceZones(branch);
+    if (zones.length === 0) return '';
+    return zones[0].stateName;
+  }
+
+  getExtraZonesCount(branch: Branch): number {
+    const zones = this.getServiceZones(branch);
+    return Math.max(0, zones.length - 1);
+  }
+
+  /**
+   * Get total municipality count across all zones.
+   */
+  getMunicipalityCount(branch: Branch): number {
+    const zones = this.getServiceZones(branch);
+    return zones.reduce((sum, z) => sum + (z.municipalities?.length || 0), 0);
+  }
+
+  /**
+   * Get all municipalities across all zones (for detail modal).
+   */
+  getAllMunicipalities(branch: Branch): ServiceMunicipality[] {
+    const zones = this.getServiceZones(branch);
+    return zones.flatMap(z => z.municipalities || []);
   }
 
   getScheduleSummary(branch: Branch): string {
     if (!branch.schedule || branch.schedule.length === 0) return 'Sin horario';
     const openDays = branch.schedule.filter(d => !d.isClosed);
     if (openDays.length === 0) return 'Cerrado';
-    if (openDays.length === 7) return `Todos los días ${openDays[0].openTime}-${openDays[0].closeTime}`;
+    if (openDays.length === 7) return `Todos los dias ${openDays[0].openTime}-${openDays[0].closeTime}`;
     if (openDays.length >= 5) {
       const firstOpen = openDays[0];
       return `${firstOpen.dayName.substring(0, 3)}-${openDays[openDays.length - 1].dayName.substring(0, 3)} ${firstOpen.openTime}-${firstOpen.closeTime}`;
     }
-    return `${openDays.length} días`;
-  }
-
-  getMunicipalityCount(branch: Branch): number {
-    return branch.serviceMunicipalities?.length || 0;
+    return `${openDays.length} dias`;
   }
 
   toggleStatus(branch: Branch): void {
@@ -100,11 +165,11 @@ export class BranchListComponent implements OnInit {
   }
 
   getDeliveryMunicipalities(branch: Branch): ServiceMunicipality[] {
-    return branch.serviceMunicipalities?.filter(m => m.hasDelivery) || [];
+    return this.getAllMunicipalities(branch).filter(m => m.hasDelivery);
   }
 
   getOilChangeMunicipalities(branch: Branch): ServiceMunicipality[] {
-    return branch.serviceMunicipalities?.filter(m => m.hasOilChangeService) || [];
+    return this.getAllMunicipalities(branch).filter(m => m.hasOilChangeService);
   }
 
   openDeleteModal(branch: Branch): void {

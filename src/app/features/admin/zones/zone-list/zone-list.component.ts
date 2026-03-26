@@ -71,7 +71,8 @@ export class ZoneListComponent implements OnInit {
         (c) =>
           c.name.toLowerCase().includes(term) ||
           c.code.toLowerCase().includes(term) ||
-          (c.stateName || '').toLowerCase().includes(term)
+          (c.stateName || '').toLowerCase().includes(term) ||
+          (c.zoneName || '').toLowerCase().includes(term)
       );
     }
 

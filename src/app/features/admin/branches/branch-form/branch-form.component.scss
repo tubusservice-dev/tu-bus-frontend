@@ -26,6 +26,11 @@
 
 .section-title { @apply text-lg font-semibold text-gray-900 dark:text-white mb-2; }
 
+.section-header-row {
+  @apply flex items-center justify-between;
+  .section-title { @apply mb-0; }
+}
+
 .subsection { @apply mt-4 pt-4 border-t border-gray-100 dark:border-gray-700; }
 .subsection-title { @apply text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1; }
 .subsection-hint { @apply text-xs text-gray-400 dark:text-gray-500 mb-3; }
@@ -37,6 +42,7 @@
 
 .form-group { @apply flex flex-col gap-1; }
 .form-label { @apply text-sm font-medium text-gray-700 dark:text-gray-300; }
+.form-label-sm { @apply text-xs font-medium text-gray-600 dark:text-gray-400; }
 .required { @apply text-red-500; }
 
 .form-input {
@@ -62,6 +68,7 @@
   }
 }
 .form-input-sm { @apply py-1.5 text-xs max-w-[120px]; }
+.form-input-xs { @apply py-1 px-2 text-xs w-16 rounded; }
 .form-input-time { @apply py-1.5 text-xs w-auto; }
 
 .form-error { @apply text-xs text-red-500 dark:text-red-400; }
@@ -71,9 +78,10 @@
 .toggle-label {
   @apply inline-flex items-center gap-3 cursor-pointer;
 }
+.toggle-inline { @apply gap-1.5; }
 .toggle-input { @apply sr-only; }
 .toggle-switch {
-  @apply relative w-10 h-5 bg-gray-300 dark:bg-gray-600 rounded-full transition-colors;
+  @apply relative w-10 h-5 bg-gray-300 dark:bg-gray-600 rounded-full transition-colors flex-shrink-0;
   &::after {
     content: '';
     @apply absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform;
@@ -90,6 +98,7 @@
 .toggle-input:checked + .toggle-switch-sm::after { @apply translate-x-4; }
 .toggle-text { @apply text-sm text-gray-700 dark:text-gray-300; }
 .toggle-text-sm { @apply text-xs text-gray-500 dark:text-gray-400; }
+.toggle-text-xs { @apply text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap; }
 .toggle-compact { @apply gap-2; }
 
 // Custom select dropdowns (Estado, Ciudad)
@@ -103,17 +112,22 @@
     @apply disabled:opacity-50 disabled:cursor-not-allowed;
     &.error { @apply border-red-500; }
   }
+  .custom-select-search-sm {
+    @apply py-2 text-xs;
+  }
   .search-icon { @apply absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400; }
 }
 .custom-select-dropdown {
-  @apply absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto;
+  @apply absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto;
 }
 .custom-select-option {
-  @apply w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300;
+  @apply w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300;
   @apply hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors;
   &:first-child { @apply rounded-t-lg; }
   &:last-child { @apply rounded-b-lg; }
 }
+
+// Selected badge (green)
 .selected-badge-full {
   @apply inline-flex items-center gap-2 px-4 py-2.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-sm font-medium rounded-lg w-full justify-between;
   .badge-remove {
@@ -121,9 +135,16 @@
     svg { @apply w-4 h-4; }
   }
 }
+.selected-badge-compact {
+  @apply inline-flex items-center gap-2 px-3 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-medium rounded-lg w-full justify-between;
+}
+.badge-remove-sm {
+  @apply p-0.5 hover:bg-green-200 dark:hover:bg-green-800 rounded-full transition-colors cursor-pointer flex-shrink-0;
+  svg { @apply w-3.5 h-3.5; }
+}
 
 // Municipality selector (category-style)
-.municipality-selector { @apply relative mt-3; }
+.municipality-selector, .municipality-selector-compact { @apply relative mt-2; }
 .municipality-input-wrapper {
   @apply relative;
   .municipality-search {
@@ -131,13 +152,16 @@
     @apply text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500;
     @apply focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-colors;
   }
+  .municipality-search-sm {
+    @apply py-2 text-xs;
+  }
   .search-icon { @apply absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400; }
 }
 .municipality-dropdown {
-  @apply absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto;
+  @apply absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto;
 }
 .municipality-option {
-  @apply w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 flex items-center justify-between;
+  @apply w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 flex items-center justify-between;
   @apply hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors;
   &:first-child { @apply rounded-t-lg; }
   &:last-child { @apply rounded-b-lg; }
@@ -145,27 +169,94 @@
 }
 .municipality-no-results { @apply px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center; }
 
-.selected-municipalities { @apply flex flex-wrap gap-2 mb-3; }
-.municipality-badge {
-  @apply inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-sm font-medium rounded-full;
-  .badge-remove {
-    @apply p-0.5 hover:bg-green-200 dark:hover:bg-green-800 rounded-full transition-colors cursor-pointer;
-    svg { @apply w-3.5 h-3.5; }
-  }
+.selected-municipalities, .selected-municipalities-compact { @apply flex flex-wrap gap-1.5 mb-2; }
+.municipality-badge, .municipality-badge-sm {
+  @apply inline-flex items-center gap-1 px-2.5 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-medium rounded-full;
+}
+.badge-remove-xs {
+  @apply p-0.5 hover:bg-green-200 dark:hover:bg-green-800 rounded-full transition-colors cursor-pointer flex-shrink-0;
+  svg { @apply w-3 h-3; }
 }
 .help-text { @apply text-xs text-gray-400 dark:text-gray-500 mt-2 block; }
 
-// Municipality config cards
-.municipality-config-card {
-  @apply p-4 rounded-lg border border-gray-100 dark:border-gray-700 mb-3;
+// ==================== ZONE CARDS ====================
+.btn-add-zone {
+  @apply inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg;
+  @apply hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors;
+  svg { @apply w-4 h-4; }
 }
-.config-card-title { @apply text-sm font-semibold text-gray-900 dark:text-white mb-3; }
-.config-toggles { @apply space-y-3; }
-.config-row { @apply flex items-center; }
-.config-sub-row {
-  @apply pl-6 space-y-2 pt-1;
+
+.empty-zones-hint {
+  @apply text-center py-6 text-sm text-gray-400 dark:text-gray-500;
 }
-.delivery-charge-input { @apply pl-6 pt-1; }
+
+.zone-card {
+  @apply border border-gray-200 dark:border-gray-700 rounded-lg;
+}
+
+.zone-card-header {
+  @apply flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-700/50 cursor-pointer;
+  @apply hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors;
+}
+
+.zone-card-title-row {
+  @apply flex items-center gap-2;
+}
+
+.zone-chevron {
+  @apply w-4 h-4 text-gray-400 transition-transform flex-shrink-0;
+  &.rotated { transform: rotate(90deg); }
+}
+
+.zone-card-title {
+  @apply text-sm font-medium text-gray-700 dark:text-gray-300;
+}
+
+.zone-muni-count {
+  @apply text-xs text-gray-400 dark:text-gray-500 bg-gray-200 dark:bg-gray-600 px-2 py-0.5 rounded-full;
+}
+
+.zone-remove-btn {
+  @apply p-1 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors rounded;
+  svg { @apply w-4 h-4; }
+}
+
+.zone-card-body {
+  @apply px-4 py-3 space-y-3;
+}
+
+.zone-location-row {
+  @apply grid grid-cols-1 sm:grid-cols-2 gap-3;
+}
+
+.zone-location-col {
+  @apply flex flex-col gap-1;
+}
+
+.zone-municipalities-section {
+  @apply pt-2 border-t border-gray-100 dark:border-gray-700 space-y-2;
+}
+
+// Municipality config inline rows
+.muni-config-list {
+  @apply mt-2 space-y-1;
+}
+
+.muni-config-row {
+  @apply flex flex-wrap items-center gap-x-4 gap-y-1 px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-700/30;
+}
+
+.muni-config-name {
+  @apply text-xs font-medium text-gray-700 dark:text-gray-300 min-w-[100px];
+}
+
+.muni-config-toggles {
+  @apply flex flex-wrap items-center gap-x-4 gap-y-1;
+}
+
+.delivery-charge-inline {
+  @apply inline-flex items-center gap-1;
+}
 
 // Schedule
 .schedule-grid { @apply space-y-2; }
