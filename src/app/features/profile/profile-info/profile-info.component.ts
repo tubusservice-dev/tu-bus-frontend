@@ -1,7 +1,7 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { AuthService, UserService, UploadService } from '../../../core';
+import { AuthService, UserService, UploadService, ZoneService } from '../../../core';
 import { ChangePasswordModalComponent } from '../change-password-modal/change-password-modal.component';
 
 @Component({
@@ -15,6 +15,7 @@ export class ProfileInfoComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly userService = inject(UserService);
   private readonly uploadService = inject(UploadService);
+  private readonly zoneService = inject(ZoneService);
   private readonly fb = inject(FormBuilder);
 
   protected readonly user = this.authService.currentUser;
@@ -28,26 +29,112 @@ export class ProfileInfoComponent implements OnInit {
   protected readonly avatarPreview = signal<string | null>(null);
   private selectedAvatarFile: File | null = null;
 
+  // Zone data for selects (all Venezuela reference data)
+  protected readonly allStates = signal<any[]>([]);
+  protected readonly availableCities = signal<any[]>([]);
+  protected readonly availableMunicipalities = signal<any[]>([]);
+
+  // Computed: is juridical person (J)
+  protected readonly isJuridical = computed(() => {
+    return this.profileForm?.get('documentType')?.value === 'J';
+  });
+
   protected profileForm!: FormGroup;
 
   ngOnInit(): void {
     this.initForm();
     this.loadProfile();
+    this.loadAllStates();
   }
 
   private initForm(): void {
     const user = this.user();
     this.profileForm = this.fb.group({
+      // Datos personales
       firstName: [user?.firstName || '', [Validators.required, Validators.minLength(2)]],
       lastName: [user?.lastName || '', [Validators.required, Validators.minLength(2)]],
       birthDate: [user?.birthDate ? this.formatDateForInput(user.birthDate) : ''],
       email: [{ value: user?.email || '', disabled: true }],
+      // Documento
       documentType: [user?.documentType || ''],
       documentNumber: [user?.documentNumber || ''],
-      phone: [user?.phone || ''],
+      // Contacto
+      phone: [user?.phone || '', [Validators.pattern(/^(0414|0424|0412|0416|0426)\d{7}$/)]],
+      alternativePhone: [user?.alternativePhone || ''],
+      // Direccion
+      stateCode: [user?.stateCode || ''],
+      cityCode: [user?.cityCode || ''],
+      municipalityCode: [user?.municipalityCode || ''],
+      neighborhood: [user?.neighborhood || ''],
+      street: [user?.street || ''],
+      houseNumber: [user?.houseNumber || ''],
+      referencePoint: [user?.referencePoint || ''],
+      zipCode: [user?.zipCode || ''],
       address: [user?.address || ''],
+      // Datos fiscales (juridico)
+      companyName: [user?.companyName || ''],
+      companyRif: [user?.companyRif || ''],
+    });
+
+    // Load cities/municipalities if user already has data
+    if (user?.stateCode) {
+      this.loadReferenceCities(user.stateCode, user?.cityCode);
+    }
+  }
+
+  protected onStateChange(): void {
+    const stateCode = this.profileForm.get('stateCode')?.value;
+    this.profileForm.get('cityCode')?.setValue('');
+    this.profileForm.get('municipalityCode')?.setValue('');
+    this.availableCities.set([]);
+    this.availableMunicipalities.set([]);
+    if (stateCode) {
+      this.loadReferenceCities(stateCode);
+    }
+  }
+
+  protected onCityChange(): void {
+    const cityCode = this.profileForm.get('cityCode')?.value;
+    this.profileForm.get('municipalityCode')?.setValue('');
+    this.availableMunicipalities.set([]);
+    if (cityCode) {
+      this.loadReferenceMunicipalities(cityCode);
+    }
+  }
+
+  private loadReferenceCities(stateCode: string, preselectedCityCode?: string): void {
+    this.zoneService.getReferenceCities(stateCode).subscribe({
+      next: (response: any) => {
+        if (response.success) {
+          this.availableCities.set(response.data || []);
+          if (preselectedCityCode) {
+            this.loadReferenceMunicipalities(preselectedCityCode);
+          }
+        }
+      }
     });
   }
+
+  private loadReferenceMunicipalities(cityCode: string): void {
+    this.zoneService.getReferenceCityByCode(cityCode).subscribe({
+      next: (response: any) => {
+        if (response.success && response.data?.municipalities) {
+          this.availableMunicipalities.set(response.data.municipalities);
+        }
+      }
+    });
+  }
+
+  private loadAllStates(): void {
+    this.zoneService.getAllStates().subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.allStates.set(response.data.sort((a: any, b: any) => a.name.localeCompare(b.name)));
+        }
+      }
+    });
+  }
+
 
   private formatDateForInput(date: string | Date): string {
     const d = new Date(date);
@@ -124,14 +211,35 @@ export class ProfileInfoComponent implements OnInit {
         this.isUploadingAvatar.set(false);
       }
 
-      const updateData = {
+      // Get names from codes
+      const selectedState = this.allStates().find((s: any) => s.code === this.profileForm.get('stateCode')?.value);
+      const selectedCity = this.availableCities().find((c: any) => c.code === this.profileForm.get('cityCode')?.value);
+      const selectedMuni = this.availableMunicipalities().find((m: any) => m.code === this.profileForm.get('municipalityCode')?.value);
+
+      const updateData: any = {
         firstName: this.profileForm.get('firstName')?.value,
         lastName: this.profileForm.get('lastName')?.value,
         birthDate: this.profileForm.get('birthDate')?.value || undefined,
         documentType: this.profileForm.get('documentType')?.value || undefined,
         documentNumber: this.profileForm.get('documentNumber')?.value || undefined,
         phone: this.profileForm.get('phone')?.value || undefined,
+        alternativePhone: this.profileForm.get('alternativePhone')?.value || undefined,
+        // Direccion
+        stateCode: this.profileForm.get('stateCode')?.value || undefined,
+        stateName: selectedState?.name || undefined,
+        cityCode: this.profileForm.get('cityCode')?.value || undefined,
+        cityName: selectedCity?.name || undefined,
+        municipalityCode: this.profileForm.get('municipalityCode')?.value || undefined,
+        municipalityName: selectedMuni?.name || undefined,
+        neighborhood: this.profileForm.get('neighborhood')?.value || undefined,
+        street: this.profileForm.get('street')?.value || undefined,
+        houseNumber: this.profileForm.get('houseNumber')?.value || undefined,
+        referencePoint: this.profileForm.get('referencePoint')?.value || undefined,
+        zipCode: this.profileForm.get('zipCode')?.value || undefined,
         address: this.profileForm.get('address')?.value || undefined,
+        // Datos fiscales
+        companyName: this.profileForm.get('companyName')?.value || undefined,
+        companyRif: this.profileForm.get('companyRif')?.value || undefined,
         ...(avatarUrl && { avatar: avatarUrl }),
       };
 
@@ -171,11 +279,33 @@ export class ProfileInfoComponent implements OnInit {
     if (!control || !control.errors) return '';
     if (control.errors['required']) return 'Este campo es requerido';
     if (control.errors['minlength']) return `Mínimo ${control.errors['minlength'].requiredLength} caracteres`;
+    if (control.errors['pattern']) {
+      if (field === 'phone') return 'Formato: 04XX-XXXXXXX';
+      if (field === 'companyRif') return 'Formato: J-12345678-9';
+      return 'Formato inválido';
+    }
     return 'Campo inválido';
   }
 
   formatDate(date: Date | string): string {
     if (!date) return 'No especificado';
     return new Date(date).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+  }
+
+  // Build full address string for display
+  protected getFullAddress(): string {
+    const u = this.user();
+    if (!u) return 'No especificado';
+
+    const parts = [];
+    if (u.street) parts.push(u.street);
+    if (u.houseNumber) parts.push(u.houseNumber);
+    if (u.neighborhood) parts.push(u.neighborhood);
+    if (u.municipalityName) parts.push(u.municipalityName);
+    if (u.cityName) parts.push(u.cityName);
+    if (u.stateName) parts.push(u.stateName);
+
+    if (parts.length > 0) return parts.join(', ');
+    return u.address || 'No especificado';
   }
 }

@@ -1,7 +1,8 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, effect } from '@angular/core';
 import { Router } from '@angular/router';
 import { CheckoutService, DispatchOption } from '../services/checkout.service';
 import { CartService } from '../../../core/services/cart.service';
+import { ZoneService } from '../../../core/services/zone.service';
 
 @Component({
   selector: 'app-checkout-dispatch',
@@ -13,6 +14,7 @@ import { CartService } from '../../../core/services/cart.service';
 export class CheckoutDispatchComponent implements OnInit {
   protected readonly checkoutService = inject(CheckoutService);
   protected readonly cartService = inject(CartService);
+  protected readonly zoneService = inject(ZoneService);
   private readonly router = inject(Router);
 
   /** Opciones de despacho */
@@ -21,9 +23,25 @@ export class CheckoutDispatchComponent implements OnInit {
   /** Tipo seleccionado */
   protected readonly selectedType = this.checkoutService.dispatchType;
 
+  private deliveryLoaded = false;
+
+  constructor() {
+    // React to zone changes (covers page reload when zone restores async)
+    effect(() => {
+      const zone = this.zoneService.selectedZone();
+      if (zone && !this.deliveryLoaded) {
+        this.deliveryLoaded = true;
+        this.checkoutService.loadDeliveryConfigForZone();
+      }
+    });
+  }
+
   ngOnInit(): void {
-    // Cargar configuración de delivery desde la sucursal para la zona del usuario
-    this.checkoutService.loadDeliveryConfigForZone();
+    // Try loading immediately if zone is already available
+    if (this.zoneService.selectedZone()) {
+      this.deliveryLoaded = true;
+      this.checkoutService.loadDeliveryConfigForZone();
+    }
 
     // Auto-seleccionar cambio de aceite si aplica y no hay selección previa
     if (!this.selectedType() && this.cartService.hasOilChangeService()) {

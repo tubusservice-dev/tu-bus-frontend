@@ -34,6 +34,7 @@ export interface ShippingRecipientInfo {
   email?: string;
   state: string;
   city: string;
+  municipality?: string;
   address: string;
   referencePoint?: string;
   agencyOfficeCode?: string;

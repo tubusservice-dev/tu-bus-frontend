@@ -5,6 +5,7 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { CheckoutService, LocalDeliveryRecipientInfo } from '../services/checkout.service';
 import { CartService } from '../../../core/services/cart.service';
 import { ZoneService, City, Municipality } from '../../../core/services/zone.service';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-checkout-local-delivery-form',
@@ -17,22 +18,16 @@ export class CheckoutLocalDeliveryFormComponent implements OnInit {
   protected readonly checkoutService = inject(CheckoutService);
   protected readonly cartService = inject(CartService);
   protected readonly zoneService = inject(ZoneService);
+  protected readonly authService = inject(AuthService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
 
-  /** Formulario de datos de delivery */
   protected deliveryForm!: FormGroup;
-
-  /** Ciudades activas disponibles */
-  protected readonly activeCities = this.zoneService.activeCities;
-
-  /** Municipios disponibles para la ciudad seleccionada */
-  protected readonly availableMunicipalities = signal<Municipality[]>([]);
-
-  /** Ciudad seleccionada */
+  protected readonly branchCities = signal<{ code: string; name: string }[]>([]);
+  protected readonly availableMunicipalities = signal<{ code: string; name: string }[]>([]);
   protected readonly selectedCityName = signal('');
+  protected readonly lockedFields = signal<Record<string, boolean>>({});
 
-  /** Tipos de documento */
   protected readonly documentTypes = [
     { code: 'V', name: 'V - Venezolano' },
     { code: 'E', name: 'E - Extranjero' },
@@ -41,59 +36,47 @@ export class CheckoutLocalDeliveryFormComponent implements OnInit {
   ];
 
   ngOnInit(): void {
-    // Redirigir si no es delivery local
     if (this.checkoutService.dispatchType() !== 'local_delivery') {
       this.router.navigate(['/checkout/despacho']);
       return;
     }
 
-    // Cargar ciudades si no están cargadas
-    if (this.zoneService.activeCities().length === 0) {
-      this.zoneService.loadCities().subscribe();
-    }
-
     this.initForm();
+    this.loadBranchZones();
     this.loadSavedData();
   }
 
-  /**
-   * Inicializar formulario
-   */
   private initForm(): void {
     this.deliveryForm = this.fb.group({
-      // Datos del destinatario
       fullName: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(100)]],
       documentType: ['V', Validators.required],
       documentNumber: ['', [Validators.required, Validators.pattern(/^\d{6,10}$/)]],
       phone: ['', [Validators.required, Validators.pattern(/^(0414|0424|0412|0416|0426)\d{7}$/)]],
       alternativePhone: ['', [Validators.pattern(/^(0414|0424|0412|0416|0426)\d{7}$/)]],
       email: ['', [Validators.email]],
-
-      // Zona de entrega (restringida por zonas del sistema)
       cityCode: ['', Validators.required],
       municipalityCode: ['', Validators.required],
-
-      // Dirección de entrega
       address: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(300)]],
       referencePoint: ['', Validators.maxLength(200)],
-
-      // Notas adicionales
       notes: ['', Validators.maxLength(500)],
     });
   }
 
-  /**
-   * Cargar datos guardados previamente
-   */
+  private loadBranchZones(): void {
+    const branch = this.checkoutService.zoneBranch();
+    if (!branch?.serviceZones) return;
+
+    const cities = branch.serviceZones.map(sz => ({
+      code: sz.cityCode,
+      name: sz.cityName,
+    }));
+    this.branchCities.set(cities);
+  }
+
   private loadSavedData(): void {
     const savedInfo = this.checkoutService.localDeliveryRecipientInfo();
     if (savedInfo) {
-      // Cargar municipios de la ciudad guardada
-      const city = this.activeCities().find(c => c.code === savedInfo.cityCode);
-      if (city) {
-        this.availableMunicipalities.set(city.municipalities.filter(m => m.isActive));
-        this.selectedCityName.set(city.name);
-      }
+      this.onCityChange(savedInfo.cityCode);
 
       this.deliveryForm.patchValue({
         fullName: savedInfo.fullName,
@@ -109,7 +92,12 @@ export class CheckoutLocalDeliveryFormComponent implements OnInit {
         notes: savedInfo.notes || '',
       });
     } else {
-      // Pre-popular con la zona seleccionada en el header
+      // Refresh user profile from server, then prefill
+      this.authService.loadUserProfile().subscribe({
+        next: () => this.prefillFromUserProfile(),
+        error: () => this.prefillFromUserProfile(),
+      });
+
       const selectedZone = this.zoneService.selectedZone();
       if (selectedZone) {
         this.onCityChange(selectedZone.city.code);
@@ -121,22 +109,138 @@ export class CheckoutLocalDeliveryFormComponent implements OnInit {
     }
   }
 
-  /**
-   * Manejar cambio de ciudad
-   */
+  private prefillFromUserProfile(): void {
+    const user = this.authService.currentUser();
+    if (!user) return;
+
+    const locked: Record<string, boolean> = {};
+    const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
+
+    if (fullName) {
+      this.deliveryForm.patchValue({ fullName });
+      this.deliveryForm.get('fullName')?.disable();
+      locked['fullName'] = true;
+    }
+    if (user.documentType) {
+      this.deliveryForm.patchValue({ documentType: user.documentType });
+      this.deliveryForm.get('documentType')?.disable();
+      locked['documentType'] = true;
+    }
+    if (user.documentNumber) {
+      this.deliveryForm.patchValue({ documentNumber: user.documentNumber });
+      this.deliveryForm.get('documentNumber')?.disable();
+      locked['documentNumber'] = true;
+    }
+    if (user.phone) {
+      this.deliveryForm.patchValue({ phone: user.phone });
+      this.deliveryForm.get('phone')?.disable();
+      locked['phone'] = true;
+    }
+    if (user.alternativePhone) {
+      this.deliveryForm.patchValue({ alternativePhone: user.alternativePhone });
+      this.deliveryForm.get('alternativePhone')?.disable();
+      locked['alternativePhone'] = true;
+    }
+    if (user.email) {
+      this.deliveryForm.patchValue({ email: user.email });
+      this.deliveryForm.get('email')?.disable();
+      locked['email'] = true;
+    }
+
+    // Only prefill address if user's zone is within branch coverage
+    if (user.cityCode && user.municipalityCode) {
+      const branch = this.checkoutService.zoneBranch();
+      const isInBranchZone = branch?.serviceZones?.some(sz =>
+        sz.cityCode === user.cityCode &&
+        sz.municipalities.some(m => m.municipalityCode === user.municipalityCode)
+      );
+      if (isInBranchZone) {
+        this.deliveryForm.get('cityCode')?.disable();
+        locked['cityCode'] = true;
+        this.deliveryForm.get('municipalityCode')?.disable();
+        locked['municipalityCode'] = true;
+
+        const addressParts = [user.street, user.houseNumber, user.neighborhood].filter(Boolean);
+        if (addressParts.length > 0) {
+          this.deliveryForm.patchValue({ address: addressParts.join(', ') });
+          this.deliveryForm.get('address')?.disable();
+          locked['address'] = true;
+        }
+        if (user.referencePoint) {
+          this.deliveryForm.patchValue({ referencePoint: user.referencePoint });
+          this.deliveryForm.get('referencePoint')?.disable();
+          locked['referencePoint'] = true;
+        }
+      }
+    }
+
+    this.lockedFields.set(locked);
+  }
+
+  protected readonly hasLockedFields = computed(() => {
+    const locked = this.lockedFields();
+    return ['fullName', 'documentType', 'documentNumber', 'phone', 'alternativePhone', 'email'].some(f => locked[f]);
+  });
+
+  protected readonly hasLockedAddressFields = computed(() => {
+    const locked = this.lockedFields();
+    return ['cityCode', 'municipalityCode', 'address', 'referencePoint'].some(f => locked[f]);
+  });
+
+  protected unlockPersonalFields(): void {
+    const fields = ['fullName', 'documentType', 'documentNumber', 'phone', 'alternativePhone', 'email'];
+    fields.forEach(field => this.deliveryForm.get(field)?.enable());
+    const updated = { ...this.lockedFields() };
+    fields.forEach(f => delete updated[f]);
+    this.lockedFields.set(updated);
+  }
+
+  protected clearPersonalFields(): void {
+    this.deliveryForm.patchValue({
+      fullName: '',
+      documentType: 'V',
+      documentNumber: '',
+      phone: '',
+      alternativePhone: '',
+      email: '',
+    });
+  }
+
+  protected unlockAddressFields(): void {
+    const fields = ['cityCode', 'municipalityCode', 'address', 'referencePoint'];
+    fields.forEach(field => this.deliveryForm.get(field)?.enable());
+    const updated = { ...this.lockedFields() };
+    fields.forEach(f => delete updated[f]);
+    this.lockedFields.set(updated);
+  }
+
+  protected clearDeliveryFields(): void {
+    const fields = ['cityCode', 'municipalityCode', 'address', 'referencePoint', 'notes'];
+    fields.forEach(field => this.deliveryForm.get(field)?.enable());
+    this.deliveryForm.patchValue({
+      cityCode: '',
+      municipalityCode: '',
+      address: '',
+      referencePoint: '',
+      notes: '',
+    });
+    const updated = { ...this.lockedFields() };
+    fields.forEach(f => delete updated[f]);
+    this.lockedFields.set(updated);
+    this.availableMunicipalities.set([]);
+    this.selectedCityName.set('');
+  }
+
   onCityChange(cityCode: string): void {
-    const city = this.activeCities().find(c => c.code === cityCode);
-    if (city) {
-      const activeMunicipalities = city.municipalities.filter(m => m.isActive);
-      this.availableMunicipalities.set(activeMunicipalities);
-      this.selectedCityName.set(city.name);
-
-      // Reset municipio
+    const branch = this.checkoutService.zoneBranch();
+    const zone = branch?.serviceZones?.find(sz => sz.cityCode === cityCode);
+    if (zone) {
+      const municipalities = zone.municipalities.map(m => ({ code: m.municipalityCode, name: m.municipalityName }));
+      this.availableMunicipalities.set(municipalities);
+      this.selectedCityName.set(zone.cityName);
       this.deliveryForm.patchValue({ municipalityCode: '' });
-
-      // Si solo hay un municipio, seleccionarlo automáticamente
-      if (activeMunicipalities.length === 1) {
-        this.deliveryForm.patchValue({ municipalityCode: activeMunicipalities[0].code });
+      if (municipalities.length === 1) {
+        this.deliveryForm.patchValue({ municipalityCode: municipalities[0].code });
       }
     } else {
       this.availableMunicipalities.set([]);
@@ -145,22 +249,17 @@ export class CheckoutLocalDeliveryFormComponent implements OnInit {
     }
   }
 
-  /**
-   * Continuar al resumen
-   */
   onSubmit(): void {
     if (this.deliveryForm.invalid) {
       this.deliveryForm.markAllAsTouched();
       return;
     }
 
-    const formValue = this.deliveryForm.value;
-    const city = this.activeCities().find(c => c.code === formValue.cityCode);
+    const formValue = this.deliveryForm.getRawValue();
+    const city = this.branchCities().find(c => c.code === formValue.cityCode);
     const municipality = this.availableMunicipalities().find(m => m.code === formValue.municipalityCode);
 
-    if (!city || !municipality) {
-      return;
-    }
+    if (!city || !municipality) return;
 
     const deliveryInfo: LocalDeliveryRecipientInfo = {
       fullName: formValue.fullName.trim(),
@@ -182,40 +281,25 @@ export class CheckoutLocalDeliveryFormComponent implements OnInit {
     this.router.navigate(['/checkout/resumen']);
   }
 
-  /**
-   * Volver a selección de despacho
-   */
   goBack(): void {
     this.router.navigate(['/checkout/despacho']);
   }
 
-  /**
-   * Verificar si un campo tiene error
-   */
   hasError(field: string): boolean {
     const control = this.deliveryForm.get(field);
     return control ? control.invalid && control.touched : false;
   }
 
-  /**
-   * Obtener mensaje de error para un campo
-   */
   getErrorMessage(field: string): string {
     const control = this.deliveryForm.get(field);
     if (!control || !control.errors) return '';
 
     if (control.errors['required']) return 'Este campo es obligatorio';
-    if (control.errors['minlength']) {
-      return `Mínimo ${control.errors['minlength'].requiredLength} caracteres`;
-    }
-    if (control.errors['maxlength']) {
-      return `Máximo ${control.errors['maxlength'].requiredLength} caracteres`;
-    }
+    if (control.errors['minlength']) return `Mínimo ${control.errors['minlength'].requiredLength} caracteres`;
+    if (control.errors['maxlength']) return `Máximo ${control.errors['maxlength'].requiredLength} caracteres`;
     if (control.errors['pattern']) {
       if (field === 'documentNumber') return 'Ingresa un número de documento válido (6-10 dígitos)';
-      if (field === 'phone' || field === 'alternativePhone') {
-        return 'Formato: 04XX-XXXXXXX';
-      }
+      if (field === 'phone' || field === 'alternativePhone') return 'Formato: 04XX-XXXXXXX';
     }
     if (control.errors['email']) return 'Ingresa un email válido';
 
