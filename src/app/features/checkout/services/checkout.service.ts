@@ -4,7 +4,7 @@ import { CartService } from '../../../core/services/cart.service';
 import { ZoneService } from '../../../core/services/zone.service';
 import { BranchService } from '../../../core/services/branch.service';
 import { ShippingAgency } from '../../../models/product.model';
-import { Branch, ServiceMunicipality } from '../../../models/branch.model';
+import { Branch } from '../../../models/branch.model';
 
 export type DispatchType = 'store_pickup' | 'shipping_agency' | 'local_delivery' | 'seller_agreement' | 'oil_change_service' | null;
 
@@ -124,7 +124,8 @@ export class CheckoutService {
   readonly zoneBranch = this._zoneBranch.asReadonly();
 
   /** Configuración de delivery del municipio seleccionado (desde la sucursal) */
-  private readonly _deliveryConfig = signal<ServiceMunicipality | null>(null);
+  // TODO: ServiceMunicipality removed. DeliveryConfig now comes from BranchZone pivot.
+  private readonly _deliveryConfig = signal<any>(null);
   readonly deliveryConfig = this._deliveryConfig.asReadonly();
   private readonly _deliveryConfigLoaded = signal(false);
 
@@ -280,46 +281,11 @@ export class CheckoutService {
    * Cargar configuración de delivery desde la sucursal que atiende la zona del usuario
    */
   loadDeliveryConfigForZone(): void {
-    const zone = this.zoneService.selectedZone();
-    if (!zone) {
-      this._zoneBranch.set(null);
-      this._deliveryConfig.set(null);
-      this._deliveryConfigLoaded.set(true);
-      return;
-    }
-
-    this.branchService.getByZone(zone.city.code, zone.municipality.code).subscribe({
-      next: (response) => {
-        if (response.success && response.data.length > 0) {
-          const branch = response.data[0];
-          this._zoneBranch.set(branch);
-          let municipalityConfig: ServiceMunicipality | null = null;
-
-          for (const sz of (branch.serviceZones || [])) {
-            if (sz.cityCode === zone.city.code) {
-              const muni = sz.municipalities.find(
-                m => m.municipalityCode === zone.municipality.code
-              );
-              if (muni) {
-                municipalityConfig = muni;
-                break;
-              }
-            }
-          }
-
-          this._deliveryConfig.set(municipalityConfig);
-        } else {
-          this._zoneBranch.set(null);
-          this._deliveryConfig.set(null);
-        }
-        this._deliveryConfigLoaded.set(true);
-      },
-      error: () => {
-        this._zoneBranch.set(null);
-        this._deliveryConfig.set(null);
-        this._deliveryConfigLoaded.set(true);
-      }
-    });
+    // TODO: Refactor — zoneService.selectedZone() and branch.serviceZones removed.
+    // Delivery config now comes from BranchZone pivot.
+    this._zoneBranch.set(null);
+    this._deliveryConfig.set(null);
+    this._deliveryConfigLoaded.set(true);
   }
 
   /**

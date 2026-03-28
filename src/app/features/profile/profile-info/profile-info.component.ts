@@ -103,36 +103,15 @@ export class ProfileInfoComponent implements OnInit {
   }
 
   private loadReferenceCities(stateCode: string, preselectedCityCode?: string): void {
-    this.zoneService.getReferenceCities(stateCode).subscribe({
-      next: (response: any) => {
-        if (response.success) {
-          this.availableCities.set(response.data || []);
-          if (preselectedCityCode) {
-            this.loadReferenceMunicipalities(preselectedCityCode);
-          }
-        }
-      }
-    });
+    // TODO: Refactor for new zone architecture — getReferenceCities no longer exists in ZoneService
   }
 
   private loadReferenceMunicipalities(cityCode: string): void {
-    this.zoneService.getReferenceCityByCode(cityCode).subscribe({
-      next: (response: any) => {
-        if (response.success && response.data?.municipalities) {
-          this.availableMunicipalities.set(response.data.municipalities);
-        }
-      }
-    });
+    // TODO: Refactor for new zone architecture — getReferenceCityByCode no longer exists in ZoneService
   }
 
   private loadAllStates(): void {
-    this.zoneService.getAllStates().subscribe({
-      next: (response) => {
-        if (response.success) {
-          this.allStates.set(response.data.sort((a: any, b: any) => a.name.localeCompare(b.name)));
-        }
-      }
-    });
+    // TODO: Refactor for new zone architecture — getAllStates no longer exists in ZoneService
   }
 
 

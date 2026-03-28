@@ -7,7 +7,7 @@ import { OrderService } from '../../../core/services/order.service';
 import { VehicleService } from '../../../core/services/vehicle.service';
 import { ZoneService } from '../../../core/services/zone.service';
 import { BranchService } from '../../../core/services/branch.service';
-import { Branch, ServiceMunicipality } from '../../../models/branch.model';
+import { Branch } from '../../../models/branch.model';
 import { PaymentMethodService } from '../../../core/services/payment-method.service';
 import { CreateOrderRequest, PaymentSubmission } from '../../../models/order.model';
 import {
@@ -252,25 +252,8 @@ export class CheckoutSummaryComponent implements OnInit {
   }
 
   private getLocalDeliveryConfig(): { freeDelivery: boolean; additionalCharge: boolean; additionalChargeAmount: number } | null {
-    const localDelivery = this.localDeliveryInfo;
-    if (!localDelivery) return null;
-
-    // Search in active branches for the municipality's delivery config
-    const branches = this.activeBranches();
-    for (const branch of branches) {
-      const sm = branch.serviceMunicipalities.find(
-        m => m.municipalityCode === localDelivery.municipalityCode && m.hasDelivery
-      );
-      if (sm) {
-        return {
-          freeDelivery: sm.freeDelivery,
-          additionalCharge: !sm.freeDelivery && sm.deliveryCharge > 0,
-          additionalChargeAmount: sm.deliveryCharge,
-        };
-      }
-    }
-
-    // Default: free delivery if no branch config found
+    // TODO: Refactor — branch.serviceMunicipalities removed. Delivery config now via BranchZone pivot.
+    // Default: free delivery until BranchZone integration
     return { freeDelivery: true, additionalCharge: false, additionalChargeAmount: 0 };
   }
 

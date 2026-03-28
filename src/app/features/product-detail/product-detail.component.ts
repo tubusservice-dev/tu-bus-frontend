@@ -70,9 +70,10 @@ export class ProductDetailComponent implements OnInit {
     return Math.round(((prod.comparePrice - prod.price) / prod.comparePrice) * 100);
   });
 
+  // TODO: stock is now per-branch via BranchProduct. Hardcoded to available until integrated.
   protected readonly isOutOfStock = computed(() => {
     const prod = this.product();
-    return !prod || prod.stock <= 0;
+    return !prod;
   });
 
   // Cantidad ya en el carrito (reactivo - depende del signal items del carrito)
@@ -84,13 +85,12 @@ export class ProductDetailComponent implements OnInit {
     return this.cartService.getItemQuantity(prod.id);
   });
 
-  // Stock disponible para agregar (stock total - cantidad en carrito)
+  // TODO: stock is now per-branch via BranchProduct. Using large default until integrated.
   protected readonly availableStock = computed(() => {
-    // Acceder al signal items para crear dependencia reactiva
     this.cartService.items();
     const prod = this.product();
     if (!prod) return 0;
-    return Math.max(0, prod.stock - this.quantityInCart());
+    return Math.max(0, 999 - this.quantityInCart());
   });
 
   protected readonly canAddMore = computed(() => {
@@ -107,7 +107,7 @@ export class ProductDetailComponent implements OnInit {
     // Acceder al signal items para crear dependencia reactiva
     this.cartService.items();
     const prod = this.product();
-    if (!prod || prod.stock <= 0) return false;
+    if (!prod) return false; // TODO: stock check removed — now per-branch
     return this.quantity() <= this.availableStock();
   });
 
@@ -194,7 +194,7 @@ export class ProductDetailComponent implements OnInit {
       price: product.price,
       comparePrice: product.comparePrice,
       images: product.images || [],
-      stock: product.stock,
+      stock: 0, // TODO: stock now per-branch via BranchProduct
       brand: product.brand,
       productModel: product.productModel,
     };
@@ -248,7 +248,7 @@ export class ProductDetailComponent implements OnInit {
         name: prod.name,
         price: prod.price,
         image: prod.images?.[0] || '',
-        stock: prod.stock || 0,
+        stock: 999, // TODO: stock now per-branch via BranchProduct
         freeOilChangeService: prod.freeOilChangeService || false,
       },
       this.quantity()

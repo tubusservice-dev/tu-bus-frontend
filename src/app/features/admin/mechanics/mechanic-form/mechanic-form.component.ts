@@ -3,7 +3,9 @@ import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MechanicService } from '../../../../core/services/mechanic.service';
-import { ZoneService, City, Municipality } from '../../../../core/services/zone.service';
+import { ZoneService } from '../../../../core/services/zone.service';
+import { Zone } from '../../../../models/zone.model';
+import { City } from '../../../../models/city.model';
 
 @Component({
   selector: 'app-mechanic-form',
@@ -24,14 +26,25 @@ export class MechanicFormComponent implements OnInit {
   protected readonly isLoading = signal(false);
   protected readonly isSubmitting = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
-  protected readonly zones = signal<City[]>([]);
+  protected readonly zones = signal<Zone[]>([]);
   protected readonly selectedZoneId = signal<string>('');
 
-  protected readonly availableMunicipalities = computed<Municipality[]>(() => {
+  protected readonly availableMunicipalities = computed<Array<{ slug: string; name: string }>>(() => {
     const zoneId = this.selectedZoneId();
     if (!zoneId) return [];
-    const city = this.zones().find(z => z.id === zoneId);
-    return city?.municipalities?.filter(m => m.isActive) || [];
+    const zone = this.zones().find(z => z.id === zoneId);
+    if (!zone) return [];
+
+    // Resolve slugs to display names from the city reference
+    const city = zone.city as City;
+    if (!city || typeof city === 'string') {
+      return zone.municipalities.map(slug => ({ slug, name: slug }));
+    }
+
+    return zone.municipalities.map(slug => {
+      const found = city.municipalities?.find(m => m.slug === slug);
+      return { slug, name: found?.name || slug };
+    });
   });
 
   protected readonly form: FormGroup = this.fb.group({
@@ -55,8 +68,8 @@ export class MechanicFormComponent implements OnInit {
 
   private loadZones(): void {
     this.zoneService.getAllAdmin().subscribe({
-      next: (cities) => {
-        this.zones.set(cities);
+      next: (response) => {
+        this.zones.set(response.data);
       },
       error: () => {
         // Zones are optional, silently fail

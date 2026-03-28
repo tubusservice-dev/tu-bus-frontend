@@ -50,25 +50,7 @@ export class CheckoutShippingFormComponent implements OnInit {
   }
 
   private loadReferenceStates(): void {
-    this.zoneService.getAllStates().subscribe({
-      next: (response: any) => {
-        if (response.success) {
-          this.states.set(response.data || []);
-          // If user data already loaded, re-prefill to match state
-          const stateCode = this.shippingForm.get('stateCode')?.value;
-          if (!stateCode) {
-            const user = this.authService.currentUser();
-            if (user?.stateName) {
-              const stateMatch = response.data?.find((s: any) => s.name === user.stateName);
-              if (stateMatch) {
-                this.shippingForm.patchValue({ stateCode: stateMatch.code });
-                this.loadReferenceCities(stateMatch.code, user.cityCode, user.municipalityCode);
-              }
-            }
-          }
-        }
-      }
-    });
+    // TODO: Refactor for new zone architecture — getAllStates no longer exists in ZoneService
   }
 
   private initForm(): void {
@@ -191,42 +173,11 @@ export class CheckoutShippingFormComponent implements OnInit {
   }
 
   private loadReferenceCities(stateCode: string, preselectedCity?: string, preselectedMuni?: string): void {
-    this.zoneService.getReferenceCities(stateCode).subscribe({
-      next: (response: any) => {
-        if (response.success) {
-          this.cities.set(response.data || []);
-          if (preselectedCity) {
-            const cityMatch = response.data?.find((c: any) => c.code === preselectedCity || c.name === preselectedCity);
-            if (cityMatch) {
-              this.shippingForm.patchValue({ cityCode: cityMatch.code });
-              if (this.lockedFields()['cityCode']) {
-                this.shippingForm.get('cityCode')?.disable();
-              }
-              this.loadReferenceMunicipalities(cityMatch.code, preselectedMuni);
-            }
-          }
-        }
-      }
-    });
+    // TODO: Refactor for new zone architecture — getReferenceCities no longer exists in ZoneService
   }
 
   private loadReferenceMunicipalities(cityCode: string, preselectedMuni?: string): void {
-    this.zoneService.getReferenceCityByCode(cityCode).subscribe({
-      next: (response: any) => {
-        if (response.success && response.data?.municipalities) {
-          this.municipalities.set(response.data.municipalities);
-          if (preselectedMuni) {
-            const muniMatch = response.data.municipalities.find((m: any) => m.code === preselectedMuni || m.name === preselectedMuni);
-            if (muniMatch) {
-              this.shippingForm.patchValue({ municipalityCode: muniMatch.code });
-              if (this.lockedFields()['municipalityCode']) {
-                this.shippingForm.get('municipalityCode')?.disable();
-              }
-            }
-          }
-        }
-      }
-    });
+    // TODO: Refactor for new zone architecture — getReferenceCityByCode no longer exists in ZoneService
   }
 
   protected readonly hasLockedFields = computed(() => {

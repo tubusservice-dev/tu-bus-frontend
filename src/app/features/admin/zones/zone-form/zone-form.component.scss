@@ -172,7 +172,79 @@
   }
 }
 
-// Municipality multi-select (category-style chips)
+// Municipality toggle list
+.muni-header {
+  @apply flex items-center justify-between mb-3;
+}
+
+.muni-select-all {
+  @apply inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors cursor-pointer;
+}
+
+.muni-counter {
+  @apply text-xs text-gray-400 dark:text-gray-500;
+
+  .muni-counter-num {
+    @apply font-bold text-gray-700 dark:text-gray-200 text-sm;
+  }
+}
+
+.muni-list {
+  @apply space-y-1.5;
+}
+
+.muni-item {
+  @apply flex items-center justify-between px-4 py-3 rounded-lg border cursor-pointer transition-all select-none;
+  @apply border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/40;
+  @apply hover:border-gray-300 dark:hover:border-gray-500 hover:shadow-sm;
+
+  &.is-active {
+    @apply border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/15 shadow-sm;
+
+    .muni-item-icon {
+      @apply text-emerald-500;
+    }
+
+    .muni-item-name {
+      @apply text-emerald-700 dark:text-emerald-400 font-medium;
+    }
+  }
+}
+
+.muni-item-info {
+  @apply flex items-center gap-2.5;
+}
+
+.muni-item-icon {
+  @apply w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0;
+}
+
+.muni-item-name {
+  @apply text-sm text-gray-700 dark:text-gray-300;
+}
+
+.muni-toggle-wrapper {
+  @apply flex-shrink-0;
+}
+
+.muni-toggle {
+  @apply relative w-9 h-5 rounded-full transition-colors;
+  @apply bg-gray-300 dark:bg-gray-600;
+
+  .muni-toggle-knob {
+    @apply absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform;
+  }
+
+  &.on {
+    @apply bg-emerald-500;
+
+    .muni-toggle-knob {
+      @apply translate-x-4;
+    }
+  }
+}
+
+// Municipality multi-select (category-style chips — kept for potential future use)
 .selected-municipalities { @apply flex flex-wrap gap-2 mb-3; }
 .municipality-badge {
   @apply inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-sm font-medium rounded-full;

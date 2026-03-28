@@ -8,8 +8,9 @@ import { LineService } from '../../../../core/services/line.service';
 import { CategoryService } from '../../../../core/services/category.service';
 import { BrandService } from '../../../../core/services/brand.service';
 import { UploadService } from '../../../../core/services/upload.service';
-import { ZoneService, City, Municipality } from '../../../../core/services/zone.service';
+import { BranchProductService } from '../../../../core/services/branch-product.service';
 import { BranchService } from '../../../../core/services/branch.service';
+import { BranchProduct } from '../../../../models/branch-product.model';
 import { Branch } from '../../../../models/branch.model';
 import {
   Line,
@@ -34,9 +35,9 @@ export class ProductFormComponent implements OnInit {
   private readonly categoryService = inject(CategoryService);
   private readonly brandService = inject(BrandService);
   private readonly uploadService = inject(UploadService);
-  private readonly zoneService = inject(ZoneService);
-  private readonly branchService = inject(BranchService);
   private readonly elementRef = inject(ElementRef);
+  private readonly branchProductService = inject(BranchProductService);
+  private readonly branchService = inject(BranchService);
 
   // Estado
   protected readonly productId = signal<string | null>(null);
@@ -97,25 +98,48 @@ export class ProductFormComponent implements OnInit {
     return filtered;
   });
 
-  // Sucursales
-  protected readonly branches = signal<Branch[]>([]);
-  protected readonly selectedBranches = signal<Branch[]>([]);
+  // Branch-Product assignment
+  protected readonly availableBranches = signal<Branch[]>([]);
+  protected readonly existingBranchProducts = signal<BranchProduct[]>([]);
+  protected readonly newBranchProducts = signal<Array<{ branch: Branch; stock: number }>>([]);
+  protected readonly deletedBranchProductIds = signal<string[]>([]);
   protected readonly branchSearchTerm = signal('');
   protected readonly showBranchDropdown = signal(false);
 
-  // Sucursales filtradas (computed)
   protected readonly filteredBranches = computed(() => {
     const search = this.branchSearchTerm().toLowerCase().trim();
-    const selectedIds = this.selectedBranches().map(b => b.id);
-    let filtered = this.branches().filter(b => b.isActive && !selectedIds.includes(b.id));
+    const assignedIds = new Set([
+      ...this.existingBranchProducts()
+        .filter(bp => !this.deletedBranchProductIds().includes(bp.id))
+        .map(bp => typeof bp.branch === 'string' ? bp.branch : (bp.branch as Branch).id),
+      ...this.newBranchProducts().map(nbp => nbp.branch.id),
+    ]);
+    let filtered = this.availableBranches().filter(b => b.isActive && !assignedIds.has(b.id));
     if (search) {
-      filtered = filtered.filter(b =>
-        b.name.toLowerCase().includes(search) ||
-        b.cityName?.toLowerCase().includes(search) ||
-        b.stateName?.toLowerCase().includes(search)
-      );
+      filtered = filtered.filter(b => b.name.toLowerCase().includes(search));
     }
     return filtered;
+  });
+
+  protected readonly totalStock = computed(() => {
+    const existingStock = this.existingBranchProducts()
+      .filter(bp => !this.deletedBranchProductIds().includes(bp.id))
+      .reduce((sum, bp) => sum + bp.stock, 0);
+    const newStock = this.newBranchProducts().reduce((sum, nbp) => sum + nbp.stock, 0);
+    return existingStock + newStock;
+  });
+
+  protected readonly outOfStockCount = computed(() => {
+    const existingOos = this.existingBranchProducts()
+      .filter(bp => !this.deletedBranchProductIds().includes(bp.id) && bp.stock === 0).length;
+    const newOos = this.newBranchProducts().filter(nbp => nbp.stock === 0).length;
+    return existingOos + newOos;
+  });
+
+  protected readonly activeBranchCount = computed(() => {
+    return this.existingBranchProducts()
+      .filter(bp => !this.deletedBranchProductIds().includes(bp.id)).length
+      + this.newBranchProducts().length;
   });
 
   // Sección activa (simplificado a 3 secciones)
@@ -136,11 +160,10 @@ export class ProductFormComponent implements OnInit {
     brand: [''],
     productModel: [''],
 
-    // Inventario (precio y stock requeridos)
+    // Precio
     price: [0, [Validators.required, Validators.min(0)]],
     comparePrice: [null],
-    stock: [1, [Validators.required, Validators.min(0)]],
-    lowStockThreshold: [5],
+    // TODO: stock is now managed per-branch via BranchProduct
 
     // Estado
     isActive: [true],
@@ -164,13 +187,13 @@ export class ProductFormComponent implements OnInit {
         lines: this.lineService.getAllAdmin(),
         categories: this.categoryService.getAllAdmin(),
         brands: this.brandService.getAllAdmin(),
-        branches: this.branchService.getAll()
+        branches: this.branchService.getActive(),
       }).subscribe({
         next: (responses) => {
           this.lines.set(responses.lines.data);
           this.categories.set(responses.categories.data);
           this.brands.set(responses.brands.data);
-          this.branches.set(responses.branches.data);
+          this.availableBranches.set(responses.branches.data);
           // Ahora cargar el producto con las categorías y marcas ya disponibles
           this.loadProduct(id);
         },
@@ -184,7 +207,7 @@ export class ProductFormComponent implements OnInit {
       this.loadLines();
       this.loadCategories();
       this.loadBrands();
-      this.loadBranches();
+      this.loadAvailableBranches();
     }
   }
 
@@ -225,13 +248,11 @@ export class ProductFormComponent implements OnInit {
   }
 
   /**
-   * Cargar sucursales
+   * Load available branches for assignment
    */
-  private loadBranches(): void {
-    this.branchService.getAll().subscribe({
-      next: (response) => {
-        this.branches.set(response.data);
-      },
+  private loadAvailableBranches(): void {
+    this.branchService.getActive().subscribe({
+      next: (response) => this.availableBranches.set(response.data),
       error: () => {},
     });
   }
@@ -261,28 +282,12 @@ export class ProductFormComponent implements OnInit {
           productModel: product.productModel,
           price: product.price,
           comparePrice: product.comparePrice,
-          stock: product.stock,
           isActive: product.isActive,
           isFeatured: product.isFeatured,
           isCombo: product.isCombo || false,
           freeOilChangeService: product.freeOilChangeService || false,
         });
         this.images.set(product.images || []);
-
-        // Cargar sucursales seleccionadas
-        if (product.branches && Array.isArray(product.branches)) {
-          const selectedBranches: Branch[] = [];
-          for (const b of product.branches) {
-            const branchData: any = typeof b === 'string' ? b : (b.id || b._id);
-            if (branchData) {
-              const found = this.branches().find(br => br.id === branchData);
-              if (found) {
-                selectedBranches.push(found);
-              }
-            }
-          }
-          this.selectedBranches.set(selectedBranches);
-        }
 
         // Cargar categorías seleccionadas
         if (product.categories && Array.isArray(product.categories)) {
@@ -324,6 +329,12 @@ export class ProductFormComponent implements OnInit {
         }
 
         this.isLoading.set(false);
+
+        // Load BranchProducts for this product
+        this.branchProductService.getByProduct(id).subscribe({
+          next: (response) => this.existingBranchProducts.set(response.data),
+          error: () => {},
+        });
       },
       error: (error) => {
         this.errorMessage.set(error.error?.message || 'Error al cargar producto');
@@ -390,8 +401,8 @@ export class ProductFormComponent implements OnInit {
   onSubmit(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
-      // Ir a la sección con errores (solo nombre, precio y stock son requeridos)
-      if (this.hasErrors(['name', 'price', 'stock'])) {
+      // Ir a la sección con errores (solo nombre y precio son requeridos)
+      if (this.hasErrors(['name', 'price'])) {
         this.activeSection.set('basic');
       }
       return;
@@ -410,7 +421,7 @@ export class ProductFormComponent implements OnInit {
       brand: this.selectedBrand()?.id || undefined,
       isCombo: formValue.isCombo || false,
       freeOilChangeService: formValue.freeOilChangeService || false,
-      branches: this.selectedBranches().map(b => b.id),
+      // TODO: branches assigned via BranchProduct
     };
 
     const request$ = this.isEditMode()
@@ -418,8 +429,9 @@ export class ProductFormComponent implements OnInit {
       : this.productService.create(data);
 
     request$.subscribe({
-      next: () => {
-        this.router.navigate(['/admin/products']);
+      next: (response) => {
+        const productId = response.data.id || this.productId()!;
+        this.saveBranchProducts(productId);
       },
       error: (error) => {
         this.errorMessage.set(error.error?.message || 'Error al guardar producto');
@@ -542,50 +554,136 @@ export class ProductFormComponent implements OnInit {
     this.selectedBrand.set(null);
   }
 
-  // ==================== SUCURSALES ====================
+  // ==================== SUCURSALES / BRANCH-PRODUCT ====================
 
   /**
-   * Abrir/cerrar dropdown de sucursales
-   */
-  toggleBranchDropdown(): void {
-    this.showBranchDropdown.update(v => !v);
-    if (this.showBranchDropdown()) {
-      this.branchSearchTerm.set('');
-    }
-  }
-
-  /**
-   * Cerrar dropdown de sucursales
-   */
-  closeBranchDropdown(): void {
-    this.showBranchDropdown.set(false);
-    this.branchSearchTerm.set('');
-  }
-
-  /**
-   * Buscar sucursales
+   * Filter branch search input
    */
   onBranchSearch(event: Event): void {
-    const value = (event.target as HTMLInputElement).value;
-    this.branchSearchTerm.set(value);
-    if (!this.showBranchDropdown()) {
-      this.showBranchDropdown.set(true);
-    }
+    this.branchSearchTerm.set((event.target as HTMLInputElement).value);
+    this.showBranchDropdown.set(true);
   }
 
   /**
-   * Seleccionar una sucursal
+   * Open branch dropdown
    */
-  selectBranch(branch: Branch): void {
-    this.selectedBranches.update(branches => [...branches, branch]);
+  openBranchDropdown(): void {
+    this.showBranchDropdown.set(true);
+  }
+
+  /**
+   * Close branch dropdown with delay for click registration
+   */
+  closeBranchDropdown(): void {
+    setTimeout(() => this.showBranchDropdown.set(false), 200);
+  }
+
+  /**
+   * Add a branch with stock 0
+   */
+  addBranch(branch: Branch): void {
+    this.newBranchProducts.update(list => [...list, { branch, stock: 0 }]);
     this.branchSearchTerm.set('');
     this.showBranchDropdown.set(false);
   }
 
   /**
-   * Eliminar una sucursal seleccionada
+   * Mark an existing BranchProduct for deletion
    */
-  removeBranchSelection(branch: Branch): void {
-    this.selectedBranches.update(branches => branches.filter(b => b.id !== branch.id));
+  removeExistingBranchProduct(bpId: string): void {
+    this.deletedBranchProductIds.update(ids => [...ids, bpId]);
   }
+
+  /**
+   * Remove a newly added branch product
+   */
+  removeNewBranchProduct(index: number): void {
+    this.newBranchProducts.update(list => list.filter((_, i) => i !== index));
+  }
+
+  /**
+   * Update stock on an existing BranchProduct (local state)
+   */
+  updateExistingStock(bpId: string, event: Event): void {
+    const value = parseInt((event.target as HTMLInputElement).value) || 0;
+    this.existingBranchProducts.update(list =>
+      list.map(bp => bp.id === bpId ? { ...bp, stock: Math.max(0, value) } : bp)
+    );
+  }
+
+  /**
+   * Update stock on a new branch product (local state)
+   */
+  updateNewStock(index: number, event: Event): void {
+    const value = parseInt((event.target as HTMLInputElement).value) || 0;
+    this.newBranchProducts.update(list =>
+      list.map((item, i) => i === index ? { ...item, stock: Math.max(0, value) } : item)
+    );
+  }
+
+  /**
+   * Get branch name from a BranchProduct (populated or string ID)
+   */
+  getBranchName(bp: BranchProduct): string {
+    if (typeof bp.branch === 'string') return bp.branch;
+    return (bp.branch as Branch)?.name || '';
+  }
+
+  /**
+   * Persist BranchProduct changes (deletions, updates, new assignments)
+   */
+  private saveBranchProducts(productId: string): void {
+    const deletions = this.deletedBranchProductIds().map(id =>
+      this.branchProductService.delete(id)
+    );
+
+    const updates = this.existingBranchProducts()
+      .filter(bp => !this.deletedBranchProductIds().includes(bp.id))
+      .map(bp => this.branchProductService.update(bp.id, { stock: bp.stock }));
+
+    const newAssignments = this.newBranchProducts();
+
+    const operations = [...deletions, ...updates];
+
+    if (operations.length > 0) {
+      forkJoin(operations).subscribe({
+        next: () => {
+          if (newAssignments.length > 0) {
+            this.createNewBranchProducts(productId);
+          } else {
+            this.router.navigate(['/admin/products']);
+          }
+        },
+        error: () => {
+          if (newAssignments.length > 0) {
+            this.createNewBranchProducts(productId);
+          } else {
+            this.router.navigate(['/admin/products']);
+          }
+        },
+      });
+    } else if (newAssignments.length > 0) {
+      this.createNewBranchProducts(productId);
+    } else {
+      this.router.navigate(['/admin/products']);
+    }
+  }
+
+  /**
+   * Batch-create new BranchProduct assignments
+   */
+  private createNewBranchProducts(productId: string): void {
+    const data = {
+      productId,
+      assignments: this.newBranchProducts().map(nbp => ({
+        branchId: nbp.branch.id,
+        stock: nbp.stock,
+      })),
+    };
+    this.branchProductService.createBatch(data).subscribe({
+      next: () => this.router.navigate(['/admin/products']),
+      error: () => this.router.navigate(['/admin/products']),
+    });
+  }
+
 }

@@ -1,33 +1,17 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
 import { RouterLink, Router, ActivatedRoute } from '@angular/router';
+import { forkJoin, Observable } from 'rxjs';
 import { BranchService } from '../../../../core/services/branch.service';
-import { ZoneService, City, Municipality } from '../../../../core/services/zone.service';
-import { State, Branch, CreateBranchRequest, ServiceZone, ServiceMunicipality } from '../../../../models/branch.model';
+import { ZoneService } from '../../../../core/services/zone.service';
+import { BranchZoneService } from '../../../../core/services/branch-zone.service';
+import { CreateBranchRequest } from '../../../../models/branch.model';
+import { Zone } from '../../../../models/zone.model';
+import { BranchZone, DeliveryConfigItem } from '../../../../models/branch-zone.model';
+import { City } from '../../../../models/city.model';
 
 const DAY_NAMES = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-
-/**
- * Internal UI state for a single service zone in the form.
- */
-interface ZoneFormState {
-  stateCode: string;
-  stateName: string;
-  cityCode: string;
-  cityName: string;
-  selectedMunicipalities: ServiceMunicipality[];
-  // UI state
-  collapsed: boolean;
-  showStateDropdown: boolean;
-  showCityDropdown: boolean;
-  showMunicipalityDropdown: boolean;
-  stateSearchTerm: string;
-  citySearchTerm: string;
-  municipalitySearchTerm: string;
-  availableCities: City[];
-  availableMunicipalities: Municipality[];
-}
 
 @Component({
   selector: 'app-branch-form',
@@ -42,6 +26,7 @@ export class BranchFormComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly branchService = inject(BranchService);
   private readonly zoneService = inject(ZoneService);
+  private readonly branchZoneService = inject(BranchZoneService);
 
   protected readonly branchId = signal<string | null>(null);
   protected readonly isEditMode = signal(false);
@@ -50,13 +35,36 @@ export class BranchFormComponent implements OnInit {
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly successMessage = signal<string | null>(null);
 
-  protected readonly states = signal<State[]>([]);
-  protected readonly allZoneCities = signal<City[]>([]);
-  protected readonly existingBranches = signal<Branch[]>([]);
-  protected readonly isLoadingStates = signal(false);
+  // Zone state
+  protected readonly availableZones = signal<Zone[]>([]);
+  protected readonly existingBranchZones = signal<BranchZone[]>([]);
+  protected readonly newBranchZones = signal<Array<{ zone: Zone; deliveryConfig: DeliveryConfigItem[] }>>([]);
+  protected readonly deletedBranchZoneIds = signal<string[]>([]);
+  protected readonly zoneSearchTerm = signal('');
+  protected readonly showZoneDropdown = signal(false);
+  protected readonly isLoadingZones = signal(false);
 
-  // Service zones array
-  protected readonly serviceZones = signal<ZoneFormState[]>([]);
+  // Collapsible state for existing branch zones
+  protected readonly collapsedExisting = signal<Set<string>>(new Set());
+  protected readonly collapsedNew = signal<Set<number>>(new Set());
+
+  // Computed: zones available to add (exclude already assigned)
+  protected readonly filteredZones = computed(() => {
+    const all = this.availableZones();
+    const existingZoneIds = new Set(
+      this.existingBranchZones()
+        .filter(bz => !this.deletedBranchZoneIds().includes(bz.id))
+        .map(bz => typeof bz.zone === 'string' ? bz.zone : bz.zone.id)
+    );
+    const newZoneIds = new Set(this.newBranchZones().map(nbz => nbz.zone.id));
+    const term = this.zoneSearchTerm().toLowerCase();
+
+    return all.filter(z =>
+      !existingZoneIds.has(z.id) &&
+      !newZoneIds.has(z.id) &&
+      (!term || z.name.toLowerCase().includes(term) || this.getZoneCityName(z).toLowerCase().includes(term))
+    );
+  });
 
   form: FormGroup = this.fb.group({
     name: ['', [Validators.required, Validators.minLength(2)]],
@@ -80,7 +88,7 @@ export class BranchFormComponent implements OnInit {
       this.isEditMode.set(true);
     }
     this.initSchedule();
-    this.loadStates();
+    this.loadZones();
   }
 
   private initSchedule(): void {
@@ -95,33 +103,18 @@ export class BranchFormComponent implements OnInit {
     });
   }
 
-  private loadStates(): void {
-    this.isLoadingStates.set(true);
-
-    // Load existing branches to know which municipalities are taken
-    this.branchService.getAll().subscribe({
-      next: (res) => this.existingBranches.set(res.data || []),
-      error: () => this.existingBranches.set([]),
-    });
-
-    // Get states from registered zones only
-    this.zoneService.getAllAdmin().subscribe({
-      next: (cities) => {
-        this.allZoneCities.set(cities);
-        const stateMap = new Map<string, State>();
-        for (const city of cities) {
-          if (city.stateCode && city.stateName) {
-            stateMap.set(city.stateCode, { id: city.stateCode, code: city.stateCode, name: city.stateName, isActive: true });
-          }
-        }
-        this.states.set(Array.from(stateMap.values()).sort((a, b) => a.name.localeCompare(b.name)));
-        this.isLoadingStates.set(false);
+  private loadZones(): void {
+    this.isLoadingZones.set(true);
+    this.zoneService.getActive().subscribe({
+      next: (res) => {
+        this.availableZones.set(res.data || []);
+        this.isLoadingZones.set(false);
         if (this.isEditMode()) {
           this.loadBranch();
         }
       },
       error: () => {
-        this.isLoadingStates.set(false);
+        this.isLoadingZones.set(false);
         if (this.isEditMode()) {
           this.loadBranch();
         }
@@ -134,9 +127,13 @@ export class BranchFormComponent implements OnInit {
     if (!id) return;
 
     this.isLoading.set(true);
-    this.branchService.getById(id).subscribe({
-      next: (response) => {
-        const branch = response.data;
+
+    forkJoin({
+      branch: this.branchService.getById(id),
+      branchZones: this.branchZoneService.getByBranch(id),
+    }).subscribe({
+      next: ({ branch: branchRes, branchZones: bzRes }) => {
+        const branch = branchRes.data;
 
         // Patch basic fields
         this.form.patchValue({
@@ -163,56 +160,11 @@ export class BranchFormComponent implements OnInit {
           });
         }
 
-        // Load service zones - handle both new format and legacy flat format
-        if (branch.serviceZones && branch.serviceZones.length > 0) {
-          // New format: multiple service zones
-          const zones: ZoneFormState[] = branch.serviceZones.map(sz => {
-            const stateCities = this.allZoneCities().filter(c => c.stateCode === sz.stateCode);
-            const selectedCity = stateCities.find(c => c.code === sz.cityCode);
-            const availableMunis = selectedCity ? selectedCity.municipalities.filter(m => m.isActive) : [];
-
-            return {
-              stateCode: sz.stateCode,
-              stateName: sz.stateName,
-              cityCode: sz.cityCode,
-              cityName: sz.cityName,
-              selectedMunicipalities: sz.municipalities || [],
-              collapsed: true,
-              showStateDropdown: false,
-              showCityDropdown: false,
-              showMunicipalityDropdown: false,
-              stateSearchTerm: '',
-              citySearchTerm: '',
-              municipalitySearchTerm: '',
-              availableCities: stateCities,
-              availableMunicipalities: availableMunis,
-            };
-          });
-          this.serviceZones.set(zones);
-        } else if (branch.stateCode && branch.cityCode) {
-          // Legacy flat format: single zone
-          const stateCities = this.allZoneCities().filter(c => c.stateCode === branch.stateCode);
-          const selectedCity = stateCities.find(c => c.code === branch.cityCode);
-          const availableMunis = selectedCity ? selectedCity.municipalities.filter(m => m.isActive) : [];
-
-          const legacyZone: ZoneFormState = {
-            stateCode: branch.stateCode,
-            stateName: branch.stateName || '',
-            cityCode: branch.cityCode,
-            cityName: branch.cityName || '',
-            selectedMunicipalities: branch.serviceMunicipalities || [],
-            collapsed: false,
-            showStateDropdown: false,
-            showCityDropdown: false,
-            showMunicipalityDropdown: false,
-            stateSearchTerm: '',
-            citySearchTerm: '',
-            municipalitySearchTerm: '',
-            availableCities: stateCities,
-            availableMunicipalities: availableMunis,
-          };
-          this.serviceZones.set([legacyZone]);
-        }
+        // Load existing branch zones
+        this.existingBranchZones.set(bzRes.data || []);
+        // Collapse all existing by default
+        const collapsed = new Set<string>((bzRes.data || []).map(bz => bz.id));
+        this.collapsedExisting.set(collapsed);
 
         this.isLoading.set(false);
       },
@@ -223,296 +175,194 @@ export class BranchFormComponent implements OnInit {
     });
   }
 
+  // ==================== ZONE HELPERS ====================
+
+  getZoneCityName(zone: Zone): string {
+    if (typeof zone.city === 'string') return '';
+    return (zone.city as City).name || '';
+  }
+
+  getZoneMunicipalityCount(zone: Zone): number {
+    return zone.municipalities?.length || 0;
+  }
+
+  getExistingZone(bz: BranchZone): Zone | null {
+    if (typeof bz.zone === 'string') return null;
+    return bz.zone as Zone;
+  }
+
+  getExistingZoneName(bz: BranchZone): string {
+    const zone = this.getExistingZone(bz);
+    return zone?.name || 'Zona desconocida';
+  }
+
+  getExistingZoneCityName(bz: BranchZone): string {
+    const zone = this.getExistingZone(bz);
+    if (!zone) return '';
+    return this.getZoneCityName(zone);
+  }
+
+  // ==================== ZONE DROPDOWN ====================
+
+  onZoneSearch(event: Event): void {
+    this.zoneSearchTerm.set((event.target as HTMLInputElement).value);
+    this.showZoneDropdown.set(true);
+  }
+
+  openZoneDropdown(): void {
+    this.showZoneDropdown.set(true);
+  }
+
+  closeZoneDropdown(): void {
+    this.showZoneDropdown.set(false);
+  }
+
   // ==================== ZONE MANAGEMENT ====================
 
-  addZone(): void {
-    const newZone: ZoneFormState = {
-      stateCode: '',
-      stateName: '',
-      cityCode: '',
-      cityName: '',
-      selectedMunicipalities: [],
-      collapsed: false,
-      showStateDropdown: false,
-      showCityDropdown: false,
-      showMunicipalityDropdown: false,
-      stateSearchTerm: '',
-      citySearchTerm: '',
-      municipalitySearchTerm: '',
-      availableCities: [],
-      availableMunicipalities: [],
-    };
-    this.serviceZones.update(zones => [...zones, newZone]);
-  }
-
-  removeZone(index: number): void {
-    this.serviceZones.update(zones => zones.filter((_, i) => i !== index));
-  }
-
-  toggleZoneCollapse(index: number): void {
-    this.serviceZones.update(zones => zones.map((z, i) =>
-      i === index ? { ...z, collapsed: !z.collapsed } : z
-    ));
-  }
-
-  getZoneTitle(zone: ZoneFormState, index: number): string {
-    if (zone.stateName && zone.cityName) {
-      return `Zona ${index + 1}: ${zone.stateName} - ${zone.cityName}`;
-    }
-    return `Zona ${index + 1}: Sin configurar`;
-  }
-
-  // ==================== STATE SELECTION PER ZONE ====================
-
-  filteredStatesForZone(zone: ZoneFormState): State[] {
-    const term = zone.stateSearchTerm.toLowerCase();
-    return this.states().filter(s => !term || s.name.toLowerCase().includes(term));
-  }
-
-  onZoneStateSearch(event: Event, index: number): void {
-    const value = (event.target as HTMLInputElement).value;
-    this.serviceZones.update(zones => zones.map((z, i) =>
-      i === index ? { ...z, stateSearchTerm: value, showStateDropdown: true } : z
-    ));
-  }
-
-  openZoneStateDropdown(index: number): void {
-    this.serviceZones.update(zones => zones.map((z, i) =>
-      i === index ? { ...z, showStateDropdown: true } : z
-    ));
-  }
-
-  closeZoneStateDropdown(index: number): void {
-    this.serviceZones.update(zones => zones.map((z, i) =>
-      i === index ? { ...z, showStateDropdown: false } : z
-    ));
-  }
-
-  selectZoneState(state: State, index: number): void {
-    const stateCities = this.allZoneCities()
-      .filter(c => c.stateCode === state.code);
-    this.serviceZones.update(zones => zones.map((z, i) =>
-      i === index ? {
-        ...z,
-        stateCode: state.code,
-        stateName: state.name,
-        cityCode: '',
-        cityName: '',
-        selectedMunicipalities: [],
-        stateSearchTerm: '',
-        showStateDropdown: false,
-        availableCities: stateCities,
-        availableMunicipalities: [],
-      } : z
-    ));
-  }
-
-  clearZoneState(index: number): void {
-    this.serviceZones.update(zones => zones.map((z, i) =>
-      i === index ? {
-        ...z,
-        stateCode: '',
-        stateName: '',
-        cityCode: '',
-        cityName: '',
-        selectedMunicipalities: [],
-        availableCities: [],
-        availableMunicipalities: [],
-      } : z
-    ));
-  }
-
-  // ==================== CITY SELECTION PER ZONE ====================
-
-  filteredCitiesForZone(zone: ZoneFormState): City[] {
-    const term = zone.citySearchTerm.toLowerCase();
-    return zone.availableCities.filter(c => !term || c.name.toLowerCase().includes(term));
-  }
-
-  onZoneCitySearch(event: Event, index: number): void {
-    const value = (event.target as HTMLInputElement).value;
-    this.serviceZones.update(zones => zones.map((z, i) =>
-      i === index ? { ...z, citySearchTerm: value, showCityDropdown: true } : z
-    ));
-  }
-
-  openZoneCityDropdown(index: number): void {
-    this.serviceZones.update(zones => zones.map((z, i) =>
-      i === index ? { ...z, showCityDropdown: true } : z
-    ));
-  }
-
-  closeZoneCityDropdown(index: number): void {
-    this.serviceZones.update(zones => zones.map((z, i) =>
-      i === index ? { ...z, showCityDropdown: false } : z
-    ));
-  }
-
-  selectZoneCity(city: City, index: number): void {
-    const taken = this.getTakenMunicipalityCodes(city.code);
-    const available = (city.municipalities || []).filter(m => m.isActive && !taken.has(m.code));
-    this.serviceZones.update(zones => zones.map((z, i) =>
-      i === index ? {
-        ...z,
-        cityCode: city.code,
-        cityName: city.name,
-        citySearchTerm: '',
-        showCityDropdown: false,
-        selectedMunicipalities: [],
-        availableMunicipalities: available,
-      } : z
-    ));
-  }
-
-  clearZoneCity(index: number): void {
-    this.serviceZones.update(zones => zones.map((z, i) =>
-      i === index ? {
-        ...z,
-        cityCode: '',
-        cityName: '',
-        selectedMunicipalities: [],
-        availableMunicipalities: [],
-      } : z
-    ));
-  }
-
-  // ==================== MUNICIPALITY SELECTION PER ZONE ====================
-
-  availableMunicipalitiesForZone(zone: ZoneFormState): Municipality[] {
-    const term = zone.municipalitySearchTerm.toLowerCase();
-    const selectedCodes = new Set(zone.selectedMunicipalities.map(m => m.municipalityCode));
-    return zone.availableMunicipalities.filter(m =>
-      !selectedCodes.has(m.code) &&
-      (!term || m.name.toLowerCase().includes(term))
-    );
-  }
-
-  onZoneMunicipalitySearch(event: Event, index: number): void {
-    const value = (event.target as HTMLInputElement).value;
-    this.serviceZones.update(zones => zones.map((z, i) =>
-      i === index ? { ...z, municipalitySearchTerm: value, showMunicipalityDropdown: true } : z
-    ));
-  }
-
-  openZoneMunicipalityDropdown(index: number): void {
-    this.serviceZones.update(zones => zones.map((z, i) =>
-      i === index ? { ...z, showMunicipalityDropdown: true } : z
-    ));
-  }
-
-  closeZoneMunicipalityDropdown(index: number): void {
-    this.serviceZones.update(zones => zones.map((z, i) =>
-      i === index ? { ...z, showMunicipalityDropdown: false } : z
-    ));
-  }
-
-  addZoneMunicipality(municipality: Municipality, index: number): void {
-    this.serviceZones.update(zones => zones.map((z, i) => {
-      if (i !== index) return z;
-      if (z.selectedMunicipalities.some(m => m.municipalityCode === municipality.code)) return z;
-      const newMuni: ServiceMunicipality = {
-        municipalityCode: municipality.code,
-        municipalityName: municipality.name,
-        hasDelivery: false,
-        freeDelivery: true,
-        deliveryCharge: 0,
-        hasOilChangeService: false,
-      };
-      return {
-        ...z,
-        selectedMunicipalities: [...z.selectedMunicipalities, newMuni],
-        municipalitySearchTerm: '',
-        // Keep dropdown open for quick multi-select
-      };
+  addZone(zone: Zone): void {
+    // Build default delivery config from zone municipalities
+    const deliveryConfig: DeliveryConfigItem[] = (zone.municipalities || []).map(slug => ({
+      municipality: slug,
+      hasDelivery: false,
+      freeDelivery: true,
+      deliveryCharge: 0,
     }));
+
+    this.newBranchZones.update(zones => [...zones, { zone, deliveryConfig }]);
+    this.zoneSearchTerm.set('');
+    this.showZoneDropdown.set(false);
   }
 
-  removeZoneMunicipality(muniCode: string, zoneIndex: number): void {
-    this.serviceZones.update(zones => zones.map((z, i) => {
-      if (i !== zoneIndex) return z;
-      return {
-        ...z,
-        selectedMunicipalities: z.selectedMunicipalities.filter(m => m.municipalityCode !== muniCode),
-      };
-    }));
+  removeExistingZone(bzId: string): void {
+    this.deletedBranchZoneIds.update(ids => [...ids, bzId]);
   }
 
-  // ==================== MUNICIPALITY CONFIG ====================
+  removeNewZone(index: number): void {
+    this.newBranchZones.update(zones => zones.filter((_, i) => i !== index));
+  }
 
-  toggleMuniDelivery(zoneIndex: number, muniCode: string): void {
-    this.serviceZones.update(zones => zones.map((z, i) => {
-      if (i !== zoneIndex) return z;
+  // ==================== COLLAPSE TOGGLES ====================
+
+  toggleExistingCollapse(bzId: string): void {
+    this.collapsedExisting.update(set => {
+      const next = new Set(set);
+      if (next.has(bzId)) {
+        next.delete(bzId);
+      } else {
+        next.add(bzId);
+      }
+      return next;
+    });
+  }
+
+  isExistingCollapsed(bzId: string): boolean {
+    return this.collapsedExisting().has(bzId);
+  }
+
+  toggleNewCollapse(index: number): void {
+    this.collapsedNew.update(set => {
+      const next = new Set(set);
+      if (next.has(index)) {
+        next.delete(index);
+      } else {
+        next.add(index);
+      }
+      return next;
+    });
+  }
+
+  isNewCollapsed(index: number): boolean {
+    return this.collapsedNew().has(index);
+  }
+
+  // ==================== DELIVERY CONFIG - EXISTING ====================
+
+  toggleExistingDelivery(bzId: string, municipality: string): void {
+    this.existingBranchZones.update(zones => zones.map(bz => {
+      if (bz.id !== bzId) return bz;
       return {
-        ...z,
-        selectedMunicipalities: z.selectedMunicipalities.map(m =>
-          m.municipalityCode === muniCode ? { ...m, hasDelivery: !m.hasDelivery } : m
+        ...bz,
+        deliveryConfig: bz.deliveryConfig.map(dc =>
+          dc.municipality === municipality ? { ...dc, hasDelivery: !dc.hasDelivery } : dc
         ),
       };
     }));
   }
 
-  toggleMuniFreeDelivery(zoneIndex: number, muniCode: string): void {
-    this.serviceZones.update(zones => zones.map((z, i) => {
-      if (i !== zoneIndex) return z;
+  toggleExistingFreeDelivery(bzId: string, municipality: string): void {
+    this.existingBranchZones.update(zones => zones.map(bz => {
+      if (bz.id !== bzId) return bz;
       return {
-        ...z,
-        selectedMunicipalities: z.selectedMunicipalities.map(m =>
-          m.municipalityCode === muniCode ? { ...m, freeDelivery: !m.freeDelivery } : m
+        ...bz,
+        deliveryConfig: bz.deliveryConfig.map(dc =>
+          dc.municipality === municipality ? { ...dc, freeDelivery: !dc.freeDelivery } : dc
         ),
       };
     }));
   }
 
-  toggleMuniOilChange(zoneIndex: number, muniCode: string): void {
-    this.serviceZones.update(zones => zones.map((z, i) => {
-      if (i !== zoneIndex) return z;
-      return {
-        ...z,
-        selectedMunicipalities: z.selectedMunicipalities.map(m =>
-          m.municipalityCode === muniCode ? { ...m, hasOilChangeService: !m.hasOilChangeService } : m
-        ),
-      };
-    }));
-  }
-
-  updateMuniDeliveryCharge(zoneIndex: number, muniCode: string, event: Event): void {
+  updateExistingDeliveryCharge(bzId: string, municipality: string, event: Event): void {
     const value = parseFloat((event.target as HTMLInputElement).value) || 0;
-    this.serviceZones.update(zones => zones.map((z, i) => {
-      if (i !== zoneIndex) return z;
+    this.existingBranchZones.update(zones => zones.map(bz => {
+      if (bz.id !== bzId) return bz;
       return {
-        ...z,
-        selectedMunicipalities: z.selectedMunicipalities.map(m =>
-          m.municipalityCode === muniCode ? { ...m, deliveryCharge: value } : m
+        ...bz,
+        deliveryConfig: bz.deliveryConfig.map(dc =>
+          dc.municipality === municipality ? { ...dc, deliveryCharge: value } : dc
         ),
       };
     }));
   }
 
-  // ==================== HELPER: Taken municipalities ====================
+  // ==================== DELIVERY CONFIG - NEW ====================
 
-  private getTakenMunicipalityCodes(cityCode: string): Set<string> {
-    const currentBranchId = this.branchId();
-    const taken = new Set<string>();
-    for (const branch of this.existingBranches()) {
-      if (currentBranchId && branch.id === currentBranchId) continue;
-      // Check new serviceZones
-      if (branch.serviceZones) {
-        for (const sz of branch.serviceZones) {
-          if (sz.cityCode === cityCode) {
-            for (const m of sz.municipalities) {
-              taken.add(m.municipalityCode);
-            }
-          }
-        }
-      }
-      // Check legacy flat fields
-      if (branch.cityCode === cityCode && branch.serviceMunicipalities) {
-        for (const sm of branch.serviceMunicipalities) {
-          taken.add(sm.municipalityCode);
-        }
-      }
+  toggleNewDelivery(index: number, municipality: string): void {
+    this.newBranchZones.update(zones => zones.map((nbz, i) => {
+      if (i !== index) return nbz;
+      return {
+        ...nbz,
+        deliveryConfig: nbz.deliveryConfig.map(dc =>
+          dc.municipality === municipality ? { ...dc, hasDelivery: !dc.hasDelivery } : dc
+        ),
+      };
+    }));
+  }
+
+  toggleNewFreeDelivery(index: number, municipality: string): void {
+    this.newBranchZones.update(zones => zones.map((nbz, i) => {
+      if (i !== index) return nbz;
+      return {
+        ...nbz,
+        deliveryConfig: nbz.deliveryConfig.map(dc =>
+          dc.municipality === municipality ? { ...dc, freeDelivery: !dc.freeDelivery } : dc
+        ),
+      };
+    }));
+  }
+
+  updateNewDeliveryCharge(index: number, municipality: string, event: Event): void {
+    const value = parseFloat((event.target as HTMLInputElement).value) || 0;
+    this.newBranchZones.update(zones => zones.map((nbz, i) => {
+      if (i !== index) return nbz;
+      return {
+        ...nbz,
+        deliveryConfig: nbz.deliveryConfig.map(dc =>
+          dc.municipality === municipality ? { ...dc, deliveryCharge: value } : dc
+        ),
+      };
+    }));
+  }
+
+  // ==================== MUNICIPALITY NAME RESOLVER ====================
+
+  getMunicipalityDisplayName(slug: string, zone: Zone): string {
+    if (typeof zone.city !== 'string') {
+      const city = zone.city as City;
+      const found = city.municipalities?.find(m => m.slug === slug);
+      if (found) return found.name;
     }
-    return taken;
+    // Fallback: capitalize slug
+    return slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   }
 
   // ==================== SUBMIT ====================
@@ -523,31 +373,10 @@ export class BranchFormComponent implements OnInit {
       return;
     }
 
-    // Validate at least one zone with state + city
-    const zones = this.serviceZones();
-    if (zones.length === 0) {
-      this.errorMessage.set('Debe agregar al menos una zona de servicio');
-      return;
-    }
-    for (const zone of zones) {
-      if (!zone.stateCode || !zone.cityCode) {
-        this.errorMessage.set('Todas las zonas deben tener estado y ciudad seleccionados');
-        return;
-      }
-    }
-
     this.isSubmitting.set(true);
     this.errorMessage.set(null);
 
     const formValue = this.form.getRawValue();
-
-    const serviceZones: ServiceZone[] = zones.map(z => ({
-      stateCode: z.stateCode,
-      stateName: z.stateName,
-      cityCode: z.cityCode,
-      cityName: z.cityName,
-      municipalities: z.selectedMunicipalities,
-    }));
 
     const data: CreateBranchRequest = {
       name: formValue.name,
@@ -556,7 +385,6 @@ export class BranchFormComponent implements OnInit {
       whatsappPhone: formValue.whatsappPhone,
       landlinePhone: formValue.landlinePhone || undefined,
       schedule: formValue.schedule,
-      serviceZones,
       coordinates: this.parseCoordinates(formValue.coordinatesRaw),
       isActive: formValue.isActive,
     };
@@ -566,11 +394,59 @@ export class BranchFormComponent implements OnInit {
       : this.branchService.create(data);
 
     request$.subscribe({
+      next: (response) => {
+        const branchId = response.data.id || this.branchId()!;
+        this.saveBranchZones(branchId);
+      },
+      error: (error) => {
+        this.errorMessage.set(error.error?.message || 'Error al guardar sucursal');
+        this.isSubmitting.set(false);
+      },
+    });
+  }
+
+  private saveBranchZones(branchId: string): void {
+    const deletions = this.deletedBranchZoneIds();
+    const newZones = this.newBranchZones();
+    const existingModified = this.existingBranchZones()
+      .filter(bz => !deletions.includes(bz.id));
+
+    const tasks: Observable<any>[] = [];
+
+    // 1. Delete removed branch zones
+    for (const id of deletions) {
+      tasks.push(this.branchZoneService.delete(id));
+    }
+
+    // 2. Create new branch zones in batch
+    if (newZones.length > 0) {
+      tasks.push(this.branchZoneService.createBatch({
+        branchId,
+        zones: newZones.map(nbz => ({
+          zoneId: nbz.zone.id,
+          deliveryConfig: nbz.deliveryConfig,
+        })),
+      }));
+    }
+
+    // 3. Update modified existing branch zones
+    for (const bz of existingModified) {
+      tasks.push(this.branchZoneService.update(bz.id, {
+        deliveryConfig: bz.deliveryConfig,
+      }));
+    }
+
+    if (tasks.length === 0) {
+      this.router.navigate(['/admin/branches']);
+      return;
+    }
+
+    forkJoin(tasks).subscribe({
       next: () => {
         this.router.navigate(['/admin/branches']);
       },
       error: (error) => {
-        this.errorMessage.set(error.error?.message || 'Error al guardar sucursal');
+        this.errorMessage.set(error.error?.message || 'Sucursal guardada, pero hubo un error al guardar las zonas');
         this.isSubmitting.set(false);
       },
     });
@@ -594,5 +470,12 @@ export class BranchFormComponent implements OnInit {
   isInvalid(field: string): boolean {
     const control = this.form.get(field);
     return !!(control?.invalid && control?.touched);
+  }
+
+  // ==================== VISIBLE EXISTING ZONES (filtered) ====================
+
+  get visibleExistingBranchZones(): BranchZone[] {
+    const deleted = this.deletedBranchZoneIds();
+    return this.existingBranchZones().filter(bz => !deleted.includes(bz.id));
   }
 }

@@ -101,14 +101,6 @@ export interface ShippingAgency {
 }
 
 /**
- * Región del producto (ciudad + municipio)
- */
-export interface ProductRegion {
-  city: string | { id: string; name: string; code: string; municipalities?: Array<{ code: string; name: string; isActive: boolean }> };
-  municipalityCode: string;
-}
-
-/**
  * Producto
  */
 export interface Product {
@@ -127,7 +119,6 @@ export interface Product {
   disclaimerRequired?: boolean;
   price: number;
   comparePrice?: number;
-  stock: number;
   line?: string | Line;
   categories: (string | Category)[];
   tags: string[];
@@ -135,7 +126,6 @@ export interface Product {
   isFeatured: boolean;
   isCombo: boolean;
   freeOilChangeService: boolean;
-  branches?: any[];
   createdAt: Date;
 }
 
@@ -156,7 +146,6 @@ export interface CreateProductRequest {
   disclaimerRequired?: boolean;
   price: number;
   comparePrice?: number;
-  stock?: number;
   line?: string;
   categories?: string[];
   tags?: string[];
@@ -164,7 +153,6 @@ export interface CreateProductRequest {
   isFeatured?: boolean;
   isCombo?: boolean;
   freeOilChangeService?: boolean;
-  branches?: string[];
 }
 
 /**

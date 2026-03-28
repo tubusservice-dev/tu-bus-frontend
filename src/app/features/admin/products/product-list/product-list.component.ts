@@ -6,6 +6,8 @@ import { ProductService, ProductQueryParams } from '../../../../core/services/pr
 import { BrandService } from '../../../../core/services/brand.service';
 import { CategoryService } from '../../../../core/services/category.service';
 import { SettingsService } from '../../../../core/services/settings.service';
+import { BranchProductService } from '../../../../core/services/branch-product.service';
+import { BranchProduct } from '../../../../models/branch-product.model';
 import {
   Product,
   Line,
@@ -26,11 +28,15 @@ export class ProductListComponent implements OnInit {
   private readonly brandService = inject(BrandService);
   private readonly categoryService = inject(CategoryService);
   private readonly settingsService = inject(SettingsService);
+  private readonly branchProductService = inject(BranchProductService);
 
   // Datos
   protected readonly products = signal<Product[]>([]);
   protected readonly brands = signal<Brand[]>([]);
   protected readonly categories = signal<Category[]>([]);
+
+  // Stock cache per product
+  protected readonly productStockMap = signal<Map<string, number>>(new Map());
 
   // Estados
   protected readonly isLoading = signal(true);
@@ -112,6 +118,7 @@ export class ProductListComponent implements OnInit {
         this.totalPages.set(response.pagination.pages);
         this.currentPage.set(response.pagination.page);
         this.isLoading.set(false);
+        this.loadProductStocks(response.data);
       },
       error: (error) => {
         this.errorMessage.set(error.error?.message || 'Error al cargar productos');
@@ -212,18 +219,37 @@ export class ProductListComponent implements OnInit {
   }
 
   /**
-   * Calcular stock total
+   * Get total stock aggregated from BranchProducts
    */
   getTotalStock(product: Product): number {
-    return product.stock;
+    return this.productStockMap().get(product.id) || 0;
   }
 
   /**
-   * Verificar si tiene bajo stock
+   * Check if product has low stock (> 0 and <= 5)
    */
   isLowStock(product: Product): boolean {
-    const totalStock = this.getTotalStock(product);
-    return totalStock > 0 && totalStock <= 5;
+    const total = this.getTotalStock(product);
+    return total > 0 && total <= 5;
+  }
+
+  /**
+   * Load stock totals for all products via BranchProduct aggregation
+   */
+  private loadProductStocks(products: Product[]): void {
+    for (const product of products) {
+      this.branchProductService.getByProduct(product.id).subscribe({
+        next: (response) => {
+          const total = response.data.reduce((sum: number, bp: BranchProduct) => sum + bp.stock, 0);
+          this.productStockMap.update(map => {
+            const newMap = new Map(map);
+            newMap.set(product.id, total);
+            return newMap;
+          });
+        },
+        error: () => {},
+      });
+    }
   }
 
   /**

@@ -53,8 +53,8 @@
           <thead>
             <tr>
               <th>Nombre</th>
-              <th>Ubicacion</th>
-              <th>Municipios</th>
+              <th>Zonas</th>
+              <th>Direccion</th>
               <th>Horario</th>
               <th>Estado</th>
               <th>Acciones</th>
@@ -66,22 +66,13 @@
                 <td>
                   <div class="branch-name">
                     <span class="name-text">{{ branch.name }}</span>
-                    @if (branch.address) {
-                      <span class="address-text">{{ branch.address }}</span>
-                    }
                   </div>
                 </td>
                 <td>
-                  <div class="location-info">
-                    <span class="city-text">{{ getLocationCity(branch) }}</span>
-                    <span class="state-text">{{ getLocationState(branch) }}</span>
-                    @if (getExtraZonesCount(branch) > 0) {
-                      <span class="extra-zones-badge">+{{ getExtraZonesCount(branch) }} zona{{ getExtraZonesCount(branch) > 1 ? 's' : '' }}</span>
-                    }
-                  </div>
+                  <span class="municipality-count">{{ getZoneCountForBranch(branch.id) }}</span>
                 </td>
                 <td>
-                  <span class="municipality-count">{{ getMunicipalityCount(branch) }}</span>
+                  <span class="address-text">{{ branch.address }}</span>
                 </td>
                 <td>
                   <span class="schedule-text">{{ getScheduleSummary(branch) }}</span>
@@ -244,37 +235,50 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
               </svg>
               Zonas de Atencion
-              <span class="detail-count">{{ getServiceZones(branch).length }} zona{{ getServiceZones(branch).length !== 1 ? 's' : '' }}</span>
+              @if (!isLoadingZones() && selectedBranchZones().length > 0) {
+                <span class="detail-count">{{ selectedBranchZones().length }}</span>
+              }
             </h3>
 
-            @for (zone of getServiceZones(branch); track $index) {
-              <div class="detail-zone-card">
-                <div class="detail-zone-header">
-                  <span class="detail-zone-location">{{ zone.cityName }}, {{ zone.stateName }}</span>
-                  <span class="detail-zone-muni-count">{{ zone.municipalities.length }} municipio{{ zone.municipalities.length !== 1 ? 's' : '' }}</span>
-                </div>
-                <div class="municipalities-list">
-                  @for (m of zone.municipalities; track m.municipalityCode) {
-                    <div class="municipality-card">
-                      <span class="municipality-name">{{ m.municipalityName }}</span>
-                      <div class="municipality-badges">
-                        @if (m.hasDelivery) {
-                          @if (m.freeDelivery) {
-                            <span class="badge badge-green">Delivery gratis</span>
-                          } @else {
-                            <span class="badge badge-blue">Delivery ${{ m.deliveryCharge.toFixed(2) }}</span>
-                          }
-                        } @else {
-                          <span class="badge badge-gray">Sin delivery</span>
-                        }
-                        @if (m.hasOilChangeService) {
-                          <span class="badge badge-purple">Cambio de aceite</span>
-                        }
-                      </div>
+            @if (isLoadingZones()) {
+              <div class="loading-state">
+                <div class="spinner"></div>
+                <span>Cargando zonas...</span>
+              </div>
+            } @else if (selectedBranchZones().length === 0) {
+              <p class="detail-value">No hay zonas asignadas a esta sucursal.</p>
+            } @else {
+              @for (bz of selectedBranchZones(); track bz.id) {
+                <div class="detail-zone-card">
+                  <div class="detail-zone-header">
+                    <span class="detail-zone-location">
+                      {{ getZoneName(bz) }}
+                      @if (getCityName(bz)) {
+                        <span class="detail-zone-muni-count"> — {{ getCityName(bz) }}</span>
+                      }
+                    </span>
+                    <span class="detail-zone-muni-count">{{ getMunicipalityCount(bz) }} municipios</span>
+                  </div>
+                  @if (bz.deliveryConfig && bz.deliveryConfig.length > 0) {
+                    <div class="municipalities-list">
+                      @for (item of bz.deliveryConfig; track item.municipality) {
+                        <div class="municipality-card">
+                          <span class="municipality-name">{{ item.municipality }}</span>
+                          <div class="municipality-badges">
+                            @if (item.hasDelivery && item.freeDelivery) {
+                              <span class="badge badge-green">Delivery gratis</span>
+                            } @else if (item.hasDelivery && !item.freeDelivery) {
+                              <span class="badge badge-blue">Delivery ${{ item.deliveryCharge.toFixed(2) }}</span>
+                            } @else {
+                              <span class="badge badge-gray">Sin delivery</span>
+                            }
+                          </div>
+                        </div>
+                      }
                     </div>
                   }
                 </div>
-              </div>
+              }
             }
           </div>
         </div>

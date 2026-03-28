@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, computed, effect, HostListener } from '@angular/core';
+import { Component, inject, signal, OnInit, computed, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -117,18 +117,8 @@ export class CatalogComponent implements OnInit {
   });
 
   constructor() {
-    // Recargar productos cuando cambia la zona seleccionada
-    effect(() => {
-      const zone = this.zoneService.selectedZone();
-      if (zone) {
-        this.loadBranchesByZone(zone.city.code, zone.municipality.code);
-      } else if (this.zoneInitialized) {
-        // Si se limpia la zona, cargar sin filtro de sucursal
-        this.branchIds.set([]);
-        this.currentPage.set(1);
-        this.loadProducts();
-      }
-    });
+    // TODO: Refactor — zoneService.selectedZone() no longer exists.
+    // Zone-based branch filtering disabled until new architecture is in place.
   }
 
   ngOnInit(): void {
@@ -141,10 +131,8 @@ export class CatalogComponent implements OnInit {
     this.loadBrands();
     this.loadCategories();
 
-    // Si ya hay zona seleccionada, el effect la cargará. Si no, cargar todos.
-    if (!this.zoneService.selectedZone()) {
-      this.loadProducts();
-    }
+    // TODO: Zone-based filtering disabled — load all products
+    this.loadProducts();
     this.zoneInitialized = true;
   }
 
@@ -166,24 +154,11 @@ export class CatalogComponent implements OnInit {
     });
   }
 
-  private loadBranchesByZone(cityCode: string, municipalityCode: string): void {
-    this.branchService.getByZone(cityCode, municipalityCode).subscribe({
-      next: (response) => {
-        if (response.success && response.data.length > 0) {
-          const ids = response.data.map(b => b.id);
-          this.branchIds.set(ids);
-        } else {
-          this.branchIds.set([]);
-        }
-        this.currentPage.set(1);
-        this.loadProducts();
-      },
-      error: () => {
-        this.branchIds.set([]);
-        this.currentPage.set(1);
-        this.loadProducts();
-      }
-    });
+  // TODO: Refactor to use BranchZoneService.findByLocation() when client module is updated
+  private loadBranchesByZone(_cityCode: string, _municipalityCode: string): void {
+    this.branchIds.set([]);
+    this.currentPage.set(1);
+    this.loadProducts();
   }
 
   loadProducts(): void {

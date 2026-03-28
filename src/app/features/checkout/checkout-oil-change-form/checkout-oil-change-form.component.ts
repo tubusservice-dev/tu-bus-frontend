@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { CheckoutService, OilChangeServiceInfo } from '../services/checkout.service';
 import { CartService } from '../../../core/services/cart.service';
-import { ZoneService, Municipality } from '../../../core/services/zone.service';
+import { ZoneService } from '../../../core/services/zone.service';
 import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
@@ -67,15 +67,7 @@ export class CheckoutOilChangeFormComponent implements OnInit {
   }
 
   private loadBranchZones(): void {
-    const branch = this.checkoutService.zoneBranch();
-    if (!branch?.serviceZones) return;
-
-    const cities = branch.serviceZones.map(sz => ({
-      code: sz.cityCode,
-      name: sz.cityName,
-      municipalities: sz.municipalities.map(m => ({ code: m.municipalityCode, name: m.municipalityName })),
-    }));
-    this.branchCities.set(cities);
+    // TODO: Refactor — branch.serviceZones removed. Delivery zones now come from BranchZone pivot.
   }
 
   private loadSavedData(): void {
@@ -102,15 +94,7 @@ export class CheckoutOilChangeFormComponent implements OnInit {
         error: () => this.prefillFromUserProfile(),
       });
 
-      // Prefill zone from header selection
-      const selectedZone = this.zoneService.selectedZone();
-      if (selectedZone) {
-        this.onCityChange(selectedZone.city.code);
-        this.oilChangeForm.patchValue({
-          cityCode: selectedZone.city.code,
-          municipalityCode: selectedZone.municipality.code,
-        });
-      }
+      // TODO: Refactor — zoneService.selectedZone() no longer exists
     }
   }
 
@@ -147,33 +131,8 @@ export class CheckoutOilChangeFormComponent implements OnInit {
       locked['email'] = true;
     }
 
-    // Only prefill address if user's zone is within branch coverage
-    if (user.cityCode && user.municipalityCode) {
-      const branch = this.checkoutService.zoneBranch();
-      const isInBranchZone = branch?.serviceZones?.some(sz =>
-        sz.cityCode === user.cityCode &&
-        sz.municipalities.some(m => m.municipalityCode === user.municipalityCode)
-      );
-      if (isInBranchZone) {
-        // Lock city and municipality
-        this.oilChangeForm.get('cityCode')?.disable();
-        locked['cityCode'] = true;
-        this.oilChangeForm.get('municipalityCode')?.disable();
-        locked['municipalityCode'] = true;
-
-        const addressParts = [user.street, user.houseNumber, user.neighborhood].filter(Boolean);
-        if (addressParts.length > 0) {
-          this.oilChangeForm.patchValue({ address: addressParts.join(', ') });
-          this.oilChangeForm.get('address')?.disable();
-          locked['address'] = true;
-        }
-        if (user.referencePoint) {
-          this.oilChangeForm.patchValue({ referencePoint: user.referencePoint });
-          this.oilChangeForm.get('referencePoint')?.disable();
-          locked['referencePoint'] = true;
-        }
-      }
-    }
+    // TODO: Refactor — branch.serviceZones removed. Cannot check branch coverage.
+    // Address prefill disabled until BranchZone pivot is integrated.
 
     this.lockedFields.set(locked);
   }
@@ -233,21 +192,10 @@ export class CheckoutOilChangeFormComponent implements OnInit {
   }
 
   onCityChange(cityCode: string): void {
-    const branch = this.checkoutService.zoneBranch();
-    const zone = branch?.serviceZones?.find(sz => sz.cityCode === cityCode);
-    if (zone) {
-      const municipalities = zone.municipalities.map(m => ({ code: m.municipalityCode, name: m.municipalityName }));
-      this.availableMunicipalities.set(municipalities);
-      this.selectedCityName.set(zone.cityName);
-      this.oilChangeForm.patchValue({ municipalityCode: '' });
-      if (municipalities.length === 1) {
-        this.oilChangeForm.patchValue({ municipalityCode: municipalities[0].code });
-      }
-    } else {
-      this.availableMunicipalities.set([]);
-      this.selectedCityName.set('');
-      this.oilChangeForm.patchValue({ municipalityCode: '' });
-    }
+    // TODO: Refactor — branch.serviceZones removed. Use BranchZone pivot for municipalities.
+    this.availableMunicipalities.set([]);
+    this.selectedCityName.set('');
+    this.oilChangeForm.patchValue({ municipalityCode: '' });
   }
 
   onSubmit(): void {

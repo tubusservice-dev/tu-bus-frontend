@@ -20,6 +20,16 @@
 
 .form-container { @apply space-y-6; }
 
+.top-row {
+  @apply flex flex-col gap-6;
+
+  @media (min-width: 1280px) {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+}
+
 .form-section {
   @apply bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 space-y-4;
 }

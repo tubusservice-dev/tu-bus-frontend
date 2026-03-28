@@ -1,15 +1,13 @@
-import { Component, inject, signal, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ZoneService, Municipality, ReferenceCity, ReferenceMunicipality } from '../../../../core/services/zone.service';
-
-interface StateItem {
-  id: string;
-  code: string;
-  name: string;
-  isActive: boolean;
-}
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
+import { City, Municipality } from '../../../../models/city.model';
+import { Zone, CreateZoneRequest, UpdateZoneRequest } from '../../../../models/zone.model';
+import { CityService } from '../../../../core/services/city.service';
+import { ZoneService } from '../../../../core/services/zone.service';
 
 @Component({
   selector: 'app-zone-form',
@@ -22,71 +20,62 @@ export class ZoneFormComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly cityService = inject(CityService);
   private readonly zoneService = inject(ZoneService);
 
-  protected readonly cityId = signal<string | null>(null);
+  // Core state
+  protected readonly zoneId = signal<string | null>(null);
   protected readonly isEditMode = signal(false);
   protected readonly isLoading = signal(false);
   protected readonly isSubmitting = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly successMessage = signal<string | null>(null);
 
-  // States
-  protected readonly states = signal<StateItem[]>([]);
-  protected readonly isLoadingStates = signal(false);
-
-  // Reference cities from reference_cities collection (for selected state)
-  protected readonly referenceCities = signal<ReferenceCity[]>([]);
+  // Cities loaded from CityService
+  protected readonly cities = signal<City[]>([]);
   protected readonly isLoadingCities = signal(false);
 
-  // Available municipalities from selected reference city
-  protected readonly availableMunicipalities = signal<ReferenceMunicipality[]>([]);
+  // Selected city and municipalities
+  protected readonly selectedCity = signal<City | null>(null);
+  protected readonly selectedMunicipalities = signal<string[]>([]);
 
-  // Selected municipalities (chips)
-  protected readonly selectedMunicipalities = signal<Municipality[]>([]);
+  // Name uniqueness check
+  protected readonly nameExists = signal(false);
+  private readonly nameCheck$ = new Subject<string>();
 
-  // Custom searchable select state
-  protected readonly stateSearchTerm = signal('');
-  protected readonly showStateDropdown = signal(false);
-  protected readonly selectedStateName = signal('');
-
+  // City searchable dropdown state
   protected readonly citySearchTerm = signal('');
   protected readonly showCityDropdown = signal(false);
-  protected readonly selectedCityName = signal('');
 
-  protected readonly municipalitySearchTerm = signal('');
-  protected readonly showMunicipalityDropdown = signal(false);
-
-  @ViewChild('municipalityInput') municipalityInput?: ElementRef<HTMLInputElement>;
-
-  // Main form
+  // Main form — only name and isActive
   protected readonly form: FormGroup = this.fb.group({
-    zoneName: ['', [Validators.required, Validators.minLength(2)]],
-    stateCode: ['', [Validators.required]],
-    cityCode: ['', [Validators.required]],
+    name: ['', [Validators.required, Validators.minLength(2)]],
     isActive: [true],
   });
 
   ngOnInit(): void {
-    this.loadStates();
+    this.loadCities();
+    this.setupNameCheck();
 
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
-      this.cityId.set(id);
+      this.zoneId.set(id);
       this.isEditMode.set(true);
       this.loadZone(id);
     }
   }
 
-  private loadStates(): void {
-    this.isLoadingStates.set(true);
-    this.zoneService.getAllStates().subscribe({
+  // ==================== DATA LOADING ====================
+
+  private loadCities(): void {
+    this.isLoadingCities.set(true);
+    this.cityService.getAll().subscribe({
       next: (response) => {
-        this.states.set(response.data || []);
-        this.isLoadingStates.set(false);
+        this.cities.set(response.data || []);
+        this.isLoadingCities.set(false);
       },
       error: () => {
-        this.isLoadingStates.set(false);
+        this.isLoadingCities.set(false);
       },
     });
   }
@@ -94,23 +83,19 @@ export class ZoneFormComponent implements OnInit {
   private loadZone(id: string): void {
     this.isLoading.set(true);
     this.zoneService.getById(id).subscribe({
-      next: (city) => {
+      next: (response) => {
+        const zone = response.data;
         this.form.patchValue({
-          zoneName: city.zoneName || '',
-          stateCode: city.stateCode || '',
-          cityCode: city.code || '',
-          isActive: city.isActive,
+          name: zone.name || '',
+          isActive: zone.isActive,
         });
 
-        this.selectedStateName.set(city.stateName || '');
-        this.selectedCityName.set(city.name || '');
-        this.selectedMunicipalities.set(city.municipalities || []);
-
-        // Load reference cities for this state so the city dropdown works
-        if (city.stateCode) {
-          this.loadCitiesForState(city.stateCode);
+        // If city is populated as object, set selectedCity
+        if (zone.city && typeof zone.city === 'object') {
+          this.selectedCity.set(zone.city as City);
         }
 
+        this.selectedMunicipalities.set(zone.municipalities || []);
         this.isLoading.set(false);
       },
       error: (error) => {
@@ -120,74 +105,37 @@ export class ZoneFormComponent implements OnInit {
     });
   }
 
-  private loadCitiesForState(stateCode: string): void {
-    this.isLoadingCities.set(true);
-    this.zoneService.getReferenceCities(stateCode).subscribe({
-      next: (response) => {
-        this.referenceCities.set(response.data || []);
-        this.isLoadingCities.set(false);
+  // ==================== NAME UNIQUENESS ====================
 
-        // If city is already selected (edit mode), load its municipalities
-        const cityCode = this.form.get('cityCode')?.value;
-        if (cityCode) {
-          const refCity = (response.data || []).find((c: ReferenceCity) => c.code === cityCode);
-          if (refCity) {
-            this.availableMunicipalities.set(refCity.municipalities || []);
-          }
-        }
-      },
-      error: () => {
-        this.isLoadingCities.set(false);
-      },
-    });
+  private setupNameCheck(): void {
+    this.nameCheck$
+      .pipe(
+        debounceTime(400),
+        distinctUntilChanged(),
+        switchMap((name) => this.zoneService.checkName(name))
+      )
+      .subscribe({
+        next: (response) => {
+          this.nameExists.set(response.data.exists);
+        },
+        error: () => {
+          this.nameExists.set(false);
+        },
+      });
   }
 
-  // ==================== STATE SELECT ====================
-
-  filteredStates(): StateItem[] {
-    const term = this.stateSearchTerm().toLowerCase();
-    return this.states().filter(s => !term || s.name.toLowerCase().includes(term));
-  }
-
-  onStateSearch(event: Event): void {
-    this.stateSearchTerm.set((event.target as HTMLInputElement).value);
-    this.showStateDropdown.set(true);
-  }
-
-  selectState(state: StateItem): void {
-    this.form.patchValue({ stateCode: state.code, cityCode: '' });
-    this.selectedStateName.set(state.name);
-    this.selectedCityName.set('');
-    this.stateSearchTerm.set('');
-    this.showStateDropdown.set(false);
-    this.referenceCities.set([]);
-    this.availableMunicipalities.set([]);
-    this.selectedMunicipalities.set([]);
-
-    this.loadCitiesForState(state.code);
-  }
-
-  clearState(): void {
-    this.form.patchValue({ stateCode: '', cityCode: '' });
-    this.selectedStateName.set('');
-    this.selectedCityName.set('');
-    this.referenceCities.set([]);
-    this.availableMunicipalities.set([]);
-    this.selectedMunicipalities.set([]);
-  }
-
-  closeStateDropdown(): void {
-    setTimeout(() => {
-      this.showStateDropdown.set(false);
-      this.stateSearchTerm.set('');
-    }, 200);
+  onNameBlur(): void {
+    const name = this.form.get('name')?.value?.trim();
+    if (name && name.length >= 2) {
+      this.nameCheck$.next(name);
+    }
   }
 
   // ==================== CITY SELECT ====================
 
-  filteredCities(): ReferenceCity[] {
+  filteredCities(): City[] {
     const term = this.citySearchTerm().toLowerCase();
-    return this.referenceCities().filter(c => !term || c.name.toLowerCase().includes(term));
+    return this.cities().filter((c) => !term || c.name.toLowerCase().includes(term));
   }
 
   onCitySearch(event: Event): void {
@@ -195,19 +143,15 @@ export class ZoneFormComponent implements OnInit {
     this.showCityDropdown.set(true);
   }
 
-  selectCity(city: ReferenceCity): void {
-    this.form.patchValue({ cityCode: city.code });
-    this.selectedCityName.set(city.name);
+  selectCity(city: City): void {
+    this.selectedCity.set(city);
     this.citySearchTerm.set('');
     this.showCityDropdown.set(false);
-    this.availableMunicipalities.set(city.municipalities ?? []);
     this.selectedMunicipalities.set([]);
   }
 
   clearCity(): void {
-    this.form.patchValue({ cityCode: '' });
-    this.selectedCityName.set('');
-    this.availableMunicipalities.set([]);
+    this.selectedCity.set(null);
     this.selectedMunicipalities.set([]);
   }
 
@@ -218,59 +162,48 @@ export class ZoneFormComponent implements OnInit {
     }, 200);
   }
 
-  // ==================== MUNICIPALITY MULTI-SELECT ====================
+  // ==================== MUNICIPALITY CHECKBOXES ====================
 
-  onMunicipalitySearch(event: Event): void {
-    this.municipalitySearchTerm.set((event.target as HTMLInputElement).value);
-    this.showMunicipalityDropdown.set(true);
+  isMunicipalitySelected(slug: string): boolean {
+    return this.selectedMunicipalities().includes(slug);
   }
 
-  closeMunicipalityDropdown(): void {
-    setTimeout(() => {
-      this.showMunicipalityDropdown.set(false);
-      this.municipalitySearchTerm.set('');
-      if (this.municipalityInput) {
-        this.municipalityInput.nativeElement.value = '';
-      }
-    }, 200);
-  }
-
-  isMunicipalitySelected(code: string): boolean {
-    return this.selectedMunicipalities().some(m => m.code === code);
-  }
-
-  filteredAvailableMunicipalities(): ReferenceMunicipality[] {
-    const term = this.municipalitySearchTerm().toLowerCase();
-    return this.availableMunicipalities().filter(
-      m => !this.isMunicipalitySelected(m.code) && (!term || m.name.toLowerCase().includes(term))
-    );
-  }
-
-  addMunicipality(municipality: ReferenceMunicipality): void {
-    if (this.isMunicipalitySelected(municipality.code)) return;
-    const zoneMunicipality: Municipality = {
-      code: municipality.code,
-      name: municipality.name,
-      isActive: true,
-    };
-    this.selectedMunicipalities.update(list => [...list, zoneMunicipality]);
-    this.municipalitySearchTerm.set('');
-    // Clear native input value
-    if (this.municipalityInput) {
-      this.municipalityInput.nativeElement.value = '';
+  toggleMunicipality(slug: string): void {
+    if (this.isMunicipalitySelected(slug)) {
+      this.selectedMunicipalities.update((list) => list.filter((s) => s !== slug));
+    } else {
+      this.selectedMunicipalities.update((list) => [...list, slug]);
     }
-    // Keep dropdown open for quick multi-select
   }
 
-  removeMunicipality(code: string): void {
-    this.selectedMunicipalities.update(list => list.filter(m => m.code !== code));
+  toggleAll(): void {
+    const city = this.selectedCity();
+    if (!city) return;
+
+    const allSlugs = city.municipalities.map((m) => m.slug);
+    const allSelected = allSlugs.length === this.selectedMunicipalities().length;
+
+    if (allSelected) {
+      this.selectedMunicipalities.set([]);
+    } else {
+      this.selectedMunicipalities.set([...allSlugs]);
+    }
+  }
+
+  get allMunicipalitiesSelected(): boolean {
+    const city = this.selectedCity();
+    if (!city || city.municipalities.length === 0) return false;
+    return city.municipalities.length === this.selectedMunicipalities().length;
   }
 
   // ==================== SUBMIT ====================
 
   onSubmit(): void {
-    if (this.form.invalid) {
+    if (this.form.invalid || !this.selectedCity()) {
       this.form.markAllAsTouched();
+      if (!this.selectedCity()) {
+        this.errorMessage.set('Debes seleccionar una ciudad');
+      }
       return;
     }
 
@@ -278,26 +211,17 @@ export class ZoneFormComponent implements OnInit {
     this.errorMessage.set(null);
 
     const formValue = this.form.getRawValue();
-    const stateName = this.selectedStateName();
-    const cityName = this.selectedCityName();
-
-    const municipalities = this.selectedMunicipalities().map(m => ({
-      code: m.code,
-      name: m.name,
-      isActive: m.isActive ?? true,
-    }));
+    const city = this.selectedCity()!;
 
     if (this.isEditMode()) {
-      const updateData = {
-        zoneName: formValue.zoneName,
-        name: cityName,
-        stateCode: formValue.stateCode,
-        stateName: stateName,
+      const updateData: UpdateZoneRequest = {
+        name: formValue.name,
+        city: city.id,
+        municipalities: this.selectedMunicipalities(),
         isActive: formValue.isActive,
-        municipalities,
       };
 
-      this.zoneService.update(this.cityId()!, updateData).subscribe({
+      this.zoneService.update(this.zoneId()!, updateData).subscribe({
         next: () => {
           this.router.navigate(['/admin/zones']);
         },
@@ -307,13 +231,11 @@ export class ZoneFormComponent implements OnInit {
         },
       });
     } else {
-      const createData = {
-        zoneName: formValue.zoneName,
-        name: cityName,
-        stateCode: formValue.stateCode,
-        stateName: stateName,
+      const createData: CreateZoneRequest = {
+        name: formValue.name,
+        city: city.id,
+        municipalities: this.selectedMunicipalities(),
         isActive: formValue.isActive,
-        municipalities,
       };
 
       this.zoneService.create(createData).subscribe({

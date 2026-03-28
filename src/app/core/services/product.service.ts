@@ -25,9 +25,7 @@ export interface ProductQueryParams {
   search?: string;
   sortBy?: 'price' | 'createdAt' | 'name';
   sortOrder?: 'asc' | 'desc';
-  cityId?: string;
-  municipalityCode?: string;
-  branchId?: string;
+  // Branch filter (comma-separated IDs)
   branchIds?: string;
   // Filtros de compatibilidad de motor
   engineDisplacement?: string;

@@ -50,8 +50,7 @@ export class TubusHeaderComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    // Cargar ciudades desde el API
-    this.zoneService.loadCities().subscribe();
+    // TODO: Refactor — zoneService.loadCities() no longer exists
 
     // Verificar ruta inicial
     this.isProfilePage.set(this.router.url === '/perfil');
@@ -73,10 +72,9 @@ export class TubusHeaderComponent implements OnInit, OnDestroy {
    * Si hay items en el carrito, muestra confirmación primero
    */
   openZoneModal(): void {
+    // TODO: Refactor — zoneService.clearSelection() no longer exists
     if (this.cartService.totalItems() > 0) {
       this.showZoneConfirm.set(true);
-    } else {
-      this.zoneService.clearSelection();
     }
   }
 
@@ -84,7 +82,7 @@ export class TubusHeaderComponent implements OnInit, OnDestroy {
   confirmZoneChange(): void {
     this.cartService.clearCart();
     this.showZoneConfirm.set(false);
-    this.zoneService.clearSelection();
+    // TODO: Refactor — zoneService.clearSelection() no longer exists
   }
 
   /** Cancela el cambio de zona */

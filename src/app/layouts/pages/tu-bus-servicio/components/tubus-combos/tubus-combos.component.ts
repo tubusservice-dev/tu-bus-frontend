@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed, effect } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { CategoryService } from '../../../../../core/services/category.service';
@@ -76,17 +76,14 @@ export class TubusCombosComponent implements OnInit {
   });
 
   constructor() {
-    // Recargar productos cuando cambia la zona seleccionada
-    effect(() => {
-      const zone = this.zoneService.selectedZone();
-      if (zone) {
-        this.loadBranchesByZone(zone.city.code, zone.municipality.code);
-      }
-    });
+    // TODO: Refactor — zoneService.selectedZone() no longer exists.
+    // Zone-based product loading disabled until new architecture.
   }
 
   ngOnInit(): void {
     this.loadCategories();
+    // TODO: Load products without zone filter for now
+    this.loadAllFeaturedProducts();
   }
 
   private loadCategories(): void {
@@ -100,33 +97,21 @@ export class TubusCombosComponent implements OnInit {
     });
   }
 
-  private loadBranchesByZone(cityCode: string, municipalityCode: string): void {
-    this.isLoading.set(true);
-    this.branchService.getByZone(cityCode, municipalityCode).subscribe({
-      next: (response) => {
-        if (response.success && response.data.length > 0) {
-          const ids = response.data.map(b => b.id);
-          this.branchIds.set(ids);
-          this.loadProducts(ids);
-        } else {
-          this.branchIds.set([]);
-          this.allProducts.set([]);
-          this.isLoading.set(false);
-        }
-      },
-      error: () => {
-        this.branchIds.set([]);
-        this.allProducts.set([]);
-        this.isLoading.set(false);
-      }
-    });
+  private loadAllFeaturedProducts(): void {
+    this.loadProducts([]);
+  }
+
+  // TODO: Refactor to use BranchZoneService.findByLocation() when client module is updated
+  private loadBranchesByZone(_cityCode: string, _municipalityCode: string): void {
+    this.branchIds.set([]);
+    this.loadAllFeaturedProducts();
   }
 
   private loadProducts(branchIds: string[]): void {
     this.productService.getAll({
       isFeatured: true,
       isActive: true,
-      branchIds: branchIds.join(','),
+      branchIds: branchIds.length > 0 ? branchIds.join(',') : undefined,
       limit: 50,
     }).subscribe({
       next: (response) => {

@@ -113,8 +113,8 @@
               <label for="municipality">Municipio</label>
               <select id="municipality" formControlName="municipality" [disabled]="!selectedZoneId()">
                 <option value="">Seleccionar municipio...</option>
-                @for (mun of availableMunicipalities(); track mun.code) {
-                  <option [value]="mun.name">{{ mun.name }}</option>
+                @for (mun of availableMunicipalities(); track mun.slug) {
+                  <option [value]="mun.slug">{{ mun.name }}</option>
                 }
               </select>
             </div>
