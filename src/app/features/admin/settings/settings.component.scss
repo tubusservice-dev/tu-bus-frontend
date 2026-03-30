@@ -255,6 +255,150 @@
   color: #d1d5db;
 }
 
+// ========== Hero Images Filmstrip ==========
+.hero-filmstrip {
+  @apply flex items-start gap-3 overflow-x-auto pb-1;
+  scrollbar-width: thin;
+}
+
+.hero-thumb-wrapper {
+  @apply flex flex-col items-center gap-1.5 flex-shrink-0;
+}
+
+.hero-thumb {
+  @apply relative flex-shrink-0 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600;
+  width: 150px;
+  height: 120px;
+
+  > img {
+    @apply w-full h-full object-cover cursor-pointer;
+    transition: opacity 0.15s;
+
+    &:hover {
+      opacity: 0.8;
+    }
+  }
+}
+
+.hero-thumb-order {
+  @apply absolute top-1 left-1 w-5 h-5 flex items-center justify-center text-[10px] font-bold text-white rounded-full pointer-events-none;
+  background-color: var(--accent-primary);
+}
+
+.hero-thumb-controls {
+  @apply flex items-center gap-0.5;
+
+  button {
+    @apply p-1 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors disabled:opacity-25 disabled:cursor-not-allowed;
+
+    svg {
+      @apply w-3.5 h-3.5;
+    }
+
+    &.thumb-delete:hover {
+      @apply text-red-500;
+    }
+  }
+}
+
+.hero-thumb-add {
+  @apply flex items-center justify-center rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 bg-transparent text-gray-400 dark:text-gray-500 cursor-pointer transition-colors;
+  width: 150px;
+  height: 120px;
+
+  &:hover:not(:disabled) {
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+  }
+
+  &:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+
+  svg {
+    @apply w-5 h-5;
+  }
+
+  .btn-spinner-small {
+    @apply w-4 h-4 border-2 border-gray-300 dark:border-gray-600 border-t-current rounded-full animate-spin;
+  }
+}
+
+.hero-images-count {
+  @apply text-xs text-gray-400 dark:text-gray-500;
+}
+
+// ========== Floating Stats Config ==========
+.floating-stats-config {
+  @apply p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-200 dark:border-gray-600 space-y-3;
+}
+
+.stats-config-title {
+  @apply text-sm font-semibold text-gray-900 dark:text-white;
+}
+
+.stats-row {
+  @apply flex items-center gap-2;
+}
+
+.stats-position-label {
+  @apply text-xs font-medium text-gray-500 dark:text-gray-400 w-16 flex-shrink-0;
+}
+
+.stats-input {
+  @apply px-3 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors;
+
+  &:focus {
+    @apply ring-2 ring-offset-0 border-transparent outline-none;
+    ring-color: var(--accent-primary);
+  }
+
+  &.stats-input-value {
+    @apply w-20 flex-shrink-0;
+  }
+
+  &.stats-input-label {
+    @apply flex-1 min-w-0;
+  }
+}
+
+.stats-error {
+  @apply block text-xs text-red-600 dark:text-red-400 pl-16;
+}
+
+// ========== Lightbox ==========
+.lightbox-overlay {
+  @apply fixed inset-0 z-50 flex items-center justify-center p-6;
+  background-color: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  animation: lightbox-in 0.2s ease-out;
+}
+
+.lightbox-close {
+  @apply absolute top-4 right-4 p-2 text-white/70 hover:text-white transition-colors rounded-full;
+  background: rgba(255, 255, 255, 0.1);
+
+  svg {
+    @apply w-6 h-6;
+  }
+}
+
+.lightbox-image {
+  @apply max-w-full max-h-full rounded-xl shadow-2xl;
+  object-fit: contain;
+  animation: lightbox-img-in 0.25s ease-out;
+}
+
+@keyframes lightbox-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes lightbox-img-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
 // ========== Carousel Config ==========
 .carousel-config {
   @apply p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl space-y-4 border border-gray-200 dark:border-gray-600 transition-all duration-200;

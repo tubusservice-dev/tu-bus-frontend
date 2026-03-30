@@ -17,6 +17,151 @@
     <!-- Acordeón de secciones -->
     <div class="settings-accordion">
 
+      <!-- ========== SECCIÓN IMÁGENES DEL HERO ========== -->
+      <div class="accordion-item" [class.expanded]="activeSection() === 'heroImages'">
+        <button class="accordion-header" (click)="toggleSection('heroImages')" type="button">
+          <div class="header-content">
+            <span class="icon">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0 0 22.5 18.75V5.25A2.25 2.25 0 0 0 20.25 3H3.75A2.25 2.25 0 0 0 1.5 5.25v13.5A2.25 2.25 0 0 0 3.75 21Z" />
+              </svg>
+            </span>
+            <span class="title">Imágenes del Hero</span>
+          </div>
+          <span class="chevron" [class.rotated]="activeSection() === 'heroImages'">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+            </svg>
+          </span>
+        </button>
+
+        <div class="accordion-content" [class.open]="activeSection() === 'heroImages'">
+          <div class="section-form">
+            <p class="section-description">
+              Imágenes de la sección principal del landing page. Haz clic en una imagen para verla completa.
+            </p>
+
+            <!-- Filmstrip: thumbnails + upload in one row -->
+            <div class="hero-filmstrip">
+              @for (image of heroImages(); track image.publicId; let i = $index) {
+                <div class="hero-thumb-wrapper">
+                  <div class="hero-thumb">
+                    <img [src]="image.url" [alt]="'Hero ' + (i + 1)" (click)="openHeroImagePreview(image.url)" />
+                    <span class="hero-thumb-order">{{ i + 1 }}</span>
+                  </div>
+                  <div class="hero-thumb-controls">
+                    <button type="button" [disabled]="i === 0" (click)="moveHeroImage(i, 'up')" title="Mover izquierda">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
+                    </button>
+                    <button type="button" [disabled]="i === heroImages().length - 1" (click)="moveHeroImage(i, 'down')" title="Mover derecha">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
+                    </button>
+                    <button type="button" class="thumb-delete" (click)="removeHeroImage(i)" title="Eliminar">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+                    </button>
+                  </div>
+                </div>
+              }
+
+              <!-- Upload slot -->
+              @if (heroImages().length < 5) {
+                <input type="file" accept="image/*" class="hidden" #heroFileInput (change)="onHeroImageSelected($event)" />
+                <button
+                  type="button"
+                  class="hero-thumb-add"
+                  [disabled]="isUploadingHeroImage()"
+                  (click)="heroFileInput.click()"
+                >
+                  @if (isUploadingHeroImage()) {
+                    <span class="btn-spinner-small"></span>
+                  } @else {
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                  }
+                </button>
+              }
+            </div>
+
+            <span class="hero-images-count">{{ heroImages().length }}/5</span>
+
+            <!-- Floating Stats config -->
+            <div class="floating-stats-config" [formGroup]="floatingStatsForm">
+              <h4 class="stats-config-title">Indicadores Flotantes</h4>
+
+              <div class="stats-row" formGroupName="stat1">
+                <span class="stats-position-label">Izquierdo</span>
+                <input type="text" formControlName="value" placeholder="Ej: 500+" class="stats-input stats-input-value" />
+                <input type="text" formControlName="label" placeholder="Ej: Servicios" class="stats-input stats-input-label" />
+                <label class="toggle-container small">
+                  <input type="checkbox" formControlName="isVisible" class="toggle-input" />
+                  <span class="toggle-switch"></span>
+                </label>
+              </div>
+              @if (floatingStatsForm.get('stat1.value')?.touched && floatingStatsForm.get('stat1.value')?.invalid) {
+                <small class="stats-error">Valor: solo números, +, %, . (máx 10 chars)</small>
+              }
+
+              <div class="stats-row" formGroupName="stat2">
+                <span class="stats-position-label">Derecho</span>
+                <input type="text" formControlName="value" placeholder="Ej: 4.9" class="stats-input stats-input-value" />
+                <input type="text" formControlName="label" placeholder="Ej: Valoración" class="stats-input stats-input-label" />
+                <label class="toggle-container small">
+                  <input type="checkbox" formControlName="isVisible" class="toggle-input" />
+                  <span class="toggle-switch"></span>
+                </label>
+              </div>
+              @if (floatingStatsForm.get('stat2.value')?.touched && floatingStatsForm.get('stat2.value')?.invalid) {
+                <small class="stats-error">Valor: solo números, +, %, . (máx 10 chars)</small>
+              }
+            </div>
+
+            <!-- Carousel config -->
+            <div class="carousel-config" [formGroup]="heroImagesCarouselForm" [class.disabled]="!heroImagesCarouselForm.get('isEnabled')?.value">
+              <div class="carousel-header">
+                <div class="carousel-info">
+                  <h4>Carrusel Automático</h4>
+                  <p class="carousel-description">Transición automática entre las imágenes del hero</p>
+                </div>
+                <label class="toggle-container small">
+                  <input type="checkbox" formControlName="isEnabled" class="toggle-input" />
+                  <span class="toggle-switch"></span>
+                </label>
+              </div>
+              @if (heroImagesCarouselForm.get('isEnabled')?.value) {
+                <div class="slider-group">
+                  <label>Intervalo: <strong>{{ getHeroCarouselIntervalInSeconds() }}s</strong></label>
+                  <input type="range" formControlName="interval" min="1000" max="15000" step="500" class="slider" />
+                  <div class="slider-labels">
+                    <span>1s</span>
+                    <span>15s</span>
+                  </div>
+                </div>
+              }
+            </div>
+
+            @if (errorMessage()['heroImages']) {
+              <div class="alert alert-error">{{ errorMessage()['heroImages'] }}</div>
+            }
+            @if (saveSuccess()['heroImages']) {
+              <div class="alert alert-success">Configuración guardada correctamente</div>
+            }
+
+            <button
+              type="button"
+              class="btn-save"
+              (click)="saveHeroImages()"
+              [disabled]="isSaving()['heroImages']"
+            >
+              @if (isSaving()['heroImages']) {
+                <span class="btn-spinner"></span>
+                Guardando...
+              } @else {
+                Guardar
+              }
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- ========== SECCIÓN CARRUSELES ========== -->
       <div class="accordion-item" [class.expanded]="activeSection() === 'carousels'">
         <button class="accordion-header" (click)="toggleSection('carousels')" type="button">
@@ -430,6 +575,18 @@
           </button>
         </div>
       </div>
+    </div>
+  }
+
+  <!-- Lightbox para vista completa de imagen del hero -->
+  @if (heroImagePreview()) {
+    <div class="lightbox-overlay" (click)="closeHeroImagePreview()">
+      <button type="button" class="lightbox-close" (click)="closeHeroImagePreview()">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+        </svg>
+      </button>
+      <img [src]="heroImagePreview()" alt="Vista completa" class="lightbox-image" (click)="$event.stopPropagation()" />
     </div>
   }
 </div>

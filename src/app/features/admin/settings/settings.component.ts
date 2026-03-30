@@ -4,14 +4,15 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } 
 import { RouterLink } from '@angular/router';
 import { SettingsService } from '../../../core/services/settings.service';
 import { PaymentMethodService } from '../../../core/services/payment-method.service';
-import { Settings, PAGINATION_OPTIONS } from '../../../models/settings.model';
+import { UploadService } from '../../../core/services/upload.service';
+import { Settings, HeroImage, FloatingStat, PAGINATION_OPTIONS } from '../../../models/settings.model';
 import {
   PaymentMethodConfig,
   PaymentMethodType,
   PAYMENT_METHOD_TYPE_LABELS,
 } from '../../../models/payment-method.model';
 
-type SectionKey = 'homeHero' | 'whatsapp' | 'carousels' | 'pagination' | 'dispatchModules' | 'dispatch' | 'paymentMethods';
+type SectionKey = 'heroImages' | 'homeHero' | 'whatsapp' | 'carousels' | 'pagination' | 'dispatchModules' | 'dispatch' | 'paymentMethods';
 type PaginationSubKey = 'catalogLimit' | 'adminLimit';
 
 @Component({
@@ -25,11 +26,17 @@ export class SettingsComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly settingsService = inject(SettingsService);
   private readonly paymentMethodService = inject(PaymentMethodService);
+  private readonly uploadService = inject(UploadService);
 
   // Estado
   protected readonly isLoading = signal(true);
   protected readonly settings = signal<Settings | null>(null);
-  protected readonly activeSection = signal<SectionKey | null>('homeHero');
+  protected readonly activeSection = signal<SectionKey | null>('heroImages');
+
+  // Hero Images
+  protected readonly heroImages = signal<HeroImage[]>([]);
+  protected readonly isUploadingHeroImage = signal(false);
+  protected readonly heroImagePreview = signal<string | null>(null);
 
   // Métodos de pago
   protected readonly paymentMethods = signal<PaymentMethodConfig[]>([]);
@@ -40,6 +47,7 @@ export class SettingsComponent implements OnInit {
 
   // Estados de guardado por sección
   protected readonly isSaving = signal<Record<SectionKey, boolean>>({
+    heroImages: false,
     homeHero: false,
     whatsapp: false,
     carousels: false,
@@ -50,6 +58,7 @@ export class SettingsComponent implements OnInit {
   });
 
   protected readonly saveSuccess = signal<Record<SectionKey, boolean>>({
+    heroImages: false,
     homeHero: false,
     whatsapp: false,
     carousels: false,
@@ -60,6 +69,7 @@ export class SettingsComponent implements OnInit {
   });
 
   protected readonly errorMessage = signal<Record<SectionKey, string | null>>({
+    heroImages: null,
     homeHero: null,
     whatsapp: null,
     carousels: null,
@@ -89,6 +99,8 @@ export class SettingsComponent implements OnInit {
   });
 
   // Formularios
+  protected heroImagesCarouselForm!: FormGroup;
+  protected floatingStatsForm!: FormGroup;
   protected homeHeroForm!: FormGroup;
   protected whatsappForm!: FormGroup;
   protected carouselsForm!: FormGroup;
@@ -102,6 +114,24 @@ export class SettingsComponent implements OnInit {
   }
 
   private initForms(): void {
+    this.heroImagesCarouselForm = this.fb.group({
+      isEnabled: [true],
+      interval: [5000, [Validators.required, Validators.min(1000), Validators.max(15000)]],
+    });
+
+    this.floatingStatsForm = this.fb.group({
+      stat1: this.fb.group({
+        value: ['500+', [Validators.required, Validators.maxLength(10), Validators.pattern(/^[\d.,+%\s]{1,10}$/)]],
+        label: ['Servicios', [Validators.required, Validators.maxLength(20)]],
+        isVisible: [true],
+      }),
+      stat2: this.fb.group({
+        value: ['4.9', [Validators.required, Validators.maxLength(10), Validators.pattern(/^[\d.,+%\s]{1,10}$/)]],
+        label: ['Valoración', [Validators.required, Validators.maxLength(20)]],
+        isVisible: [true],
+      }),
+    });
+
     this.homeHeroForm = this.fb.group({
       title: ['', [Validators.required, Validators.maxLength(100)]],
       titleAccent: ['', [Validators.required, Validators.maxLength(100)]],
@@ -151,6 +181,22 @@ export class SettingsComponent implements OnInit {
         this.settings.set(data);
 
         // Poblar formularios
+        if (data.heroImages) {
+          this.heroImages.set(data.heroImages.images || []);
+          if (data.heroImages.carousel) {
+            this.heroImagesCarouselForm.patchValue(data.heroImages.carousel);
+          }
+          if (data.heroImages.floatingStats?.length) {
+            const left = data.heroImages.floatingStats.find((s) => s.position === 'left');
+            const right = data.heroImages.floatingStats.find((s) => s.position === 'right');
+            if (left) {
+              this.floatingStatsForm.get('stat1')?.patchValue(left);
+            }
+            if (right) {
+              this.floatingStatsForm.get('stat2')?.patchValue(right);
+            }
+          }
+        }
         this.homeHeroForm.patchValue(data.homeHero);
         this.whatsappForm.patchValue(data.whatsapp);
         this.carouselsForm.patchValue(data.carousels);
@@ -184,6 +230,126 @@ export class SettingsComponent implements OnInit {
         this.loadPaymentMethods();
       }
     }
+  }
+
+  // ========== Hero Images ==========
+  onHeroImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    if (this.heroImages().length >= 5) {
+      this.setError('heroImages', 'Máximo 5 imágenes permitidas');
+      input.value = '';
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      this.setError('heroImages', 'Solo se permiten archivos de imagen');
+      input.value = '';
+      return;
+    }
+
+    this.isUploadingHeroImage.set(true);
+    this.clearMessages('heroImages');
+
+    this.uploadService.uploadImage(file, 'hero').subscribe({
+      next: (response) => {
+        const newImage: HeroImage = {
+          url: response.data.url,
+          publicId: response.data.publicId,
+          order: this.heroImages().length,
+        };
+        this.heroImages.update((images) => [...images, newImage]);
+        this.isUploadingHeroImage.set(false);
+        input.value = '';
+      },
+      error: (error) => {
+        this.isUploadingHeroImage.set(false);
+        this.setError('heroImages', error.error?.message || 'Error al subir imagen');
+        input.value = '';
+      },
+    });
+  }
+
+  removeHeroImage(index: number): void {
+    const image = this.heroImages()[index];
+    if (!image) return;
+
+    this.uploadService.deleteImage(image.publicId).subscribe({
+      next: () => {
+        this.heroImages.update((images) => {
+          const updated = images.filter((_, i) => i !== index);
+          return updated.map((img, i) => ({ ...img, order: i }));
+        });
+      },
+      error: () => {
+        // Remove from local state even if Cloudinary delete fails
+        this.heroImages.update((images) => {
+          const updated = images.filter((_, i) => i !== index);
+          return updated.map((img, i) => ({ ...img, order: i }));
+        });
+      },
+    });
+  }
+
+  moveHeroImage(index: number, direction: 'up' | 'down'): void {
+    const images = [...this.heroImages()];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+
+    if (targetIndex < 0 || targetIndex >= images.length) return;
+
+    [images[index], images[targetIndex]] = [images[targetIndex], images[index]];
+    this.heroImages.set(images.map((img, i) => ({ ...img, order: i })));
+  }
+
+  saveHeroImages(): void {
+    if (this.floatingStatsForm.invalid) {
+      this.floatingStatsForm.markAllAsTouched();
+      this.setError('heroImages', 'Revisa los campos de los indicadores flotantes');
+      return;
+    }
+
+    this.setSaving('heroImages', true);
+    this.clearMessages('heroImages');
+
+    const stat1 = this.floatingStatsForm.get('stat1')?.value;
+    const stat2 = this.floatingStatsForm.get('stat2')?.value;
+
+    const floatingStats: FloatingStat[] = [
+      { ...stat1, position: 'left' as const },
+      { ...stat2, position: 'right' as const },
+    ];
+
+    const payload = {
+      images: this.heroImages(),
+      carousel: this.heroImagesCarouselForm.value,
+      floatingStats,
+    };
+
+    this.settingsService.updateHeroImages(payload).subscribe({
+      next: () => {
+        this.setSaving('heroImages', false);
+        this.setSuccess('heroImages', true);
+        setTimeout(() => this.setSuccess('heroImages', false), 3000);
+      },
+      error: (error) => {
+        this.setSaving('heroImages', false);
+        this.setError('heroImages', error.error?.message || 'Error al guardar');
+      },
+    });
+  }
+
+  openHeroImagePreview(url: string): void {
+    this.heroImagePreview.set(url);
+  }
+
+  closeHeroImagePreview(): void {
+    this.heroImagePreview.set(null);
+  }
+
+  getHeroCarouselIntervalInSeconds(): number {
+    return (this.heroImagesCarouselForm.get('interval')?.value || 5000) / 1000;
   }
 
   // ========== Home Hero ==========

@@ -10,6 +10,8 @@ import {
   WhatsAppConfig,
   CarouselsConfig,
   HomeHeroConfig,
+  HeroImagesConfig,
+  UpdateHeroImagesDto,
   PaginationConfig,
   UpdateDispatchDto,
   DEFAULT_SETTINGS,
@@ -40,6 +42,7 @@ export class SettingsService {
   readonly whatsappConfig = computed(() => this._settings().whatsapp);
   readonly carouselsConfig = computed(() => this._settings().carousels);
   readonly homeHeroConfig = computed(() => this._settings().homeHero);
+  readonly heroImagesConfig = computed(() => this._settings().heroImages);
   readonly paginationConfig = computed(() => this._settings().pagination);
   readonly dispatchConfig = computed(() => this._settings().dispatch);
 
@@ -54,6 +57,14 @@ export class SettingsService {
           const mergedSettings: Settings = {
             ...DEFAULT_SETTINGS,
             ...response.data,
+            heroImages: {
+              images: response.data.heroImages?.images ?? DEFAULT_SETTINGS.heroImages.images,
+              carousel: {
+                ...DEFAULT_SETTINGS.heroImages.carousel,
+                ...response.data.heroImages?.carousel,
+              },
+              floatingStats: response.data.heroImages?.floatingStats ?? DEFAULT_SETTINGS.heroImages.floatingStats,
+            },
             pagination: {
               ...DEFAULT_SETTINGS.pagination,
               ...response.data.pagination,
@@ -138,6 +149,19 @@ export class SettingsService {
    */
   updateHomeHero(data: Partial<HomeHeroConfig>): Observable<SettingsResponse> {
     return this.http.put<SettingsResponse>(`${this.adminUrl}/home-hero`, data).pipe(
+      tap((response) => {
+        if (response.data) {
+          this._settings.set(response.data);
+        }
+      })
+    );
+  }
+
+  /**
+   * Actualizar imágenes del Hero
+   */
+  updateHeroImages(data: UpdateHeroImagesDto): Observable<SettingsResponse> {
+    return this.http.put<SettingsResponse>(`${this.adminUrl}/hero-images`, data).pipe(
       tap((response) => {
         if (response.data) {
           this._settings.set(response.data);

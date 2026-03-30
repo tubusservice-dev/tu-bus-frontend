@@ -174,10 +174,6 @@
   aspect-ratio: 4 / 5;
 
   &:hover {
-    .service-image {
-      transform: scale(1.08);
-    }
-
     .image-overlay {
       opacity: 0.15;
     }
@@ -186,7 +182,18 @@
 
 .service-image {
   @apply w-full h-full object-cover;
-  @apply transition-transform duration-500 ease-out;
+
+  &.carousel-layer {
+    @apply absolute inset-0;
+    opacity: 0;
+    transition: opacity 1s ease-in-out;
+    will-change: opacity;
+
+    &.active {
+      opacity: 1;
+      z-index: 1;
+    }
+  }
 }
 
 .image-overlay {
@@ -194,6 +201,7 @@
   @apply transition-opacity duration-500;
   background: linear-gradient(135deg, var(--tubus-primary) 0%, var(--tubus-primary-dark) 100%);
   opacity: 0;
+  z-index: 2;
 }
 
 // Floating Stats
@@ -203,6 +211,7 @@
   background-color: var(--bg-primary);
   border: 1px solid var(--border-color);
   animation: float 3s ease-in-out infinite;
+  z-index: 10;
 
   &.stat-1 {
     @apply -left-4 top-1/4;

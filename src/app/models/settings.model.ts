@@ -13,6 +13,27 @@ export interface CarouselsConfig {
   homeCarousel: CarouselConfig;
 }
 
+export interface HeroImage {
+  url: string;
+  publicId: string;
+  order: number;
+}
+
+export type FloatingStatPosition = 'left' | 'right';
+
+export interface FloatingStat {
+  value: string;
+  label: string;
+  isVisible: boolean;
+  position: FloatingStatPosition;
+}
+
+export interface HeroImagesConfig {
+  images: HeroImage[];
+  carousel: CarouselConfig;
+  floatingStats: FloatingStat[];
+}
+
 export interface HomeHeroConfig {
   title: string;
   titleAccent: string;
@@ -50,9 +71,16 @@ export interface Settings {
   whatsapp: WhatsAppConfig;
   carousels: CarouselsConfig;
   homeHero: HomeHeroConfig;
+  heroImages: HeroImagesConfig;
   pagination: PaginationConfig;
   dispatch: DispatchConfig;
   updatedAt?: string;
+}
+
+export interface UpdateHeroImagesDto {
+  images?: HeroImage[];
+  carousel?: Partial<CarouselConfig>;
+  floatingStats?: FloatingStat[];
 }
 
 export interface UpdateDispatchDto {
@@ -74,6 +102,14 @@ export const DEFAULT_SETTINGS: Settings = {
   },
   carousels: {
     homeCarousel: { isEnabled: true, interval: 5000 },
+  },
+  heroImages: {
+    images: [],
+    carousel: { isEnabled: true, interval: 5000 },
+    floatingStats: [
+      { value: '500+', label: 'Servicios', isVisible: true, position: 'left' },
+      { value: '4.9', label: 'Valoración', isVisible: true, position: 'right' },
+    ],
   },
   homeHero: {
     title: 'Mantenimiento',

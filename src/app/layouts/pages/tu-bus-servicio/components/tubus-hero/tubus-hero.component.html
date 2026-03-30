@@ -62,18 +62,34 @@
     <div class="hero-image">
       <div class="hero-image-container">
         <div class="image-wrapper">
-          <img src="assets/img/promociones.jpg" alt="Servicio de cambio de aceite" class="service-image" />
+          <!-- Persistent dual-layer crossfade -->
+          <img
+            [src]="layerSrc()[0]"
+            alt="Hero imagen"
+            class="service-image carousel-layer"
+            [class.active]="activeLayer() === 0"
+          />
+          <img
+            [src]="layerSrc()[1]"
+            alt="Hero imagen"
+            class="service-image carousel-layer"
+            [class.active]="activeLayer() === 1"
+          />
           <div class="image-overlay"></div>
         </div>
         <!-- Floating stats -->
-        <div class="floating-stat stat-1">
-          <span class="stat-number">500+</span>
-          <span class="stat-label">Servicios</span>
-        </div>
-        <div class="floating-stat stat-2">
-          <span class="stat-number">4.9</span>
-          <span class="stat-label">Valoracion</span>
-        </div>
+        @if (leftStat(); as stat) {
+          <div class="floating-stat stat-1">
+            <span class="stat-number">{{ stat.value }}</span>
+            <span class="stat-label">{{ stat.label }}</span>
+          </div>
+        }
+        @if (rightStat(); as stat) {
+          <div class="floating-stat stat-2">
+            <span class="stat-number">{{ stat.value }}</span>
+            <span class="stat-label">{{ stat.label }}</span>
+          </div>
+        }
       </div>
     </div>
   </div>
