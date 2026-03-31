@@ -4,6 +4,8 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ProductService } from '../../core/services/product.service';
 import { CartService } from '../../core/services/cart.service';
 import { AuthService } from '../../core/services/auth.service';
+import { LocationService } from '../../core/services/location.service';
+import { BranchProductService } from '../../core/services/branch-product.service';
 import { Product, Category, Brand, Line } from '../../models/product.model';
 import {
   ProductCardComponent,
@@ -23,6 +25,8 @@ export class ProductDetailComponent implements OnInit {
   private readonly productService = inject(ProductService);
   private readonly cartService = inject(CartService);
   private readonly authService = inject(AuthService);
+  private readonly locationService = inject(LocationService);
+  private readonly branchProductService = inject(BranchProductService);
 
   // Estado principal
   protected readonly isLoading = signal(true);
@@ -38,6 +42,10 @@ export class ProductDetailComponent implements OnInit {
   // Productos relacionados
   protected readonly relatedProducts = signal<ProductCardData[]>([]);
   protected readonly loadingRelated = signal(false);
+
+  // Stock from BranchProduct aggregation
+  protected readonly productStock = signal(0);
+  protected readonly isLoadingStock = signal(false);
 
   // Estado de login para carrito
   protected readonly showLoginMessage = signal(false);
@@ -70,10 +78,10 @@ export class ProductDetailComponent implements OnInit {
     return Math.round(((prod.comparePrice - prod.price) / prod.comparePrice) * 100);
   });
 
-  // TODO: stock is now per-branch via BranchProduct. Hardcoded to available until integrated.
   protected readonly isOutOfStock = computed(() => {
     const prod = this.product();
-    return !prod;
+    if (!prod) return true;
+    return this.productStock() <= 0;
   });
 
   // Cantidad ya en el carrito (reactivo - depende del signal items del carrito)
@@ -85,12 +93,11 @@ export class ProductDetailComponent implements OnInit {
     return this.cartService.getItemQuantity(prod.id);
   });
 
-  // TODO: stock is now per-branch via BranchProduct. Using large default until integrated.
   protected readonly availableStock = computed(() => {
     this.cartService.items();
     const prod = this.product();
     if (!prod) return 0;
-    return Math.max(0, 999 - this.quantityInCart());
+    return Math.max(0, this.productStock() - this.quantityInCart());
   });
 
   protected readonly canAddMore = computed(() => {
@@ -107,7 +114,7 @@ export class ProductDetailComponent implements OnInit {
     // Acceder al signal items para crear dependencia reactiva
     this.cartService.items();
     const prod = this.product();
-    if (!prod) return false; // TODO: stock check removed — now per-branch
+    if (!prod || this.productStock() <= 0) return false;
     return this.quantity() <= this.availableStock();
   });
 
@@ -135,6 +142,9 @@ export class ProductDetailComponent implements OnInit {
         this.selectedImageIndex.set(0);
         this.quantity.set(1);
 
+        // Load real stock from BranchProduct
+        this.loadStock(response.data.id);
+
         // Cargar productos relacionados
         if (response.data.categories && response.data.categories.length > 0) {
           this.loadRelatedProducts(response.data);
@@ -144,6 +154,26 @@ export class ProductDetailComponent implements OnInit {
         console.error('Error loading product:', err);
         this.error.set('No se pudo cargar el producto');
         this.isLoading.set(false);
+      },
+    });
+  }
+
+  private loadStock(productId: string): void {
+    const branchIds = this.locationService.branchIds();
+    if (branchIds.length === 0) {
+      this.productStock.set(0);
+      return;
+    }
+
+    this.isLoadingStock.set(true);
+    this.branchProductService.getAggregatedStock(productId, branchIds).subscribe({
+      next: (res) => {
+        this.productStock.set(res.data.totalStock);
+        this.isLoadingStock.set(false);
+      },
+      error: () => {
+        this.productStock.set(0);
+        this.isLoadingStock.set(false);
       },
     });
   }
@@ -194,7 +224,7 @@ export class ProductDetailComponent implements OnInit {
       price: product.price,
       comparePrice: product.comparePrice,
       images: product.images || [],
-      stock: 0, // TODO: stock now per-branch via BranchProduct
+      stock: (product as any).totalStock ?? 0,
       brand: product.brand,
       productModel: product.productModel,
     };
@@ -248,7 +278,7 @@ export class ProductDetailComponent implements OnInit {
         name: prod.name,
         price: prod.price,
         image: prod.images?.[0] || '',
-        stock: 999, // TODO: stock now per-branch via BranchProduct
+        stock: this.productStock(),
         freeOilChangeService: prod.freeOilChangeService || false,
       },
       this.quantity()

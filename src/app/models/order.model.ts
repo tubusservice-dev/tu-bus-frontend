@@ -35,6 +35,21 @@ export interface DispatchDetails {
   recipientMunicipality?: string;
   agencyOfficeCode?: string;
   referencePoint?: string;
+  selectedBranchId?: string;
+  selectedBranchName?: string;
+  selectedBranchAddress?: string;
+}
+
+export interface BillingAddress {
+  source: 'shipping' | 'profile' | 'custom';
+  fullName?: string;
+  documentType?: string;
+  documentNumber?: string;
+  address?: string;
+  city?: string;
+  municipality?: string;
+  state?: string;
+  referencePoint?: string;
 }
 
 export interface PaymentSubmission {
@@ -69,6 +84,7 @@ export interface Order {
   paymentMethod?: string;
   dispatchType: string;
   dispatchDetails: DispatchDetails;
+  billingAddress?: BillingAddress;
   disclaimerAccepted: boolean;
   disclaimerAcceptedAt?: string;
   notes?: string;
@@ -83,12 +99,14 @@ export interface Order {
 export interface CreateOrderRequest {
   items: OrderItem[];
   vehicle?: string;
+  selectedBranch?: string;
   subtotal: number;
   shippingCost?: number;
   total: number;
-  dispatchType: 'store_pickup' | 'shipping_agency' | 'local_delivery' | 'seller_agreement';
+  dispatchType: 'store_pickup' | 'shipping_agency' | 'local_delivery' | 'seller_agreement' | 'oil_change_service' | 'in_store_oil_change';
   paymentMethod?: string;
   dispatchDetails?: DispatchDetails;
+  billingAddress?: BillingAddress;
   disclaimerAccepted: boolean;
   notes?: string;
   paymentSubmission?: PaymentSubmission;

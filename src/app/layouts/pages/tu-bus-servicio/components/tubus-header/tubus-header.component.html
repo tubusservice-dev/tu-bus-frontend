@@ -22,7 +22,7 @@
       <!-- Separador -->
       <div class="header-divider"></div>
 
-      <!-- Selector de Zona (Ciudad + Municipio) -->
+      <!-- Selector de Zona -->
       <button
         type="button"
         class="zone-button"
@@ -32,24 +32,28 @@
           <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
           <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
         </svg>
-        <!-- TODO: Zone selection display disabled — zoneService signals removed -->
+        @if (locationService.hasLocation()) {
+          <span class="zone-label">{{ locationService.locationLabel() }}</span>
+          <span class="zone-change-hint">Cambiar</span>
+        } @else {
+          <span class="zone-label">Seleccionar ubicacion</span>
+        }
       </button>
     </div>
 
     <!-- Acciones (Derecha) -->
     <div class="header-right">
-      <!-- Botón de cambio de tema (solo desktop) -->
+      <!-- Tema (solo desktop) -->
       <span class="hidden sm:inline-flex">
         <app-theme-toggle />
       </span>
 
-      <!-- Carrito de compras (solo si está logueado y tiene zona seleccionada) -->
-      <!-- TODO: Zone check removed — show cart for all authenticated users -->
+      <!-- Carrito (solo si autenticado) -->
       @if (isLoggedIn()) {
         <app-cart-popover />
       }
 
-      <!-- Botón Login o Menú de Usuario -->
+      <!-- Login o Menu de Usuario -->
       @if (isLoggedIn()) {
         <app-user-menu />
       } @else {
@@ -68,7 +72,7 @@
   </div>
 </header>
 
-<!-- Modal de confirmación cambio de zona -->
+<!-- Zone change confirmation modal -->
 @if (showZoneConfirm()) {
   <div class="zone-confirm-backdrop" (click)="cancelZoneChange()">
     <div class="zone-confirm-modal" (click)="$event.stopPropagation()">
@@ -77,14 +81,14 @@
           <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
         </svg>
       </div>
-      <h3 class="zone-confirm-title">¿Cambiar de zona?</h3>
+      <h3 class="zone-confirm-title">Cambiar de zona?</h3>
       <p class="zone-confirm-text">
         Tienes <strong>{{ cartService.totalItems() }}</strong> producto{{ cartService.totalItems() > 1 ? 's' : '' }} en tu carrito.
-        Al cambiar de zona se vaciará tu carrito y tendrás que volver a agregar los productos.
+        Al cambiar de zona se vaciara tu carrito.
       </p>
       <div class="zone-confirm-actions">
         <button type="button" class="zone-confirm-btn confirm" (click)="confirmZoneChange()">
-          Sí, cambiar zona
+          Si, cambiar zona
         </button>
         <button type="button" class="zone-confirm-btn cancel" (click)="cancelZoneChange()">
           Cancelar
@@ -94,7 +98,14 @@
   </div>
 }
 
-<!-- Modal de Autenticación -->
+<!-- Zoning Modal -->
+<app-zoning-modal
+  [isOpen]="showZoneModal()"
+  [mandatory]="!locationService.hasLocation()"
+  (closed)="onZoneModalClosed()"
+/>
+
+<!-- Auth Modal -->
 @if (isAuthModalOpen()) {
   <app-auth-modal (closeModal)="closeAuthModal()" />
 }

@@ -18,7 +18,25 @@ import {
 })
 export class BranchProductService {
   private readonly http = inject(HttpClient);
+  private readonly publicUrl = `${environment.apiUrl}/branch-products`;
   private readonly adminUrl = `${environment.apiUrl}/branch-products/admin`;
+
+  // ==================== PUBLIC ENDPOINTS ====================
+
+  /**
+   * Get aggregated stock for a product across specific branches (public).
+   */
+  getAggregatedStock(
+    productId: string,
+    branchIds: string[]
+  ): Observable<{ success: boolean; data: { totalStock: number; byBranch: { branchId: string; branchName: string; stock: number }[] } }> {
+    const params = new HttpParams()
+      .set('productId', productId)
+      .set('branchIds', branchIds.join(','));
+    return this.http.get<any>(`${this.publicUrl}/stock`, { params });
+  }
+
+  // ==================== ADMIN ENDPOINTS ====================
 
   /**
    * Get all BranchProducts for a branch (populated with product).

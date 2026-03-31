@@ -5,9 +5,7 @@ import { CheckoutService } from '../services/checkout.service';
 import { CartService } from '../../../core/services/cart.service';
 import { OrderService } from '../../../core/services/order.service';
 import { VehicleService } from '../../../core/services/vehicle.service';
-import { ZoneService } from '../../../core/services/zone.service';
-import { BranchService } from '../../../core/services/branch.service';
-import { Branch } from '../../../models/branch.model';
+import { LocationService, BranchSummary } from '../../../core/services/location.service';
 import { PaymentMethodService } from '../../../core/services/payment-method.service';
 import { CreateOrderRequest, PaymentSubmission } from '../../../models/order.model';
 import {
@@ -33,12 +31,8 @@ export class CheckoutSummaryComponent implements OnInit {
   private readonly orderService = inject(OrderService);
   private readonly vehicleService = inject(VehicleService);
   private readonly paymentMethodService = inject(PaymentMethodService);
-  private readonly zoneService = inject(ZoneService);
-  private readonly branchService = inject(BranchService);
+  protected readonly locationService = inject(LocationService);
   private readonly router = inject(Router);
-
-  // Branches for delivery config
-  private readonly activeBranches = signal<Branch[]>([]);
 
   // State signals
   protected readonly isGenerating = signal(false);
@@ -115,10 +109,35 @@ export class CheckoutSummaryComponent implements OnInit {
   protected readonly submittedPayment = signal<PaymentSubmission | null>(null);
   protected readonly submittedMethodType = signal<PaymentMethodType | null>(null);
 
-  // Can generate order: disclaimer accepted AND payment submitted
-  protected readonly canGenerateOrder = computed(() =>
-    this.disclaimerAccepted() && this.paymentSubmitted()
-  );
+  // ========== Branch Selection ==========
+
+  /** Whether branch selection is needed for this dispatch type */
+  protected readonly needsBranchSelection = computed(() => {
+    const dt = this.checkoutService.dispatchType();
+    return dt === 'store_pickup' || dt === 'in_store_oil_change';
+  });
+
+  /** Branches available for selection based on dispatch type */
+  protected readonly availableBranches = computed<BranchSummary[]>(() => {
+    const dt = this.checkoutService.dispatchType();
+    if (dt === 'store_pickup') return this.locationService.branches();
+    if (dt === 'in_store_oil_change') return this.locationService.branchesWithOilChange();
+    return [];
+  });
+
+  /** Whether a vehicle is required for this dispatch type */
+  protected readonly needsVehicle = computed(() => {
+    const dt = this.checkoutService.dispatchType();
+    return dt === 'oil_change_service' || dt === 'in_store_oil_change';
+  });
+
+  // Can generate order: disclaimer accepted AND payment submitted AND required selections made
+  protected readonly canGenerateOrder = computed(() => {
+    if (!this.disclaimerAccepted() || !this.paymentSubmitted()) return false;
+    if (this.needsBranchSelection() && !this.checkoutService.hasBranch()) return false;
+    if (this.needsVehicle() && !this.checkoutService.hasVehicle()) return false;
+    return true;
+  });
 
   ngOnInit(): void {
     if (!this.checkoutService.hasDispatchType()) {
@@ -168,11 +187,13 @@ export class CheckoutSummaryComponent implements OnInit {
     // Load active payment methods from API
     this.loadPaymentMethods();
 
-    // Load active branches for delivery config
-    this.branchService.getActive().subscribe({
-      next: (res) => this.activeBranches.set(res.data || []),
-      error: () => this.activeBranches.set([]),
-    });
+    // Auto-select branch if only one available
+    if (this.needsBranchSelection()) {
+      const branches = this.availableBranches();
+      if (branches.length === 1 && !this.checkoutService.selectedBranch()) {
+        this.checkoutService.selectBranch(branches[0]);
+      }
+    }
   }
 
   private loadPaymentMethods(): void {
@@ -252,9 +273,13 @@ export class CheckoutSummaryComponent implements OnInit {
   }
 
   private getLocalDeliveryConfig(): { freeDelivery: boolean; additionalCharge: boolean; additionalChargeAmount: number } | null {
-    // TODO: Refactor — branch.serviceMunicipalities removed. Delivery config now via BranchZone pivot.
-    // Default: free delivery until BranchZone integration
-    return { freeDelivery: true, additionalCharge: false, additionalChargeAmount: 0 };
+    const dc = this.locationService.deliveryConfig();
+    if (!dc) return null;
+    return {
+      freeDelivery: dc.freeDelivery,
+      additionalCharge: !dc.freeDelivery && dc.deliveryCharge > 0,
+      additionalChargeAmount: dc.deliveryCharge,
+    };
   }
 
   get isPayOnDelivery(): boolean {
@@ -294,6 +319,12 @@ export class CheckoutSummaryComponent implements OnInit {
 
   isInfoOnlyType(type: PaymentMethodType): boolean {
     return PAYMENT_TYPES_INFO_ONLY.includes(type);
+  }
+
+  // ========== Branch Selection ==========
+
+  selectBranch(branch: BranchSummary): void {
+    this.checkoutService.selectBranch(branch);
   }
 
   // ========== Modal Actions ==========
@@ -450,7 +481,72 @@ export class CheckoutSummaryComponent implements OnInit {
     const sellerAgreement = this.sellerAgreementInfo;
     const agency = this.shippingAgency;
     const store = this.storeInfo;
-    const selectedVehicle = this.vehicleService.selectedVehicle();
+    const selectedVehicle = this.checkoutService.selectedVehicle();
+    const selectedBranch = this.checkoutService.selectedBranch();
+
+    // Build dispatch details based on type
+    const dispatchDetails: any = {};
+
+    // Branch info for pickup/in-store types
+    if (selectedBranch) {
+      dispatchDetails.selectedBranchId = selectedBranch.id;
+      dispatchDetails.selectedBranchName = selectedBranch.name;
+      dispatchDetails.selectedBranchAddress = selectedBranch.address;
+      dispatchDetails.storeAddress = selectedBranch.address;
+    }
+
+    // Store pickup fallback
+    if (this.dispatchType === 'store_pickup' && !selectedBranch && store) {
+      dispatchDetails.storeAddress = store.address;
+      dispatchDetails.storeSchedule = store.schedule;
+    }
+
+    // Shipping agency + recipient
+    if (this.dispatchType === 'shipping_agency') {
+      if (agency) {
+        dispatchDetails.agencyName = agency.name;
+        dispatchDetails.agencyId = agency.id;
+      }
+      if (recipient) {
+        dispatchDetails.recipientName = recipient.fullName;
+        dispatchDetails.recipientDocument = `${recipient.documentType}-${recipient.documentNumber}`;
+        dispatchDetails.recipientPhone = recipient.phone;
+        dispatchDetails.recipientAddress = recipient.address;
+        dispatchDetails.recipientState = recipient.state;
+        dispatchDetails.recipientCity = recipient.city;
+        dispatchDetails.agencyOfficeCode = recipient.agencyOfficeCode;
+        dispatchDetails.referencePoint = recipient.referencePoint;
+      }
+    }
+
+    // Local delivery
+    if (this.dispatchType === 'local_delivery' && localDelivery) {
+      dispatchDetails.recipientName = localDelivery.fullName;
+      dispatchDetails.recipientDocument = `${localDelivery.documentType}-${localDelivery.documentNumber}`;
+      dispatchDetails.recipientPhone = localDelivery.phone;
+      dispatchDetails.recipientAddress = localDelivery.address;
+      dispatchDetails.recipientCity = localDelivery.cityName;
+      dispatchDetails.recipientMunicipality = localDelivery.municipalityName;
+      dispatchDetails.referencePoint = localDelivery.referencePoint;
+    }
+
+    // Seller agreement
+    if (this.dispatchType === 'seller_agreement' && sellerAgreement) {
+      dispatchDetails.recipientName = sellerAgreement.fullName;
+      dispatchDetails.recipientDocument = `${sellerAgreement.documentType}-${sellerAgreement.documentNumber}`;
+      dispatchDetails.recipientPhone = sellerAgreement.phone;
+    }
+
+    // Oil change service (home)
+    if (this.dispatchType === 'oil_change_service' && this.oilChangeServiceInfo) {
+      dispatchDetails.recipientName = this.oilChangeServiceInfo.fullName;
+      dispatchDetails.recipientDocument = `${this.oilChangeServiceInfo.documentType}-${this.oilChangeServiceInfo.documentNumber}`;
+      dispatchDetails.recipientPhone = this.oilChangeServiceInfo.phone;
+      dispatchDetails.recipientAddress = this.oilChangeServiceInfo.address;
+      dispatchDetails.recipientCity = this.oilChangeServiceInfo.cityName;
+      dispatchDetails.recipientMunicipality = this.oilChangeServiceInfo.municipalityName;
+      dispatchDetails.referencePoint = this.oilChangeServiceInfo.referencePoint;
+    }
 
     const orderData: CreateOrderRequest = {
       items,
@@ -461,56 +557,10 @@ export class CheckoutSummaryComponent implements OnInit {
       paymentMethod: this.submittedPayment()?.methodType as any,
       disclaimerAccepted: this.disclaimerAccepted(),
       vehicle: selectedVehicle?.id,
+      selectedBranch: selectedBranch?.id,
+      billingAddress: this.checkoutService.billingAddress() || undefined,
       paymentSubmission: this.submittedPayment() || undefined,
-      dispatchDetails: {
-        ...(this.dispatchType === 'store_pickup' && store
-          ? { storeAddress: store.address, storeSchedule: store.schedule }
-          : {}),
-        ...(this.dispatchType === 'shipping_agency' && agency
-          ? { agencyName: agency.name, agencyId: agency.id }
-          : {}),
-        ...(this.dispatchType === 'shipping_agency' && recipient
-          ? {
-              recipientName: recipient.fullName,
-              recipientDocument: `${recipient.documentType}-${recipient.documentNumber}`,
-              recipientPhone: recipient.phone,
-              recipientAddress: recipient.address,
-              recipientState: recipient.state,
-              recipientCity: recipient.city,
-              agencyOfficeCode: recipient.agencyOfficeCode,
-              referencePoint: recipient.referencePoint,
-            }
-          : {}),
-        ...(this.dispatchType === 'local_delivery' && localDelivery
-          ? {
-              recipientName: localDelivery.fullName,
-              recipientDocument: `${localDelivery.documentType}-${localDelivery.documentNumber}`,
-              recipientPhone: localDelivery.phone,
-              recipientAddress: localDelivery.address,
-              recipientCity: localDelivery.cityName,
-              recipientMunicipality: localDelivery.municipalityName,
-              referencePoint: localDelivery.referencePoint,
-            }
-          : {}),
-        ...(this.dispatchType === 'seller_agreement' && sellerAgreement
-          ? {
-              recipientName: sellerAgreement.fullName,
-              recipientDocument: `${sellerAgreement.documentType}-${sellerAgreement.documentNumber}`,
-              recipientPhone: sellerAgreement.phone,
-            }
-          : {}),
-        ...(this.dispatchType === 'oil_change_service' && this.oilChangeServiceInfo
-          ? {
-              recipientName: this.oilChangeServiceInfo.fullName,
-              recipientDocument: `${this.oilChangeServiceInfo.documentType}-${this.oilChangeServiceInfo.documentNumber}`,
-              recipientPhone: this.oilChangeServiceInfo.phone,
-              recipientAddress: this.oilChangeServiceInfo.address,
-              recipientCity: this.oilChangeServiceInfo.cityName,
-              recipientMunicipality: this.oilChangeServiceInfo.municipalityName,
-              referencePoint: this.oilChangeServiceInfo.referencePoint,
-            }
-          : {}),
-      },
+      dispatchDetails,
     };
 
     this.orderService.createOrder(orderData).subscribe({
@@ -535,16 +585,23 @@ export class CheckoutSummaryComponent implements OnInit {
 
   goBack(): void {
     const dispatchType = this.checkoutService.dispatchType();
-    if (dispatchType === 'shipping_agency') {
-      this.router.navigate(['/checkout/envio']);
-    } else if (dispatchType === 'local_delivery') {
-      this.router.navigate(['/checkout/delivery']);
-    } else if (dispatchType === 'seller_agreement') {
-      this.router.navigate(['/checkout/vendedor']);
-    } else if (dispatchType === 'oil_change_service') {
-      this.router.navigate(['/checkout/cambio-aceite']);
-    } else {
-      this.router.navigate(['/checkout/despacho']);
+    switch (dispatchType) {
+      case 'shipping_agency':
+        this.router.navigate(['/checkout/envio']);
+        break;
+      case 'local_delivery':
+        this.router.navigate(['/checkout/delivery']);
+        break;
+      case 'seller_agreement':
+      case 'store_pickup':
+      case 'in_store_oil_change':
+        this.router.navigate(['/checkout/despacho']);
+        break;
+      case 'oil_change_service':
+        this.router.navigate(['/checkout/cambio-aceite']);
+        break;
+      default:
+        this.router.navigate(['/checkout/despacho']);
     }
   }
 }

@@ -1,7 +1,9 @@
-import { Component, signal, output, inject, OnInit } from '@angular/core';
+import { Component, signal, output, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs';
 import { AuthService } from '../../../core/services';
+import { RegisterRequest } from '../../../models/auth.model';
 
 type AuthMode = 'login' | 'register';
 
@@ -12,33 +14,30 @@ type AuthMode = 'login' | 'register';
   templateUrl: './auth-modal.component.html',
   styleUrl: './auth-modal.component.scss',
 })
-export class AuthModalComponent implements OnInit {
+export class AuthModalComponent implements OnInit, OnDestroy {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
+  private docTypeSub: Subscription | null = null;
 
-  /** Evento para cerrar el modal */
   readonly closeModal = output<void>();
 
-  /** Modo actual del modal (login o registro) */
   protected readonly mode = signal<AuthMode>('login');
-
-  /** Estado de carga */
   protected readonly isLoading = signal(false);
-
-  /** Mensaje de error */
   protected readonly errorMessage = signal<string | null>(null);
-
-  /** Indica si la sesión expiró */
   protected readonly sessionExpired = this.authService.sessionExpired;
 
-  /** Formulario de login */
+  // Stepper — always 2 steps
+  protected readonly currentStep = signal(1);
+  protected readonly isJuridical = signal(false);
+
+  // Login form
   protected readonly loginForm: FormGroup = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(6)]],
   });
 
-  /** Formulario de registro */
-  protected readonly registerForm: FormGroup = this.fb.group({
+  // Step 1: Credentials
+  protected readonly step1Form: FormGroup = this.fb.group({
     firstName: ['', [Validators.required, Validators.minLength(2)]],
     lastName: ['', [Validators.required, Validators.minLength(2)]],
     email: ['', [Validators.required, Validators.email]],
@@ -46,28 +45,96 @@ export class AuthModalComponent implements OnInit {
     confirmPassword: ['', [Validators.required]],
   });
 
+  // Step 2: Identity & Contact (+ companyName conditional)
+  protected readonly step2Form: FormGroup = this.fb.group({
+    documentType: ['', [Validators.required]],
+    documentNumber: ['', [Validators.required]],
+    birthDate: [''],
+    phone: ['', [Validators.required, Validators.pattern(/^(0414|0424|0412|0416|0426)\d{7}$/)]],
+    companyName: [''],
+  });
+
   ngOnInit(): void {
-    // Si la sesión expiró, mostrar mensaje y limpiar el flag después de un tiempo
     if (this.sessionExpired()) {
-      setTimeout(() => {
-        this.authService.clearSessionExpired();
-      }, 5000);
+      setTimeout(() => this.authService.clearSessionExpired(), 5000);
     }
+
+    this.docTypeSub = this.step2Form.get('documentType')!.valueChanges.subscribe((type) => {
+      this.isJuridical.set(type === 'J');
+
+      const docCtrl = this.step2Form.get('documentNumber')!;
+      const birthCtrl = this.step2Form.get('birthDate')!;
+      const companyCtrl = this.step2Form.get('companyName')!;
+
+      const patterns: Record<string, RegExp> = {
+        V: /^\d{6,8}$/,
+        E: /^\d{6,8}$/,
+        J: /^\d{8,9}$/,
+        P: /^[a-zA-Z0-9]{5,15}$/,
+        G: /^\d{6,15}$/,
+      };
+
+      const pattern = patterns[type];
+      if (pattern) {
+        docCtrl.setValidators([Validators.required, Validators.pattern(pattern)]);
+      } else {
+        docCtrl.setValidators([Validators.required]);
+      }
+      docCtrl.updateValueAndValidity();
+
+      if (type === 'J') {
+        birthCtrl.clearValidators();
+        birthCtrl.setValue('');
+        companyCtrl.setValidators([Validators.required, Validators.minLength(3), Validators.maxLength(100)]);
+      } else {
+        birthCtrl.setValidators([Validators.required]);
+        companyCtrl.clearValidators();
+        companyCtrl.setValue('');
+      }
+      birthCtrl.updateValueAndValidity();
+      companyCtrl.updateValueAndValidity();
+    });
   }
 
-  /**
-   * Cambia entre modo login y registro
-   */
+  ngOnDestroy(): void {
+    this.docTypeSub?.unsubscribe();
+  }
+
   switchMode(newMode: AuthMode): void {
     this.mode.set(newMode);
     this.errorMessage.set(null);
+    this.currentStep.set(1);
+    this.isJuridical.set(false);
     this.loginForm.reset();
-    this.registerForm.reset();
+    this.step1Form.reset();
+    this.step2Form.reset();
   }
 
-  /**
-   * Envía el formulario de login
-   */
+  // ========== Navigation ==========
+
+  nextStep(): void {
+    if (this.step1Form.invalid) {
+      this.step1Form.markAllAsTouched();
+      return;
+    }
+
+    const s1 = this.step1Form.value;
+    if (s1.password !== s1.confirmPassword) {
+      this.errorMessage.set('Las contraseñas no coinciden');
+      return;
+    }
+
+    this.errorMessage.set(null);
+    this.currentStep.set(2);
+  }
+
+  prevStep(): void {
+    this.errorMessage.set(null);
+    this.currentStep.set(1);
+  }
+
+  // ========== Submit ==========
+
   onLogin(): void {
     if (this.loginForm.invalid) {
       this.loginForm.markAllAsTouched();
@@ -84,49 +151,58 @@ export class AuthModalComponent implements OnInit {
       },
       error: (error) => {
         this.isLoading.set(false);
-        this.errorMessage.set(
-          error.error?.message || 'Error al iniciar sesión. Intenta de nuevo.'
-        );
+        this.errorMessage.set(error.error?.message || 'Error al iniciar sesión. Intenta de nuevo.');
       },
     });
   }
 
-  /**
-   * Envía el formulario de registro
-   */
   onRegister(): void {
-    if (this.registerForm.invalid) {
-      this.registerForm.markAllAsTouched();
+    if (this.step2Form.invalid) {
+      this.step2Form.markAllAsTouched();
       return;
     }
 
-    const { confirmPassword, ...registerData } = this.registerForm.value;
+    const { confirmPassword, ...s1 } = this.step1Form.value;
+    const s2 = this.step2Form.value;
 
-    if (registerData.password !== confirmPassword) {
-      this.errorMessage.set('Las contraseñas no coinciden');
-      return;
+    const payload: RegisterRequest = {
+      ...s1,
+      documentType: s2.documentType,
+      documentNumber: s2.documentNumber,
+      phone: s2.phone,
+    };
+
+    if (s2.documentType !== 'J' && s2.birthDate) {
+      payload.birthDate = s2.birthDate;
+    }
+
+    if (s2.documentType === 'J' && s2.companyName) {
+      payload.companyName = s2.companyName;
     }
 
     this.isLoading.set(true);
     this.errorMessage.set(null);
 
-    this.authService.register(registerData).subscribe({
+    this.authService.register(payload).subscribe({
       next: () => {
         this.isLoading.set(false);
         this.closeModal.emit();
       },
       error: (error) => {
         this.isLoading.set(false);
-        this.errorMessage.set(
-          error.error?.message || 'Error al registrarse. Intenta de nuevo.'
-        );
+        const body = error.error;
+        if (body?.errors?.length) {
+          const details = body.errors.map((e: { message: string }) => e.message).join('. ');
+          this.errorMessage.set(details);
+        } else {
+          this.errorMessage.set(body?.message || 'Error al registrarse. Intenta de nuevo.');
+        }
       },
     });
   }
 
-  /**
-   * Inicia sesión con OAuth
-   */
+  // ========== OAuth ==========
+
   loginWithGoogle(): void {
     this.authService.loginWithOAuth('google');
   }
@@ -135,26 +211,19 @@ export class AuthModalComponent implements OnInit {
     this.authService.loginWithOAuth('facebook');
   }
 
-  /**
-   * Cierra el modal al hacer click en el overlay
-   */
+  // ========== Helpers ==========
+
   onOverlayClick(event: MouseEvent): void {
     if ((event.target as HTMLElement).classList.contains('modal-overlay')) {
       this.closeModal.emit();
     }
   }
 
-  /**
-   * Verifica si un campo tiene error
-   */
   hasError(form: FormGroup, field: string): boolean {
     const control = form.get(field);
     return !!control && control.invalid && control.touched;
   }
 
-  /**
-   * Obtiene el mensaje de error de un campo
-   */
   getErrorMessage(form: FormGroup, field: string): string {
     const control = form.get(field);
     if (!control || !control.errors) return '';
@@ -162,10 +231,28 @@ export class AuthModalComponent implements OnInit {
     if (control.errors['required']) return 'Este campo es requerido';
     if (control.errors['email']) return 'Ingresa un email válido';
     if (control.errors['minlength']) {
-      const minLength = control.errors['minlength'].requiredLength;
-      return `Mínimo ${minLength} caracteres`;
+      return `Mínimo ${control.errors['minlength'].requiredLength} caracteres`;
+    }
+    if (control.errors['maxlength']) {
+      return `Máximo ${control.errors['maxlength'].requiredLength} caracteres`;
+    }
+    if (control.errors['pattern']) {
+      if (field === 'phone') return 'Formato: 04XX seguido de 7 dígitos';
+      if (field === 'documentNumber') return 'Formato de documento inválido';
+      return 'Formato inválido';
     }
 
     return 'Campo inválido';
+  }
+
+  getDocNumberPlaceholder(): string {
+    const type = this.step2Form.get('documentType')?.value;
+    switch (type) {
+      case 'V': case 'E': return 'Ej: 12345678';
+      case 'J': return 'Ej: 123456789';
+      case 'P': return 'Ej: AB1234567';
+      case 'G': return 'Ej: 123456';
+      default: return 'Número de documento';
+    }
   }
 }

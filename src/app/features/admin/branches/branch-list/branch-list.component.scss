@@ -205,11 +205,11 @@
 
 // Municipalities
 .municipalities-list {
-  @apply space-y-2;
+  @apply divide-y divide-gray-100 dark:divide-gray-700;
 }
 
 .municipality-card {
-  @apply flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg;
+  @apply flex items-center justify-between px-3 py-2;
 
   @media (max-width: 640px) {
     @apply flex-col items-start gap-2;
@@ -231,6 +231,7 @@
   &.badge-blue { @apply bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400; }
   &.badge-gray { @apply bg-gray-100 dark:bg-gray-600/30 text-gray-500 dark:text-gray-400; }
   &.badge-purple { @apply bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400; }
+  &.badge-oil-change { @apply bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400; }
 }
 
 // Footer

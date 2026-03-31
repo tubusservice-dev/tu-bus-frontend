@@ -4,12 +4,11 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
 import { TubusHeaderComponent } from '../../pages/tu-bus-servicio/components/tubus-header/tubus-header.component';
 import { FooterComponent } from '../footer/footer.component';
-import { ZoningModalComponent } from '../../../shared/components';
 
 @Component({
   selector: 'app-main-layout',
   standalone: true,
-  imports: [RouterOutlet, TubusHeaderComponent, FooterComponent, ZoningModalComponent],
+  imports: [RouterOutlet, TubusHeaderComponent, FooterComponent],
   templateUrl: './main-layout.component.html',
   styleUrl: './main-layout.component.scss'
 })

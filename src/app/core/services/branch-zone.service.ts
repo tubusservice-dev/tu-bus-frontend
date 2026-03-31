@@ -18,7 +18,33 @@ import {
 })
 export class BranchZoneService {
   private readonly http = inject(HttpClient);
+  private readonly publicUrl = `${environment.apiUrl}/branch-zones`;
   private readonly adminUrl = `${environment.apiUrl}/branch-zones/admin`;
+
+  // ==================== PUBLIC ENDPOINTS ====================
+
+  /**
+   * Find branches serving a geographic location (public, no auth).
+   */
+  findByLocation(citySlug: string, municipality?: string): Observable<any> {
+    let params = new HttpParams().set('citySlug', citySlug);
+    if (municipality) {
+      params = params.set('municipality', municipality);
+    }
+    return this.http.get<any>(`${this.publicUrl}/by-location`, { params });
+  }
+
+  /**
+   * Get delivery configuration for a location (public, no auth).
+   */
+  getDeliveryConfig(citySlug: string, municipality: string): Observable<any> {
+    const params = new HttpParams()
+      .set('citySlug', citySlug)
+      .set('municipality', municipality);
+    return this.http.get<any>(`${this.publicUrl}/delivery-config`, { params });
+  }
+
+  // ==================== ADMIN ENDPOINTS ====================
 
   /**
    * Get all BranchZones for a branch (populated with zone + city).

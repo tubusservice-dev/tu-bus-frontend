@@ -2,10 +2,14 @@ import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 import { CheckoutService, OilChangeServiceInfo } from '../services/checkout.service';
 import { CartService } from '../../../core/services/cart.service';
-import { ZoneService } from '../../../core/services/zone.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { LocationService } from '../../../core/services/location.service';
+import { BranchZoneService } from '../../../core/services/branch-zone.service';
+import { VehicleService } from '../../../core/services/vehicle.service';
+import { Vehicle } from '../../../models/vehicle.model';
 
 @Component({
   selector: 'app-checkout-oil-change-form',
@@ -17,20 +21,28 @@ import { AuthService } from '../../../core/services/auth.service';
 export class CheckoutOilChangeFormComponent implements OnInit {
   protected readonly checkoutService = inject(CheckoutService);
   protected readonly cartService = inject(CartService);
-  protected readonly zoneService = inject(ZoneService);
   protected readonly authService = inject(AuthService);
+  private readonly locationService = inject(LocationService);
+  private readonly branchZoneService = inject(BranchZoneService);
+  protected readonly vehicleService = inject(VehicleService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
 
-  // Track which personal fields are locked (have user profile data)
   protected readonly lockedFields = signal<Record<string, boolean>>({});
 
   protected oilChangeForm!: FormGroup;
 
-  // Branch-based zone data (only cities/municipalities served by the branch)
+  // Zone data
   protected readonly branchCities = signal<{ code: string; name: string }[]>([]);
+  private readonly allMunicipalities = signal<{ name: string; slug: string; citySlug: string }[]>([]);
   protected readonly availableMunicipalities = signal<{ code: string; name: string }[]>([]);
   protected readonly selectedCityName = signal('');
+
+  // Vehicle selection
+  protected readonly vehicles = signal<Vehicle[]>([]);
+  protected readonly selectedVehicle = signal<Vehicle | null>(null);
+  protected readonly showVehicleForm = signal(false);
+  protected readonly isLoadingVehicles = signal(false);
 
   protected readonly documentTypes = [
     { code: 'V', name: 'V - Venezolano' },
@@ -47,6 +59,7 @@ export class CheckoutOilChangeFormComponent implements OnInit {
 
     this.initForm();
     this.loadBranchZones();
+    this.loadVehicles();
     this.loadSavedData();
   }
 
@@ -67,7 +80,70 @@ export class CheckoutOilChangeFormComponent implements OnInit {
   }
 
   private loadBranchZones(): void {
-    // TODO: Refactor — branch.serviceZones removed. Delivery zones now come from BranchZone pivot.
+    const branches = this.locationService.branches();
+    if (branches.length === 0) return;
+
+    const requests = branches.map((b) => this.branchZoneService.getByBranch(b.id));
+
+    forkJoin(requests).subscribe({
+      next: (responses) => {
+        const cityMap = new Map<string, { code: string; name: string }>();
+        const muniList: { name: string; slug: string; citySlug: string }[] = [];
+
+        for (const res of responses) {
+          for (const bz of (res as any).data || []) {
+            const zone = bz.zone as any;
+            const city = zone?.city as any;
+            if (!city) continue;
+
+            cityMap.set(city.slug, { code: city.slug, name: city.name });
+
+            for (const dc of bz.deliveryConfig) {
+              const muni = city.municipalities?.find((m: any) => m.slug === dc.municipality);
+              if (muni && !muniList.some((m) => m.slug === muni.slug && m.citySlug === city.slug)) {
+                muniList.push({ name: muni.name, slug: muni.slug, citySlug: city.slug });
+              }
+            }
+          }
+        }
+
+        this.branchCities.set(Array.from(cityMap.values()));
+        this.allMunicipalities.set(muniList);
+      },
+    });
+  }
+
+  private loadVehicles(): void {
+    this.isLoadingVehicles.set(true);
+    this.vehicleService.getMyVehicles(1, 50).subscribe({
+      next: (res: any) => {
+        const vehicleList = res.data || [];
+        this.vehicles.set(vehicleList);
+        this.isLoadingVehicles.set(false);
+
+        // Auto-select if only one vehicle
+        if (vehicleList.length === 1) {
+          this.selectVehicle(vehicleList[0]);
+        }
+
+        // Restore previously selected vehicle
+        const prev = this.checkoutService.selectedVehicle();
+        if (prev) {
+          this.selectedVehicle.set(prev);
+        }
+      },
+      error: () => this.isLoadingVehicles.set(false),
+    });
+  }
+
+  protected selectVehicle(vehicle: Vehicle): void {
+    this.selectedVehicle.set(vehicle);
+    this.checkoutService.selectVehicle(vehicle);
+  }
+
+  protected clearVehicleSelection(): void {
+    this.selectedVehicle.set(null);
+    this.checkoutService.clearVehicle();
   }
 
   private loadSavedData(): void {
@@ -94,7 +170,6 @@ export class CheckoutOilChangeFormComponent implements OnInit {
         error: () => this.prefillFromUserProfile(),
       });
 
-      // TODO: Refactor — zoneService.selectedZone() no longer exists
     }
   }
 
@@ -130,9 +205,6 @@ export class CheckoutOilChangeFormComponent implements OnInit {
       this.oilChangeForm.get('email')?.disable();
       locked['email'] = true;
     }
-
-    // TODO: Refactor — branch.serviceZones removed. Cannot check branch coverage.
-    // Address prefill disabled until BranchZone pivot is integrated.
 
     this.lockedFields.set(locked);
   }
@@ -192,15 +264,23 @@ export class CheckoutOilChangeFormComponent implements OnInit {
   }
 
   onCityChange(cityCode: string): void {
-    // TODO: Refactor — branch.serviceZones removed. Use BranchZone pivot for municipalities.
-    this.availableMunicipalities.set([]);
-    this.selectedCityName.set('');
+    const munis = this.allMunicipalities()
+      .filter((m) => m.citySlug === cityCode)
+      .map((m) => ({ code: m.slug, name: m.name }));
+    this.availableMunicipalities.set(munis);
+    const city = this.branchCities().find((c) => c.code === cityCode);
+    this.selectedCityName.set(city?.name || '');
     this.oilChangeForm.patchValue({ municipalityCode: '' });
   }
 
   onSubmit(): void {
     if (this.oilChangeForm.invalid) {
       this.oilChangeForm.markAllAsTouched();
+      return;
+    }
+
+    // Vehicle is mandatory for oil change service
+    if (!this.selectedVehicle()) {
       return;
     }
 

@@ -7,6 +7,7 @@ import {
   OrderListResponse,
   OrderResponse,
   CreateOrderRequest,
+  PaymentSubmission,
   OrderStatus,
 } from '../../models/order.model';
 
@@ -50,6 +51,10 @@ export class OrderService {
 
   cancelOrder(id: string): Observable<OrderResponse> {
     return this.http.post<OrderResponse>(`${this.apiUrl}/${id}/cancel`, {});
+  }
+
+  updatePayment(id: string, payment: PaymentSubmission): Observable<OrderResponse> {
+    return this.http.patch<OrderResponse>(`${this.apiUrl}/${id}/payment`, payment);
   }
 
   // ==================== ADMIN METHODS ====================

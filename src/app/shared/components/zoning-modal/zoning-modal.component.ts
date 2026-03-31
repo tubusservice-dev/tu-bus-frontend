@@ -1,14 +1,10 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject, signal, computed, input, output, effect, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CityService } from '../../../core/services/city.service';
+import { LocationService } from '../../../core/services/location.service';
+import { City, Municipality } from '../../../models/city.model';
 
-// TODO: Refactor zoning-modal for new zone architecture.
-// Previously used ZoneService signals (cities, activeCities, inactiveCities,
-// selectedCity, selectCity, selectMunicipality, clearSelection, hasSelection, loadCities).
-// These were removed in the zone service rewrite.
-// For now, the modal is disabled (showModal = false) until the new client-side
-// zone selection flow is implemented.
-
-type ModalStep = 'city' | 'municipality' | 'out-of-coverage';
+type ModalStep = 'city' | 'municipality' | 'no-coverage';
 
 @Component({
   selector: 'app-zoning-modal',
@@ -17,30 +13,132 @@ type ModalStep = 'city' | 'municipality' | 'out-of-coverage';
   templateUrl: './zoning-modal.component.html',
   styleUrl: './zoning-modal.component.scss',
 })
-export class ZoningModalComponent {
+export class ZoningModalComponent implements OnInit, OnDestroy {
+  private readonly cityService = inject(CityService);
+  protected readonly locationService = inject(LocationService);
+
+  // ==================== INPUTS / OUTPUTS ====================
+
+  /** Whether the modal is open (controlled from parent) */
+  readonly isOpen = input(false);
+
+  /** If true, user cannot dismiss without selecting a location */
+  readonly mandatory = input(false);
+
+  /** Emitted when the modal closes */
+  readonly closed = output<void>();
+
+  // ==================== STATE ====================
+
   protected readonly step = signal<ModalStep>('city');
-  protected readonly selectedCity = signal<any>(null);
+  protected readonly cities = signal<City[]>([]);
+  protected readonly selectedCity = signal<City | null>(null);
+  protected readonly isLoading = signal(true);
+  protected readonly isResolving = signal(false);
+  protected readonly searchTerm = signal('');
 
-  // TODO: These need to come from a new client-side zone selection service
-  protected readonly activeCities = signal<any[]>([]);
-  protected readonly inactiveCities = signal<any[]>([]);
-  protected readonly isLoading = signal(false);
+  // ==================== COMPUTED ====================
 
-  protected readonly availableMunicipalities = signal<any[]>([]);
+  /** Cities filtered by search term */
+  protected readonly filteredCities = computed(() => {
+    const all = this.cities();
+    const term = this.searchTerm().toLowerCase().trim();
+    if (!term) return all;
+    return all.filter((c) => c.name.toLowerCase().includes(term));
+  });
 
-  // TODO: Always hidden until new zone selection flow is implemented
-  protected readonly showModal = signal(false);
+  /** Municipalities of the selected city */
+  protected readonly municipalities = computed<Municipality[]>(() => {
+    const city = this.selectedCity();
+    return city?.municipalities || [];
+  });
 
-  selectCity(city: any): void {
-    // TODO: Implement with new zone architecture
+  constructor() {
+    // Lock/unlock body scroll when modal opens/closes
+    effect(() => {
+      document.body.style.overflow = this.isOpen() ? 'hidden' : '';
+    });
+
+    // Watch for location resolution to close modal or show no-coverage
+    effect(() => {
+      if (!this.isResolving()) return;
+      if (!this.locationService.isResolved()) return;
+
+      this.isResolving.set(false);
+
+      if (this.locationService.hasCoverage()) {
+        this.closed.emit();
+      } else {
+        this.step.set('no-coverage');
+      }
+    });
   }
 
-  selectMunicipality(municipality: any): void {
-    // TODO: Implement with new zone architecture
+  // ==================== LIFECYCLE ====================
+
+  ngOnInit(): void {
+    this.loadCities();
   }
 
-  backToCity(): void {
+  ngOnDestroy(): void {
+    document.body.style.overflow = '';
+  }
+
+  // ==================== METHODS ====================
+
+  private loadCities(): void {
+    this.isLoading.set(true);
+    this.cityService.getWithCoverage().subscribe({
+      next: (res) => {
+        this.cities.set(res.data || []);
+        this.isLoading.set(false);
+      },
+      error: () => {
+        this.cities.set([]);
+        this.isLoading.set(false);
+      },
+    });
+  }
+
+  protected selectCity(city: City): void {
+    this.selectedCity.set(city);
+    this.searchTerm.set('');
+    this.step.set('municipality');
+  }
+
+  protected selectMunicipality(municipality: Municipality): void {
+    const city = this.selectedCity();
+    if (!city) return;
+
+    this.isResolving.set(true);
+    this.locationService.setLocation(
+      city.slug,
+      city.name,
+      municipality.slug,
+      municipality.name
+    );
+  }
+
+  protected backToCity(): void {
     this.selectedCity.set(null);
+    this.searchTerm.set('');
     this.step.set('city');
+  }
+
+  protected continueWithoutCoverage(): void {
+    // Location is already saved in LocationService (hasCoverage = false)
+    this.closed.emit();
+  }
+
+  protected closeModal(): void {
+    // Prevent closing if mandatory and no location selected
+    if (this.mandatory() && !this.locationService.hasLocation()) {
+      return;
+    }
+    this.closed.emit();
+  }
+
+  protected onSearchInput(event: Event): void {
+    this.searchTerm.set((event.target as HTMLInputElement).value);
   }
 }

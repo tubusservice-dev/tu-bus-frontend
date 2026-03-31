@@ -1,10 +1,9 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { CategoryService } from '../../../../../core/services/category.service';
 import { ProductService } from '../../../../../core/services/product.service';
-import { ZoneService } from '../../../../../core/services/zone.service';
-import { BranchService } from '../../../../../core/services/branch.service';
+import { LocationService } from '../../../../../core/services/location.service';
 import { Category, Product } from '../../../../../models/product.model';
 
 @Component({
@@ -17,19 +16,16 @@ import { Category, Product } from '../../../../../models/product.model';
 export class TubusCombosComponent implements OnInit {
   private readonly categoryService = inject(CategoryService);
   private readonly productService = inject(ProductService);
-  private readonly zoneService = inject(ZoneService);
-  private readonly branchService = inject(BranchService);
+  private readonly locationService = inject(LocationService);
 
-  // Signals para datos
+  // Signals
   protected readonly categories = signal<Category[]>([]);
   protected readonly allProducts = signal<Product[]>([]);
   protected readonly totalProducts = signal<number>(0);
   protected readonly selectedFilter = signal<string>('all');
   protected readonly isLoading = signal(true);
-  private readonly branchIds = signal<string[]>([]);
-  private hasLoadedProducts = false;
 
-  // Computed para filtros dinámicos (Todos + categorías)
+  // Computed: dynamic filters (All + categories)
   protected readonly filters = computed(() => {
     const baseFilter = [{ id: 'all', label: 'Todos' }];
     const categoryFilters = this.categories().map(cat => ({
@@ -39,7 +35,7 @@ export class TubusCombosComponent implements OnInit {
     return [...baseFilter, ...categoryFilters];
   });
 
-  // Computed para productos filtrados por categoría (máximo 4)
+  // Computed: filtered products by category (max 4)
   protected readonly filteredProducts = computed(() => {
     const filter = this.selectedFilter();
     const products = this.allProducts();
@@ -59,7 +55,7 @@ export class TubusCombosComponent implements OnInit {
     return filtered.slice(0, 4);
   });
 
-  // Computed para mostrar botón "Ver todo"
+  // Computed: show "view all" button
   protected readonly showViewAllButton = computed(() => {
     const filter = this.selectedFilter();
     const products = this.allProducts();
@@ -75,15 +71,27 @@ export class TubusCombosComponent implements OnInit {
     return filtered.length > 4;
   });
 
+  private initialLoadDone = false;
+
   constructor() {
-    // TODO: Refactor — zoneService.selectedZone() no longer exists.
-    // Zone-based product loading disabled until new architecture.
+    // Wait for LocationService to resolve before loading products
+    effect(() => {
+      const resolved = this.locationService.isResolved();
+      if (resolved && !this.initialLoadDone) {
+        this.initialLoadDone = true;
+        this.loadFeaturedProducts();
+      }
+    });
   }
 
   ngOnInit(): void {
     this.loadCategories();
-    // TODO: Load products without zone filter for now
-    this.loadAllFeaturedProducts();
+
+    // If already resolved, load immediately
+    if (this.locationService.isResolved() && !this.initialLoadDone) {
+      this.initialLoadDone = true;
+      this.loadFeaturedProducts();
+    }
   }
 
   private loadCategories(): void {
@@ -93,21 +101,13 @@ export class TubusCombosComponent implements OnInit {
           this.categories.set(response.data);
         }
       },
-      error: (err) => console.error('Error cargando categorías:', err)
+      error: (err) => console.error('Error cargando categorias:', err)
     });
   }
 
-  private loadAllFeaturedProducts(): void {
-    this.loadProducts([]);
-  }
+  private loadFeaturedProducts(): void {
+    const branchIds = this.locationService.branchIds();
 
-  // TODO: Refactor to use BranchZoneService.findByLocation() when client module is updated
-  private loadBranchesByZone(_cityCode: string, _municipalityCode: string): void {
-    this.branchIds.set([]);
-    this.loadAllFeaturedProducts();
-  }
-
-  private loadProducts(branchIds: string[]): void {
     this.productService.getAll({
       isFeatured: true,
       isActive: true,

@@ -23,6 +23,15 @@ export class CityService {
   }
 
   /**
+   * Get only cities that have branch coverage (active zones with branches).
+   */
+  getWithCoverage(): Observable<CityListResponse> {
+    return this.http.get<CityListResponse>(this.apiUrl, {
+      params: { withCoverage: 'true' },
+    });
+  }
+
+  /**
    * Get a single city by slug.
    */
   getBySlug(slug: string): Observable<CityResponse> {

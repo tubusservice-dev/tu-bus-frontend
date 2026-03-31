@@ -1,7 +1,8 @@
 import { Component, inject, signal, OnInit, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { AuthService, UserService, UploadService, ZoneService } from '../../../core';
+import { AuthService, UserService, UploadService } from '../../../core';
+import { getStates, getCitiesByState, getMunicipalitiesByState } from '../../../shared/data/venezuela-states';
 import { ChangePasswordModalComponent } from '../change-password-modal/change-password-modal.component';
 
 @Component({
@@ -15,7 +16,6 @@ export class ProfileInfoComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly userService = inject(UserService);
   private readonly uploadService = inject(UploadService);
-  private readonly zoneService = inject(ZoneService);
   private readonly fb = inject(FormBuilder);
 
   protected readonly user = this.authService.currentUser;
@@ -89,29 +89,32 @@ export class ProfileInfoComponent implements OnInit {
     this.availableCities.set([]);
     this.availableMunicipalities.set([]);
     if (stateCode) {
-      this.loadReferenceCities(stateCode);
+      this.availableCities.set(getCitiesByState(stateCode));
+      this.availableMunicipalities.set(getMunicipalitiesByState(stateCode));
     }
   }
 
   protected onCityChange(): void {
-    const cityCode = this.profileForm.get('cityCode')?.value;
-    this.profileForm.get('municipalityCode')?.setValue('');
-    this.availableMunicipalities.set([]);
-    if (cityCode) {
-      this.loadReferenceMunicipalities(cityCode);
-    }
+    // City and municipality are independent lists — no cascade
   }
 
   private loadReferenceCities(stateCode: string, preselectedCityCode?: string): void {
-    // TODO: Refactor for new zone architecture — getReferenceCities no longer exists in ZoneService
-  }
+    this.availableCities.set(getCitiesByState(stateCode));
+    this.availableMunicipalities.set(getMunicipalitiesByState(stateCode));
 
-  private loadReferenceMunicipalities(cityCode: string): void {
-    // TODO: Refactor for new zone architecture — getReferenceCityByCode no longer exists in ZoneService
+    if (preselectedCityCode) {
+      this.profileForm.get('cityCode')?.setValue(preselectedCityCode);
+    }
   }
 
   private loadAllStates(): void {
-    // TODO: Refactor for new zone architecture — getAllStates no longer exists in ZoneService
+    this.allStates.set(getStates());
+
+    // If user already has a state saved, pre-load the cities cascade
+    const user = this.user();
+    if (user?.stateCode) {
+      this.loadReferenceCities(user.stateCode, user.cityCode);
+    }
   }
 
 

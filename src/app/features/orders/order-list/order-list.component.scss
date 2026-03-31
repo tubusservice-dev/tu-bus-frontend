@@ -72,15 +72,23 @@
 }
 
 .modal-content {
-  @apply w-full max-w-lg mx-4 max-h-[85vh] flex flex-col;
+  @apply w-full max-w-2xl mx-4 max-h-[90vh] flex flex-col;
   @apply bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden;
   animation: slideUp 0.3s ease-out;
+
+  @media (max-width: 640px) {
+    @apply mx-2 max-h-[95vh] rounded-xl;
+  }
 }
 
 .modal-header {
-  @apply flex items-start justify-between px-6 py-4;
+  @apply flex items-start justify-between px-6 py-5;
   @apply border-b border-gray-200 dark:border-gray-700;
   .modal-title { @apply text-lg font-semibold text-gray-900 dark:text-white mb-1; }
+
+  @media (max-width: 640px) {
+    @apply px-4 py-4;
+  }
 }
 
 .modal-close {
@@ -90,7 +98,13 @@
   svg { @apply w-5 h-5; }
 }
 
-.modal-body { @apply p-6 overflow-y-auto space-y-5; }
+.modal-body {
+  @apply p-6 overflow-y-auto space-y-6;
+
+  @media (max-width: 640px) {
+    @apply p-4 space-y-5;
+  }
+}
 
 .detail-section {
   h4 { @apply text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-3; }
@@ -156,6 +170,159 @@
 
 .btn-danger {
   @apply bg-red-500 hover:bg-red-600 text-white;
+}
+
+// ============================================
+// DISPATCH / PAYMENT / VEHICLE DETAIL
+// ============================================
+.detail-info-grid {
+  @apply flex flex-col gap-1;
+}
+
+.info-row {
+  @apply flex items-start gap-4 py-2.5 text-sm;
+  @apply border-b border-gray-100 dark:border-gray-700/50 last:border-0;
+
+  @media (max-width: 480px) {
+    @apply flex-col gap-0.5;
+  }
+}
+
+.info-label {
+  @apply w-32 flex-shrink-0 font-medium text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide pt-0.5;
+
+  @media (max-width: 480px) {
+    @apply w-full;
+  }
+}
+
+.info-value {
+  @apply flex-1 text-gray-900 dark:text-white leading-relaxed;
+}
+
+.section-header-row {
+  @apply flex items-center justify-between mb-3;
+
+  h4 { @apply mb-0; }
+}
+
+.btn-edit-payment {
+  @apply inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg transition-colors;
+  color: var(--accent-primary);
+  background: none;
+  border: 1px solid var(--accent-primary);
+
+  svg { @apply w-3.5 h-3.5; }
+
+  &:hover { background-color: rgba(var(--accent-primary-rgb, 220, 38, 38), 0.08); }
+}
+
+.no-payment-text {
+  @apply text-sm text-gray-400 dark:text-gray-500 italic;
+}
+
+.vehicle-detail-card {
+  @apply text-sm font-medium px-4 py-3 rounded-lg;
+  background-color: var(--bg-secondary, #f3f4f6);
+  color: var(--text-primary);
+}
+
+// ============================================
+// PAYMENT EDIT FORM
+// ============================================
+.payment-edit-form {
+  @apply flex flex-col gap-4 p-5 rounded-xl border;
+  border-color: var(--accent-primary);
+  background-color: var(--bg-secondary, #f9fafb);
+
+  @media (max-width: 640px) {
+    @apply p-4 gap-3;
+  }
+}
+
+.form-row {
+  @apply flex flex-col gap-1;
+
+  label {
+    @apply text-xs font-medium text-gray-600 dark:text-gray-400;
+  }
+
+  input, select {
+    @apply w-full px-3 py-2 text-sm rounded-lg border outline-none transition-colors;
+    background-color: var(--bg-primary);
+    border-color: var(--border-color, #d1d5db);
+    color: var(--text-primary);
+
+    &:focus {
+      border-color: var(--accent-primary);
+    }
+  }
+}
+
+.payment-edit-actions {
+  @apply flex items-center justify-end gap-2 pt-2;
+}
+
+.btn-cancel-edit {
+  @apply px-4 py-2 text-sm font-medium rounded-lg transition-colors;
+  color: var(--text-secondary);
+  background: none;
+
+  &:hover { background-color: var(--bg-tertiary, #e5e7eb); }
+}
+
+.btn-save-payment {
+  @apply px-4 py-2 text-sm font-semibold rounded-lg text-white transition-colors;
+  background-color: var(--accent-primary);
+
+  &:hover { opacity: 0.9; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+// ============================================
+// PROOF UPLOAD
+// ============================================
+.proof-preview {
+  @apply relative inline-block rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600;
+  max-width: 200px;
+
+  img {
+    @apply w-full h-auto block;
+  }
+}
+
+.proof-remove {
+  @apply absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center;
+  @apply bg-red-500 text-white hover:bg-red-600 transition-colors;
+
+  svg { @apply w-3.5 h-3.5; }
+}
+
+.proof-upload-label {
+  @apply flex items-center gap-2 px-4 py-3 rounded-lg border-2 border-dashed cursor-pointer transition-colors text-sm;
+  border-color: var(--border-color, #d1d5db);
+  color: var(--text-secondary);
+
+  svg { @apply w-5 h-5; }
+
+  &:hover {
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+  }
+}
+
+.alert-success {
+  @apply text-sm p-3 rounded-lg mb-3;
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.alert-error {
+  @apply text-sm p-3 rounded-lg mb-3;
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }

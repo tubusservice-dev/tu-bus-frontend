@@ -238,6 +238,130 @@
 }
 
 // ============================================
+// BRANCH SELECTOR
+// ============================================
+.branch-empty-hint {
+  @apply text-sm text-center py-4;
+  color: var(--text-secondary);
+}
+
+.branch-selector-list {
+  @apply flex flex-col gap-2;
+}
+
+.branch-selector-card {
+  @apply flex items-center justify-between w-full px-4 py-3 rounded-lg border-2 text-left transition-all duration-200;
+  background-color: var(--bg-primary);
+  border-color: var(--border-color);
+
+  &:hover {
+    border-color: var(--accent-primary);
+    background-color: var(--bg-secondary);
+  }
+
+  &.selected {
+    border-color: var(--accent-primary);
+    background-color: rgba(var(--accent-primary-rgb, 220, 38, 38), 0.05);
+    box-shadow: 0 0 0 1px var(--accent-primary);
+  }
+}
+
+.branch-selector-info {
+  @apply flex flex-col gap-0.5;
+}
+
+.branch-selector-name {
+  @apply font-semibold text-sm;
+  color: var(--text-primary);
+}
+
+.branch-selector-address {
+  @apply text-xs;
+  color: var(--text-secondary);
+}
+
+.branch-selector-phone {
+  @apply text-xs;
+  color: var(--text-tertiary);
+}
+
+.branch-selector-badges {
+  @apply flex items-center gap-2 flex-shrink-0;
+}
+
+.branch-badge {
+  @apply text-[10px] font-medium px-2 py-0.5 rounded-full;
+}
+
+.branch-badge-oil {
+  @apply bg-amber-100 text-amber-700;
+}
+
+:host-context(.dark) .branch-badge-oil {
+  @apply bg-amber-900/30 text-amber-400;
+}
+
+.branch-check-icon {
+  @apply w-6 h-6;
+  color: var(--accent-primary);
+}
+
+// ============================================
+// VEHICLE SUMMARY
+// ============================================
+.vehicle-summary-card {
+  @apply flex flex-col gap-2 p-4 rounded-lg;
+  background-color: var(--bg-secondary);
+}
+
+.vehicle-summary-main {
+  @apply flex items-center justify-between;
+}
+
+.vehicle-summary-name {
+  @apply font-semibold text-sm;
+  color: var(--text-primary);
+}
+
+.vehicle-summary-plate {
+  @apply text-xs font-mono font-bold px-2 py-0.5 rounded;
+  background-color: var(--bg-tertiary, var(--bg-primary));
+  color: var(--text-secondary);
+}
+
+.vehicle-summary-details {
+  @apply flex flex-wrap gap-x-4 gap-y-1 text-xs;
+  color: var(--text-secondary);
+}
+
+.vehicle-missing-warning {
+  @apply flex items-center gap-3 p-4 rounded-lg text-sm;
+  background-color: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  color: rgb(180, 120, 10);
+
+  svg {
+    @apply w-5 h-5 flex-shrink-0;
+    color: rgb(245, 158, 11);
+  }
+}
+
+:host-context(.dark) .vehicle-missing-warning {
+  background-color: rgba(245, 158, 11, 0.1);
+  color: #fbbf24;
+}
+
+// ============================================
+// IN-STORE OIL CHANGE NOTICE
+// ============================================
+.in-store-oil-notice {
+  @apply text-sm mt-3 p-3 rounded-lg text-center;
+  background-color: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  color: var(--text-secondary);
+}
+
+// ============================================
 // PAYMENT METHODS SELECTION
 // ============================================
 .payment-methods-hint {

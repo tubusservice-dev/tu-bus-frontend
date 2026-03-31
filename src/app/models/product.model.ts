@@ -127,6 +127,8 @@ export interface Product {
   isCombo: boolean;
   freeOilChangeService: boolean;
   createdAt: Date;
+  /** Aggregated stock across zone branches (present when branchIds filter used) */
+  totalStock?: number;
 }
 
 /**

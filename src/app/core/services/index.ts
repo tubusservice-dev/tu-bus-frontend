@@ -21,3 +21,4 @@ export * from './payment.service';
 export * from './admin-notification.service';
 export * from './mechanic.service';
 export * from './payment-method.service';
+export * from './location.service';

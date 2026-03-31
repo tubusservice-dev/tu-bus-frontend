@@ -1,7 +1,7 @@
 <div class="orders-container">
   <div class="orders-header">
     <h2 class="orders-title">Mis Pedidos</h2>
-    <p class="orders-subtitle">Historial y seguimiento de tus órdenes</p>
+    <p class="orders-subtitle">Historial y seguimiento de tus ordenes</p>
   </div>
 
   @if (orderService.isLoading()) {
@@ -14,11 +14,10 @@
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor" class="empty-icon">
         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" />
       </svg>
-      <h3>No tienes pedidos aún</h3>
-      <p>Tus órdenes aparecerán aquí después de tu primera compra</p>
+      <h3>No tienes pedidos aun</h3>
+      <p>Tus ordenes apareceran aqui despues de tu primera compra</p>
     </div>
   } @else {
-    <!-- Lista de órdenes -->
     <div class="orders-list">
       @for (order of orderService.orders(); track order.id) {
         <div class="order-card" (click)="viewDetail(order)">
@@ -31,14 +30,13 @@
               {{ getStatusLabel(order.status) }}
             </span>
           </div>
-
           <div class="order-card-body">
             <div class="order-items-preview">
               @for (item of order.items.slice(0, 3); track item.product) {
                 <span class="item-name">{{ item.name }} x{{ item.quantity }}</span>
               }
               @if (order.items.length > 3) {
-                <span class="more-items">+{{ order.items.length - 3 }} más</span>
+                <span class="more-items">+{{ order.items.length - 3 }} mas</span>
               }
             </div>
             <div class="order-meta">
@@ -52,14 +50,14 @@
   }
 
   <!-- Modal de detalle -->
-  @if (selectedOrder()) {
+  @if (selectedOrder(); as order) {
     <div class="modal-overlay" (click)="closeDetail()">
       <div class="modal-content" (click)="$event.stopPropagation()">
         <div class="modal-header">
           <div>
-            <h3 class="modal-title">Orden {{ selectedOrder()!.orderNumber }}</h3>
-            <span class="status-badge" [ngClass]="getStatusClass(selectedOrder()!.status)">
-              {{ getStatusLabel(selectedOrder()!.status) }}
+            <h3 class="modal-title">Orden {{ order.orderNumber }}</h3>
+            <span class="status-badge" [ngClass]="getStatusClass(order.status)">
+              {{ getStatusLabel(order.status) }}
             </span>
           </div>
           <button type="button" class="modal-close" (click)="closeDetail()">
@@ -67,61 +65,250 @@
           </button>
         </div>
 
-        <div class="modal-body">
-          <!-- Productos -->
-          <div class="detail-section">
-            <h4>Productos</h4>
-            @for (item of selectedOrder()!.items; track item.product) {
-              <div class="detail-item">
-                @if (item.image) {
-                  <img [src]="item.image" [alt]="item.name" class="item-image" />
-                }
-                <div class="item-info">
-                  <span class="item-name-detail">{{ item.name }}</span>
-                  <span class="item-qty">Cant: {{ item.quantity }} x {{ item.price | currency:'USD' }}</span>
-                </div>
-                <span class="item-total">{{ item.price * item.quantity | currency:'USD' }}</span>
-              </div>
-            }
-          </div>
-
-          <!-- Totales -->
-          <div class="detail-section totals">
-            <div class="total-row"><span>Subtotal</span><span>{{ selectedOrder()!.subtotal | currency:'USD' }}</span></div>
-            <div class="total-row"><span>Envío</span><span>{{ selectedOrder()!.shippingCost | currency:'USD' }}</span></div>
-            <div class="total-row total-final"><span>Total</span><span>{{ selectedOrder()!.total | currency:'USD' }}</span></div>
-          </div>
-
-          <!-- Timeline -->
-          @if (selectedOrder()!.statusHistory.length > 0) {
+        @if (isLoadingDetail()) {
+          <div class="loading-state"><div class="spinner"></div><p>Cargando detalles...</p></div>
+        } @else {
+          <div class="modal-body">
+            <!-- Productos -->
             <div class="detail-section">
-              <h4>Historial</h4>
-              <div class="timeline">
-                @for (entry of selectedOrder()!.statusHistory; track entry.timestamp) {
-                  <div class="timeline-entry">
-                    <div class="timeline-dot"></div>
-                    <div class="timeline-content">
-                      <span class="timeline-status">{{ getStatusLabel(entry.status) }}</span>
-                      <span class="timeline-date">{{ formatDate(entry.timestamp) }}</span>
-                      @if (entry.note) {
-                        <span class="timeline-note">{{ entry.note }}</span>
-                      }
-                    </div>
+              <h4>Productos</h4>
+              @for (item of order.items; track item.product) {
+                <div class="detail-item">
+                  @if (item.image) {
+                    <img [src]="item.image" [alt]="item.name" class="item-image" />
+                  }
+                  <div class="item-info">
+                    <span class="item-name-detail">{{ item.name }}</span>
+                    <span class="item-qty">Cant: {{ item.quantity }} x {{ item.price | currency:'USD' }}</span>
+                  </div>
+                  <span class="item-total">{{ item.price * item.quantity | currency:'USD' }}</span>
+                </div>
+              }
+            </div>
+
+            <!-- Totales -->
+            <div class="detail-section totals">
+              <div class="total-row"><span>Subtotal</span><span>{{ order.subtotal | currency:'USD' }}</span></div>
+              <div class="total-row"><span>Envio</span><span>{{ order.shippingCost | currency:'USD' }}</span></div>
+              <div class="total-row total-final"><span>Total</span><span>{{ order.total | currency:'USD' }}</span></div>
+            </div>
+
+            <!-- Despacho -->
+            <div class="detail-section">
+              <h4>Despacho</h4>
+              <div class="detail-info-grid">
+                <div class="info-row">
+                  <span class="info-label">Tipo</span>
+                  <span class="info-value">{{ getDispatchLabel(order.dispatchType) }}</span>
+                </div>
+                @if (order.dispatchDetails.selectedBranchName) {
+                  <div class="info-row">
+                    <span class="info-label">Sucursal</span>
+                    <span class="info-value">{{ order.dispatchDetails.selectedBranchName }}</span>
+                  </div>
+                }
+                @if (order.dispatchDetails.selectedBranchAddress) {
+                  <div class="info-row">
+                    <span class="info-label">Direccion</span>
+                    <span class="info-value">{{ order.dispatchDetails.selectedBranchAddress }}</span>
+                  </div>
+                }
+                @if (order.dispatchDetails.agencyName) {
+                  <div class="info-row">
+                    <span class="info-label">Agencia</span>
+                    <span class="info-value">{{ order.dispatchDetails.agencyName }}</span>
+                  </div>
+                }
+                @if (order.dispatchDetails.recipientName) {
+                  <div class="info-row">
+                    <span class="info-label">Destinatario</span>
+                    <span class="info-value">{{ order.dispatchDetails.recipientName }}</span>
+                  </div>
+                }
+                @if (order.dispatchDetails.recipientPhone) {
+                  <div class="info-row">
+                    <span class="info-label">Telefono</span>
+                    <span class="info-value">{{ order.dispatchDetails.recipientPhone }}</span>
+                  </div>
+                }
+                @if (order.dispatchDetails.recipientAddress) {
+                  <div class="info-row">
+                    <span class="info-label">Direccion envio</span>
+                    <span class="info-value">{{ order.dispatchDetails.recipientAddress }}</span>
+                  </div>
+                }
+                @if (order.dispatchDetails.recipientCity || order.dispatchDetails.recipientState) {
+                  <div class="info-row">
+                    <span class="info-label">Ubicacion</span>
+                    <span class="info-value">
+                      {{ order.dispatchDetails.recipientMunicipality ? order.dispatchDetails.recipientMunicipality + ', ' : '' }}{{ order.dispatchDetails.recipientCity }}{{ order.dispatchDetails.recipientState ? ', ' + order.dispatchDetails.recipientState : '' }}
+                    </span>
+                  </div>
+                }
+                @if (order.dispatchDetails.referencePoint) {
+                  <div class="info-row">
+                    <span class="info-label">Referencia</span>
+                    <span class="info-value">{{ order.dispatchDetails.referencePoint }}</span>
                   </div>
                 }
               </div>
             </div>
-          }
 
-          <!-- Acción cancelar -->
-          @if (selectedOrder()!.status === 'pending') {
-            <div class="detail-actions">
-              <button type="button" class="btn btn-danger" (click)="cancelOrder(selectedOrder()!); closeDetail()">
-                Cancelar Orden
-              </button>
+            <!-- Vehiculo -->
+            @if (order.vehicle) {
+              <div class="detail-section">
+                <h4>Vehiculo</h4>
+                <div class="vehicle-detail-card">
+                  <span>{{ getVehicleLabel(order.vehicle) }}</span>
+                </div>
+              </div>
+            }
+
+            <!-- Pago -->
+            <div class="detail-section">
+              <div class="section-header-row">
+                <h4>Datos del Pago</h4>
+                @if (canEditPayment && !isEditingPayment()) {
+                  <button type="button" class="btn-edit-payment" (click)="startEditingPayment()">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Z" />
+                    </svg>
+                    Editar
+                  </button>
+                }
+              </div>
+
+              @if (paymentEditSuccess()) {
+                <div class="alert-success">{{ paymentEditSuccess() }}</div>
+              }
+
+              @if (!isEditingPayment()) {
+                <!-- Payment read-only view -->
+                @if (order.paymentSubmission) {
+                  <div class="detail-info-grid">
+                    <div class="info-row">
+                      <span class="info-label">Metodo</span>
+                      <span class="info-value">{{ order.paymentSubmission.methodLabel }}</span>
+                    </div>
+                    @if (order.paymentSubmission.referenceNumber) {
+                      <div class="info-row">
+                        <span class="info-label">Referencia</span>
+                        <span class="info-value">{{ order.paymentSubmission.referenceNumber }}</span>
+                      </div>
+                    }
+                    @if (order.paymentSubmission.sourceBank) {
+                      <div class="info-row">
+                        <span class="info-label">Banco</span>
+                        <span class="info-value">{{ order.paymentSubmission.sourceBank }}</span>
+                      </div>
+                    }
+                    @if (order.paymentSubmission.amount) {
+                      <div class="info-row">
+                        <span class="info-label">Monto</span>
+                        <span class="info-value">{{ getCurrencySymbol(order.paymentSubmission.methodType) }} {{ order.paymentSubmission.amount }}</span>
+                      </div>
+                    }
+                    @if (order.paymentSubmission.paymentDate) {
+                      <div class="info-row">
+                        <span class="info-label">Fecha pago</span>
+                        <span class="info-value">{{ order.paymentSubmission.paymentDate }}</span>
+                      </div>
+                    }
+                    @if (order.paymentSubmission.notes) {
+                      <div class="info-row">
+                        <span class="info-label">Notas</span>
+                        <span class="info-value">{{ order.paymentSubmission.notes }}</span>
+                      </div>
+                    }
+                  </div>
+                } @else {
+                  <p class="no-payment-text">No se han registrado datos de pago.</p>
+                }
+              } @else {
+                <!-- Payment edit form -->
+                <div class="payment-edit-form">
+                  @if (paymentEditError()) {
+                    <div class="alert-error">{{ paymentEditError() }}</div>
+                  }
+                  <div class="form-row">
+                    <label>Numero de referencia</label>
+                    <input type="text" [value]="editReferenceNumber()" (input)="onPaymentFieldChange('referenceNumber', $event)" placeholder="Ej: 00001234567" />
+                  </div>
+                  <div class="form-row">
+                    <label>Banco emisor</label>
+                    <select [value]="editSourceBank()" (change)="onPaymentFieldChange('sourceBank', $event)">
+                      <option value="">Seleccionar banco...</option>
+                      @for (bank of venezuelanBanks; track bank) {
+                        <option [value]="bank">{{ bank }}</option>
+                      }
+                    </select>
+                  </div>
+                  <div class="form-row">
+                    <label>Monto</label>
+                    <input type="number" [value]="editAmount()" (input)="onPaymentFieldChange('amount', $event)" step="0.01" min="0" placeholder="0.00" />
+                  </div>
+                  <div class="form-row">
+                    <label>Fecha de pago</label>
+                    <input type="date" [value]="editPaymentDate()" (input)="onPaymentFieldChange('paymentDate', $event)" />
+                  </div>
+                  <div class="form-row">
+                    <label>Comprobante de pago</label>
+                    @if (editProofPreview()) {
+                      <div class="proof-preview">
+                        <img [src]="editProofPreview()" alt="Comprobante" />
+                        <button type="button" class="proof-remove" (click)="removeProofFile()">
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+                        </button>
+                      </div>
+                    } @else {
+                      <label class="proof-upload-label">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" /></svg>
+                        <span>Subir imagen del comprobante</span>
+                        <input type="file" accept="image/*" (change)="onProofFileChange($event)" class="sr-only" />
+                      </label>
+                    }
+                  </div>
+                  <div class="payment-edit-actions">
+                    <button type="button" class="btn btn-cancel-edit" (click)="cancelEditingPayment()" [disabled]="isSavingPayment()">Cancelar</button>
+                    <button type="button" class="btn btn-save-payment" (click)="savePayment()" [disabled]="isSavingPayment()">
+                      @if (isSavingPayment()) { Guardando... } @else { Guardar Cambios }
+                    </button>
+                  </div>
+                </div>
+              }
             </div>
-          }
-        </div>
+
+            <!-- Timeline -->
+            @if (order.statusHistory && order.statusHistory.length > 0) {
+              <div class="detail-section">
+                <h4>Historial</h4>
+                <div class="timeline">
+                  @for (entry of order.statusHistory; track entry.timestamp) {
+                    <div class="timeline-entry">
+                      <div class="timeline-dot"></div>
+                      <div class="timeline-content">
+                        <span class="timeline-status">{{ getStatusLabel(entry.status) }}</span>
+                        <span class="timeline-date">{{ formatDate(entry.timestamp) }}</span>
+                        @if (entry.note) {
+                          <span class="timeline-note">{{ entry.note }}</span>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- Cancelar -->
+            @if (order.status === 'pending') {
+              <div class="detail-actions">
+                <button type="button" class="btn btn-danger" (click)="cancelOrder(order)">
+                  Cancelar Orden
+                </button>
+              </div>
+            }
+          </div>
+        }
       </div>
     </div>
   }

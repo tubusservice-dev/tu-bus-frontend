@@ -2,10 +2,12 @@ import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 import { CheckoutService, LocalDeliveryRecipientInfo } from '../services/checkout.service';
 import { CartService } from '../../../core/services/cart.service';
-import { ZoneService } from '../../../core/services/zone.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { LocationService } from '../../../core/services/location.service';
+import { BranchZoneService } from '../../../core/services/branch-zone.service';
 
 @Component({
   selector: 'app-checkout-local-delivery-form',
@@ -17,13 +19,15 @@ import { AuthService } from '../../../core/services/auth.service';
 export class CheckoutLocalDeliveryFormComponent implements OnInit {
   protected readonly checkoutService = inject(CheckoutService);
   protected readonly cartService = inject(CartService);
-  protected readonly zoneService = inject(ZoneService);
   protected readonly authService = inject(AuthService);
+  private readonly locationService = inject(LocationService);
+  private readonly branchZoneService = inject(BranchZoneService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
 
   protected deliveryForm!: FormGroup;
   protected readonly branchCities = signal<{ code: string; name: string }[]>([]);
+  protected readonly allMunicipalities = signal<{ name: string; slug: string; citySlug: string }[]>([]);
   protected readonly availableMunicipalities = signal<{ code: string; name: string }[]>([]);
   protected readonly selectedCityName = signal('');
   protected readonly lockedFields = signal<Record<string, boolean>>({});
@@ -63,7 +67,38 @@ export class CheckoutLocalDeliveryFormComponent implements OnInit {
   }
 
   private loadBranchZones(): void {
-    // TODO: Refactor — branch.serviceZones removed. Delivery zones now come from BranchZone pivot.
+    const branches = this.locationService.branches();
+    if (branches.length === 0) return;
+
+    const requests = branches.map((b) => this.branchZoneService.getByBranch(b.id));
+
+    forkJoin(requests).subscribe({
+      next: (responses) => {
+        const cityMap = new Map<string, { code: string; name: string }>();
+        const muniList: { name: string; slug: string; citySlug: string }[] = [];
+
+        for (const res of responses) {
+          for (const bz of (res as any).data || []) {
+            const zone = bz.zone as any;
+            const city = zone?.city as any;
+            if (!city) continue;
+
+            cityMap.set(city.slug, { code: city.slug, name: city.name });
+
+            for (const dc of bz.deliveryConfig) {
+              if (!dc.hasDelivery) continue;
+              const muni = city.municipalities?.find((m: any) => m.slug === dc.municipality);
+              if (muni && !muniList.some((m) => m.slug === muni.slug && m.citySlug === city.slug)) {
+                muniList.push({ name: muni.name, slug: muni.slug, citySlug: city.slug });
+              }
+            }
+          }
+        }
+
+        this.branchCities.set(Array.from(cityMap.values()));
+        this.allMunicipalities.set(muniList);
+      },
+    });
   }
 
   private loadSavedData(): void {
@@ -91,7 +126,6 @@ export class CheckoutLocalDeliveryFormComponent implements OnInit {
         error: () => this.prefillFromUserProfile(),
       });
 
-      // TODO: Refactor — zoneService.selectedZone() no longer exists
     }
   }
 
@@ -133,8 +167,32 @@ export class CheckoutLocalDeliveryFormComponent implements OnInit {
       locked['email'] = true;
     }
 
-    // TODO: Refactor — branch.serviceZones removed. Cannot check branch coverage.
-    // Address prefill from user profile disabled until BranchZone pivot is integrated.
+    // Prefill address if user profile location is within coverage
+    if (user.cityCode && user.municipalityCode) {
+      const muniMatch = this.allMunicipalities().find(
+        (m) => m.slug === user.municipalityCode && m.citySlug === user.cityCode
+      );
+      if (muniMatch) {
+        this.onCityChange(user.cityCode);
+        this.deliveryForm.patchValue({ cityCode: user.cityCode, municipalityCode: user.municipalityCode });
+        this.deliveryForm.get('cityCode')?.disable();
+        this.deliveryForm.get('municipalityCode')?.disable();
+        locked['cityCode'] = true;
+        locked['municipalityCode'] = true;
+
+        const addressParts = [user.street, user.houseNumber, user.neighborhood].filter(Boolean);
+        if (addressParts.length > 0) {
+          this.deliveryForm.patchValue({ address: addressParts.join(', ') });
+          this.deliveryForm.get('address')?.disable();
+          locked['address'] = true;
+        }
+        if (user.referencePoint) {
+          this.deliveryForm.patchValue({ referencePoint: user.referencePoint });
+          this.deliveryForm.get('referencePoint')?.disable();
+          locked['referencePoint'] = true;
+        }
+      }
+    }
 
     this.lockedFields.set(locked);
   }
@@ -194,9 +252,12 @@ export class CheckoutLocalDeliveryFormComponent implements OnInit {
   }
 
   onCityChange(cityCode: string): void {
-    // TODO: Refactor — branch.serviceZones removed. Use BranchZone pivot for municipalities.
-    this.availableMunicipalities.set([]);
-    this.selectedCityName.set('');
+    const munis = this.allMunicipalities()
+      .filter((m) => m.citySlug === cityCode)
+      .map((m) => ({ code: m.slug, name: m.name }));
+    this.availableMunicipalities.set(munis);
+    const city = this.branchCities().find((c) => c.code === cityCode);
+    this.selectedCityName.set(city?.name || '');
     this.deliveryForm.patchValue({ municipalityCode: '' });
   }
 

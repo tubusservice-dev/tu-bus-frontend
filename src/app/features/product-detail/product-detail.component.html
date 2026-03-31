@@ -133,14 +133,25 @@
           </div>
         </div>
 
-        <!-- Stock — TODO: stock is now per-branch via BranchProduct -->
+        <!-- Stock -->
         <div class="stock-info">
+          @if (isLoadingStock()) {
+            <span class="stock-loading">Verificando stock...</span>
+          } @else if (isOutOfStock()) {
+            <span class="out-of-stock-label">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
+              </svg>
+              Agotado
+            </span>
+          } @else {
             <span class="in-stock">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
               </svg>
-              Disponible
+              Disponible ({{ productStock() }} unidades)
             </span>
+          }
         </div>
 
         <!-- Info cantidad en carrito -->

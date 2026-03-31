@@ -14,20 +14,10 @@
 
     <!-- Tabs -->
     <div class="tabs">
-      <button
-        type="button"
-        class="tab"
-        [class.active]="mode() === 'login'"
-        (click)="switchMode('login')"
-      >
+      <button type="button" class="tab" [class.active]="mode() === 'login'" (click)="switchMode('login')">
         Iniciar Sesión
       </button>
-      <button
-        type="button"
-        class="tab"
-        [class.active]="mode() === 'register'"
-        (click)="switchMode('register')"
-      >
+      <button type="button" class="tab" [class.active]="mode() === 'register'" (click)="switchMode('register')">
         Registrarse
       </button>
     </div>
@@ -54,19 +44,12 @@
         </div>
       }
 
-      <!-- Formulario de Login -->
+      <!-- ========== LOGIN ========== -->
       @if (mode() === 'login') {
         <form [formGroup]="loginForm" (ngSubmit)="onLogin()" class="auth-form">
           <div class="form-group">
             <label for="login-email" class="form-label">Correo Electrónico</label>
-            <input
-              type="email"
-              id="login-email"
-              formControlName="email"
-              class="form-input"
-              [class.error]="hasError(loginForm, 'email')"
-              placeholder="tu@email.com"
-            />
+            <input type="email" id="login-email" formControlName="email" class="form-input" [class.error]="hasError(loginForm, 'email')" placeholder="tu@email.com" />
             @if (hasError(loginForm, 'email')) {
               <span class="field-error">{{ getErrorMessage(loginForm, 'email') }}</span>
             }
@@ -74,27 +57,15 @@
 
           <div class="form-group">
             <label for="login-password" class="form-label">Contraseña</label>
-            <input
-              type="password"
-              id="login-password"
-              formControlName="password"
-              class="form-input"
-              [class.error]="hasError(loginForm, 'password')"
-              placeholder="••••••••"
-            />
+            <input type="password" id="login-password" formControlName="password" class="form-input" [class.error]="hasError(loginForm, 'password')" placeholder="••••••••" />
             @if (hasError(loginForm, 'password')) {
               <span class="field-error">{{ getErrorMessage(loginForm, 'password') }}</span>
             }
           </div>
 
-          <button
-            type="submit"
-            class="submit-btn"
-            [disabled]="isLoading()"
-          >
+          <button type="submit" class="submit-btn" [disabled]="isLoading()">
             @if (isLoading()) {
-              <span class="spinner"></span>
-              Iniciando sesión...
+              <span class="spinner"></span> Iniciando sesión...
             } @else {
               Iniciar Sesión
             }
@@ -102,99 +73,151 @@
         </form>
       }
 
-      <!-- Formulario de Registro -->
+      <!-- ========== REGISTER (Stepper) ========== -->
       @if (mode() === 'register') {
-        <form [formGroup]="registerForm" (ngSubmit)="onRegister()" class="auth-form">
-          <div class="form-row">
-            <div class="form-group">
-              <label for="register-firstName" class="form-label">Nombre</label>
-              <input
-                type="text"
-                id="register-firstName"
-                formControlName="firstName"
-                class="form-input"
-                [class.error]="hasError(registerForm, 'firstName')"
-                placeholder="Juan"
-              />
-              @if (hasError(registerForm, 'firstName')) {
-                <span class="field-error">{{ getErrorMessage(registerForm, 'firstName') }}</span>
+        <!-- Step indicator (fixed 2 steps) -->
+        <div class="stepper-indicator">
+          <div class="step-item">
+            <div class="step-circle" [class.active]="currentStep() === 1" [class.completed]="currentStep() > 1">
+              @if (currentStep() > 1) {
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
+              } @else {
+                1
               }
             </div>
-
-            <div class="form-group">
-              <label for="register-lastName" class="form-label">Apellido</label>
-              <input
-                type="text"
-                id="register-lastName"
-                formControlName="lastName"
-                class="form-input"
-                [class.error]="hasError(registerForm, 'lastName')"
-                placeholder="Pérez"
-              />
-              @if (hasError(registerForm, 'lastName')) {
-                <span class="field-error">{{ getErrorMessage(registerForm, 'lastName') }}</span>
-              }
+            <div class="step-line" [class.completed]="currentStep() > 1"></div>
+          </div>
+          <div class="step-item">
+            <div class="step-circle" [class.active]="currentStep() === 2">
+              2
             </div>
           </div>
+        </div>
 
-          <div class="form-group">
-            <label for="register-email" class="form-label">Correo Electrónico</label>
-            <input
-              type="email"
-              id="register-email"
-              formControlName="email"
-              class="form-input"
-              [class.error]="hasError(registerForm, 'email')"
-              placeholder="tu@email.com"
-            />
-            @if (hasError(registerForm, 'email')) {
-              <span class="field-error">{{ getErrorMessage(registerForm, 'email') }}</span>
+        <div class="auth-form">
+
+          <!-- Step 1: Credentials -->
+          @if (currentStep() === 1) {
+            <div [formGroup]="step1Form">
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Nombre</label>
+                  <input type="text" formControlName="firstName" class="form-input" [class.error]="hasError(step1Form, 'firstName')" placeholder="Juan" />
+                  @if (hasError(step1Form, 'firstName')) {
+                    <span class="field-error">{{ getErrorMessage(step1Form, 'firstName') }}</span>
+                  }
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Apellido</label>
+                  <input type="text" formControlName="lastName" class="form-input" [class.error]="hasError(step1Form, 'lastName')" placeholder="Pérez" />
+                  @if (hasError(step1Form, 'lastName')) {
+                    <span class="field-error">{{ getErrorMessage(step1Form, 'lastName') }}</span>
+                  }
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Correo Electrónico</label>
+                <input type="email" formControlName="email" class="form-input" [class.error]="hasError(step1Form, 'email')" placeholder="tu@email.com" />
+                @if (hasError(step1Form, 'email')) {
+                  <span class="field-error">{{ getErrorMessage(step1Form, 'email') }}</span>
+                }
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Contraseña</label>
+                <input type="password" formControlName="password" class="form-input" [class.error]="hasError(step1Form, 'password')" placeholder="••••••••" />
+                @if (hasError(step1Form, 'password')) {
+                  <span class="field-error">{{ getErrorMessage(step1Form, 'password') }}</span>
+                }
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Confirmar Contraseña</label>
+                <input type="password" formControlName="confirmPassword" class="form-input" [class.error]="hasError(step1Form, 'confirmPassword')" placeholder="••••••••" />
+                @if (hasError(step1Form, 'confirmPassword')) {
+                  <span class="field-error">{{ getErrorMessage(step1Form, 'confirmPassword') }}</span>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Step 2: Identity & Contact -->
+          @if (currentStep() === 2) {
+            <div [formGroup]="step2Form">
+              <div class="form-row form-row-doc">
+                <div class="form-group">
+                  <label class="form-label">Tipo</label>
+                  <select formControlName="documentType" class="form-input form-select" [class.error]="hasError(step2Form, 'documentType')">
+                    <option value="" disabled>Tipo</option>
+                    <option value="V">V - Venezolano</option>
+                    <option value="E">E - Extranjero</option>
+                    <option value="J">J - Jurídico</option>
+                    <option value="P">P - Pasaporte</option>
+                    <option value="G">G - Gubernamental</option>
+                  </select>
+                  @if (hasError(step2Form, 'documentType')) {
+                    <span class="field-error">{{ getErrorMessage(step2Form, 'documentType') }}</span>
+                  }
+                </div>
+                <div class="form-group">
+                  <label class="form-label">N. Documento</label>
+                  <input type="text" formControlName="documentNumber" class="form-input" [class.error]="hasError(step2Form, 'documentNumber')" [placeholder]="getDocNumberPlaceholder()" />
+                  @if (hasError(step2Form, 'documentNumber')) {
+                    <span class="field-error">{{ getErrorMessage(step2Form, 'documentNumber') }}</span>
+                  }
+                </div>
+              </div>
+
+              @if (step2Form.get('documentType')?.value && step2Form.get('documentType')?.value !== 'J') {
+                <div class="form-group">
+                  <label class="form-label">Fecha de Nacimiento</label>
+                  <input type="date" formControlName="birthDate" class="form-input" [class.error]="hasError(step2Form, 'birthDate')" />
+                  @if (hasError(step2Form, 'birthDate')) {
+                    <span class="field-error">{{ getErrorMessage(step2Form, 'birthDate') }}</span>
+                  }
+                </div>
+              }
+
+              @if (isJuridical()) {
+                <div class="form-group">
+                  <label class="form-label">Razón Social</label>
+                  <input type="text" formControlName="companyName" class="form-input" [class.error]="hasError(step2Form, 'companyName')" placeholder="Nombre de la empresa" />
+                  @if (hasError(step2Form, 'companyName')) {
+                    <span class="field-error">{{ getErrorMessage(step2Form, 'companyName') }}</span>
+                  }
+                </div>
+              }
+
+              <div class="form-group">
+                <label class="form-label">Teléfono</label>
+                <input type="tel" formControlName="phone" class="form-input" [class.error]="hasError(step2Form, 'phone')" placeholder="04121234567" />
+                @if (hasError(step2Form, 'phone')) {
+                  <span class="field-error">{{ getErrorMessage(step2Form, 'phone') }}</span>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Navigation -->
+          <div class="stepper-nav">
+            @if (currentStep() > 1) {
+              <button type="button" class="back-btn" (click)="prevStep()">Anterior</button>
+            }
+            @if (currentStep() === 1) {
+              <button type="button" class="submit-btn" (click)="nextStep()">Siguiente</button>
+            }
+            @if (currentStep() === 2) {
+              <button type="button" class="submit-btn" [disabled]="isLoading()" (click)="onRegister()">
+                @if (isLoading()) {
+                  <span class="spinner"></span> Registrando...
+                } @else {
+                  Crear Cuenta
+                }
+              </button>
             }
           </div>
-
-          <div class="form-group">
-            <label for="register-password" class="form-label">Contraseña</label>
-            <input
-              type="password"
-              id="register-password"
-              formControlName="password"
-              class="form-input"
-              [class.error]="hasError(registerForm, 'password')"
-              placeholder="••••••••"
-            />
-            @if (hasError(registerForm, 'password')) {
-              <span class="field-error">{{ getErrorMessage(registerForm, 'password') }}</span>
-            }
-          </div>
-
-          <div class="form-group">
-            <label for="register-confirmPassword" class="form-label">Confirmar Contraseña</label>
-            <input
-              type="password"
-              id="register-confirmPassword"
-              formControlName="confirmPassword"
-              class="form-input"
-              [class.error]="hasError(registerForm, 'confirmPassword')"
-              placeholder="••••••••"
-            />
-            @if (hasError(registerForm, 'confirmPassword')) {
-              <span class="field-error">{{ getErrorMessage(registerForm, 'confirmPassword') }}</span>
-            }
-          </div>
-
-          <button
-            type="submit"
-            class="submit-btn"
-            [disabled]="isLoading()"
-          >
-            @if (isLoading()) {
-              <span class="spinner"></span>
-              Registrando...
-            } @else {
-              Crear Cuenta
-            }
-          </button>
-        </form>
+        </div>
       }
 
       <!-- Separador -->
@@ -213,7 +236,6 @@
           </svg>
           Google
         </button>
-
       </div>
     </div>
   </div>

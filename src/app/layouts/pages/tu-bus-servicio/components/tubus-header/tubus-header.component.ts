@@ -5,7 +5,9 @@ import { ThemeToggleComponent } from '../../../../../shared/components/theme-tog
 import { UserMenuComponent } from '../../../../../shared/components/user-menu/user-menu.component';
 import { CartPopoverComponent } from '../../../../../shared/components/cart-popover/cart-popover.component';
 import { AuthModalComponent } from '../../../../../shared/components/auth-modal/auth-modal.component';
-import { AuthService, ZoneService } from '../../../../../core/services';
+import { ZoningModalComponent } from '../../../../../shared/components/zoning-modal/zoning-modal.component';
+import { AuthService } from '../../../../../core/services';
+import { LocationService } from '../../../../../core/services/location.service';
 import { CartService } from '../../../../../core/services/cart.service';
 
 @Component({
@@ -17,6 +19,7 @@ import { CartService } from '../../../../../core/services/cart.service';
     UserMenuComponent,
     CartPopoverComponent,
     AuthModalComponent,
+    ZoningModalComponent,
   ],
   templateUrl: './tubus-header.component.html',
   styleUrl: './tubus-header.component.scss'
@@ -24,24 +27,27 @@ import { CartService } from '../../../../../core/services/cart.service';
 export class TubusHeaderComponent implements OnInit, OnDestroy {
   protected readonly authService = inject(AuthService);
   private readonly router = inject(Router);
-  protected readonly zoneService = inject(ZoneService);
+  protected readonly locationService = inject(LocationService);
   protected readonly cartService = inject(CartService);
   private routerSub?: Subscription;
 
-  /** Verifica si estamos en la página de perfil */
+  /** Whether we are on the profile page */
   protected readonly isProfilePage = signal(false);
 
-  /** Estado de autenticación desde el servicio */
+  /** Auth state from service */
   protected readonly isLoggedIn = this.authService.isAuthenticated;
 
-  /** Modal de auth controlado por el AuthService */
+  /** Auth modal controlled by AuthService */
   protected readonly isAuthModalOpen = this.authService.authModalOpen;
 
-  /** Modal de confirmación de cambio de zona */
+  /** Zone change confirmation modal */
   protected readonly showZoneConfirm = signal(false);
 
+  /** Zoning modal visibility */
+  protected readonly showZoneModal = signal(false);
+
   constructor() {
-    // Abrir modal automáticamente cuando la sesión expira
+    // Auto-open auth modal when session expires
     effect(() => {
       if (this.authService.sessionExpired()) {
         this.authService.openAuthModal();
@@ -50,12 +56,15 @@ export class TubusHeaderComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    // TODO: Refactor — zoneService.loadCities() no longer exists
+    // Auto-open zone modal if no location selected
+    if (!this.locationService.hasLocation()) {
+      this.showZoneModal.set(true);
+    }
 
-    // Verificar ruta inicial
+    // Check initial route
     this.isProfilePage.set(this.router.url === '/perfil');
 
-    // Escuchar cambios de ruta
+    // Listen for route changes
     this.routerSub = this.router.events
       .pipe(filter((event) => event instanceof NavigationEnd))
       .subscribe((event) => {
@@ -68,38 +77,41 @@ export class TubusHeaderComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Abre el modal de selección de zona
-   * Si hay items en el carrito, muestra confirmación primero
+   * Open zone selection modal.
+   * If cart has items, show confirmation first.
    */
   openZoneModal(): void {
-    // TODO: Refactor — zoneService.clearSelection() no longer exists
     if (this.cartService.totalItems() > 0) {
       this.showZoneConfirm.set(true);
+    } else {
+      this.showZoneModal.set(true);
     }
   }
 
-  /** Confirma cambio de zona y limpia carrito */
+  /** Confirm zone change: clear cart, then open modal */
   confirmZoneChange(): void {
     this.cartService.clearCart();
+    this.locationService.clearLocation();
     this.showZoneConfirm.set(false);
-    // TODO: Refactor — zoneService.clearSelection() no longer exists
+    this.showZoneModal.set(true);
   }
 
-  /** Cancela el cambio de zona */
+  /** Cancel zone change */
   cancelZoneChange(): void {
     this.showZoneConfirm.set(false);
   }
 
-  /**
-   * Abre el modal de autenticación
-   */
+  /** Called when zoning modal closes */
+  onZoneModalClosed(): void {
+    this.showZoneModal.set(false);
+  }
+
+  /** Open auth modal */
   onLoginClick(): void {
     this.authService.openAuthModal();
   }
 
-  /**
-   * Cierra el modal de autenticación
-   */
+  /** Close auth modal */
   closeAuthModal(): void {
     this.authService.closeAuthModal();
   }

@@ -20,6 +20,7 @@ export interface Branch {
   landlinePhone?: string;
   schedule: ScheduleDay[];
   coordinates?: Coordinates;
+  hasInStoreOilChange: boolean;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -33,6 +34,7 @@ export interface CreateBranchRequest {
   landlinePhone?: string;
   schedule: ScheduleDay[];
   coordinates?: Coordinates;
+  hasInStoreOilChange?: boolean;
   isActive?: boolean;
 }
 

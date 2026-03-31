@@ -14,9 +14,11 @@ export interface RegisterRequest {
   password: string;
   firstName: string;
   lastName: string;
-  documentType?: DocumentType;
-  documentNumber?: string;
-  phone?: string;
+  documentType: DocumentType;
+  documentNumber: string;
+  phone: string;
+  birthDate?: string;
+  companyName?: string;
 }
 
 export interface AuthResponse {

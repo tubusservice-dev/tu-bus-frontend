@@ -1,12 +1,22 @@
 import { Injectable, computed, signal, inject } from '@angular/core';
 import { SettingsService } from '../../../core/services/settings.service';
 import { CartService } from '../../../core/services/cart.service';
-import { ZoneService } from '../../../core/services/zone.service';
-import { BranchService } from '../../../core/services/branch.service';
+import { LocationService, BranchSummary } from '../../../core/services/location.service';
 import { ShippingAgency } from '../../../models/product.model';
-import { Branch } from '../../../models/branch.model';
+import { Vehicle } from '../../../models/vehicle.model';
 
-export type DispatchType = 'store_pickup' | 'shipping_agency' | 'local_delivery' | 'seller_agreement' | 'oil_change_service' | null;
+// ============================================
+// TYPES
+// ============================================
+
+export type DispatchType =
+  | 'store_pickup'
+  | 'shipping_agency'
+  | 'local_delivery'
+  | 'seller_agreement'
+  | 'oil_change_service'
+  | 'in_store_oil_change'
+  | null;
 
 export interface DispatchOption {
   id: DispatchType;
@@ -24,7 +34,6 @@ export interface StorePickupInfo {
   additionalInfo?: string;
 }
 
-/** Información del destinatario del envío */
 export interface ShippingRecipientInfo {
   fullName: string;
   documentType: 'V' | 'E' | 'J' | 'P';
@@ -41,7 +50,6 @@ export interface ShippingRecipientInfo {
   notes?: string;
 }
 
-/** Información del destinatario para delivery local */
 export interface LocalDeliveryRecipientInfo {
   fullName: string;
   documentType: 'V' | 'E' | 'J' | 'P';
@@ -58,7 +66,6 @@ export interface LocalDeliveryRecipientInfo {
   notes?: string;
 }
 
-/** Información de contacto para acordar con vendedor */
 export interface SellerAgreementInfo {
   fullName: string;
   documentType: 'V' | 'E' | 'J' | 'P';
@@ -68,7 +75,6 @@ export interface SellerAgreementInfo {
   notes?: string;
 }
 
-/** Información para servicio de cambio de aceite a domicilio */
 export interface OilChangeServiceInfo {
   fullName: string;
   documentType: 'V' | 'E' | 'J' | 'P';
@@ -85,6 +91,22 @@ export interface OilChangeServiceInfo {
   notes?: string;
 }
 
+export interface BillingAddress {
+  source: 'shipping' | 'profile' | 'custom';
+  fullName?: string;
+  documentType?: string;
+  documentNumber?: string;
+  address: string;
+  city: string;
+  municipality?: string;
+  state?: string;
+  referencePoint?: string;
+}
+
+// ============================================
+// STATE
+// ============================================
+
 export interface CheckoutState {
   dispatchType: DispatchType;
   storePickupInfo: StorePickupInfo | null;
@@ -93,6 +115,9 @@ export interface CheckoutState {
   localDeliveryRecipientInfo: LocalDeliveryRecipientInfo | null;
   sellerAgreementInfo: SellerAgreementInfo | null;
   oilChangeServiceInfo: OilChangeServiceInfo | null;
+  selectedVehicle: Vehicle | null;
+  selectedBranch: BranchSummary | null;
+  billingAddress: BillingAddress | null;
   paymentMethod: string | null;
   disclaimerAccepted: boolean;
 }
@@ -105,9 +130,16 @@ const INITIAL_STATE: CheckoutState = {
   localDeliveryRecipientInfo: null,
   sellerAgreementInfo: null,
   oilChangeServiceInfo: null,
+  selectedVehicle: null,
+  selectedBranch: null,
+  billingAddress: null,
   paymentMethod: null,
   disclaimerAccepted: false,
 };
+
+// ============================================
+// SERVICE
+// ============================================
 
 @Injectable({
   providedIn: 'root',
@@ -115,46 +147,20 @@ const INITIAL_STATE: CheckoutState = {
 export class CheckoutService {
   private readonly settingsService = inject(SettingsService);
   private readonly cartService = inject(CartService);
-  private readonly zoneService = inject(ZoneService);
-  private readonly branchService = inject(BranchService);
+  private readonly locationService = inject(LocationService);
   private readonly _state = signal<CheckoutState>(INITIAL_STATE);
 
-  /** Sucursal que atiende la zona del usuario */
-  private readonly _zoneBranch = signal<Branch | null>(null);
-  readonly zoneBranch = this._zoneBranch.asReadonly();
+  // ==================== PUBLIC READONLY STATE ====================
 
-  /** Configuración de delivery del municipio seleccionado (desde la sucursal) */
-  // TODO: ServiceMunicipality removed. DeliveryConfig now comes from BranchZone pivot.
-  private readonly _deliveryConfig = signal<any>(null);
-  readonly deliveryConfig = this._deliveryConfig.asReadonly();
-  private readonly _deliveryConfigLoaded = signal(false);
-
-  /** Estado público de solo lectura */
   readonly state = this._state.asReadonly();
-
-  /** Tipo de despacho seleccionado */
   readonly dispatchType = computed(() => this._state().dispatchType);
-
-  /** Verificar si hay un tipo de despacho seleccionado */
   readonly hasDispatchType = computed(() => this._state().dispatchType !== null);
 
-  /** Configuración de dispatch desde settings */
+  // Dispatch config from admin settings
   private readonly dispatchConfig = computed(() => this.settingsService.dispatchConfig());
 
-  /** Información de la tienda para retiro (desde la sucursal que atiende la zona) */
+  // Store pickup info (from settings fallback)
   readonly storeInfo = computed<StorePickupInfo>(() => {
-    const branch = this._zoneBranch();
-    if (branch) {
-      // Construir horario legible desde el schedule de la sucursal
-      const schedule = this.buildScheduleString(branch.schedule);
-      return {
-        address: branch.address,
-        schedule,
-        phone: branch.whatsappPhone,
-        additionalInfo: branch.name,
-      };
-    }
-    // Fallback a la configuración del admin settings
     const config = this.dispatchConfig();
     return {
       address: config.storePickup.address,
@@ -164,25 +170,16 @@ export class CheckoutService {
     };
   });
 
-  /** Opciones de despacho disponibles (filtradas según configuración de módulos) */
+  // ==================== DISPATCH OPTIONS ====================
+
   readonly dispatchOptions = computed<DispatchOption[]>(() => {
     const config = this.dispatchConfig();
     const modules = config.modules;
     const options: DispatchOption[] = [];
+    const hasCoverage = this.locationService.hasCoverage();
+    const hasOilChange = this.cartService.hasOilChangeService();
 
-    // Servicio de cambio de aceite gratis - primero si aplica
-    if (this.cartService.hasOilChangeService()) {
-      options.push({
-        id: 'oil_change_service',
-        name: 'Servicio de Cambio de Aceite',
-        description: 'Cambio de aceite a domicilio gratis incluido con tu compra',
-        icon: 'oil',
-        price: null,
-        isAvailable: true,
-      });
-    }
-
-    // Retiro en Tienda - solo si está habilitado en módulos
+    // 1. Retiro en Tienda — ALWAYS
     if (modules.storePickup) {
       options.push({
         id: 'store_pickup',
@@ -194,42 +191,66 @@ export class CheckoutService {
       });
     }
 
-    // Agencias de Envío - solo si está habilitado en módulos
-    if (modules.shippingAgency) {
-      options.push({
-        id: 'shipping_agency',
-        name: 'Agencias de Envío',
-        description: 'Envío a través de agencias a nivel nacional',
-        icon: 'truck',
-        price: null,
-        isAvailable: true,
-      });
-    }
-
-    // Delivery Local - habilitado si la sucursal tiene delivery para el municipio del usuario
-    const deliveryMuni = this._deliveryConfig();
-    if (deliveryMuni && deliveryMuni.hasDelivery) {
-      const isFree = deliveryMuni.freeDelivery;
-      const charge = deliveryMuni.deliveryCharge || 0;
+    // 2. Delivery Local — ONLY if coverage AND delivery enabled
+    if (hasCoverage && this.locationService.hasDelivery()) {
+      const dc = this.locationService.deliveryConfig();
+      const isFree = dc?.freeDelivery ?? false;
+      const charge = dc?.deliveryCharge ?? 0;
       options.push({
         id: 'local_delivery',
         name: 'Delivery Local',
         description: isFree
-          ? 'Entrega a domicilio gratis en tu zona de cobertura'
-          : `Entrega a domicilio en tu zona (costo: $${charge.toFixed(2)})`,
+          ? 'Entrega a domicilio gratis en tu zona'
+          : `Entrega a domicilio en tu zona ($${charge.toFixed(2)})`,
         icon: 'bike',
         price: isFree ? null : charge,
         isAvailable: true,
       });
     }
 
-    // Acordar con Vendedor - solo si está habilitado en módulos (visual, no seleccionable)
+    // 3. Envio por Agencia — ALWAYS (user may be in a different state)
+    if (modules.shippingAgency) {
+      options.push({
+        id: 'shipping_agency',
+        name: 'Envio por Agencia',
+        description: 'Envio a traves de agencias a nivel nacional',
+        icon: 'truck',
+        price: null,
+        isAvailable: true,
+      });
+    }
+
+    // 4. Acordar con Vendedor — ALWAYS
     if (modules.sellerAgreement) {
       options.push({
         id: 'seller_agreement',
         name: 'Acordar con Vendedor',
-        description: 'Coordina directamente con nosotros el método de entrega',
+        description: 'Coordina directamente con nosotros el metodo de entrega',
         icon: 'chat',
+        price: null,
+        isAvailable: true,
+      });
+    }
+
+    // 5. Cambio de Aceite a Domicilio — oil combo + coverage
+    if (hasOilChange && hasCoverage) {
+      options.push({
+        id: 'oil_change_service',
+        name: 'Cambio de Aceite a Domicilio',
+        description: 'Servicio de cambio de aceite gratis incluido con tu compra',
+        icon: 'oil',
+        price: null,
+        isAvailable: true,
+      });
+    }
+
+    // 6. Cambio de Aceite en Tienda — oil combo + branch has service
+    if (hasOilChange && this.locationService.hasInStoreOilChange()) {
+      options.push({
+        id: 'in_store_oil_change',
+        name: 'Cambio de Aceite en Tienda',
+        description: 'Lleva tu vehiculo a la sucursal para el cambio de aceite',
+        icon: 'wrench',
         price: null,
         isAvailable: true,
       });
@@ -238,183 +259,110 @@ export class CheckoutService {
     return options;
   });
 
-  /** Agencia de envío seleccionada */
+  // ==================== STATE COMPUTEDS ====================
+
   readonly selectedShippingAgency = computed(() => this._state().selectedShippingAgency);
-
-  /** Información del destinatario (envío por agencia) */
   readonly shippingRecipientInfo = computed(() => this._state().shippingRecipientInfo);
-
-  /** Información del destinatario (delivery local) */
   readonly localDeliveryRecipientInfo = computed(() => this._state().localDeliveryRecipientInfo);
-
-  /** Verificar si hay una agencia seleccionada */
-  readonly hasShippingAgency = computed(() => this._state().selectedShippingAgency !== null);
-
-  /** Verificar si hay información de destinatario completa (envío por agencia) */
-  readonly hasShippingRecipientInfo = computed(() => this._state().shippingRecipientInfo !== null);
-
-  /** Verificar si hay información de destinatario completa (delivery local) */
-  readonly hasLocalDeliveryRecipientInfo = computed(() => this._state().localDeliveryRecipientInfo !== null);
-
-  /** Información de contacto (acordar con vendedor) */
   readonly sellerAgreementInfo = computed(() => this._state().sellerAgreementInfo);
-
-  /** Verificar si hay información de contacto (acordar con vendedor) */
-  readonly hasSellerAgreementInfo = computed(() => this._state().sellerAgreementInfo !== null);
-
-  /** Información del servicio de cambio de aceite */
   readonly oilChangeServiceInfo = computed(() => this._state().oilChangeServiceInfo);
-
-  /** Verificar si hay información del servicio de cambio de aceite */
-  readonly hasOilChangeServiceInfo = computed(() => this._state().oilChangeServiceInfo !== null);
-
-  /** Método de pago seleccionado */
+  readonly selectedVehicle = computed(() => this._state().selectedVehicle);
+  readonly selectedBranch = computed(() => this._state().selectedBranch);
+  readonly billingAddress = computed(() => this._state().billingAddress);
   readonly paymentMethod = computed(() => this._state().paymentMethod);
-
-  /** Verificar si hay un método de pago seleccionado */
-  readonly hasPaymentMethod = computed(() => this._state().paymentMethod !== null);
-
-  /** Disclaimer aceptado */
   readonly disclaimerAccepted = computed(() => this._state().disclaimerAccepted);
 
-  /**
-   * Cargar configuración de delivery desde la sucursal que atiende la zona del usuario
-   */
-  loadDeliveryConfigForZone(): void {
-    // TODO: Refactor — zoneService.selectedZone() and branch.serviceZones removed.
-    // Delivery config now comes from BranchZone pivot.
-    this._zoneBranch.set(null);
-    this._deliveryConfig.set(null);
-    this._deliveryConfigLoaded.set(true);
-  }
+  readonly hasShippingAgency = computed(() => this._state().selectedShippingAgency !== null);
+  readonly hasShippingRecipientInfo = computed(() => this._state().shippingRecipientInfo !== null);
+  readonly hasLocalDeliveryRecipientInfo = computed(() => this._state().localDeliveryRecipientInfo !== null);
+  readonly hasSellerAgreementInfo = computed(() => this._state().sellerAgreementInfo !== null);
+  readonly hasOilChangeServiceInfo = computed(() => this._state().oilChangeServiceInfo !== null);
+  readonly hasVehicle = computed(() => this._state().selectedVehicle !== null);
+  readonly hasBranch = computed(() => this._state().selectedBranch !== null);
+  readonly hasPaymentMethod = computed(() => this._state().paymentMethod !== null);
 
-  /**
-   * Construir string de horario legible desde el schedule de la sucursal
-   */
-  private buildScheduleString(schedule: { dayName: string; openTime: string; closeTime: string; isClosed: boolean }[]): string {
-    if (!schedule || schedule.length === 0) return '';
+  // ==================== DISPATCH ACTIONS ====================
 
-    const openDays = schedule.filter(d => !d.isClosed);
-    if (openDays.length === 0) return 'Cerrado';
-
-    // Agrupar días consecutivos con el mismo horario
-    const groups: { days: string[]; time: string }[] = [];
-    for (const day of openDays) {
-      const time = `${day.openTime} - ${day.closeTime}`;
-      const lastGroup = groups[groups.length - 1];
-      if (lastGroup && lastGroup.time === time) {
-        lastGroup.days.push(day.dayName);
-      } else {
-        groups.push({ days: [day.dayName], time });
-      }
-    }
-
-    return groups.map(g => {
-      const dayRange = g.days.length > 1
-        ? `${g.days[0].substring(0, 3)} a ${g.days[g.days.length - 1].substring(0, 3)}`
-        : g.days[0].substring(0, 3);
-      return `${dayRange}: ${g.time}`;
-    }).join(' | ');
-  }
-
-  /**
-   * Seleccionar tipo de despacho
-   */
   selectDispatchType(type: DispatchType): void {
     this._state.update((state) => ({
       ...state,
       dispatchType: type,
       storePickupInfo: type === 'store_pickup' ? this.storeInfo() : null,
-      // Limpiar datos de envío si cambia el tipo
       selectedShippingAgency: type === 'shipping_agency' ? state.selectedShippingAgency : null,
       shippingRecipientInfo: type === 'shipping_agency' ? state.shippingRecipientInfo : null,
       localDeliveryRecipientInfo: type === 'local_delivery' ? state.localDeliveryRecipientInfo : null,
       sellerAgreementInfo: type === 'seller_agreement' ? state.sellerAgreementInfo : null,
       oilChangeServiceInfo: type === 'oil_change_service' ? state.oilChangeServiceInfo : null,
+      // Preserve vehicle for oil change types
+      selectedVehicle: (type === 'oil_change_service' || type === 'in_store_oil_change')
+        ? state.selectedVehicle : null,
+      // Preserve branch for pickup/in-store types
+      selectedBranch: (type === 'store_pickup' || type === 'in_store_oil_change')
+        ? state.selectedBranch : null,
     }));
   }
 
-  /**
-   * Seleccionar agencia de envío
-   */
   selectShippingAgency(agency: ShippingAgency): void {
-    this._state.update((state) => ({
-      ...state,
-      selectedShippingAgency: agency,
-    }));
+    this._state.update((s) => ({ ...s, selectedShippingAgency: agency }));
   }
 
-  /**
-   * Establecer información del destinatario (envío por agencia)
-   */
   setShippingRecipientInfo(info: ShippingRecipientInfo): void {
-    this._state.update((state) => ({
-      ...state,
-      shippingRecipientInfo: info,
-    }));
+    this._state.update((s) => ({ ...s, shippingRecipientInfo: info }));
   }
 
-  /**
-   * Establecer información del destinatario (delivery local)
-   */
   setLocalDeliveryRecipientInfo(info: LocalDeliveryRecipientInfo): void {
-    this._state.update((state) => ({
-      ...state,
-      localDeliveryRecipientInfo: info,
-    }));
+    this._state.update((s) => ({ ...s, localDeliveryRecipientInfo: info }));
   }
 
-  /**
-   * Establecer información de contacto (acordar con vendedor)
-   */
   setSellerAgreementInfo(info: SellerAgreementInfo): void {
-    this._state.update((state) => ({
-      ...state,
-      sellerAgreementInfo: info,
-    }));
+    this._state.update((s) => ({ ...s, sellerAgreementInfo: info }));
   }
 
-  /**
-   * Establecer información del servicio de cambio de aceite
-   */
   setOilChangeServiceInfo(info: OilChangeServiceInfo): void {
-    this._state.update((state) => ({
-      ...state,
-      oilChangeServiceInfo: info,
-    }));
+    this._state.update((s) => ({ ...s, oilChangeServiceInfo: info }));
   }
 
-  /**
-   * Seleccionar método de pago
-   */
+  selectVehicle(vehicle: Vehicle): void {
+    this._state.update((s) => ({ ...s, selectedVehicle: vehicle }));
+  }
+
+  clearVehicle(): void {
+    this._state.update((s) => ({ ...s, selectedVehicle: null }));
+  }
+
+  selectBranch(branch: BranchSummary): void {
+    this._state.update((s) => ({ ...s, selectedBranch: branch }));
+  }
+
+  clearBranch(): void {
+    this._state.update((s) => ({ ...s, selectedBranch: null }));
+  }
+
+  setBillingAddress(address: BillingAddress): void {
+    this._state.update((s) => ({ ...s, billingAddress: address }));
+  }
+
   selectPaymentMethod(method: string): void {
-    this._state.update((state) => ({ ...state, paymentMethod: method }));
+    this._state.update((s) => ({ ...s, paymentMethod: method }));
   }
 
-  /**
-   * Establecer aceptación del disclaimer
-   */
   setDisclaimerAccepted(accepted: boolean): void {
-    this._state.update((state) => ({ ...state, disclaimerAccepted: accepted }));
+    this._state.update((s) => ({ ...s, disclaimerAccepted: accepted }));
   }
 
-  /**
-   * Limpiar selección de agencia
-   */
+  // ==================== CLEAR / RESET ====================
+
   clearShippingAgency(): void {
-    this._state.update((state) => ({
-      ...state,
+    this._state.update((s) => ({
+      ...s,
       selectedShippingAgency: null,
       shippingRecipientInfo: null,
     }));
   }
 
-  /**
-   * Limpiar selección de despacho
-   */
   clearDispatchType(): void {
-    this._state.update((state) => ({
-      ...state,
+    this._state.update((s) => ({
+      ...s,
       dispatchType: null,
       storePickupInfo: null,
       selectedShippingAgency: null,
@@ -422,56 +370,56 @@ export class CheckoutService {
       localDeliveryRecipientInfo: null,
       sellerAgreementInfo: null,
       oilChangeServiceInfo: null,
+      selectedVehicle: null,
+      selectedBranch: null,
     }));
   }
 
-  /**
-   * Resetear todo el estado del checkout
-   */
   resetCheckout(): void {
     this._state.set(INITIAL_STATE);
   }
 
-  /**
-   * Obtener opción de despacho por ID
-   */
+  // ==================== HELPERS ====================
+
   getDispatchOption(id: DispatchType): DispatchOption | undefined {
     return this.dispatchOptions().find((option) => option.id === id);
   }
 
-  /**
-   * Calcular costo de envío basado en la agencia seleccionada
-   */
   getShippingCost(): number | null {
-    const agency = this._state().selectedShippingAgency;
+    const state = this._state();
+
+    // Delivery local cost
+    if (state.dispatchType === 'local_delivery') {
+      const dc = this.locationService.deliveryConfig();
+      if (dc?.freeDelivery) return 0;
+      return dc?.deliveryCharge ?? null;
+    }
+
+    // Agency cost
+    const agency = state.selectedShippingAgency;
     if (!agency) return null;
 
-    if (agency.config.freeShipping) {
-      return 0;
-    }
+    if (agency.config.freeShipping) return 0;
+    if (agency.config.additionalCharge) return agency.config.additionalChargeAmount;
 
-    if (agency.config.additionalCharge) {
-      return agency.config.additionalChargeAmount;
-    }
-
-    // collectOnDelivery - el costo se paga al recibir
     return null;
   }
 
-  /**
-   * Obtener descripción del costo de envío
-   */
   getShippingCostLabel(): string {
-    const agency = this._state().selectedShippingAgency;
+    const state = this._state();
+
+    if (state.dispatchType === 'local_delivery') {
+      const dc = this.locationService.deliveryConfig();
+      if (dc?.freeDelivery) return 'Delivery gratis';
+      if (dc?.deliveryCharge) return `+$${dc.deliveryCharge.toFixed(2)}`;
+      return '';
+    }
+
+    const agency = state.selectedShippingAgency;
     if (!agency) return '';
 
-    if (agency.config.freeShipping) {
-      return 'Envío gratis';
-    }
-
-    if (agency.config.additionalCharge) {
-      return `+$${agency.config.additionalChargeAmount.toFixed(2)}`;
-    }
+    if (agency.config.freeShipping) return 'Envio gratis';
+    if (agency.config.additionalCharge) return `+$${agency.config.additionalChargeAmount.toFixed(2)}`;
 
     return 'Pago en destino';
   }

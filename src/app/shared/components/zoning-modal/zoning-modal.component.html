@@ -1,12 +1,12 @@
-@if (showModal()) {
-  <div class="zoning-overlay">
-    <div class="zoning-modal">
+@if (isOpen()) {
+  <div class="zoning-overlay" (click)="closeModal()">
+    <div class="zoning-modal" (click)="$event.stopPropagation()">
       <!-- Logo -->
       <div class="modal-logo">
         <img src="assets/icons/autobus.png" alt="TuBus Express" class="logo-img" />
       </div>
 
-      <!-- Step: Selección de ciudad -->
+      <!-- Step: City Selection -->
       @if (step() === 'city') {
         <div class="modal-body">
           <h2 class="modal-title">Selecciona tu ciudad</h2>
@@ -15,12 +15,28 @@
           @if (isLoading()) {
             <div class="loading-state">
               <div class="spinner"></div>
-              <p>Cargando zonas...</p>
+              <p>Cargando ciudades...</p>
             </div>
           } @else {
-            <!-- Ciudades activas -->
+            <!-- Search -->
+            @if (cities().length > 6) {
+              <div class="search-box">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                </svg>
+                <input
+                  type="text"
+                  placeholder="Buscar ciudad..."
+                  [value]="searchTerm()"
+                  (input)="onSearchInput($event)"
+                  autocomplete="off"
+                />
+              </div>
+            }
+
+            <!-- Cities grid -->
             <div class="cities-grid">
-              @for (city of activeCities(); track city.id) {
+              @for (city of filteredCities(); track city.slug) {
                 <button
                   type="button"
                   class="zone-btn zone-btn--active"
@@ -33,38 +49,21 @@
                     </svg>
                   </span>
                   <span class="zone-btn__name">{{ city.name }}</span>
-                  <span class="zone-btn__badge zone-btn__badge--available">Disponible</span>
+                  <span class="zone-btn__badge zone-btn__badge--available">
+                    {{ city.municipalities.length }} municipios
+                  </span>
                 </button>
               }
             </div>
 
-            <!-- Separador -->
-            @if (inactiveCities().length > 0) {
-              <div class="separator">
-                <span class="separator__line"></span>
-                <span class="separator__text">Otras ciudades</span>
-                <span class="separator__line"></span>
-              </div>
-
-              <!-- Ciudades inactivas -->
-              <div class="cities-grid cities-grid--inactive">
-                @for (city of inactiveCities(); track city.id) {
-                  <button
-                    type="button"
-                    class="zone-btn zone-btn--inactive"
-                    (click)="selectCity(city)"
-                  >
-                    <span class="zone-btn__name">{{ city.name }}</span>
-                    <span class="zone-btn__badge zone-btn__badge--soon">Pronto</span>
-                  </button>
-                }
-              </div>
+            @if (filteredCities().length === 0 && searchTerm()) {
+              <p class="no-results">No se encontraron ciudades con ese nombre</p>
             }
           }
         </div>
       }
 
-      <!-- Step: Selección de municipio -->
+      <!-- Step: Municipality Selection -->
       @if (step() === 'municipality') {
         <div class="modal-body">
           <button type="button" class="back-btn" (click)="backToCity()">
@@ -78,7 +77,7 @@
           <p class="modal-subtitle">Selecciona tu municipio</p>
 
           <div class="municipalities-grid">
-            @for (municipality of availableMunicipalities(); track municipality.code) {
+            @for (municipality of municipalities(); track municipality.slug) {
               <button
                 type="button"
                 class="zone-btn zone-btn--municipality"
@@ -96,8 +95,8 @@
         </div>
       }
 
-      <!-- Step: Fuera de cobertura -->
-      @if (step() === 'out-of-coverage') {
+      <!-- Step: No Coverage -->
+      @if (step() === 'no-coverage') {
         <div class="modal-body out-of-coverage">
           <div class="ooc-icon">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -105,18 +104,31 @@
             </svg>
           </div>
 
-          <h2 class="modal-title">Proximamente en {{ selectedCity()?.name }}</h2>
+          <h2 class="modal-title">Sin cobertura en tu zona</h2>
           <p class="modal-subtitle">
-            Estamos trabajando para llevar nuestros servicios a tu ciudad.
-            Te notificaremos cuando estemos disponibles.
+            No tenemos sucursales que atiendan tu municipio directamente,
+            pero puedes continuar y usar envio por agencia o retiro en tienda.
           </p>
 
-          <button type="button" class="btn-back-main" (click)="backToCity()">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-            </svg>
-            Seleccionar otra ciudad
-          </button>
+          <div class="ooc-actions">
+            <button type="button" class="btn-ooc-secondary" (click)="backToCity()">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+              </svg>
+              Otra ubicacion
+            </button>
+            <button type="button" class="btn-back-main" (click)="continueWithoutCoverage()">
+              Continuar asi
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- Resolving overlay -->
+      @if (isResolving()) {
+        <div class="resolving-overlay">
+          <div class="spinner"></div>
+          <span>Verificando cobertura...</span>
         </div>
       }
     </div>

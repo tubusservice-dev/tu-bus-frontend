@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, computed, HostListener } from '@angular/core';
+import { Component, inject, signal, OnInit, computed, HostListener, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -6,9 +6,8 @@ import { ProductService } from '../../core/services/product.service';
 import { BrandService } from '../../core/services/brand.service';
 import { CategoryService } from '../../core/services/category.service';
 import { SettingsService } from '../../core/services/settings.service';
-import { ZoneService } from '../../core/services/zone.service';
 import { VehicleService } from '../../core/services/vehicle.service';
-import { BranchService } from '../../core/services/branch.service';
+import { LocationService } from '../../core/services/location.service';
 import { ProductCardComponent, ProductCardData } from '../../shared/components/product-card/product-card.component';
 import {
   Product,
@@ -39,23 +38,21 @@ export class CatalogComponent implements OnInit {
   private readonly categoryService = inject(CategoryService);
   private readonly settingsService = inject(SettingsService);
 
-  protected readonly zoneService = inject(ZoneService);
   protected readonly vehicleService = inject(VehicleService);
-  private readonly branchService = inject(BranchService);
+  protected readonly locationService = inject(LocationService);
   private readonly route = inject(ActivatedRoute);
 
   // Filtro de vehículo (activo cuando se navega desde el garaje)
   protected readonly vehicleFilterActive = signal(false);
 
-  // Branch IDs para filtrar por zona
-  private readonly branchIds = signal<string[]>([]);
-  private zoneInitialized = false;
+  // Tracks whether initial product load has been triggered
+  private initialLoadDone = false;
 
   // Estado
   protected readonly isLoading = signal(true);
   private readonly allProducts = signal<ProductCardData[]>([]);
   protected readonly products = computed(() => {
-    let filtered = this.filterByZone(this.allProducts());
+    let filtered = this.allProducts();
     if (this.vehicleFilterActive()) {
       filtered = this.filterByVehicle(filtered);
     }
@@ -117,12 +114,20 @@ export class CatalogComponent implements OnInit {
   });
 
   constructor() {
-    // TODO: Refactor — zoneService.selectedZone() no longer exists.
-    // Zone-based branch filtering disabled until new architecture is in place.
+    // Wait for LocationService to resolve before loading products.
+    // This avoids a race condition where branchIds is empty because
+    // the HTTP call from resolveLocation() hasn't completed yet.
+    effect(() => {
+      const resolved = this.locationService.isResolved();
+      if (resolved && !this.initialLoadDone) {
+        this.initialLoadDone = true;
+        this.loadProducts();
+      }
+    });
   }
 
   ngOnInit(): void {
-    // Activar filtro de vehículo si se navega desde el garaje
+    // Activate vehicle filter if navigating from garage
     const fromGarage = this.route.snapshot.queryParamMap.get('fromGarage');
     if (fromGarage === 'true' && this.vehicleService.selectedVehicle()) {
       this.vehicleFilterActive.set(true);
@@ -131,9 +136,11 @@ export class CatalogComponent implements OnInit {
     this.loadBrands();
     this.loadCategories();
 
-    // TODO: Zone-based filtering disabled — load all products
-    this.loadProducts();
-    this.zoneInitialized = true;
+    // If location is already resolved (e.g. no saved location), load immediately
+    if (this.locationService.isResolved() && !this.initialLoadDone) {
+      this.initialLoadDone = true;
+      this.loadProducts();
+    }
   }
 
   loadBrands(): void {
@@ -152,13 +159,6 @@ export class CatalogComponent implements OnInit {
       },
       error: () => {},
     });
-  }
-
-  // TODO: Refactor to use BranchZoneService.findByLocation() when client module is updated
-  private loadBranchesByZone(_cityCode: string, _municipalityCode: string): void {
-    this.branchIds.set([]);
-    this.currentPage.set(1);
-    this.loadProducts();
   }
 
   loadProducts(): void {
@@ -183,8 +183,8 @@ export class CatalogComponent implements OnInit {
       sortOrder = 'desc';
     }
 
-    // Incluir branchIds si hay zona seleccionada
-    const ids = this.branchIds();
+    // Include branchIds from user's selected location
+    const ids = this.locationService.branchIds();
     const branchIds = ids.length > 0 ? ids.join(',') : undefined;
 
     this.productService.getAll({
@@ -201,7 +201,12 @@ export class CatalogComponent implements OnInit {
       branchIds,
     }).subscribe({
       next: (response) => {
-        this.allProducts.set(response.data);
+        // Map totalStock from backend to stock field for ProductCardData
+        const mapped = response.data.map((p: any) => ({
+          ...p,
+          stock: p.totalStock ?? p.stock ?? 0,
+        }));
+        this.allProducts.set(mapped);
         this.totalPages.set(response.pagination?.pages || 1);
         this.totalProducts.set(response.pagination?.total || 0);
         this.isLoading.set(false);
@@ -293,15 +298,6 @@ export class CatalogComponent implements OnInit {
 
       return engineMatch && oilMatch;
     });
-  }
-
-  /**
-   * Filtra productos por la zona seleccionada.
-   * Si no hay zona o la zona es "all", muestra todos.
-   */
-  private filterByZone(products: ProductCardData[]): ProductCardData[] {
-    // Filtrado por zona se hace ahora a través de sucursales en el backend
-    return products;
   }
 
   getPageNumbers(): number[] {

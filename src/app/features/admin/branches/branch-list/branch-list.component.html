@@ -66,6 +66,9 @@
                 <td>
                   <div class="branch-name">
                     <span class="name-text">{{ branch.name }}</span>
+                    @if (branch.hasInStoreOilChange) {
+                      <span class="badge badge-oil-change">Cambio en tienda</span>
+                    }
                   </div>
                 </td>
                 <td>
@@ -158,6 +161,9 @@
             >
               {{ branch.isActive ? 'Activa' : 'Inactiva' }}
             </span>
+            @if (branch.hasInStoreOilChange) {
+              <span class="badge badge-oil-change">Cambio de aceite en tienda</span>
+            }
           </div>
           <button type="button" class="detail-close" (click)="closeDetailModal()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

@@ -5,7 +5,7 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { CheckoutService, ShippingRecipientInfo } from '../services/checkout.service';
 import { CartService } from '../../../core/services/cart.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { ZoneService } from '../../../core/services/zone.service';
+import { getStates, getCitiesByState, getMunicipalitiesByState } from '../../../shared/data/venezuela-states';
 
 @Component({
   selector: 'app-checkout-shipping-form',
@@ -18,7 +18,6 @@ export class CheckoutShippingFormComponent implements OnInit {
   protected readonly checkoutService = inject(CheckoutService);
   protected readonly cartService = inject(CartService);
   protected readonly authService = inject(AuthService);
-  protected readonly zoneService = inject(ZoneService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
 
@@ -26,10 +25,10 @@ export class CheckoutShippingFormComponent implements OnInit {
   protected readonly selectedAgency = this.checkoutService.selectedShippingAgency;
   protected readonly lockedFields = signal<Record<string, boolean>>({});
 
-  // Reference data from backend (all Venezuela)
-  protected readonly states = signal<any[]>([]);
-  protected readonly cities = signal<any[]>([]);
-  protected readonly municipalities = signal<any[]>([]);
+  // Reference data — all 24 Venezuelan states with cities and municipalities
+  protected readonly states = signal<{ code: string; name: string }[]>([]);
+  protected readonly cities = signal<{ code: string; name: string }[]>([]);
+  protected readonly municipalities = signal<{ code: string; name: string }[]>([]);
 
   protected readonly documentTypes = [
     { code: 'V', name: 'V - Venezolano' },
@@ -50,7 +49,7 @@ export class CheckoutShippingFormComponent implements OnInit {
   }
 
   private loadReferenceStates(): void {
-    // TODO: Refactor for new zone architecture — getAllStates no longer exists in ZoneService
+    this.states.set(getStates());
   }
 
   private initForm(): void {
@@ -159,25 +158,31 @@ export class CheckoutShippingFormComponent implements OnInit {
     this.cities.set([]);
     this.municipalities.set([]);
     if (stateCode) {
-      this.loadReferenceCities(stateCode);
+      this.cities.set(getCitiesByState(stateCode));
+      this.municipalities.set(getMunicipalitiesByState(stateCode));
     }
   }
 
   protected onCityChange(): void {
-    const cityCode = this.shippingForm.get('cityCode')?.value;
-    this.shippingForm.patchValue({ municipalityCode: '' });
-    this.municipalities.set([]);
-    if (cityCode) {
-      this.loadReferenceMunicipalities(cityCode);
-    }
+    // City and municipality are independent lists within a state — no cascade needed
   }
 
   private loadReferenceCities(stateCode: string, preselectedCity?: string, preselectedMuni?: string): void {
-    // TODO: Refactor for new zone architecture — getReferenceCities no longer exists in ZoneService
+    this.cities.set(getCitiesByState(stateCode));
+    this.municipalities.set(getMunicipalitiesByState(stateCode));
+
+    if (preselectedCity) {
+      this.shippingForm.patchValue({ cityCode: preselectedCity });
+      this.shippingForm.get('cityCode')?.disable();
+    }
+    if (preselectedMuni) {
+      this.shippingForm.patchValue({ municipalityCode: preselectedMuni });
+      this.shippingForm.get('municipalityCode')?.disable();
+    }
   }
 
-  private loadReferenceMunicipalities(cityCode: string, preselectedMuni?: string): void {
-    // TODO: Refactor for new zone architecture — getReferenceCityByCode no longer exists in ZoneService
+  private loadReferenceMunicipalities(_stateCode: string, _cityName: string): void {
+    // Municipalities loaded together with cities in onStateChange
   }
 
   protected readonly hasLockedFields = computed(() => {

@@ -73,6 +73,7 @@ export class BranchFormComponent implements OnInit {
     whatsappPhone: ['', [Validators.required]],
     landlinePhone: [''],
     coordinatesRaw: [''],
+    hasInStoreOilChange: [false],
     isActive: [true],
     schedule: this.fb.array([]),
   });
@@ -143,6 +144,7 @@ export class BranchFormComponent implements OnInit {
           whatsappPhone: branch.whatsappPhone,
           landlinePhone: branch.landlinePhone || '',
           coordinatesRaw: branch.coordinates ? `${branch.coordinates.latitude}, ${branch.coordinates.longitude}` : '',
+          hasInStoreOilChange: branch.hasInStoreOilChange ?? false,
           isActive: branch.isActive,
         });
 
@@ -386,6 +388,7 @@ export class BranchFormComponent implements OnInit {
       landlinePhone: formValue.landlinePhone || undefined,
       schedule: formValue.schedule,
       coordinates: this.parseCoordinates(formValue.coordinatesRaw),
+      hasInStoreOilChange: formValue.hasInStoreOilChange,
       isActive: formValue.isActive,
     };
 
