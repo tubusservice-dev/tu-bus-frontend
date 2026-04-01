@@ -70,7 +70,7 @@ export class BranchFormComponent implements OnInit {
     name: ['', [Validators.required, Validators.minLength(2)]],
     description: [''],
     address: ['', [Validators.required]],
-    whatsappPhone: ['', [Validators.required]],
+    whatsappPhone: [''],
     landlinePhone: [''],
     coordinatesRaw: [''],
     hasInStoreOilChange: [false],

@@ -29,9 +29,10 @@ export class OrderService {
     return this.http.post<OrderResponse>(this.apiUrl, data);
   }
 
-  getMyOrders(page = 1, limit = 10, status?: OrderStatus): Observable<OrderListResponse> {
+  getMyOrders(page = 1, limit = 10, status?: OrderStatus, search?: string): Observable<OrderListResponse> {
     let params = new HttpParams().set('page', page).set('limit', limit);
     if (status) params = params.set('status', status);
+    if (search) params = params.set('search', search);
 
     this._isLoading.set(true);
     return this.http.get<OrderListResponse>(this.apiUrl, { params }).pipe(
@@ -59,9 +60,10 @@ export class OrderService {
 
   // ==================== ADMIN METHODS ====================
 
-  getAdminOrders(page = 1, limit = 10, status?: OrderStatus): Observable<OrderListResponse> {
+  getAdminOrders(page = 1, limit = 10, status?: OrderStatus, search?: string): Observable<OrderListResponse> {
     let params = new HttpParams().set('page', page).set('limit', limit);
     if (status) params = params.set('status', status);
+    if (search) params = params.set('search', search);
     return this.http.get<OrderListResponse>(this.adminApiUrl, { params });
   }
 
@@ -75,5 +77,13 @@ export class OrderService {
 
   updateOrderStatus(orderId: string, status: OrderStatus, note?: string): Observable<OrderResponse> {
     return this.http.put<OrderResponse>(`${this.adminApiUrl}/${orderId}/status`, { status, note });
+  }
+
+  updateDispatchStatus(orderId: string, dispatchStatus: string, note?: string): Observable<OrderResponse> {
+    return this.http.patch<OrderResponse>(`${this.adminApiUrl}/${orderId}/dispatch-status`, { dispatchStatus, note });
+  }
+
+  updateNotes(orderId: string, notes: string): Observable<OrderResponse> {
+    return this.http.patch<OrderResponse>(`${this.adminApiUrl}/${orderId}/notes`, { notes });
   }
 }

@@ -10,11 +10,12 @@ import { LocationService } from '../../../core/services/location.service';
 import { BranchZoneService } from '../../../core/services/branch-zone.service';
 import { VehicleService } from '../../../core/services/vehicle.service';
 import { Vehicle } from '../../../models/vehicle.model';
+import { VehicleFormComponent } from '../../garage/vehicle-form/vehicle-form.component';
 
 @Component({
   selector: 'app-checkout-oil-change-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, VehicleFormComponent],
   templateUrl: './checkout-oil-change-form.component.html',
   styleUrl: './checkout-oil-change-form.component.scss',
 })
@@ -38,9 +39,8 @@ export class CheckoutOilChangeFormComponent implements OnInit {
   protected readonly availableMunicipalities = signal<{ code: string; name: string }[]>([]);
   protected readonly selectedCityName = signal('');
 
-  // Vehicle selection
+  // Vehicle selection (multi-select)
   protected readonly vehicles = signal<Vehicle[]>([]);
-  protected readonly selectedVehicle = signal<Vehicle | null>(null);
   protected readonly showVehicleForm = signal(false);
   protected readonly isLoadingVehicles = signal(false);
 
@@ -121,29 +121,40 @@ export class CheckoutOilChangeFormComponent implements OnInit {
         this.vehicles.set(vehicleList);
         this.isLoadingVehicles.set(false);
 
-        // Auto-select if only one vehicle
-        if (vehicleList.length === 1) {
-          this.selectVehicle(vehicleList[0]);
-        }
-
-        // Restore previously selected vehicle
-        const prev = this.checkoutService.selectedVehicle();
-        if (prev) {
-          this.selectedVehicle.set(prev);
+        // Auto-select if only one vehicle and none selected
+        if (vehicleList.length === 1 && this.checkoutService.selectedVehicles().length === 0) {
+          this.checkoutService.addVehicle(vehicleList[0]);
         }
       },
       error: () => this.isLoadingVehicles.set(false),
     });
   }
 
-  protected selectVehicle(vehicle: Vehicle): void {
-    this.selectedVehicle.set(vehicle);
-    this.checkoutService.selectVehicle(vehicle);
+  protected isVehicleSelected(vehicleId: string): boolean {
+    return this.checkoutService.selectedVehicles().some((v) => v.id === vehicleId);
   }
 
-  protected clearVehicleSelection(): void {
-    this.selectedVehicle.set(null);
-    this.checkoutService.clearVehicle();
+  protected toggleVehicle(vehicle: Vehicle): void {
+    this.checkoutService.toggleVehicle(vehicle);
+  }
+
+  protected openInlineVehicleForm(): void {
+    this.showVehicleForm.set(true);
+  }
+
+  protected cancelInlineVehicle(): void {
+    this.showVehicleForm.set(false);
+  }
+
+  protected onInlineVehicleSave(data: any): void {
+    this.vehicleService.create(data).subscribe({
+      next: (res: any) => {
+        const newVehicle = res.data;
+        this.vehicles.update((list) => [newVehicle, ...list]);
+        this.checkoutService.addVehicle(newVehicle);
+        this.showVehicleForm.set(false);
+      },
+    });
   }
 
   private loadSavedData(): void {
@@ -279,8 +290,8 @@ export class CheckoutOilChangeFormComponent implements OnInit {
       return;
     }
 
-    // Vehicle is mandatory for oil change service
-    if (!this.selectedVehicle()) {
+    // At least one vehicle is mandatory for oil change service
+    if (this.checkoutService.selectedVehicles().length === 0) {
       return;
     }
 

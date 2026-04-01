@@ -76,7 +76,8 @@ export interface Order {
   orderNumber: string;
   user: string | { id: string; firstName: string; lastName: string; email: string };
   items: OrderItem[];
-  vehicle?: string | { id: string; placa: string; marca: string; modelo: string; year: number };
+  vehicles: (string | { id: string; placa: string; marca: string; modelo: string; year: number; engineType?: any })[];
+  vehicle?: string | { id: string; placa: string; marca: string; modelo: string; year: number }; // @deprecated
   subtotal: number;
   shippingCost: number;
   total: number;
@@ -98,7 +99,7 @@ export interface Order {
 
 export interface CreateOrderRequest {
   items: OrderItem[];
-  vehicle?: string;
+  vehicles?: string[];
   selectedBranch?: string;
   subtotal: number;
   shippingCost?: number;

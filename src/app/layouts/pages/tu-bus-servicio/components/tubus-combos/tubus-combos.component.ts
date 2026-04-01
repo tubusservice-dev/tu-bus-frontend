@@ -40,19 +40,11 @@ export class TubusCombosComponent implements OnInit {
     const filter = this.selectedFilter();
     const products = this.allProducts();
 
-    let filtered: Product[];
-    if (filter === 'all') {
-      filtered = products;
-    } else {
-      filtered = products.filter(product =>
-        product.categories.some(cat => {
-          if (typeof cat === 'string') return cat === filter;
-          return cat.id === filter;
-        })
-      );
-    }
+    if (filter === 'all') return products.slice(0, 4);
 
-    return filtered.slice(0, 4);
+    return products.filter(product =>
+      product.categories.some(cat => this.matchCategory(cat, filter))
+    ).slice(0, 4);
   });
 
   // Computed: show "view all" button
@@ -62,14 +54,16 @@ export class TubusCombosComponent implements OnInit {
 
     if (filter === 'all') return products.length > 4;
 
-    const filtered = products.filter(product =>
-      product.categories.some(cat => {
-        if (typeof cat === 'string') return cat === filter;
-        return cat.id === filter;
-      })
-    );
-    return filtered.length > 4;
+    return products.filter(product =>
+      product.categories.some(cat => this.matchCategory(cat, filter))
+    ).length > 4;
   });
+
+  /** Match a category (string ID, or object with id/_id) against a filter ID */
+  private matchCategory(cat: string | Category | any, filterId: string): boolean {
+    if (typeof cat === 'string') return cat === filterId;
+    return cat.id === filterId || cat._id === filterId || cat.slug === filterId;
+  }
 
   private initialLoadDone = false;
 

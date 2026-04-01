@@ -42,10 +42,12 @@ export class CheckoutDispatchComponent implements OnInit {
 
     switch (dispatchType) {
       case 'store_pickup':
-      case 'seller_agreement':
       case 'in_store_oil_change':
         // Direct to summary (no form needed)
         this.router.navigate(['/checkout/resumen']);
+        break;
+      case 'seller_agreement':
+        this.router.navigate(['/checkout/vendedor']);
         break;
       case 'shipping_agency':
         this.router.navigate(['/checkout/agencia']);

@@ -87,7 +87,7 @@
 
       <div class="menu-divider"></div>
 
-      <button type="button" class="logout-btn" role="menuitem" (click)="logout()">
+      <button type="button" class="logout-btn" role="menuitem" (click)="requestLogout()">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="menu-icon">
           <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
         </svg>
@@ -96,3 +96,22 @@
     </div>
   }
 </div>
+
+<!-- Logout confirmation modal -->
+@if (showLogoutModal()) {
+  <div class="logout-overlay" (click)="cancelLogout()">
+    <div class="logout-modal" (click)="$event.stopPropagation()">
+      <div class="logout-modal-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
+        </svg>
+      </div>
+      <h3 class="logout-modal-title">Cerrar Sesión</h3>
+      <p class="logout-modal-text">¿Estás seguro que deseas cerrar tu sesión?</p>
+      <div class="logout-modal-actions">
+        <button type="button" class="logout-modal-cancel" (click)="cancelLogout()">Cancelar</button>
+        <button type="button" class="logout-modal-confirm" (click)="confirmLogout()">Cerrar Sesión</button>
+      </div>
+    </div>
+  </div>
+}

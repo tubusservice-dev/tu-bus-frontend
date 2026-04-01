@@ -185,6 +185,84 @@ select.input {
   color: var(--text-secondary);
 }
 
+// ========== Vehicle Multi-Select ==========
+.vehicle-select-list {
+  @apply space-y-2;
+}
+
+.vehicle-select-card {
+  @apply w-full flex items-center justify-between p-4 rounded-xl text-left transition-all;
+  background-color: var(--bg-secondary);
+  border: 2px solid var(--border-color);
+  cursor: pointer;
+
+  &:hover { border-color: var(--accent-primary); }
+
+  &.selected {
+    border-color: var(--accent-primary);
+    background-color: rgba(var(--accent-primary-rgb, 59, 130, 246), 0.06);
+  }
+}
+
+.vehicle-select-info {
+  @apply flex flex-col gap-0.5;
+}
+
+.vehicle-select-name {
+  @apply text-sm font-semibold;
+  color: var(--text-primary);
+}
+
+.vehicle-select-plate {
+  @apply text-xs font-mono px-2 py-0.5 rounded inline-block w-fit;
+  background-color: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.vehicle-select-specs {
+  @apply text-xs mt-1;
+  color: var(--text-secondary);
+}
+
+.vehicle-check-icon {
+  @apply w-6 h-6 flex-shrink-0;
+  color: var(--accent-primary);
+}
+
+.vehicle-add-btn {
+  @apply flex items-center justify-center gap-2 w-full py-3 mt-3 rounded-xl text-sm font-medium transition-all;
+  color: #3b82f6;
+  border: 2px dashed #4b5563;
+  background: transparent;
+
+  &:hover {
+    color: #60a5fa;
+    border-color: #60a5fa;
+    background-color: rgba(96, 165, 250, 0.06);
+  }
+
+  svg { @apply w-5 h-5; }
+}
+
+.vehicle-hint-required {
+  @apply text-xs mt-2 text-amber-600 dark:text-amber-400;
+}
+
+.vehicle-empty-state {
+  @apply flex items-center gap-3 p-4 rounded-xl;
+  background-color: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+
+  svg { @apply w-5 h-5 flex-shrink-0; color: #f59e0b; }
+  span { @apply text-sm; color: var(--text-primary); }
+}
+
+.inline-vehicle-form {
+  @apply mt-4 p-4 rounded-xl;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-secondary);
+}
+
 // ========== Actions ==========
 .form-actions {
   @apply flex justify-center pt-4;

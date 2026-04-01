@@ -69,6 +69,7 @@
           <img
             [src]="selectedImage()"
             [alt]="prod.name"
+            (error)="onImageError($event)"
             class="main-image"
           />
 
@@ -96,7 +97,7 @@
                 [class.active]="i === selectedImageIndex()"
                 (click)="selectImage(i)"
               >
-                <img [src]="img" [alt]="'Imagen ' + (i + 1)" />
+                <img [src]="img" [alt]="'Imagen ' + (i + 1)" (error)="onImageError($event)" />
               </button>
             }
           </div>
@@ -138,7 +139,7 @@
           @if (isLoadingStock()) {
             <span class="stock-loading">Verificando stock...</span>
           } @else if (isOutOfStock()) {
-            <span class="out-of-stock-label">
+            <span class="out-of-stock-text">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
               </svg>
@@ -285,7 +286,7 @@
           @for (relatedProduct of relatedProducts(); track relatedProduct.id) {
             <a class="related-mini-card" [routerLink]="['/producto', relatedProduct.id]">
               <div class="mini-card-image">
-                <img [src]="relatedProduct.images[0]" [alt]="relatedProduct.name" />
+                <img [src]="relatedProduct.images[0]" [alt]="relatedProduct.name" (error)="onImageError($event)" />
               </div>
               <div class="mini-card-info">
                 <span class="mini-card-brand">{{ $any(relatedProduct.brand)?.name || '' }}</span>

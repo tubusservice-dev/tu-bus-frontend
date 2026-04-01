@@ -1,12 +1,14 @@
 import { Component, inject, signal, OnInit, computed } from '@angular/core';
 import { Router } from '@angular/router';
-import { CurrencyPipe } from '@angular/common';
+import { CurrencyPipe, CommonModule } from '@angular/common';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { CheckoutService } from '../services/checkout.service';
 import { CartService } from '../../../core/services/cart.service';
 import { OrderService } from '../../../core/services/order.service';
-import { VehicleService } from '../../../core/services/vehicle.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { LocationService, BranchSummary } from '../../../core/services/location.service';
 import { PaymentMethodService } from '../../../core/services/payment-method.service';
+import { UploadService } from '../../../core/services/upload.service';
 import { CreateOrderRequest, PaymentSubmission } from '../../../models/order.model';
 import {
   PaymentMethodConfig,
@@ -21,7 +23,7 @@ import {
 @Component({
   selector: 'app-checkout-summary',
   standalone: true,
-  imports: [CurrencyPipe],
+  imports: [CurrencyPipe, CommonModule, ReactiveFormsModule],
   templateUrl: './checkout-summary.component.html',
   styleUrl: './checkout-summary.component.scss',
 })
@@ -29,8 +31,10 @@ export class CheckoutSummaryComponent implements OnInit {
   protected readonly checkoutService = inject(CheckoutService);
   protected readonly cartService = inject(CartService);
   private readonly orderService = inject(OrderService);
-  private readonly vehicleService = inject(VehicleService);
+  private readonly authService = inject(AuthService);
+  private readonly uploadService = inject(UploadService);
   private readonly paymentMethodService = inject(PaymentMethodService);
+  private readonly fb = inject(FormBuilder);
   protected readonly locationService = inject(LocationService);
   private readonly router = inject(Router);
 
@@ -109,10 +113,17 @@ export class CheckoutSummaryComponent implements OnInit {
   protected readonly submittedPayment = signal<PaymentSubmission | null>(null);
   protected readonly submittedMethodType = signal<PaymentMethodType | null>(null);
 
-  // ========== Branch Selection ==========
+  // ========== Branch Selection (Universal) ==========
 
-  /** Whether branch selection is needed for this dispatch type */
+  /** Whether branch selection should be shown (all types if multiple branches) */
   protected readonly needsBranchSelection = computed(() => {
+    const dt = this.checkoutService.dispatchType();
+    if (dt === 'store_pickup' || dt === 'in_store_oil_change') return true;
+    return this.locationService.branches().length > 1;
+  });
+
+  /** Whether branch selection is mandatory (only pickup/in-store) */
+  protected readonly isBranchMandatory = computed(() => {
     const dt = this.checkoutService.dispatchType();
     return dt === 'store_pickup' || dt === 'in_store_oil_change';
   });
@@ -120,21 +131,118 @@ export class CheckoutSummaryComponent implements OnInit {
   /** Branches available for selection based on dispatch type */
   protected readonly availableBranches = computed<BranchSummary[]>(() => {
     const dt = this.checkoutService.dispatchType();
-    if (dt === 'store_pickup') return this.locationService.branches();
     if (dt === 'in_store_oil_change') return this.locationService.branchesWithOilChange();
-    return [];
+    return this.locationService.branches();
   });
 
-  /** Whether a vehicle is required for this dispatch type */
+  // ========== Vehicle Selection (Multi-vehicle) ==========
+
+  /** Whether vehicles are required for this dispatch type */
   protected readonly needsVehicle = computed(() => {
     const dt = this.checkoutService.dispatchType();
     return dt === 'oil_change_service' || dt === 'in_store_oil_change';
   });
 
-  // Can generate order: disclaimer accepted AND payment submitted AND required selections made
+  // Vehicle selection is handled in oil-change-form; summary is read-only
+
+  // ========== Billing Address ==========
+
+  protected billingSource = signal<'shipping' | 'profile' | 'custom'>('profile');
+  protected billingForm!: FormGroup;
+
+  protected readonly canUseShippingAddress = computed(() => {
+    const dt = this.checkoutService.dispatchType();
+    return dt === 'local_delivery' || dt === 'shipping_agency' || dt === 'oil_change_service';
+  });
+
+  onBillingSourceChange(source: 'shipping' | 'profile' | 'custom'): void {
+    this.billingSource.set(source);
+
+    if (source === 'shipping') {
+      this.buildBillingFromShipping();
+    } else if (source === 'profile') {
+      this.buildBillingFromProfile();
+    }
+    // 'custom' waits for form submission
+  }
+
+  private buildBillingFromShipping(): void {
+    const dt = this.checkoutService.dispatchType();
+    let address = '', city = '', municipality = '', state = '', fullName = '', docType = '', docNum = '', refPoint = '';
+
+    if (dt === 'local_delivery') {
+      const info = this.localDeliveryInfo;
+      if (info) {
+        fullName = info.fullName; docType = info.documentType; docNum = info.documentNumber;
+        address = info.address; city = info.cityName; municipality = info.municipalityName;
+        refPoint = info.referencePoint || '';
+      }
+    } else if (dt === 'shipping_agency') {
+      const info = this.recipientInfo;
+      if (info) {
+        fullName = info.fullName; docType = info.documentType; docNum = info.documentNumber;
+        address = info.address; city = info.city; state = info.state;
+        municipality = info.municipality || ''; refPoint = info.referencePoint || '';
+      }
+    } else if (dt === 'oil_change_service') {
+      const info = this.oilChangeServiceInfo;
+      if (info) {
+        fullName = info.fullName; docType = info.documentType; docNum = info.documentNumber;
+        address = info.address; city = info.cityName; municipality = info.municipalityName;
+        refPoint = info.referencePoint || '';
+      }
+    }
+
+    this.checkoutService.setBillingAddress({
+      source: 'shipping', fullName, documentType: docType, documentNumber: docNum,
+      address, city, municipality, state, referencePoint: refPoint,
+    });
+  }
+
+  private buildBillingFromProfile(): void {
+    const user = this.authService.currentUser();
+    if (!user) return;
+
+    const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
+    const addressParts = [user.street, user.houseNumber, user.neighborhood].filter(Boolean);
+
+    this.checkoutService.setBillingAddress({
+      source: 'profile',
+      fullName,
+      documentType: user.documentType,
+      documentNumber: user.documentNumber,
+      address: addressParts.length > 0 ? addressParts.join(', ') : (user as any).address || '',
+      city: user.cityName || '',
+      municipality: user.municipalityName || '',
+      state: user.stateName || '',
+      referencePoint: user.referencePoint || '',
+    });
+  }
+
+  onBillingFormSubmit(): void {
+    if (this.billingForm.invalid) {
+      this.billingForm.markAllAsTouched();
+      return;
+    }
+    const v = this.billingForm.getRawValue();
+    this.checkoutService.setBillingAddress({
+      source: 'custom',
+      fullName: v.fullName?.trim(),
+      documentType: v.documentType,
+      documentNumber: v.documentNumber?.trim(),
+      address: v.address?.trim(),
+      city: v.city?.trim(),
+      municipality: v.municipality?.trim(),
+      state: v.state?.trim(),
+      referencePoint: v.referencePoint?.trim(),
+    });
+  }
+
+  // ========== Can Generate Order ==========
+
   protected readonly canGenerateOrder = computed(() => {
     if (!this.disclaimerAccepted() || !this.paymentSubmitted()) return false;
-    if (this.needsBranchSelection() && !this.checkoutService.hasBranch()) return false;
+    if (this.isBranchMandatory() && !this.checkoutService.hasBranch()) return false;
     if (this.needsVehicle() && !this.checkoutService.hasVehicle()) return false;
     return true;
   });
@@ -187,12 +295,27 @@ export class CheckoutSummaryComponent implements OnInit {
     // Load active payment methods from API
     this.loadPaymentMethods();
 
-    // Auto-select branch if only one available
-    if (this.needsBranchSelection()) {
-      const branches = this.availableBranches();
-      if (branches.length === 1 && !this.checkoutService.selectedBranch()) {
-        this.checkoutService.selectBranch(branches[0]);
-      }
+    // Initialize billing form for custom address
+    this.billingForm = this.fb.group({
+      fullName: ['', [Validators.required, Validators.minLength(3)]],
+      documentType: ['V', Validators.required],
+      documentNumber: ['', [Validators.required, Validators.pattern(/^\d{6,10}$/)]],
+      address: ['', [Validators.required, Validators.minLength(10)]],
+      city: ['', Validators.required],
+      municipality: [''],
+      state: [''],
+      referencePoint: [''],
+    });
+
+    // Auto-select branch if only one available (for ALL dispatch types)
+    const branches = this.availableBranches();
+    if (branches.length === 1 && !this.checkoutService.selectedBranch()) {
+      this.checkoutService.selectBranch(branches[0]);
+    }
+
+    // Default billing address to profile
+    if (!this.checkoutService.billingAddress()) {
+      this.buildBillingFromProfile();
     }
   }
 
@@ -427,11 +550,27 @@ export class CheckoutSummaryComponent implements OnInit {
       submission.paymentDate = this.formPaymentDate();
     }
 
-    // TODO: Upload proof file to cloud storage if needed
-    // For now we store the submission data without the file
+    // Upload proof file if selected, then finalize
+    if (this.formProofFile()) {
+      this.uploadService.uploadImage(this.formProofFile()!, 'payment-proofs').subscribe({
+        next: (uploadRes) => {
+          submission.proofUrl = uploadRes.data.url;
+          submission.proofPublicId = uploadRes.data.publicId;
+          this.finalizePaymentSubmission(submission, group.type);
+        },
+        error: () => {
+          // Proceed without proof on upload failure
+          this.finalizePaymentSubmission(submission, group.type);
+        },
+      });
+    } else {
+      this.finalizePaymentSubmission(submission, group.type);
+    }
+  }
 
+  private finalizePaymentSubmission(submission: PaymentSubmission, methodType: PaymentMethodType): void {
     this.submittedPayment.set(submission);
-    this.submittedMethodType.set(group.type);
+    this.submittedMethodType.set(methodType);
     this.paymentSubmitted.set(true);
     this.closeModal();
   }
@@ -481,7 +620,7 @@ export class CheckoutSummaryComponent implements OnInit {
     const sellerAgreement = this.sellerAgreementInfo;
     const agency = this.shippingAgency;
     const store = this.storeInfo;
-    const selectedVehicle = this.checkoutService.selectedVehicle();
+    const selectedVehicles = this.checkoutService.selectedVehicles();
     const selectedBranch = this.checkoutService.selectedBranch();
 
     // Build dispatch details based on type
@@ -556,7 +695,7 @@ export class CheckoutSummaryComponent implements OnInit {
       dispatchType: this.dispatchType as any,
       paymentMethod: this.submittedPayment()?.methodType as any,
       disclaimerAccepted: this.disclaimerAccepted(),
-      vehicle: selectedVehicle?.id,
+      vehicles: selectedVehicles.length > 0 ? selectedVehicles.map((v) => v.id) : undefined,
       selectedBranch: selectedBranch?.id,
       billingAddress: this.checkoutService.billingAddress() || undefined,
       paymentSubmission: this.submittedPayment() || undefined,
@@ -593,6 +732,8 @@ export class CheckoutSummaryComponent implements OnInit {
         this.router.navigate(['/checkout/delivery']);
         break;
       case 'seller_agreement':
+        this.router.navigate(['/checkout/vendedor']);
+        break;
       case 'store_pickup':
       case 'in_store_oil_change':
         this.router.navigate(['/checkout/despacho']);

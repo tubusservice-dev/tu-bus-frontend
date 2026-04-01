@@ -15,20 +15,13 @@ export class UserMenuComponent {
   private readonly authService = inject(AuthService);
   protected readonly themeService = inject(ThemeService);
 
-  /** Usuario actual desde el servicio */
   protected readonly user = this.authService.currentUser;
-
-  /** Nombre completo del usuario */
   protected readonly userName = this.authService.userFullName;
-
-  /** Avatar del usuario */
   protected readonly userAvatar = this.authService.userAvatar;
-
-  /** Email del usuario */
   protected readonly userEmail = computed(() => this.user()?.email ?? '');
 
-  /** Controla si el menú desplegable está abierto */
   protected readonly isMenuOpen = signal(false);
+  protected readonly showLogoutModal = signal(false);
 
   toggleMenu(): void {
     this.isMenuOpen.update(value => !value);
@@ -38,8 +31,20 @@ export class UserMenuComponent {
     this.isMenuOpen.set(false);
   }
 
-  logout(): void {
+  requestLogout(): void {
     this.closeMenu();
+    this.showLogoutModal.set(true);
+    document.body.style.overflow = 'hidden';
+  }
+
+  cancelLogout(): void {
+    this.showLogoutModal.set(false);
+    document.body.style.overflow = '';
+  }
+
+  confirmLogout(): void {
+    this.showLogoutModal.set(false);
+    document.body.style.overflow = '';
     this.authService.logout();
   }
 

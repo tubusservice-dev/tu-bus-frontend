@@ -29,6 +29,8 @@ export class AdminOrderListComponent implements OnInit {
   protected readonly totalPages = signal(1);
   protected readonly totalItems = signal(0);
   protected readonly statusFilter = signal<string>('');
+  protected readonly searchQuery = signal('');
+  private searchTimeout: any = null;
   protected readonly activeTab = signal<'active' | 'history'>('active');
 
   protected readonly orderStatuses = Object.values(OrderStatus);
@@ -41,7 +43,8 @@ export class AdminOrderListComponent implements OnInit {
   loadOrders(page = 1): void {
     this.isLoading.set(true);
     const status = (this.statusFilter() as OrderStatus) || undefined;
-    this.orderService.getAdminOrders(page, 10, status).subscribe({
+    const search = this.searchQuery().trim() || undefined;
+    this.orderService.getAdminOrders(page, 10, status, search).subscribe({
       next: (response) => {
         this.orders.set(response.data);
         this.currentPage.set(response.pagination.page);
@@ -57,6 +60,13 @@ export class AdminOrderListComponent implements OnInit {
 
   onStatusFilterChange(): void {
     this.loadOrders(1);
+  }
+
+  onSearchInput(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.searchQuery.set(value);
+    clearTimeout(this.searchTimeout);
+    this.searchTimeout = setTimeout(() => this.loadOrders(1), 300);
   }
 
   switchTab(tab: 'active' | 'history'): void {

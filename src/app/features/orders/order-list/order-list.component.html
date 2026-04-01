@@ -4,6 +4,21 @@
     <p class="orders-subtitle">Historial y seguimiento de tus ordenes</p>
   </div>
 
+  <!-- Filters & Search -->
+  <div class="orders-toolbar">
+    <div class="toolbar-search">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="search-icon">
+        <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+      </svg>
+      <input type="text" placeholder="Buscar por número de orden..." [value]="searchQuery()" (input)="onSearchInput($event)" class="search-input" />
+    </div>
+    <select class="status-filter" [value]="statusFilter()" (change)="onStatusFilterChange($event)">
+      @for (fs of filterStatuses; track fs.value) {
+        <option [value]="fs.value">{{ fs.label }}</option>
+      }
+    </select>
+  </div>
+
   @if (orderService.isLoading()) {
     <div class="loading-state">
       <div class="spinner"></div>
@@ -47,6 +62,22 @@
         </div>
       }
     </div>
+
+    <!-- Pagination -->
+    @if (totalPages() > 1) {
+      <div class="pagination">
+        <button class="pagination-btn" [disabled]="currentPage() === 1" (click)="goToPage(currentPage() - 1)">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
+        </button>
+        @for (p of visiblePages; track p) {
+          <button class="pagination-btn" [class.active]="p === currentPage()" (click)="goToPage(p)">{{ p }}</button>
+        }
+        <button class="pagination-btn" [disabled]="currentPage() === totalPages()" (click)="goToPage(currentPage() + 1)">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
+        </button>
+        <span class="pagination-info">Página {{ currentPage() }} de {{ totalPages() }} ({{ totalItems() }} órdenes)</span>
+      </div>
+    }
   }
 
   <!-- Modal de detalle -->
@@ -101,6 +132,14 @@
                   <span class="info-label">Tipo</span>
                   <span class="info-value">{{ getDispatchLabel(order.dispatchType) }}</span>
                 </div>
+                @if (order.dispatchStatus && order.dispatchStatus !== 'pending') {
+                  <div class="info-row">
+                    <span class="info-label">Estado despacho</span>
+                    <span class="dispatch-status-badge" [ngClass]="getDispatchStatusClass(order.dispatchStatus)">
+                      {{ getDispatchStatusLabel(order.dispatchStatus) }}
+                    </span>
+                  </div>
+                }
                 @if (order.dispatchDetails.selectedBranchName) {
                   <div class="info-row">
                     <span class="info-label">Sucursal</span>
@@ -154,13 +193,82 @@
               </div>
             </div>
 
-            <!-- Vehiculo -->
-            @if (order.vehicle) {
+            <!-- Vehiculos -->
+            @if (order.vehicles.length) {
               <div class="detail-section">
-                <h4>Vehiculo</h4>
+                <h4>{{ order.vehicles.length > 1 ? 'Vehículos' : 'Vehículo' }}</h4>
+                @for (v of order.vehicles; track $index) {
+                  <div class="vehicle-detail-card">
+                    <span>{{ getVehicleLabel(v) }}</span>
+                  </div>
+                }
+              </div>
+            } @else if (order.vehicle) {
+              <div class="detail-section">
+                <h4>Vehículo</h4>
                 <div class="vehicle-detail-card">
                   <span>{{ getVehicleLabel(order.vehicle) }}</span>
                 </div>
+              </div>
+            }
+
+            <!-- Dirección de Facturación -->
+            @if (order.billingAddress) {
+              <div class="detail-section">
+                <h4>Dirección de Facturación</h4>
+                <div class="detail-info-grid">
+                  <div class="info-row">
+                    <span class="info-label">Fuente</span>
+                    <span class="info-value">{{ getBillingSourceLabel(order.billingAddress.source) }}</span>
+                  </div>
+                  @if (order.billingAddress.fullName) {
+                    <div class="info-row">
+                      <span class="info-label">Nombre</span>
+                      <span class="info-value">{{ order.billingAddress.fullName }}</span>
+                    </div>
+                  }
+                  @if (order.billingAddress.address) {
+                    <div class="info-row">
+                      <span class="info-label">Dirección</span>
+                      <span class="info-value">{{ order.billingAddress.address }}</span>
+                    </div>
+                  }
+                  @if (order.billingAddress.city || order.billingAddress.state) {
+                    <div class="info-row">
+                      <span class="info-label">Ubicación</span>
+                      <span class="info-value">
+                        {{ order.billingAddress.city }}{{ order.billingAddress.municipality ? ', ' + order.billingAddress.municipality : '' }}{{ order.billingAddress.state ? ', ' + order.billingAddress.state : '' }}
+                      </span>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- Mecánico asignado (oil change) -->
+            @if (order.mechanic && typeof order.mechanic === 'object') {
+              <div class="detail-section">
+                <h4>Mecánico Asignado</h4>
+                <div class="detail-info-grid">
+                  <div class="info-row">
+                    <span class="info-label">Nombre</span>
+                    <span class="info-value">{{ $any(order.mechanic).name }}</span>
+                  </div>
+                  @if ($any(order.mechanic).phone) {
+                    <div class="info-row">
+                      <span class="info-label">Teléfono</span>
+                      <span class="info-value">{{ $any(order.mechanic).phone }}</span>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- Notas del usuario -->
+            @if (order.notes) {
+              <div class="detail-section">
+                <h4>Notas</h4>
+                <p class="order-notes-text">{{ order.notes }}</p>
               </div>
             }
 
@@ -301,14 +409,37 @@
 
             <!-- Cancelar -->
             @if (order.status === 'pending') {
-              <div class="detail-actions">
-                <button type="button" class="btn btn-danger" (click)="cancelOrder(order)">
-                  Cancelar Orden
-                </button>
+              <div class="cancel-section">
+                <p class="cancel-inline-text">
+                  Si deseas cancelar esta orden, los productos reservados volverán al inventario y deberás realizar una nueva compra.
+                  <a class="cancel-inline-link" (click)="openCancelModal()">Cancelar orden</a>
+                </p>
               </div>
             }
           </div>
         }
+      </div>
+    </div>
+  }
+
+  <!-- Cancel order modal -->
+  @if (showCancelModal() && selectedOrder(); as order) {
+    <div class="cancel-overlay" (click)="closeCancelModal()">
+      <div class="cancel-modal" (click)="$event.stopPropagation()">
+        <div class="cancel-modal-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+          </svg>
+        </div>
+        <h3 class="cancel-modal-title">Cancelar Orden</h3>
+        <p class="cancel-modal-order">#{{ order.orderNumber }}</p>
+        <p class="cancel-modal-text">Al confirmar, se notificará al administrador sobre la cancelación. Si ya realizaste un pago, el equipo se pondrá en contacto contigo para gestionar tu reembolso.</p>
+        <div class="cancel-modal-actions">
+          <button type="button" class="cancel-modal-back" (click)="closeCancelModal()">Volver</button>
+          <button type="button" class="cancel-modal-confirm" [disabled]="isCancelling()" (click)="confirmCancelOrder()">
+            @if (isCancelling()) { Cancelando... } @else { Confirmar cancelación }
+          </button>
+        </div>
       </div>
     </div>
   }

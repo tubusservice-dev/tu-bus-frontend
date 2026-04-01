@@ -1,10 +1,11 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { OrderService } from '../../../core/services/order.service';
+import { UploadService } from '../../../core/services/upload.service';
 import {
   Order, OrderStatus, PaymentSubmission,
   ORDER_STATUS_LABELS, ORDER_STATUS_COLORS,
-  DISPATCH_STATUS_LABELS,
+  DISPATCH_STATUS_LABELS, DISPATCH_STATUS_COLORS,
 } from '../../../models/order.model';
 
 @Component({
@@ -16,11 +17,28 @@ import {
 })
 export class OrderListComponent implements OnInit {
   protected readonly orderService = inject(OrderService);
+  private readonly uploadService = inject(UploadService);
+
   protected readonly selectedOrder = signal<Order | null>(null);
   protected readonly isLoadingDetail = signal(false);
   protected readonly statusLabels = ORDER_STATUS_LABELS;
   protected readonly statusColors = ORDER_STATUS_COLORS;
   protected readonly dispatchStatusLabels = DISPATCH_STATUS_LABELS;
+  protected readonly dispatchStatusColors = DISPATCH_STATUS_COLORS;
+
+  // Pagination
+  protected readonly currentPage = signal(1);
+  protected readonly totalPages = signal(1);
+  protected readonly totalItems = signal(0);
+
+  // Filters
+  protected readonly statusFilter = signal<OrderStatus | ''>('');
+  protected readonly searchQuery = signal('');
+  private searchTimeout: any = null;
+
+  // Cancel order modal
+  protected readonly showCancelModal = signal(false);
+  protected readonly isCancelling = signal(false);
 
   // Payment edit state
   protected readonly isEditingPayment = signal(false);
@@ -48,9 +66,64 @@ export class OrderListComponent implements OnInit {
     'BANFANB', '100% Banco', 'Bangente',
   ];
 
+  protected readonly filterStatuses = [
+    { value: '', label: 'Todas' },
+    { value: OrderStatus.PENDING, label: 'Pendientes' },
+    { value: OrderStatus.CONFIRMED, label: 'Confirmadas' },
+    { value: OrderStatus.PROCESSING, label: 'En Proceso' },
+    { value: OrderStatus.SHIPPED, label: 'Enviadas' },
+    { value: OrderStatus.COMPLETED, label: 'Completadas' },
+    { value: OrderStatus.CANCELLED, label: 'Canceladas' },
+  ];
+
   ngOnInit(): void {
-    this.orderService.getMyOrders().subscribe();
+    this.loadOrders();
   }
+
+  // ==================== DATA LOADING ====================
+
+  loadOrders(page = 1): void {
+    const status = this.statusFilter() || undefined;
+    const search = this.searchQuery().trim() || undefined;
+
+    this.orderService.getMyOrders(page, 10, status as OrderStatus, search).subscribe({
+      next: (res) => {
+        this.currentPage.set(res.pagination.page);
+        this.totalPages.set(res.pagination.pages);
+        this.totalItems.set(res.pagination.total);
+      },
+    });
+  }
+
+  onStatusFilterChange(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    this.statusFilter.set(value as OrderStatus | '');
+    this.loadOrders(1);
+  }
+
+  onSearchInput(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.searchQuery.set(value);
+    clearTimeout(this.searchTimeout);
+    this.searchTimeout = setTimeout(() => this.loadOrders(1), 300);
+  }
+
+  goToPage(page: number): void {
+    if (page < 1 || page > this.totalPages()) return;
+    this.loadOrders(page);
+  }
+
+  get visiblePages(): number[] {
+    const current = this.currentPage();
+    const total = this.totalPages();
+    const pages: number[] = [];
+    const start = Math.max(1, current - 2);
+    const end = Math.min(total, current + 2);
+    for (let i = start; i <= end; i++) pages.push(i);
+    return pages;
+  }
+
+  // ==================== LABELS & HELPERS ====================
 
   getStatusLabel(status: OrderStatus | string): string {
     return this.statusLabels[status as OrderStatus] || status;
@@ -71,6 +144,25 @@ export class OrderListComponent implements OnInit {
     };
     return labels[type] || type;
   }
+
+  getDispatchStatusLabel(status: string): string {
+    return this.dispatchStatusLabels[status] || status;
+  }
+
+  getDispatchStatusClass(status: string): string {
+    return this.dispatchStatusColors[status] || '';
+  }
+
+  getBillingSourceLabel(source: string): string {
+    const labels: Record<string, string> = {
+      shipping: 'Dirección de envío',
+      profile: 'Dirección del perfil',
+      custom: 'Dirección personalizada',
+    };
+    return labels[source] || source;
+  }
+
+  // ==================== ORDER DETAIL ====================
 
   viewDetail(order: Order): void {
     this.isLoadingDetail.set(true);
@@ -93,13 +185,28 @@ export class OrderListComponent implements OnInit {
     document.body.style.overflow = '';
   }
 
-  cancelOrder(order: Order): void {
-    if (!confirm(`Cancelar la orden ${order.orderNumber}?`)) return;
+  openCancelModal(): void {
+    this.showCancelModal.set(true);
+  }
 
+  closeCancelModal(): void {
+    this.showCancelModal.set(false);
+  }
+
+  confirmCancelOrder(): void {
+    const order = this.selectedOrder();
+    if (!order) return;
+
+    this.isCancelling.set(true);
     this.orderService.cancelOrder(order.id).subscribe({
       next: () => {
+        this.isCancelling.set(false);
+        this.showCancelModal.set(false);
         this.closeDetail();
-        this.orderService.getMyOrders().subscribe();
+        this.loadOrders(this.currentPage());
+      },
+      error: () => {
+        this.isCancelling.set(false);
       },
     });
   }
@@ -156,15 +263,33 @@ export class OrderListComponent implements OnInit {
       paymentDate: this.editPaymentDate() || undefined,
     };
 
-    this.orderService.updatePayment(order.id, updated).subscribe({
+    // Upload proof file if selected, then save payment
+    if (this.editProofFile) {
+      this.uploadService.uploadImage(this.editProofFile, 'payment-proofs').subscribe({
+        next: (uploadRes) => {
+          updated.proofUrl = uploadRes.data.url;
+          updated.proofPublicId = uploadRes.data.publicId;
+          this.sendPaymentUpdate(order.id, updated);
+        },
+        error: () => {
+          this.isSavingPayment.set(false);
+          this.paymentEditError.set('Error al subir el comprobante');
+        },
+      });
+    } else {
+      this.sendPaymentUpdate(order.id, updated);
+    }
+  }
+
+  private sendPaymentUpdate(orderId: string, updated: PaymentSubmission): void {
+    this.orderService.updatePayment(orderId, updated).subscribe({
       next: (res) => {
         this.selectedOrder.set(res.data);
         this.isEditingPayment.set(false);
         this.isSavingPayment.set(false);
         this.paymentEditSuccess.set('Pago actualizado correctamente');
         setTimeout(() => this.paymentEditSuccess.set(null), 3000);
-        // Refresh list
-        this.orderService.getMyOrders().subscribe();
+        this.loadOrders(this.currentPage());
       },
       error: (err) => {
         this.isSavingPayment.set(false);
@@ -197,7 +322,7 @@ export class OrderListComponent implements OnInit {
     this.editProofPreview.set(null);
   }
 
-  // ==================== HELPERS ====================
+  // ==================== FORMAT HELPERS ====================
 
   formatDate(date: string): string {
     return new Date(date).toLocaleDateString('es-ES', {

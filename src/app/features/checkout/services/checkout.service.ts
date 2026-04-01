@@ -115,7 +115,7 @@ export interface CheckoutState {
   localDeliveryRecipientInfo: LocalDeliveryRecipientInfo | null;
   sellerAgreementInfo: SellerAgreementInfo | null;
   oilChangeServiceInfo: OilChangeServiceInfo | null;
-  selectedVehicle: Vehicle | null;
+  selectedVehicles: Vehicle[];
   selectedBranch: BranchSummary | null;
   billingAddress: BillingAddress | null;
   paymentMethod: string | null;
@@ -130,7 +130,7 @@ const INITIAL_STATE: CheckoutState = {
   localDeliveryRecipientInfo: null,
   sellerAgreementInfo: null,
   oilChangeServiceInfo: null,
-  selectedVehicle: null,
+  selectedVehicles: [],
   selectedBranch: null,
   billingAddress: null,
   paymentMethod: null,
@@ -179,7 +179,31 @@ export class CheckoutService {
     const hasCoverage = this.locationService.hasCoverage();
     const hasOilChange = this.cartService.hasOilChangeService();
 
-    // 1. Retiro en Tienda — ALWAYS
+    // 1. Cambio de Aceite a Domicilio — oil combo + coverage (priority)
+    if (hasOilChange && hasCoverage) {
+      options.push({
+        id: 'oil_change_service',
+        name: 'Cambio de Aceite a Domicilio',
+        description: 'Servicio de cambio de aceite gratis incluido con tu compra',
+        icon: 'oil',
+        price: null,
+        isAvailable: true,
+      });
+    }
+
+    // 2. Cambio de Aceite en Tienda — oil combo + branch has service
+    if (hasOilChange && this.locationService.hasInStoreOilChange()) {
+      options.push({
+        id: 'in_store_oil_change',
+        name: 'Cambio de Aceite en Tienda',
+        description: 'Lleva tu vehiculo a la sucursal para el cambio de aceite',
+        icon: 'wrench',
+        price: null,
+        isAvailable: true,
+      });
+    }
+
+    // 3. Retiro en Tienda — ALWAYS
     if (modules.storePickup) {
       options.push({
         id: 'store_pickup',
@@ -191,7 +215,7 @@ export class CheckoutService {
       });
     }
 
-    // 2. Delivery Local — ONLY if coverage AND delivery enabled
+    // 4. Delivery Local — ONLY if coverage AND delivery enabled
     if (hasCoverage && this.locationService.hasDelivery()) {
       const dc = this.locationService.deliveryConfig();
       const isFree = dc?.freeDelivery ?? false;
@@ -208,7 +232,7 @@ export class CheckoutService {
       });
     }
 
-    // 3. Envio por Agencia — ALWAYS (user may be in a different state)
+    // 5. Envio por Agencia — ALWAYS
     if (modules.shippingAgency) {
       options.push({
         id: 'shipping_agency',
@@ -220,37 +244,13 @@ export class CheckoutService {
       });
     }
 
-    // 4. Acordar con Vendedor — ALWAYS
+    // 6. Acordar con Vendedor — ALWAYS
     if (modules.sellerAgreement) {
       options.push({
         id: 'seller_agreement',
         name: 'Acordar con Vendedor',
         description: 'Coordina directamente con nosotros el metodo de entrega',
         icon: 'chat',
-        price: null,
-        isAvailable: true,
-      });
-    }
-
-    // 5. Cambio de Aceite a Domicilio — oil combo + coverage
-    if (hasOilChange && hasCoverage) {
-      options.push({
-        id: 'oil_change_service',
-        name: 'Cambio de Aceite a Domicilio',
-        description: 'Servicio de cambio de aceite gratis incluido con tu compra',
-        icon: 'oil',
-        price: null,
-        isAvailable: true,
-      });
-    }
-
-    // 6. Cambio de Aceite en Tienda — oil combo + branch has service
-    if (hasOilChange && this.locationService.hasInStoreOilChange()) {
-      options.push({
-        id: 'in_store_oil_change',
-        name: 'Cambio de Aceite en Tienda',
-        description: 'Lleva tu vehiculo a la sucursal para el cambio de aceite',
-        icon: 'wrench',
         price: null,
         isAvailable: true,
       });
@@ -266,7 +266,8 @@ export class CheckoutService {
   readonly localDeliveryRecipientInfo = computed(() => this._state().localDeliveryRecipientInfo);
   readonly sellerAgreementInfo = computed(() => this._state().sellerAgreementInfo);
   readonly oilChangeServiceInfo = computed(() => this._state().oilChangeServiceInfo);
-  readonly selectedVehicle = computed(() => this._state().selectedVehicle);
+  readonly selectedVehicles = computed(() => this._state().selectedVehicles);
+  readonly selectedVehicle = computed(() => this._state().selectedVehicles[0] ?? null); // @deprecated compat
   readonly selectedBranch = computed(() => this._state().selectedBranch);
   readonly billingAddress = computed(() => this._state().billingAddress);
   readonly paymentMethod = computed(() => this._state().paymentMethod);
@@ -277,7 +278,8 @@ export class CheckoutService {
   readonly hasLocalDeliveryRecipientInfo = computed(() => this._state().localDeliveryRecipientInfo !== null);
   readonly hasSellerAgreementInfo = computed(() => this._state().sellerAgreementInfo !== null);
   readonly hasOilChangeServiceInfo = computed(() => this._state().oilChangeServiceInfo !== null);
-  readonly hasVehicle = computed(() => this._state().selectedVehicle !== null);
+  readonly hasVehicle = computed(() => this._state().selectedVehicles.length > 0);
+  readonly hasVehicles = computed(() => this._state().selectedVehicles.length > 0);
   readonly hasBranch = computed(() => this._state().selectedBranch !== null);
   readonly hasPaymentMethod = computed(() => this._state().paymentMethod !== null);
 
@@ -293,12 +295,11 @@ export class CheckoutService {
       localDeliveryRecipientInfo: type === 'local_delivery' ? state.localDeliveryRecipientInfo : null,
       sellerAgreementInfo: type === 'seller_agreement' ? state.sellerAgreementInfo : null,
       oilChangeServiceInfo: type === 'oil_change_service' ? state.oilChangeServiceInfo : null,
-      // Preserve vehicle for oil change types
-      selectedVehicle: (type === 'oil_change_service' || type === 'in_store_oil_change')
-        ? state.selectedVehicle : null,
-      // Preserve branch for pickup/in-store types
-      selectedBranch: (type === 'store_pickup' || type === 'in_store_oil_change')
-        ? state.selectedBranch : null,
+      // Preserve vehicles for oil change types
+      selectedVehicles: (type === 'oil_change_service' || type === 'in_store_oil_change')
+        ? state.selectedVehicles : [],
+      // Preserve branch for ALL dispatch types
+      selectedBranch: state.selectedBranch,
     }));
   }
 
@@ -322,12 +323,42 @@ export class CheckoutService {
     this._state.update((s) => ({ ...s, oilChangeServiceInfo: info }));
   }
 
-  selectVehicle(vehicle: Vehicle): void {
-    this._state.update((s) => ({ ...s, selectedVehicle: vehicle }));
+  addVehicle(vehicle: Vehicle): void {
+    this._state.update((s) => {
+      const exists = s.selectedVehicles.some((v) => v.id === vehicle.id);
+      if (exists) return s;
+      return { ...s, selectedVehicles: [...s.selectedVehicles, vehicle] };
+    });
   }
 
+  removeVehicle(vehicleId: string): void {
+    this._state.update((s) => ({
+      ...s,
+      selectedVehicles: s.selectedVehicles.filter((v) => v.id !== vehicleId),
+    }));
+  }
+
+  toggleVehicle(vehicle: Vehicle): void {
+    const exists = this._state().selectedVehicles.some((v) => v.id === vehicle.id);
+    if (exists) {
+      this.removeVehicle(vehicle.id);
+    } else {
+      this.addVehicle(vehicle);
+    }
+  }
+
+  clearVehicles(): void {
+    this._state.update((s) => ({ ...s, selectedVehicles: [] }));
+  }
+
+  /** @deprecated Use addVehicle() instead */
+  selectVehicle(vehicle: Vehicle): void {
+    this._state.update((s) => ({ ...s, selectedVehicles: [vehicle] }));
+  }
+
+  /** @deprecated Use clearVehicles() instead */
   clearVehicle(): void {
-    this._state.update((s) => ({ ...s, selectedVehicle: null }));
+    this._state.update((s) => ({ ...s, selectedVehicles: [] }));
   }
 
   selectBranch(branch: BranchSummary): void {
@@ -370,7 +401,7 @@ export class CheckoutService {
       localDeliveryRecipientInfo: null,
       sellerAgreementInfo: null,
       oilChangeServiceInfo: null,
-      selectedVehicle: null,
+      selectedVehicles: [],
       selectedBranch: null,
     }));
   }

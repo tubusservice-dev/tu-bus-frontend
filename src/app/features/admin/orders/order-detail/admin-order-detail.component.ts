@@ -44,6 +44,17 @@ export class AdminOrderDetailComponent implements OnInit {
   // Dispatch modal
   protected readonly dispatchModalOpen = signal(false);
 
+  // Dispatch status
+  protected readonly showDispatchStatusModal = signal(false);
+  protected readonly newDispatchStatus = signal('');
+  protected readonly dispatchStatusNote = signal('');
+  protected readonly isChangingDispatchStatus = signal(false);
+
+  // Notes editing
+  protected readonly isEditingNotes = signal(false);
+  protected readonly editNotesValue = signal('');
+  protected readonly isSavingNotes = signal(false);
+
   protected readonly orderStatuses = Object.values(OrderStatus);
   protected readonly ORDER_STATUS_LABELS = ORDER_STATUS_LABELS;
 
@@ -101,6 +112,8 @@ export class AdminOrderDetailComponent implements OnInit {
       shipping_agency: 'Agencia de Envío',
       local_delivery: 'Delivery Local',
       seller_agreement: 'Acordar con Vendedor',
+      oil_change_service: 'Cambio de Aceite a Domicilio',
+      in_store_oil_change: 'Cambio de Aceite en Tienda',
     };
     return labels[type] || type;
   }
@@ -145,12 +158,12 @@ export class AdminOrderDetailComponent implements OnInit {
   }
 
   getVehicleInfo(order: Order): string {
-    if (!order.vehicle) return '-';
-    if (typeof order.vehicle === 'object') {
-      const v = order.vehicle;
-      return `${v.marca} ${v.modelo} ${v.year} - ${v.placa}`;
-    }
-    return String(order.vehicle);
+    const vehicles = order.vehicles?.length ? order.vehicles : (order.vehicle ? [order.vehicle] : []);
+    if (!vehicles.length) return '-';
+    return vehicles.map(v => {
+      if (typeof v === 'object') return `${v.marca} ${v.modelo} ${v.year} - ${v.placa}`;
+      return String(v);
+    }).join(' | ');
   }
 
   // ========== Actions ==========
@@ -165,6 +178,71 @@ export class AdminOrderDetailComponent implements OnInit {
 
   onMechanicAssigned(updatedOrder: Order): void {
     this.order.set(updatedOrder);
+  }
+
+  // ========== Dispatch Status ==========
+
+  openDispatchStatusModal(): void {
+    const order = this.order();
+    if (!order) return;
+    this.newDispatchStatus.set(order.dispatchStatus || 'pending');
+    this.dispatchStatusNote.set('');
+    this.showDispatchStatusModal.set(true);
+  }
+
+  closeDispatchStatusModal(): void {
+    this.showDispatchStatusModal.set(false);
+  }
+
+  confirmDispatchStatusChange(): void {
+    const order = this.order();
+    if (!order || !this.newDispatchStatus()) return;
+
+    this.isChangingDispatchStatus.set(true);
+    this.orderService.updateDispatchStatus(order.id, this.newDispatchStatus(), this.dispatchStatusNote() || undefined).subscribe({
+      next: (res) => {
+        this.order.set(res.data);
+        this.isChangingDispatchStatus.set(false);
+        this.closeDispatchStatusModal();
+      },
+      error: () => this.isChangingDispatchStatus.set(false),
+    });
+  }
+
+  // ========== Notes Editing ==========
+
+  startEditingNotes(): void {
+    const order = this.order();
+    this.editNotesValue.set(order?.notes || '');
+    this.isEditingNotes.set(true);
+  }
+
+  cancelEditingNotes(): void {
+    this.isEditingNotes.set(false);
+  }
+
+  saveNotes(): void {
+    const order = this.order();
+    if (!order) return;
+
+    this.isSavingNotes.set(true);
+    this.orderService.updateNotes(order.id, this.editNotesValue()).subscribe({
+      next: (res) => {
+        this.order.set(res.data);
+        this.isSavingNotes.set(false);
+        this.isEditingNotes.set(false);
+      },
+      error: () => this.isSavingNotes.set(false),
+    });
+  }
+
+  getBillingSourceLabel(source?: string): string {
+    const labels: Record<string, string> = {
+      shipping: 'Dirección de envío',
+      profile: 'Dirección del perfil',
+      custom: 'Dirección personalizada',
+    };
+    return labels[source || ''] || source || '-';
   }
 
   goBack(): void {

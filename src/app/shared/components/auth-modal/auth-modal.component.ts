@@ -203,7 +203,10 @@ export class AuthModalComponent implements OnInit, OnDestroy {
 
   // ========== OAuth ==========
 
+  protected readonly isOAuthLoading = signal(false);
+
   loginWithGoogle(): void {
+    this.isOAuthLoading.set(true);
     this.authService.loginWithOAuth('google');
   }
 

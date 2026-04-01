@@ -76,7 +76,7 @@
   }
 }
 
-.btn-dispatch {
+.btn-dispatch, .btn-dispatch-status {
   @apply inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium border transition-all;
   @apply border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800;
 
@@ -366,4 +366,40 @@
 
 .btn-reject-confirm {
   @apply px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors;
+}
+
+// ============================================
+// NOTES EDITING
+// ============================================
+.notes-value {
+  @apply flex items-center gap-2;
+}
+
+.btn-edit-inline {
+  @apply w-6 h-6 flex items-center justify-center rounded transition-colors;
+  @apply text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20;
+}
+
+.notes-edit-area {
+  @apply flex-1 flex flex-col gap-2;
+
+  textarea {
+    @apply w-full px-3 py-2 rounded-lg border text-sm resize-none;
+    @apply border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100;
+    @apply focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500;
+  }
+}
+
+.notes-edit-actions {
+  @apply flex items-center justify-end gap-2;
+}
+
+.btn-notes-cancel {
+  @apply px-3 py-1.5 rounded-lg text-xs font-medium;
+  @apply text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors;
+}
+
+.btn-notes-save {
+  @apply px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700;
+  @apply disabled:opacity-60 disabled:cursor-not-allowed transition-colors;
 }
