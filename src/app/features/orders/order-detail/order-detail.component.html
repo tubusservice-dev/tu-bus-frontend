@@ -59,22 +59,42 @@
                   <span class="product-name">{{ item.name }}</span>
                   <span class="product-qty">x{{ item.quantity }} &middot; {{ item.price | currency:'USD' }} c/u</span>
                 </div>
-                <span class="product-total">{{ item.price * item.quantity | currency:'USD' }}</span>
+                <div class="product-total-col">
+                  <span class="product-total">{{ item.price * item.quantity | currency:'USD' }}</span>
+                  @if (exchangeRateService.showBsPrice()) {
+                    <span class="product-total-bs">{{ exchangeRateService.formatBsPrice(item.price * item.quantity) }}</span>
+                  }
+                </div>
               </div>
             }
           </div>
           <div class="totals-section">
             <div class="total-row">
               <span>Subtotal</span>
-              <span>{{ o.subtotal | currency:'USD' }}</span>
+              <div class="total-row-values">
+                <span>{{ o.subtotal | currency:'USD' }}</span>
+                @if (exchangeRateService.showBsPrice()) {
+                  <span class="total-row-bs">{{ exchangeRateService.formatBsPrice(o.subtotal) }}</span>
+                }
+              </div>
             </div>
             <div class="total-row">
               <span>Envío</span>
-              <span>{{ o.shippingCost === 0 ? 'Gratis' : (o.shippingCost | currency:'USD') }}</span>
+              <div class="total-row-values">
+                <span>{{ o.shippingCost === 0 ? 'Gratis' : (o.shippingCost | currency:'USD') }}</span>
+                @if (exchangeRateService.showBsPrice() && o.shippingCost > 0) {
+                  <span class="total-row-bs">{{ exchangeRateService.formatBsPrice(o.shippingCost) }}</span>
+                }
+              </div>
             </div>
             <div class="total-row total-final">
               <span>Total</span>
-              <span>{{ o.total | currency:'USD' }}</span>
+              <div class="total-row-values">
+                <span>{{ o.total | currency:'USD' }}</span>
+                @if (exchangeRateService.showBsPrice()) {
+                  <span class="total-row-bs total-bs-final">{{ exchangeRateService.formatBsPrice(o.total) }}</span>
+                }
+              </div>
             </div>
           </div>
         </section>

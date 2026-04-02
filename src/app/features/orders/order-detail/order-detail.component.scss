@@ -173,6 +173,28 @@
   @apply text-sm font-semibold text-gray-900 dark:text-gray-100 flex-shrink-0;
 }
 
+.product-total-col {
+  @apply flex flex-col items-end flex-shrink-0;
+}
+
+.product-total-bs {
+  @apply text-xs font-semibold;
+  color: #9ca3af;
+}
+
+.total-row-values {
+  @apply flex flex-col items-end;
+}
+
+.total-row-bs {
+  @apply text-xs font-semibold;
+  color: #9ca3af;
+
+  &.total-bs-final {
+    @apply text-sm;
+  }
+}
+
 // ============================================
 // TOTALS
 // ============================================

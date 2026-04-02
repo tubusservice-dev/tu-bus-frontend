@@ -194,12 +194,18 @@
 }
 
 .item-price {
-  @apply text-sm font-semibold mb-2;
+  @apply text-sm font-semibold mb-0.5;
   color: var(--accent-primary);
 
   @media (max-width: 639px) {
-    @apply text-base mb-3;
+    @apply text-base mb-0.5;
   }
+}
+
+.item-price-bs {
+  @apply text-xs font-semibold mb-2;
+  color: #9ca3af;
+  line-height: 1;
 }
 
 // Controles de cantidad
@@ -296,6 +302,10 @@
   }
 }
 
+.subtotal-values {
+  @apply flex flex-col items-end;
+}
+
 .subtotal-value {
   @apply text-lg font-bold;
   color: var(--text-primary);
@@ -303,6 +313,11 @@
   @media (max-width: 639px) {
     @apply text-xl;
   }
+}
+
+.subtotal-bs {
+  @apply text-xs font-semibold;
+  color: #9ca3af;
 }
 
 .checkout-btn {

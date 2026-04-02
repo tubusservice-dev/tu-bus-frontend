@@ -14,6 +14,7 @@ import {
   UpdateHeroImagesDto,
   PaginationConfig,
   UpdateDispatchDto,
+  ExchangeRateConfig,
   DEFAULT_SETTINGS,
   STORE_COLORS,
   ADMIN_COLORS,
@@ -45,6 +46,7 @@ export class SettingsService {
   readonly heroImagesConfig = computed(() => this._settings().heroImages);
   readonly paginationConfig = computed(() => this._settings().pagination);
   readonly dispatchConfig = computed(() => this._settings().dispatch);
+  readonly exchangeRateConfig = computed(() => this._settings().exchangeRate);
 
   /**
    * Cargar configuraciones desde el servidor (público)
@@ -78,6 +80,10 @@ export class SettingsService {
                 ...DEFAULT_SETTINGS.dispatch.storePickup,
                 ...response.data.dispatch?.storePickup,
               },
+            },
+            exchangeRate: {
+              ...DEFAULT_SETTINGS.exchangeRate,
+              ...response.data.exchangeRate,
             },
           };
           this._settings.set(mergedSettings);
@@ -214,6 +220,25 @@ export class SettingsService {
             },
           };
           this._settings.set(mergedSettings);
+        }
+      })
+    );
+  }
+
+  /**
+   * Actualizar configuración de tasa de cambio
+   */
+  updateExchangeRateConfig(data: Partial<ExchangeRateConfig>): Observable<SettingsResponse> {
+    return this.http.put<SettingsResponse>(`${this.adminUrl}/exchange-rate`, data).pipe(
+      tap((response) => {
+        if (response.data) {
+          this._settings.set({
+            ...this._settings(),
+            exchangeRate: {
+              ...DEFAULT_SETTINGS.exchangeRate,
+              ...response.data.exchangeRate,
+            },
+          });
         }
       })
     );

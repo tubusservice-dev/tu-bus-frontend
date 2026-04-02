@@ -7,6 +7,7 @@ import { CartService } from '../../core/services/cart.service';
 import { AuthService } from '../../core/services/auth.service';
 import { LocationService } from '../../core/services/location.service';
 import { BranchProductService } from '../../core/services/branch-product.service';
+import { ExchangeRateService } from '../../core/services/exchange-rate.service';
 import { Product, Category, Brand, Line } from '../../models/product.model';
 import {
   ProductCardComponent,
@@ -30,6 +31,7 @@ export class ProductDetailComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly locationService = inject(LocationService);
   private readonly branchProductService = inject(BranchProductService);
+  protected readonly exchangeRateService = inject(ExchangeRateService);
   private readonly destroyRef = inject(DestroyRef);
 
   constructor() {

@@ -59,7 +59,7 @@
               <div class="cart-card">
                 <!-- Imagen del producto -->
                 <div class="card-image-container">
-                  <img [src]="item.image" [alt]="item.name" class="card-image" />
+                  <img [src]="item.image || 'https://placehold.co/400x300/e5e7eb/9ca3af?text=Sin+imagen'" [alt]="item.name" class="card-image" />
                 </div>
 
                 <!-- Contenido de la card -->
@@ -141,7 +141,7 @@
                   <tr class="cart-row">
                     <td class="td-product">
                       <div class="product-info">
-                        <img [src]="item.image" [alt]="item.name" class="product-image" />
+                        <img [src]="item.image || 'https://placehold.co/400x300/e5e7eb/9ca3af?text=Sin+imagen'" [alt]="item.name" class="product-image" />
                         <span class="product-name">{{ item.name }}</span>
                       </div>
                     </td>
@@ -217,7 +217,12 @@
 
             <div class="summary-total">
               <span>Total</span>
-              <span class="total-value">{{ cartService.subtotal() | currency:'USD' }}</span>
+              <div class="summary-values">
+                <span class="total-value">{{ cartService.subtotal() | currency:'USD' }}</span>
+                @if (exchangeRateService.showBsPrice()) {
+                  <span class="total-bs">{{ exchangeRateService.formatBsPrice(cartService.subtotal()) }}</span>
+                }
+              </div>
             </div>
 
             <button type="button" class="btn-checkout" (click)="onContinue()">

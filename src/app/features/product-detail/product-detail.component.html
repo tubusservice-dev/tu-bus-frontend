@@ -127,10 +127,13 @@
         <div class="price-section">
           <span class="price-label">Precio</span>
           <div class="price-values">
+            <span class="current-price">${{ prod.price | number:'1.2-2' }}</span>
             @if (hasDiscount()) {
               <span class="compare-price">${{ prod.comparePrice | number:'1.2-2' }}</span>
             }
-            <span class="current-price">${{ prod.price | number:'1.2-2' }}</span>
+            @if (exchangeRateService.showBsPrice()) {
+              <span class="price-bs-detail">{{ exchangeRateService.formatBsPrice(prod.price) }}</span>
+            }
           </div>
         </div>
 
@@ -298,6 +301,9 @@
                   <p class="mini-card-desc">{{ relatedProduct.description }}</p>
                 }
                 <span class="mini-card-price">${{ relatedProduct.price | number:'1.2-2' }}</span>
+                @if (exchangeRateService.showBsPrice()) {
+                  <span class="mini-card-price-bs">{{ exchangeRateService.formatBsPrice(relatedProduct.price) }}</span>
+                }
               </div>
             </a>
           }

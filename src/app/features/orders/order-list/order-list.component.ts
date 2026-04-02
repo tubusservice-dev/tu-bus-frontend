@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { OrderService } from '../../../core/services/order.service';
+import { ExchangeRateService } from '../../../core/services/exchange-rate.service';
 import {
   Order, OrderStatus,
   ORDER_STATUS_LABELS, ORDER_STATUS_COLORS,
@@ -18,6 +19,7 @@ import {
 })
 export class OrderListComponent implements OnInit {
   protected readonly orderService = inject(OrderService);
+  protected readonly exchangeRateService = inject(ExchangeRateService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 

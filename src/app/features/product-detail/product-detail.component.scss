@@ -252,7 +252,7 @@
   }
 
   .price-values {
-    @apply flex items-baseline gap-3;
+    @apply flex items-baseline gap-3 flex-wrap;
   }
 
   .compare-price {
@@ -263,6 +263,11 @@
   .current-price {
     @apply text-3xl font-bold;
     color: var(--accent-primary);
+  }
+
+  .price-bs-detail {
+    @apply text-base font-medium ml-auto;
+    color: #9ca3af;
   }
 }
 
@@ -543,6 +548,11 @@
 .mini-card-price {
   @apply text-base font-bold mt-1;
   color: var(--accent-primary);
+}
+
+.mini-card-price-bs {
+  @apply block text-xs font-semibold;
+  color: #9ca3af;
 }
 
 // Vista desktop: grid con product cards

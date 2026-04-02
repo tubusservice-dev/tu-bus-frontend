@@ -1,10 +1,11 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { SettingsService } from '../../../core/services/settings.service';
 import { PaymentMethodService } from '../../../core/services/payment-method.service';
 import { UploadService } from '../../../core/services/upload.service';
+import { ExchangeRateService } from '../../../core/services/exchange-rate.service';
 import { Settings, HeroImage, FloatingStat, PAGINATION_OPTIONS } from '../../../models/settings.model';
 import {
   PaymentMethodConfig,
@@ -12,7 +13,7 @@ import {
   PAYMENT_METHOD_TYPE_LABELS,
 } from '../../../models/payment-method.model';
 
-type SectionKey = 'heroImages' | 'homeHero' | 'whatsapp' | 'carousels' | 'pagination' | 'dispatchModules' | 'dispatch' | 'paymentMethods';
+type SectionKey = 'heroImages' | 'homeHero' | 'whatsapp' | 'carousels' | 'pagination' | 'dispatchModules' | 'dispatch' | 'paymentMethods' | 'exchangeRate';
 type PaginationSubKey = 'catalogLimit' | 'adminLimit';
 
 @Component({
@@ -27,6 +28,7 @@ export class SettingsComponent implements OnInit {
   private readonly settingsService = inject(SettingsService);
   private readonly paymentMethodService = inject(PaymentMethodService);
   private readonly uploadService = inject(UploadService);
+  protected readonly exchangeRateService = inject(ExchangeRateService);
 
   // Estado
   protected readonly isLoading = signal(true);
@@ -45,6 +47,15 @@ export class SettingsComponent implements OnInit {
   protected readonly isDeletingMethod = signal<string | null>(null);
   protected readonly methodToDelete = signal<PaymentMethodConfig | null>(null);
 
+  // Exchange Rate
+  protected readonly isEditingRate = signal(false);
+  protected readonly rateSaving = signal(false);
+  protected readonly rateSuccess = signal(false);
+  protected readonly rateError = signal<string | null>(null);
+  protected readonly editableRate = signal<number | null>(null);
+  protected readonly showBsPrice = signal(false);
+  protected readonly toggleSaving = signal(false);
+
   // Estados de guardado por sección
   protected readonly isSaving = signal<Record<SectionKey, boolean>>({
     heroImages: false,
@@ -55,6 +66,7 @@ export class SettingsComponent implements OnInit {
     dispatchModules: false,
     dispatch: false,
     paymentMethods: false,
+    exchangeRate: false,
   });
 
   protected readonly saveSuccess = signal<Record<SectionKey, boolean>>({
@@ -66,6 +78,7 @@ export class SettingsComponent implements OnInit {
     dispatchModules: false,
     dispatch: false,
     paymentMethods: false,
+    exchangeRate: false,
   });
 
   protected readonly errorMessage = signal<Record<SectionKey, string | null>>({
@@ -77,6 +90,7 @@ export class SettingsComponent implements OnInit {
     dispatchModules: null,
     dispatch: null,
     paymentMethods: null,
+    exchangeRate: null,
   });
 
   // Opciones de paginación
@@ -211,6 +225,14 @@ export class SettingsComponent implements OnInit {
             this.dispatchForm.patchValue({ storePickup: data.dispatch.storePickup });
           }
         }
+
+        // Exchange rate config
+        if (data.exchangeRate) {
+          this.showBsPrice.set(data.exchangeRate.showBsPrice);
+        }
+
+        // Load current exchange rate
+        this.exchangeRateService.loadAdminRate();
 
         this.isLoading.set(false);
       },
@@ -563,6 +585,63 @@ export class SettingsComponent implements OnInit {
         this.isDeletingMethod.set(null);
       },
     });
+  }
+
+  // ========== Tasa de Cambio ==========
+  toggleShowBsPrice(): void {
+    const newValue = !this.showBsPrice();
+    this.toggleSaving.set(true);
+    this.settingsService.updateExchangeRateConfig({ showBsPrice: newValue }).subscribe({
+      next: () => {
+        this.showBsPrice.set(newValue);
+        this.toggleSaving.set(false);
+      },
+      error: () => {
+        this.toggleSaving.set(false);
+      },
+    });
+  }
+
+  startEditingRate(): void {
+    const currentRate = this.exchangeRateService.currentRate();
+    this.editableRate.set(currentRate);
+    this.isEditingRate.set(true);
+    this.rateError.set(null);
+  }
+
+  cancelEditingRate(): void {
+    this.isEditingRate.set(false);
+    this.editableRate.set(null);
+    this.rateError.set(null);
+  }
+
+  saveRate(): void {
+    const rate = this.editableRate();
+    if (!rate || rate <= 0) {
+      this.rateError.set('La tasa debe ser un número mayor a 0');
+      return;
+    }
+
+    this.rateSaving.set(true);
+    this.rateError.set(null);
+
+    this.exchangeRateService.updateRate(rate).subscribe({
+      next: () => {
+        this.rateSaving.set(false);
+        this.isEditingRate.set(false);
+        this.rateSuccess.set(true);
+        setTimeout(() => this.rateSuccess.set(false), 3000);
+      },
+      error: (error) => {
+        this.rateSaving.set(false);
+        this.rateError.set(error.error?.message || 'Error al guardar la tasa');
+      },
+    });
+  }
+
+  onRateInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.editableRate.set(parseFloat(input.value) || null);
   }
 
   // ========== Helpers ==========

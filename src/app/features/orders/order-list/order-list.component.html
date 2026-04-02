@@ -56,7 +56,12 @@
             </div>
             <div class="order-meta">
               <span class="order-date">{{ formatDate(order.createdAt) }}</span>
-              <span class="order-total">{{ order.total | currency:'USD' }}</span>
+              <div class="order-total-col">
+                <span class="order-total">{{ order.total | currency:'USD' }}</span>
+                @if (exchangeRateService.showBsPrice()) {
+                  <span class="order-total-bs">{{ exchangeRateService.formatBsPrice(order.total) }}</span>
+                }
+              </div>
             </div>
           </div>
         </div>

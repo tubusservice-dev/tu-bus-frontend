@@ -65,7 +65,7 @@
           @for (item of cartService.items(); track item.id) {
             <div class="cart-item">
               <img
-                [src]="item.image"
+                [src]="item.image || 'https://placehold.co/400x300/e5e7eb/9ca3af?text=Sin+imagen'"
                 [alt]="item.name"
                 class="item-image"
               />
@@ -118,7 +118,12 @@
         <div class="popover-footer">
           <div class="subtotal">
             <span class="subtotal-label">Subtotal:</span>
-            <span class="subtotal-value">{{ cartService.subtotal() | currency:'USD' }}</span>
+            <div class="subtotal-values">
+              <span class="subtotal-value">{{ cartService.subtotal() | currency:'USD' }}</span>
+              @if (exchangeRateService.showBsPrice()) {
+                <span class="subtotal-bs">{{ exchangeRateService.formatBsPrice(cartService.subtotal()) }}</span>
+              }
+            </div>
           </div>
           <button
             type="button"

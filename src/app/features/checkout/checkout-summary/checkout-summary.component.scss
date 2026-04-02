@@ -628,6 +628,32 @@
   }
 }
 
+.payment-row-values {
+  @apply flex flex-col items-end;
+}
+
+.payment-row-bs {
+  @apply text-xs font-semibold;
+  color: #9ca3af;
+
+  &.total-bs {
+    @apply text-sm;
+  }
+}
+
+.confirm-values {
+  @apply flex flex-col items-end;
+}
+
+.confirm-bs {
+  @apply text-xs font-semibold;
+  color: #9ca3af;
+
+  &.total-bs-confirm {
+    @apply text-sm;
+  }
+}
+
 .shipping-value {
   color: #16a34a !important;
 
@@ -1054,6 +1080,20 @@
   font-weight: 600;
   color: var(--text-primary);
   font-family: monospace;
+}
+
+.payment-amount-card {
+  border: 1px solid var(--border-color);
+  margin-top: 0.5rem;
+}
+
+.detail-value-bs {
+  color: #9ca3af;
+}
+
+.detail-value-rate {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
 }
 
 .method-custom-msg {

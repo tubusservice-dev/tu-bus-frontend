@@ -65,6 +65,10 @@ export interface DispatchConfig {
   storePickup: StorePickupConfig;
 }
 
+export interface ExchangeRateConfig {
+  showBsPrice: boolean;
+}
+
 export const PAGINATION_OPTIONS = [10, 20, 50, 100] as const;
 
 export interface Settings {
@@ -74,6 +78,7 @@ export interface Settings {
   heroImages: HeroImagesConfig;
   pagination: PaginationConfig;
   dispatch: DispatchConfig;
+  exchangeRate: ExchangeRateConfig;
   updatedAt?: string;
 }
 
@@ -134,6 +139,9 @@ export const DEFAULT_SETTINGS: Settings = {
       phone: '+58 412-1234567',
       additionalInfo: '',
     },
+  },
+  exchangeRate: {
+    showBsPrice: false,
   },
 };
 

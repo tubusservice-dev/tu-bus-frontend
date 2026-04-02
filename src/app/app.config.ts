@@ -12,6 +12,7 @@ import { firstValueFrom } from 'rxjs';
 import { routes } from './app.routes';
 import { authInterceptor } from './core/interceptors';
 import { AuthService, SettingsService } from './core/services';
+import { ExchangeRateService } from './core/services/exchange-rate.service';
 
 /**
  * Inicializa la sesión del usuario si existe un token guardado
@@ -36,10 +37,13 @@ function initializeAuth(): () => Promise<void> {
  */
 function initializeSettings(): () => Promise<void> {
   const settingsService = inject(SettingsService);
+  const exchangeRateService = inject(ExchangeRateService);
 
   return async () => {
     try {
       await firstValueFrom(settingsService.loadSettings());
+      // Load exchange rate after settings (non-blocking)
+      exchangeRateService.loadCurrentRate();
     } catch {
       // Si falla, usa valores por defecto (ya manejado en el servicio)
     }

@@ -29,7 +29,7 @@
           <div class="products-list">
             @for (item of cartService.items(); track item.id) {
               <div class="product-row">
-                <img [src]="item.image" [alt]="item.name" class="product-image" />
+                <img [src]="item.image || 'https://placehold.co/400x300/e5e7eb/9ca3af?text=Sin+imagen'" [alt]="item.name" class="product-image" />
                 <div class="product-info">
                   <h3 class="product-name">{{ item.name }}</h3>
                   <p class="product-qty">Cantidad: {{ item.quantity }}</p>
@@ -687,7 +687,12 @@
             </div>
             <div class="payment-row total">
               <span>Total</span>
-              <span>{{ total | currency:'USD' }}</span>
+              <div class="payment-row-values">
+                <span>{{ total | currency:'USD' }}</span>
+                @if (exchangeRateService.showBsPrice()) {
+                  <span class="payment-row-bs total-bs">{{ exchangeRateService.formatBsPrice(total) }}</span>
+                }
+              </div>
             </div>
           </div>
         </div>
@@ -814,6 +819,21 @@
               <p class="method-custom-msg">{{ selectedMethodInModal()!.customMessage }}</p>
             }
           </div>
+
+          <!-- Payment amount summary -->
+          <div class="method-details-card payment-amount-card">
+            <h4>Monto a pagar</h4>
+            <div class="method-detail-row">
+              <span class="detail-label">Total (USD)</span>
+              <span class="detail-value">{{ total | currency:'USD':'symbol':'1.2-2' }}</span>
+            </div>
+            @if (exchangeRateService.showBsPrice()) {
+              <div class="method-detail-row">
+                <span class="detail-label">Total (Bs)</span>
+                <span class="detail-value detail-value-bs">{{ exchangeRateService.formatBsPrice(total) }}</span>
+              </div>
+            }
+          </div>
         }
 
         <!-- Info-only types (efectivo, tarjeta) -->
@@ -919,17 +939,32 @@
         </div>
         <div class="confirm-detail-row">
           <span class="confirm-label">Subtotal</span>
-          <span class="confirm-value">{{ cartService.subtotal() | currency:'USD':'symbol':'1.2-2' }}</span>
+          <div class="confirm-values">
+            <span class="confirm-value">{{ cartService.subtotal() | currency:'USD':'symbol':'1.2-2' }}</span>
+            @if (exchangeRateService.showBsPrice()) {
+              <span class="confirm-bs">{{ exchangeRateService.formatBsPrice(cartService.subtotal()) }}</span>
+            }
+          </div>
         </div>
         @if (shippingCost > 0) {
           <div class="confirm-detail-row">
             <span class="confirm-label">Envío</span>
-            <span class="confirm-value">{{ shippingCost | currency:'USD':'symbol':'1.2-2' }}</span>
+            <div class="confirm-values">
+              <span class="confirm-value">{{ shippingCost | currency:'USD':'symbol':'1.2-2' }}</span>
+              @if (exchangeRateService.showBsPrice()) {
+                <span class="confirm-bs">{{ exchangeRateService.formatBsPrice(shippingCost) }}</span>
+              }
+            </div>
           </div>
         }
         <div class="confirm-detail-row total-row">
           <span class="confirm-label">Total</span>
-          <span class="confirm-value">{{ total | currency:'USD':'symbol':'1.2-2' }}</span>
+          <div class="confirm-values">
+            <span class="confirm-value">{{ total | currency:'USD':'symbol':'1.2-2' }}</span>
+            @if (exchangeRateService.showBsPrice()) {
+              <span class="confirm-bs total-bs-confirm">{{ exchangeRateService.formatBsPrice(total) }}</span>
+            }
+          </div>
         </div>
       </div>
 

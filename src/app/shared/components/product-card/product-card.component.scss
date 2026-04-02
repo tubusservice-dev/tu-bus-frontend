@@ -139,7 +139,7 @@
 }
 
 .price-block {
-  @apply flex items-baseline gap-2 self-center;
+  @apply flex items-baseline gap-2 self-center flex-wrap;
 }
 
 .price-old {
@@ -155,6 +155,12 @@
   &.discount {
     color: #dc2626;
   }
+}
+
+.price-bs {
+  @apply w-full text-xs font-semibold;
+  color: #9ca3af;
+  line-height: 1;
 }
 
 // ===== BOTÓN CARRITO =====

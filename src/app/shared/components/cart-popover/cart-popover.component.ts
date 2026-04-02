@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { CurrencyPipe } from '@angular/common';
 import { CartService, CartItem } from '../../../core/services/cart.service';
+import { ExchangeRateService } from '../../../core/services/exchange-rate.service';
 
 @Component({
   selector: 'app-cart-popover',
@@ -13,6 +14,7 @@ import { CartService, CartItem } from '../../../core/services/cart.service';
 export class CartPopoverComponent {
   protected readonly cartService = inject(CartService);
   private readonly router = inject(Router);
+  protected readonly exchangeRateService = inject(ExchangeRateService);
 
   /** Controla si el popover está abierto */
   protected readonly isOpen = signal(false);

@@ -48,6 +48,8 @@
   @apply flex items-center justify-between;
   .order-date { @apply text-xs text-gray-500 dark:text-gray-400; }
   .order-total { @apply text-lg font-bold text-gray-900 dark:text-white; }
+  .order-total-col { @apply flex flex-col items-end; }
+  .order-total-bs { @apply text-xs font-semibold; color: #9ca3af; }
 }
 
 // ============================================

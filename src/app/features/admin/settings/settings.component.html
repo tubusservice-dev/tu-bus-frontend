@@ -539,6 +539,143 @@
         </div>
       </div>
 
+      <!-- ========== SECCIÓN TASA DEL DÓLAR ========== -->
+      <div class="accordion-item" [class.expanded]="activeSection() === 'exchangeRate'">
+        <button class="accordion-header" (click)="toggleSection('exchangeRate')" type="button">
+          <div class="header-content">
+            <span class="icon">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+              </svg>
+            </span>
+            <span class="title">Tasa del Dólar</span>
+          </div>
+          <span class="chevron" [class.rotated]="activeSection() === 'exchangeRate'">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+            </svg>
+          </span>
+        </button>
+
+        <div class="accordion-content" [class.open]="activeSection() === 'exchangeRate'">
+          <div class="section-form">
+            <p class="section-description">
+              Tasa de cambio del dólar BCV para mostrar precios en Bolívares.
+            </p>
+
+            <!-- Toggle mostrar precio en Bs -->
+            <div class="exchange-toggle-row">
+              <div class="toggle-info">
+                <span class="toggle-label">Mostrar precio en Bs</span>
+                <span class="toggle-desc">Los usuarios verán el precio en Bolívares debajo del precio en USD</span>
+              </div>
+              <label class="toggle-switch">
+                <input
+                  type="checkbox"
+                  [checked]="showBsPrice()"
+                  (change)="toggleShowBsPrice()"
+                  [disabled]="toggleSaving()"
+                />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+
+            <!-- Rate display/edit -->
+            <div class="exchange-rate-card">
+              <div class="rate-header">
+                <span class="rate-title">Tasa actual</span>
+                @if (exchangeRateService.rateData(); as rateData) {
+                  <span class="rate-source">
+                    Fuente: {{ rateData.source === 'bcv' ? 'BCV (Automática)' : 'Manual' }}
+                  </span>
+                }
+              </div>
+
+              <div class="rate-body">
+                <div class="rate-input-group">
+                  <span class="rate-prefix">1 USD =</span>
+                  @if (isEditingRate()) {
+                    <input
+                      type="number"
+                      class="rate-input"
+                      [value]="editableRate()"
+                      (input)="onRateInput($event)"
+                      step="0.01"
+                      min="0.01"
+                      placeholder="0.00"
+                    />
+                  } @else {
+                    <input
+                      type="text"
+                      class="rate-input rate-input-locked"
+                      [value]="(exchangeRateService.currentRate() ?? 0) | number:'1.2-2'"
+                      readonly
+                    />
+                  }
+                  <span class="rate-suffix">Bs</span>
+                </div>
+
+                <div class="rate-actions">
+                  @if (isEditingRate()) {
+                    <button
+                      type="button"
+                      class="btn-rate btn-rate-save"
+                      [disabled]="rateSaving()"
+                      (click)="saveRate()"
+                    >
+                      @if (rateSaving()) {
+                        <span class="spinner-xs"></span>
+                      } @else {
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                        </svg>
+                      }
+                      Guardar
+                    </button>
+                    <button
+                      type="button"
+                      class="btn-rate btn-rate-cancel"
+                      [disabled]="rateSaving()"
+                      (click)="cancelEditingRate()"
+                    >
+                      Cancelar
+                    </button>
+                  } @else {
+                    <button
+                      type="button"
+                      class="btn-rate btn-rate-edit"
+                      (click)="startEditingRate()"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Z" />
+                      </svg>
+                      Editar
+                    </button>
+                  }
+                </div>
+              </div>
+
+              @if (rateError()) {
+                <p class="rate-error">{{ rateError() }}</p>
+              }
+              @if (rateSuccess()) {
+                <p class="rate-success">Tasa actualizada correctamente</p>
+              }
+
+              @if (exchangeRateService.rateData(); as rateData) {
+                <div class="rate-footer">
+                  <span class="rate-updated">Última actualización: {{ rateData.updatedAt | date:'dd/MM/yyyy, h:mm a' }}</span>
+                </div>
+              }
+            </div>
+
+            <p class="exchange-note">
+              La tasa se actualiza automáticamente del BCV a las 11:00 AM y 7:00 PM (hora Venezuela).
+            </p>
+          </div>
+        </div>
+      </div>
+
     </div>
   }
 

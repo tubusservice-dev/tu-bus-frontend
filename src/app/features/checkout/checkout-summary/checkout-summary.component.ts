@@ -11,6 +11,7 @@ import { LocationService, BranchSummary } from '../../../core/services/location.
 import { PaymentMethodService } from '../../../core/services/payment-method.service';
 import { UploadService } from '../../../core/services/upload.service';
 import { BranchProductService } from '../../../core/services/branch-product.service';
+import { ExchangeRateService } from '../../../core/services/exchange-rate.service';
 import { CreateOrderRequest, PaymentSubmission } from '../../../models/order.model';
 import {
   PaymentMethodConfig,
@@ -40,6 +41,7 @@ export class CheckoutSummaryComponent implements OnInit {
   protected readonly locationService = inject(LocationService);
   private readonly branchProductService = inject(BranchProductService);
   private readonly router = inject(Router);
+  protected readonly exchangeRateService = inject(ExchangeRateService);
 
   // State signals
   protected readonly isGenerating = signal(false);

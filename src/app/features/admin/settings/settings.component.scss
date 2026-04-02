@@ -784,3 +784,141 @@
   @apply inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg;
   @apply hover:bg-red-700 transition-colors disabled:opacity-50;
 }
+
+// ========== Exchange Rate Section ==========
+.exchange-toggle-row {
+  @apply flex items-center justify-between p-4 rounded-lg mb-4;
+  @apply bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700;
+}
+
+.toggle-info {
+  @apply flex flex-col gap-0.5;
+}
+
+.toggle-label {
+  @apply text-sm font-semibold text-gray-900 dark:text-white;
+}
+
+.toggle-desc {
+  @apply text-xs text-gray-500 dark:text-gray-400;
+}
+
+.toggle-switch {
+  @apply relative inline-flex h-6 w-11 items-center cursor-pointer;
+
+  input {
+    @apply sr-only;
+  }
+
+  .toggle-slider {
+    @apply absolute inset-0 rounded-full transition-colors duration-200;
+    @apply bg-gray-300 dark:bg-gray-600;
+
+    &::before {
+      content: '';
+      @apply absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white transition-transform duration-200;
+    }
+  }
+
+  input:checked + .toggle-slider {
+    @apply bg-orange-500;
+
+    &::before {
+      transform: translateX(1.25rem);
+    }
+  }
+
+  input:disabled + .toggle-slider {
+    @apply opacity-50 cursor-not-allowed;
+  }
+}
+
+.exchange-rate-card {
+  @apply p-4 rounded-lg border border-gray-200 dark:border-gray-700 mb-3;
+  @apply bg-white dark:bg-gray-800/30;
+}
+
+.rate-header {
+  @apply flex items-center justify-between mb-3;
+}
+
+.rate-title {
+  @apply text-sm font-semibold text-gray-900 dark:text-white;
+}
+
+.rate-source {
+  @apply text-xs px-2 py-0.5 rounded-full;
+  @apply bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300;
+}
+
+.rate-body {
+  @apply flex items-center gap-3 flex-wrap;
+}
+
+.rate-input-group {
+  @apply flex items-center gap-2 flex-1;
+}
+
+.rate-prefix {
+  @apply text-sm font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap;
+}
+
+.rate-input {
+  @apply w-36 px-3 py-2 text-lg font-bold rounded-lg text-center;
+  @apply bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600;
+  @apply text-gray-900 dark:text-white;
+  @apply focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all;
+
+  &.rate-input-locked {
+    @apply bg-gray-100 dark:bg-gray-800 cursor-not-allowed opacity-80;
+  }
+}
+
+.rate-suffix {
+  @apply text-sm font-bold text-orange-500;
+}
+
+.rate-actions {
+  @apply flex items-center gap-2;
+}
+
+.btn-rate {
+  @apply inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-all;
+  @apply disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.btn-icon {
+  @apply w-4 h-4;
+}
+
+.btn-rate-edit {
+  @apply text-white bg-blue-600 hover:bg-blue-700;
+}
+
+.btn-rate-save {
+  @apply text-white bg-green-600 hover:bg-green-700;
+}
+
+.btn-rate-cancel {
+  @apply text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600;
+}
+
+.rate-error {
+  @apply mt-2 text-xs text-red-500 dark:text-red-400;
+}
+
+.rate-success {
+  @apply mt-2 text-xs text-green-500 dark:text-green-400;
+}
+
+.rate-footer {
+  @apply mt-3 pt-3 border-t border-gray-200 dark:border-gray-700;
+}
+
+.rate-updated {
+  @apply text-xs text-gray-500 dark:text-gray-400;
+}
+
+.exchange-note {
+  @apply text-xs text-gray-400 dark:text-gray-500 italic;
+}
