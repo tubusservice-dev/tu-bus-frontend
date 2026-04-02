@@ -197,26 +197,40 @@
               <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" />
             </svg>
             Datos del Pago
-            @if (canEditPayment() && !isEditingPayment()) {
-              <button type="button" class="btn-edit-inline" (click)="startEditingPayment()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="14">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Z" />
-                </svg>
+            @if (o.paymentSubmission) {
+              <button type="button" class="btn-toggle-detail" (click)="togglePaymentDetail()">
+                @if (isPaymentExpanded()) {
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
+                  </svg>
+                } @else {
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                  </svg>
+                }
               </button>
             }
           </h3>
 
-          @if (paymentEditSuccess()) {
-            <div class="alert-success">{{ paymentEditSuccess() }}</div>
-          }
-
-          @if (!isEditingPayment()) {
-            @if (o.paymentSubmission) {
-              <div class="info-rows">
+          @if (o.paymentSubmission) {
+            <!-- Summary row (always visible) -->
+            <div class="info-rows">
+              <div class="info-row">
+                <span class="info-label">Método</span>
+                <span class="info-value fw-600">{{ o.paymentSubmission.methodLabel }}</span>
+              </div>
+              @if (o.paymentSubmission.amount) {
                 <div class="info-row">
-                  <span class="info-label">Método</span>
-                  <span class="info-value fw-600">{{ o.paymentSubmission.methodLabel }}</span>
+                  <span class="info-label">Monto</span>
+                  <span class="info-value fw-600">{{ getCurrencySymbol(o.paymentSubmission.methodType) }} {{ o.paymentSubmission.amount }}</span>
                 </div>
+              }
+            </div>
+
+            <!-- Expanded details -->
+            @if (isPaymentExpanded()) {
+              <div class="info-rows payment-expanded">
                 @if (o.paymentSubmission.referenceNumber) {
                   <div class="info-row">
                     <span class="info-label">Referencia</span>
@@ -229,78 +243,50 @@
                     <span class="info-value">{{ o.paymentSubmission.sourceBank }}</span>
                   </div>
                 }
-                @if (o.paymentSubmission.amount) {
-                  <div class="info-row">
-                    <span class="info-label">Monto</span>
-                    <span class="info-value fw-600">{{ getCurrencySymbol(o.paymentSubmission.methodType) }} {{ o.paymentSubmission.amount }}</span>
-                  </div>
-                }
                 @if (o.paymentSubmission.paymentDate) {
                   <div class="info-row">
                     <span class="info-label">Fecha pago</span>
                     <span class="info-value">{{ o.paymentSubmission.paymentDate }}</span>
                   </div>
                 }
-                @if (o.paymentSubmission.notes) {
-                  <div class="info-row">
-                    <span class="info-label">Notas</span>
-                    <span class="info-value">{{ o.paymentSubmission.notes }}</span>
+                @if (o.paymentSubmission.proofUrl) {
+                  <div class="proof-section">
+                    <span class="info-label">Comprobante</span>
+                    <img [src]="o.paymentSubmission.proofUrl" alt="Comprobante de pago" class="proof-image" />
                   </div>
                 }
               </div>
-            } @else {
-              <p class="no-data">No se han registrado datos de pago.</p>
             }
-          } @else {
-            <div class="payment-edit-form">
-              @if (paymentEditError()) {
-                <div class="alert-error">{{ paymentEditError() }}</div>
+
+            <!-- Payment note (always visible) -->
+            <div class="payment-note-section">
+              @if (noteSuccess()) {
+                <div class="alert-success-inline">{{ noteSuccess() }}</div>
               }
-              <div class="form-row">
-                <label>Número de referencia</label>
-                <input type="text" [value]="editReferenceNumber()" (input)="onPaymentFieldChange('referenceNumber', $event)" placeholder="Ej: 00001234567" />
-              </div>
-              <div class="form-row">
-                <label>Banco emisor</label>
-                <select [value]="editSourceBank()" (change)="onPaymentFieldChange('sourceBank', $event)">
-                  <option value="">Seleccionar banco...</option>
-                  @for (bank of venezuelanBanks; track bank) {
-                    <option [value]="bank">{{ bank }}</option>
-                  }
-                </select>
-              </div>
-              <div class="form-row">
-                <label>Monto</label>
-                <input type="number" [value]="editAmount()" (input)="onPaymentFieldChange('amount', $event)" step="0.01" min="0" placeholder="0.00" />
-              </div>
-              <div class="form-row">
-                <label>Fecha de pago</label>
-                <input type="date" [value]="editPaymentDate()" (input)="onPaymentFieldChange('paymentDate', $event)" />
-              </div>
-              <div class="form-row">
-                <label>Comprobante de pago</label>
-                @if (editProofPreview()) {
-                  <div class="proof-preview">
-                    <img [src]="editProofPreview()" alt="Comprobante" />
-                    <button type="button" class="proof-remove" (click)="removeProofFile()">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
-                    </button>
-                  </div>
-                } @else {
-                  <label class="proof-upload-label">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" /></svg>
-                    <span>Subir imagen del comprobante</span>
-                    <input type="file" accept="image/*" (change)="onProofFileChange($event)" class="sr-only" />
-                  </label>
-                }
-              </div>
-              <div class="payment-edit-actions">
-                <button type="button" class="btn-cancel-edit" (click)="cancelEditingPayment()" [disabled]="isSavingPayment()">Cancelar</button>
-                <button type="button" class="btn-save-payment" (click)="savePayment()" [disabled]="isSavingPayment()">
-                  @if (isSavingPayment()) { Guardando... } @else { Guardar Cambios }
+              @if (noteError()) {
+                <div class="alert-error-inline">{{ noteError() }}</div>
+              }
+              <label class="note-label">Comentario sobre el pago</label>
+              <textarea
+                class="note-textarea"
+                rows="2"
+                placeholder="Escribe un comentario sobre tu pago..."
+                [value]="paymentNote()"
+                (input)="paymentNote.set($any($event.target).value)"
+              ></textarea>
+              <div class="note-actions">
+                <button
+                  type="button"
+                  class="btn-save-note"
+                  [disabled]="isSavingNote()"
+                  (click)="savePaymentNote()"
+                >
+                  @if (isSavingNote()) { Guardando... } @else { Enviar comentario }
                 </button>
               </div>
             </div>
+          } @else {
+            <p class="no-data">No se han registrado datos de pago.</p>
           }
         </section>
 
@@ -408,37 +394,70 @@
         }
       </div>
 
-      <!-- Cancelar orden -->
+    </div>
+
+      <!-- Cancelar orden (solo pendiente) -->
       @if (o.status === 'pending') {
         <div class="cancel-section">
           <p class="cancel-inline-text">
             Si deseas cancelar esta orden, los productos reservados volverán al inventario y deberás realizar una nueva compra.
-            <a class="cancel-inline-link" (click)="openCancelModal()">Cancelar orden</a>
+            <a class="cancel-inline-link" (click)="openReasonModal()">Cancelar orden</a>
           </p>
         </div>
       }
-    </div>
   }
 </div>
 
-<!-- Cancel order modal -->
-@if (showCancelModal() && order(); as o) {
-  <div class="cancel-overlay" (click)="closeCancelModal()">
+<!-- Modal 1: Motivo de cancelación -->
+@if (showReasonModal() && order(); as o) {
+  <div class="cancel-overlay" (click)="closeReasonModal()">
     <div class="cancel-modal" (click)="$event.stopPropagation()">
       <div class="cancel-modal-icon">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 0 1 1.037-.443 48.282 48.282 0 0 0 5.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />
         </svg>
       </div>
-      <h3 class="cancel-modal-title">Cancelar Orden</h3>
+      <h3 class="cancel-modal-title">Motivo de cancelación</h3>
       <p class="cancel-modal-order">#{{ o.orderNumber }}</p>
-      <p class="cancel-modal-text">Al confirmar, se notificará al administrador sobre la cancelación. Si ya realizaste un pago, el equipo se pondrá en contacto contigo para gestionar tu reembolso.</p>
+      <p class="cancel-modal-text">Cuéntanos por qué deseas cancelar tu orden. Esta información será revisada por nuestro equipo.</p>
+      <textarea
+        class="cancel-reason-textarea"
+        rows="3"
+        placeholder="Escribe el motivo de tu cancelación..."
+        [value]="cancelReason()"
+        (input)="cancelReason.set($any($event.target).value)"
+      ></textarea>
       <div class="cancel-modal-actions">
-        <button type="button" class="cancel-modal-back" (click)="closeCancelModal()">Volver</button>
-        <button type="button" class="cancel-modal-confirm" [disabled]="isCancelling()" (click)="confirmCancelOrder()">
-          @if (isCancelling()) { Cancelando... } @else { Confirmar cancelación }
-        </button>
+        <button type="button" class="cancel-modal-back" (click)="closeReasonModal()">Cancelar</button>
+        <button type="button" class="cancel-modal-confirm" (click)="proceedToConfirm()">Continuar</button>
       </div>
+    </div>
+  </div>
+}
+
+<!-- Modal 2: Confirmación final -->
+@if (showConfirmModal() && order(); as o) {
+  <div class="cancel-overlay">
+    <div class="cancel-modal" (click)="$event.stopPropagation()">
+      @if (isCancelling()) {
+        <div class="cancel-loading">
+          <div class="cancel-spinner"></div>
+          <p>Enviando solicitud de cancelación...</p>
+        </div>
+      } @else {
+        <div class="cancel-modal-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+          </svg>
+        </div>
+        <h3 class="cancel-modal-title">Confirmar cancelación</h3>
+        <p class="cancel-modal-order">#{{ o.orderNumber }}</p>
+        <p class="cancel-modal-text">Al confirmar, se notificará al administrador sobre tu solicitud de cancelación. Si ya realizaste un pago, el equipo se pondrá en contacto contigo para gestionar tu reembolso, si cumples con las políticas de reembolso.</p>
+        <div class="cancel-modal-actions">
+          <button type="button" class="cancel-modal-back" (click)="closeConfirmModal()">Cancelar</button>
+          <button type="button" class="cancel-modal-confirm" (click)="confirmCancelOrder()">Confirmar</button>
+        </div>
+      }
     </div>
   </div>
 }

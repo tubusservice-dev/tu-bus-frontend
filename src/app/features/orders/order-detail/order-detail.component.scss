@@ -266,78 +266,79 @@
 }
 
 // ============================================
-// EDIT INLINE BUTTON
+// PAYMENT TOGGLE BUTTON
 // ============================================
-.btn-edit-inline {
-  @apply ml-auto w-6 h-6 flex items-center justify-center rounded transition-colors;
+.btn-toggle-detail {
+  @apply ml-auto w-7 h-7 flex items-center justify-center rounded-lg transition-colors;
   @apply text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20;
 }
 
 // ============================================
-// PAYMENT EDIT FORM
+// PAYMENT EXPANDED
 // ============================================
-.payment-edit-form {
-  @apply flex flex-col gap-4 p-4 sm:p-5;
-}
+.payment-expanded {
+  @apply border-t border-gray-100;
 
-.form-row {
-  @apply flex flex-col gap-1;
-
-  label {
-    @apply text-xs font-medium text-gray-600 dark:text-gray-400;
-  }
-
-  input, select {
-    @apply w-full px-3 py-2 text-sm rounded-lg border outline-none transition-colors;
-    @apply bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100;
-    @apply border-gray-300 dark:border-gray-600;
-    @apply focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500;
+  :host-context(.dark) & {
+    border-top-color: rgba(51, 65, 85, 0.5);
   }
 }
 
-.payment-edit-actions {
-  @apply flex items-center justify-end gap-2 pt-2;
+// ============================================
+// PROOF IMAGE (READ-ONLY)
+// ============================================
+.proof-section {
+  @apply flex flex-col gap-2 px-4 sm:px-5 py-3;
 }
 
-.btn-cancel-edit {
-  @apply px-4 py-2 text-sm font-medium rounded-lg transition-colors;
-  @apply text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700;
+.proof-image {
+  @apply max-w-full max-h-64 rounded-lg border border-gray-200 dark:border-gray-700 object-contain;
 }
 
-.btn-save-payment {
-  @apply px-4 py-2 text-sm font-semibold rounded-lg text-white transition-colors;
+// ============================================
+// PAYMENT NOTE SECTION
+// ============================================
+.payment-note-section {
+  @apply px-4 sm:px-5 py-4 border-t border-gray-100;
+
+  :host-context(.dark) & {
+    border-top-color: #334155;
+  }
+}
+
+.note-label {
+  @apply block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5;
+}
+
+.note-textarea {
+  @apply w-full px-3 py-2 text-sm rounded-lg border outline-none transition-colors resize-none;
+  @apply bg-white dark:bg-gray-700/50 text-gray-900 dark:text-gray-100;
+  @apply border-gray-300 dark:border-gray-600;
+  @apply focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500;
+}
+
+.note-actions {
+  @apply flex justify-end mt-2;
+}
+
+.btn-save-note {
+  @apply px-4 py-1.5 text-xs font-semibold rounded-lg text-white transition-colors;
   background-color: #3b82f6;
 
   &:hover { background-color: #2563eb; }
   &:disabled { @apply opacity-50 cursor-not-allowed; }
 }
 
-// ============================================
-// PROOF UPLOAD
-// ============================================
-.proof-preview {
-  @apply relative inline-block rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600;
-  max-width: 200px;
-
-  img { @apply w-full h-auto block; }
+.alert-success-inline {
+  @apply text-xs p-2 rounded-lg mb-2;
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #059669;
 }
 
-.proof-remove {
-  @apply absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center;
-  @apply bg-red-500 text-white hover:bg-red-600 transition-colors;
-
-  svg { @apply w-3.5 h-3.5; }
-}
-
-.proof-upload-label {
-  @apply flex items-center gap-2 px-4 py-3 rounded-lg border-2 border-dashed cursor-pointer transition-colors text-sm;
-  @apply border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400;
-
-  svg { @apply w-5 h-5; }
-
-  &:hover {
-    @apply border-blue-400 text-blue-500;
-  }
+.alert-error-inline {
+  @apply text-xs p-2 rounded-lg mb-2;
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
 }
 
 // ============================================
@@ -381,7 +382,7 @@
 // CANCEL INLINE LINK
 // ============================================
 .cancel-section {
-  @apply pt-4 border-t border-gray-200 dark:border-gray-700;
+  @apply pt-6;
 }
 
 .cancel-inline-text {
@@ -393,6 +394,16 @@
   color: #ef4444;
 
   &:hover { color: #dc2626; }
+}
+
+// ============================================
+// CANCEL REASON TEXTAREA
+// ============================================
+.cancel-reason-textarea {
+  @apply w-full px-3 py-2 text-sm rounded-lg border outline-none transition-colors resize-none mb-4;
+  @apply bg-white dark:bg-gray-700/50 text-gray-900 dark:text-gray-100;
+  @apply border-gray-300 dark:border-gray-600;
+  @apply focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500;
 }
 
 // ============================================
@@ -451,4 +462,27 @@
 
   &:hover:not(:disabled) { background-color: #dc2626; }
   &:disabled { @apply opacity-60 cursor-not-allowed; }
+}
+
+// ============================================
+// CANCEL LOADING STATE
+// ============================================
+.cancel-loading {
+  @apply flex flex-col items-center justify-center py-8 gap-4;
+
+  p {
+    @apply text-sm text-gray-500 dark:text-gray-400;
+  }
+}
+
+.cancel-spinner {
+  @apply w-10 h-10 rounded-full animate-spin;
+  border-width: 3px;
+  border-color: #e5e7eb;
+  border-top-color: #ef4444;
+
+  :host-context(.dark) & {
+    border-color: #374151;
+    border-top-color: #ef4444;
+  }
 }

@@ -1,7 +1,9 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, DestroyRef, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ProductService, ProductQueryParams } from '../../../../core/services/product.service';
 import { BrandService } from '../../../../core/services/brand.service';
 import { CategoryService } from '../../../../core/services/category.service';
@@ -31,6 +33,9 @@ export class ProductListComponent implements OnInit {
   private readonly categoryService = inject(CategoryService);
   private readonly settingsService = inject(SettingsService);
   private readonly branchProductService = inject(BranchProductService);
+  private readonly destroyRef = inject(DestroyRef);
+
+  private readonly searchSubject$ = new Subject<string>();
 
   // Datos
   protected readonly products = signal<Product[]>([]);
@@ -55,11 +60,16 @@ export class ProductListComponent implements OnInit {
   protected readonly pageSize = signal(this.adminLimit);
 
   // Filtros
+  protected readonly vehicleTypeOptions = Object.entries(VEHICLE_TYPE_LABELS)
+    .filter(([key]) => key !== VehicleType.ALL)
+    .map(([value, label]) => ({ value, label }));
+
   protected readonly filters = signal<ProductQueryParams>({
     page: 1,
     limit: this.adminLimit,
     sortBy: 'createdAt',
     sortOrder: 'desc',
+    vehicleType: undefined,
     brand: '',
     category: '',
   });
@@ -77,9 +87,25 @@ export class ProductListComponent implements OnInit {
   protected readonly viewMode = signal<'cards' | 'table'>('cards');
 
   ngOnInit(): void {
+    this.searchSubject$
+      .pipe(
+        debounceTime(400),
+        distinctUntilChanged(),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((value) => {
+        this.filters.update((f) => ({ ...f, search: value || undefined, page: 1 }));
+        this.loadProducts();
+      });
+
     this.loadBrands();
     this.loadCategories();
     this.loadProducts();
+  }
+
+  onSearchInput(value: string): void {
+    this.filters.update((f) => ({ ...f, search: value || undefined }));
+    this.searchSubject$.next(value);
   }
 
   /**
@@ -146,6 +172,7 @@ export class ProductListComponent implements OnInit {
       limit: this.adminLimit,
       sortBy: 'createdAt',
       sortOrder: 'desc',
+      vehicleType: undefined,
       brand: '',
       category: '',
     });

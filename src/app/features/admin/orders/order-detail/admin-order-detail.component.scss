@@ -161,6 +161,58 @@
 }
 
 // ============================================
+// CANCELLATION REQUEST CARD
+// ============================================
+.cancellation-card {
+  border-color: #f59e0b;
+
+  :host-context(.dark) & {
+    border-color: #d97706;
+  }
+}
+
+.cancellation-title {
+  @apply bg-orange-50 text-orange-800 border-orange-200;
+
+  :host-context(.dark) & {
+    background-color: rgba(245, 158, 11, 0.1);
+    color: #fbbf24;
+    border-bottom-color: rgba(245, 158, 11, 0.2);
+  }
+
+  svg {
+    color: #f59e0b !important;
+  }
+}
+
+.cancellation-body {
+  @apply px-4 sm:px-5 py-4 flex flex-col gap-3;
+}
+
+.cancellation-reason {
+  @apply flex flex-col gap-1;
+}
+
+.cancellation-reason-label {
+  @apply text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide;
+}
+
+.cancellation-reason-text {
+  @apply text-sm leading-relaxed p-3 rounded-lg italic;
+  @apply bg-orange-50 text-orange-900 border border-orange-200;
+
+  :host-context(.dark) & {
+    background-color: rgba(245, 158, 11, 0.08);
+    color: #fbbf24;
+    border-color: rgba(245, 158, 11, 0.15);
+  }
+}
+
+.cancellation-hint {
+  @apply text-xs text-gray-500 dark:text-gray-400 leading-relaxed;
+}
+
+// ============================================
 // PRODUCTS
 // ============================================
 .products-list {

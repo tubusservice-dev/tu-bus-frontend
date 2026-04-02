@@ -10,6 +10,7 @@ export enum OrderStatus {
   SHIPPED = 'shipped',
   DELIVERED = 'delivered',
   COMPLETED = 'completed',
+  CANCELLATION_REQUESTED = 'cancellation_requested',
   CANCELLED = 'cancelled',
 }
 
@@ -138,6 +139,7 @@ export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   [OrderStatus.SHIPPED]: 'Enviada',
   [OrderStatus.DELIVERED]: 'Entregada',
   [OrderStatus.COMPLETED]: 'Completada',
+  [OrderStatus.CANCELLATION_REQUESTED]: 'Cancelación Solicitada',
   [OrderStatus.CANCELLED]: 'Cancelada',
 };
 
@@ -163,5 +165,6 @@ export const ORDER_STATUS_COLORS: Record<OrderStatus, string> = {
   [OrderStatus.SHIPPED]: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
   [OrderStatus.DELIVERED]: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
   [OrderStatus.COMPLETED]: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
+  [OrderStatus.CANCELLATION_REQUESTED]: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
   [OrderStatus.CANCELLED]: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
 };

@@ -22,8 +22,7 @@
             type="text"
             placeholder="Buscar productos..."
             [ngModel]="filters().search"
-            (ngModelChange)="updateFilter('search', $event)"
-            (keyup.enter)="onSearch()"
+            (ngModelChange)="onSearchInput($event)"
           />
         </div>
 

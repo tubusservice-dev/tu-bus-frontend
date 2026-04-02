@@ -1,10 +1,11 @@
-import { Component, OnInit, inject, signal, computed, effect } from '@angular/core';
+import { Component, DestroyRef, inject, signal, computed, effect, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { CategoryService } from '../../../../../core/services/category.service';
-import { ProductService } from '../../../../../core/services/product.service';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Subject, switchMap } from 'rxjs';
+import { ProductService, ProductQueryParams } from '../../../../../core/services/product.service';
 import { LocationService } from '../../../../../core/services/location.service';
-import { Category, Product } from '../../../../../models/product.model';
+import { Product, VehicleType, VEHICLE_TYPE_LABELS } from '../../../../../models/product.model';
 
 @Component({
   selector: 'app-tubus-combos',
@@ -13,112 +14,77 @@ import { Category, Product } from '../../../../../models/product.model';
   templateUrl: './tubus-combos.component.html',
   styleUrl: './tubus-combos.component.scss'
 })
-export class TubusCombosComponent implements OnInit {
-  private readonly categoryService = inject(CategoryService);
+export class TubusCombosComponent {
   private readonly productService = inject(ProductService);
   private readonly locationService = inject(LocationService);
+  private readonly destroyRef = inject(DestroyRef);
+
+  private readonly fetchTrigger$ = new Subject<ProductQueryParams>();
 
   // Signals
-  protected readonly categories = signal<Category[]>([]);
-  protected readonly allProducts = signal<Product[]>([]);
+  protected readonly products = signal<Product[]>([]);
   protected readonly totalProducts = signal<number>(0);
   protected readonly selectedFilter = signal<string>('all');
   protected readonly isLoading = signal(true);
 
-  // Computed: dynamic filters (All + categories)
+  // Computed: static filters from VehicleType enum
   protected readonly filters = computed(() => {
-    const baseFilter = [{ id: 'all', label: 'Todos' }];
-    const categoryFilters = this.categories().map(cat => ({
-      id: cat.id,
-      label: cat.name
-    }));
-    return [...baseFilter, ...categoryFilters];
+    const vehicleTypeFilters = Object.entries(VEHICLE_TYPE_LABELS)
+      .filter(([key]) => key !== VehicleType.ALL)
+      .map(([id, label]) => ({ id, label }));
+    return [{ id: 'all', label: 'Todos' }, ...vehicleTypeFilters];
   });
 
-  // Computed: filtered products by category (max 4)
-  protected readonly filteredProducts = computed(() => {
-    const filter = this.selectedFilter();
-    const products = this.allProducts();
-
-    if (filter === 'all') return products.slice(0, 4);
-
-    return products.filter(product =>
-      product.categories.some(cat => this.matchCategory(cat, filter))
-    ).slice(0, 4);
-  });
-
-  // Computed: show "view all" button
-  protected readonly showViewAllButton = computed(() => {
-    const filter = this.selectedFilter();
-    const products = this.allProducts();
-
-    if (filter === 'all') return products.length > 4;
-
-    return products.filter(product =>
-      product.categories.some(cat => this.matchCategory(cat, filter))
-    ).length > 4;
-  });
-
-  /** Match a category (string ID, or object with id/_id) against a filter ID */
-  private matchCategory(cat: string | Category | any, filterId: string): boolean {
-    if (typeof cat === 'string') return cat === filterId;
-    return cat.id === filterId || cat._id === filterId || cat.slug === filterId;
-  }
-
-  private initialLoadDone = false;
+  // Computed: show "view all" button based on backend total
+  protected readonly showViewAllButton = computed(() => this.totalProducts() > 4);
 
   constructor() {
-    // Wait for LocationService to resolve before loading products
+    // Single subscription with switchMap to cancel in-flight requests
+    this.fetchTrigger$
+      .pipe(
+        switchMap(params => this.productService.getAll(params)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (response) => {
+          if (response.success) {
+            this.products.set(response.data);
+            this.totalProducts.set(response.pagination?.total || response.data.length);
+          }
+          this.isLoading.set(false);
+        },
+        error: () => {
+          this.products.set([]);
+          this.totalProducts.set(0);
+          this.isLoading.set(false);
+        },
+      });
+
+    // Reactive effect: triggers on location resolved OR filter change
     effect(() => {
       const resolved = this.locationService.isResolved();
-      if (resolved && !this.initialLoadDone) {
-        this.initialLoadDone = true;
-        this.loadFeaturedProducts();
+      const filter = this.selectedFilter();
+
+      if (!resolved) return;
+
+      // Read branchIds without tracking to avoid circular dependency
+      const branchIds = untracked(() => this.locationService.branchIds());
+
+      const params: ProductQueryParams = {
+        isFeatured: true,
+        isActive: true,
+        limit: 4,
+        branchIds: branchIds.length > 0 ? branchIds.join(',') : undefined,
+      };
+
+      if (filter !== 'all') {
+        params.vehicleType = filter as VehicleType;
       }
-    });
-  }
 
-  ngOnInit(): void {
-    this.loadCategories();
-
-    // If already resolved, load immediately
-    if (this.locationService.isResolved() && !this.initialLoadDone) {
-      this.initialLoadDone = true;
-      this.loadFeaturedProducts();
-    }
-  }
-
-  private loadCategories(): void {
-    this.categoryService.getAll().subscribe({
-      next: (response) => {
-        if (response.success) {
-          this.categories.set(response.data);
-        }
-      },
-      error: (err) => console.error('Error cargando categorias:', err)
-    });
-  }
-
-  private loadFeaturedProducts(): void {
-    const branchIds = this.locationService.branchIds();
-
-    this.productService.getAll({
-      isFeatured: true,
-      isActive: true,
-      branchIds: branchIds.length > 0 ? branchIds.join(',') : undefined,
-      limit: 50,
-    }).subscribe({
-      next: (response) => {
-        if (response.success) {
-          this.allProducts.set(response.data);
-          this.totalProducts.set(response.pagination?.total || response.data.length);
-        }
-        this.isLoading.set(false);
-      },
-      error: () => {
-        this.allProducts.set([]);
-        this.isLoading.set(false);
-      }
+      untracked(() => {
+        this.isLoading.set(true);
+        this.fetchTrigger$.next(params);
+      });
     });
   }
 

@@ -226,6 +226,29 @@
 
       <!-- Col Right: Payment + Status History -->
       <div class="detail-column">
+        <!-- Solicitud de Cancelación -->
+        @if (o.status === 'cancellation_requested') {
+          <section class="detail-card cancellation-card">
+            <h3 class="card-title cancellation-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+              </svg>
+              Solicitud de Cancelación
+            </h3>
+            <div class="cancellation-body">
+              @for (entry of o.statusHistory; track $index) {
+                @if (entry.status === 'cancellation_requested' && entry.note) {
+                  <div class="cancellation-reason">
+                    <span class="cancellation-reason-label">Motivo del cliente</span>
+                    <p class="cancellation-reason-text">{{ entry.note }}</p>
+                  </div>
+                }
+              }
+              <p class="cancellation-hint">El cliente ha solicitado la cancelación de esta orden. Puedes aprobar la cancelación usando el botón "Cambiar Estado".</p>
+            </div>
+          </section>
+        }
+
         <!-- Pago -->
         <section class="detail-card">
           <h3 class="card-title">
@@ -268,6 +291,12 @@
                 <div class="proof-section">
                   <span class="info-label">Comprobante</span>
                   <img [src]="o.paymentSubmission.proofUrl" alt="Comprobante de pago" class="proof-image" />
+                </div>
+              }
+              @if (o.paymentSubmission.notes) {
+                <div class="info-row">
+                  <span class="info-label">Nota del cliente</span>
+                  <span class="info-value" style="font-style:italic">{{ o.paymentSubmission.notes }}</span>
                 </div>
               }
             </div>

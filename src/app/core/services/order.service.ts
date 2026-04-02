@@ -50,8 +50,8 @@ export class OrderService {
     return this.http.get<OrderResponse>(`${this.apiUrl}/${id}`);
   }
 
-  cancelOrder(id: string): Observable<OrderResponse> {
-    return this.http.post<OrderResponse>(`${this.apiUrl}/${id}/cancel`, {});
+  cancelOrder(id: string, reason?: string): Observable<OrderResponse> {
+    return this.http.post<OrderResponse>(`${this.apiUrl}/${id}/cancel`, { reason });
   }
 
   updatePayment(id: string, payment: PaymentSubmission): Observable<OrderResponse> {

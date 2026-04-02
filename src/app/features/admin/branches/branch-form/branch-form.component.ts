@@ -48,7 +48,7 @@ export class BranchFormComponent implements OnInit {
   protected readonly collapsedExisting = signal<Set<string>>(new Set());
   protected readonly collapsedNew = signal<Set<number>>(new Set());
 
-  // Computed: zones available to add (exclude already assigned)
+  // Computed: all zones matching search term, with assigned flag
   protected readonly filteredZones = computed(() => {
     const all = this.availableZones();
     const existingZoneIds = new Set(
@@ -59,11 +59,12 @@ export class BranchFormComponent implements OnInit {
     const newZoneIds = new Set(this.newBranchZones().map(nbz => nbz.zone.id));
     const term = this.zoneSearchTerm().toLowerCase();
 
-    return all.filter(z =>
-      !existingZoneIds.has(z.id) &&
-      !newZoneIds.has(z.id) &&
-      (!term || z.name.toLowerCase().includes(term) || this.getZoneCityName(z).toLowerCase().includes(term))
-    );
+    return all
+      .filter(z => !term || z.name.toLowerCase().includes(term) || this.getZoneCityName(z).toLowerCase().includes(term))
+      .map(z => ({
+        ...z,
+        isAssigned: existingZoneIds.has(z.id) || newZoneIds.has(z.id),
+      }));
   });
 
   form: FormGroup = this.fb.group({
@@ -207,12 +208,9 @@ export class BranchFormComponent implements OnInit {
   // ==================== ZONE DROPDOWN ====================
 
   onZoneSearch(event: Event): void {
-    this.zoneSearchTerm.set((event.target as HTMLInputElement).value);
-    this.showZoneDropdown.set(true);
-  }
-
-  openZoneDropdown(): void {
-    this.showZoneDropdown.set(true);
+    const value = (event.target as HTMLInputElement).value;
+    this.zoneSearchTerm.set(value);
+    this.showZoneDropdown.set(value.trim().length > 0);
   }
 
   closeZoneDropdown(): void {
@@ -221,7 +219,9 @@ export class BranchFormComponent implements OnInit {
 
   // ==================== ZONE MANAGEMENT ====================
 
-  addZone(zone: Zone): void {
+  addZone(zone: Zone & { isAssigned?: boolean }): void {
+    if (zone.isAssigned) return;
+
     // Build default delivery config from zone municipalities
     const deliveryConfig: DeliveryConfigItem[] = (zone.municipalities || []).map(slug => ({
       municipality: slug,
@@ -232,7 +232,7 @@ export class BranchFormComponent implements OnInit {
 
     this.newBranchZones.update(zones => [...zones, { zone, deliveryConfig }]);
     this.zoneSearchTerm.set('');
-    // Keep dropdown open so the user can select multiple zones consecutively
+    this.showZoneDropdown.set(false);
   }
 
   removeExistingZone(bzId: string): void {

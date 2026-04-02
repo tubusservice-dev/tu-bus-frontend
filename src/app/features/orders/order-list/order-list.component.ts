@@ -1,6 +1,8 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, DestroyRef, inject, signal, OnInit } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { Router } from '@angular/router';
+import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { OrderService } from '../../../core/services/order.service';
 import {
   Order, OrderStatus,
@@ -17,6 +19,9 @@ import {
 export class OrderListComponent implements OnInit {
   protected readonly orderService = inject(OrderService);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
+
+  private readonly searchSubject$ = new Subject<string>();
 
   protected readonly statusLabels = ORDER_STATUS_LABELS;
   protected readonly statusColors = ORDER_STATUS_COLORS;
@@ -29,7 +34,6 @@ export class OrderListComponent implements OnInit {
   // Filters
   protected readonly statusFilter = signal<OrderStatus | ''>('');
   protected readonly searchQuery = signal('');
-  private searchTimeout: any = null;
 
   protected readonly filterStatuses = [
     { value: '', label: 'Todas' },
@@ -42,6 +46,14 @@ export class OrderListComponent implements OnInit {
   ];
 
   ngOnInit(): void {
+    this.searchSubject$
+      .pipe(
+        debounceTime(400),
+        distinctUntilChanged(),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(() => this.loadOrders(1));
+
     this.loadOrders();
   }
 
@@ -69,8 +81,7 @@ export class OrderListComponent implements OnInit {
   onSearchInput(event: Event): void {
     const value = (event.target as HTMLInputElement).value;
     this.searchQuery.set(value);
-    clearTimeout(this.searchTimeout);
-    this.searchTimeout = setTimeout(() => this.loadOrders(1), 300);
+    this.searchSubject$.next(value);
   }
 
   goToPage(page: number): void {

@@ -1,7 +1,9 @@
-import { Component, inject, signal, OnInit, computed, HostListener, effect } from '@angular/core';
+import { Component, DestroyRef, inject, signal, OnInit, computed, HostListener, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
+import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ProductService } from '../../core/services/product.service';
 import { BrandService } from '../../core/services/brand.service';
 import { CategoryService } from '../../core/services/category.service';
@@ -42,6 +44,9 @@ export class CatalogComponent implements OnInit {
   protected readonly vehicleService = inject(VehicleService);
   protected readonly locationService = inject(LocationService);
   private readonly route = inject(ActivatedRoute);
+  private readonly destroyRef = inject(DestroyRef);
+
+  private readonly searchSubject$ = new Subject<string>();
 
   // Vehicle type filter options
   protected readonly vehicleTypeOptions = Object.entries(VEHICLE_TYPE_LABELS).map(
@@ -131,6 +136,18 @@ export class CatalogComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.searchSubject$
+      .pipe(
+        debounceTime(400),
+        distinctUntilChanged(),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((value) => {
+        this.filters.update((f) => ({ ...f, search: value }));
+        this.currentPage.set(1);
+        this.loadProducts();
+      });
+
     // Activate vehicle filter if navigating from garage
     const fromGarage = this.route.snapshot.queryParamMap.get('fromGarage');
     if (fromGarage === 'true' && this.vehicleService.selectedVehicle()) {
@@ -220,9 +237,9 @@ export class CatalogComponent implements OnInit {
     });
   }
 
-  onSearch(): void {
-    this.currentPage.set(1);
-    this.loadProducts();
+  onSearchInput(value: string): void {
+    this.filters.update((f) => ({ ...f, search: value }));
+    this.searchSubject$.next(value);
   }
 
   updateFilter<K extends keyof FilterState>(key: K, value: FilterState[K]): void {
