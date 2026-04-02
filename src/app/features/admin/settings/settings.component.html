@@ -566,111 +566,125 @@
             <!-- Toggle mostrar precio en Bs -->
             <div class="exchange-toggle-row">
               <div class="toggle-info">
-                <span class="toggle-label">Mostrar precio en Bs</span>
+                <span class="toggle-label-text">Mostrar precio en Bs</span>
                 <span class="toggle-desc">Los usuarios verán el precio en Bolívares debajo del precio en USD</span>
               </div>
-              <label class="toggle-switch">
+              <label class="toggle-label">
                 <input
                   type="checkbox"
+                  class="toggle-input"
                   [checked]="showBsPrice()"
                   (change)="toggleShowBsPrice()"
                   [disabled]="toggleSaving()"
                 />
-                <span class="toggle-slider"></span>
+                <span class="toggle-switch"></span>
               </label>
             </div>
 
-            <!-- Rate display/edit -->
+            <!-- Rate fields row -->
             <div class="exchange-rate-card">
-              <div class="rate-header">
-                <span class="rate-title">Tasa actual</span>
-                @if (exchangeRateService.rateData(); as rateData) {
-                  <span class="rate-source">
-                    Fuente: {{ rateData.source === 'bcv' ? 'BCV (Automática)' : 'Manual' }}
-                  </span>
-                }
-              </div>
-
-              <div class="rate-body">
-                <div class="rate-input-group">
-                  <span class="rate-prefix">1 USD =</span>
-                  @if (isEditingRate()) {
-                    <input
-                      type="number"
-                      class="rate-input"
-                      [value]="editableRate()"
-                      (input)="onRateInput($event)"
-                      step="0.01"
-                      min="0.01"
-                      placeholder="0.00"
-                    />
-                  } @else {
+              <div class="rate-fields-row">
+                <!-- Official BCV rate -->
+                <div class="rate-field" [class.rate-field-disabled]="useCustomRate()">
+                  <label class="rate-field-label">Tasa Oficial BCV</label>
+                  <div class="rate-input-wrapper">
                     <input
                       type="text"
-                      class="rate-input rate-input-locked"
+                      class="rate-input rate-input-readonly"
                       [value]="(exchangeRateService.currentRate() ?? 0) | number:'1.2-2'"
                       readonly
+                      tabindex="-1"
                     />
+                    <span class="rate-input-suffix">Bs</span>
+                  </div>
+                  <button
+                    type="button"
+                    class="btn-refresh-rate"
+                    [disabled]="isRefreshing() || useCustomRate()"
+                    (click)="refreshRate()"
+                  >
+                    @if (isRefreshing()) {
+                      <span class="spinner-xs"></span>
+                      Consultando...
+                    } @else {
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-refresh-icon">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182" />
+                      </svg>
+                      Actualizar
+                    }
+                  </button>
+                  <p class="refresh-hint">Sincroniza la tasa con el BCV</p>
+                  @if (rateError()) {
+                    <p class="rate-error">{{ rateError() }}</p>
                   }
-                  <span class="rate-suffix">Bs</span>
+                  @if (refreshMessage()) {
+                    <p class="rate-message" [class.rate-changed]="refreshChanged()" [class.rate-unchanged]="!refreshChanged()">
+                      {{ refreshMessage() }}
+                    </p>
+                  }
                 </div>
 
-                <div class="rate-actions">
-                  @if (isEditingRate()) {
-                    <button
-                      type="button"
-                      class="btn-rate btn-rate-save"
-                      [disabled]="rateSaving()"
-                      (click)="saveRate()"
-                    >
-                      @if (rateSaving()) {
-                        <span class="spinner-xs"></span>
-                      } @else {
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                        </svg>
-                      }
-                      Guardar
-                    </button>
-                    <button
-                      type="button"
-                      class="btn-rate btn-rate-cancel"
-                      [disabled]="rateSaving()"
-                      (click)="cancelEditingRate()"
-                    >
-                      Cancelar
-                    </button>
-                  } @else {
-                    <button
-                      type="button"
-                      class="btn-rate btn-rate-edit"
-                      (click)="startEditingRate()"
-                    >
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Z" />
-                      </svg>
-                      Editar
-                    </button>
+                <!-- Toggle custom rate -->
+                <div class="rate-toggle-center">
+                  <label class="toggle-label" title="Usar tasa personalizada">
+                    <input
+                      type="checkbox"
+                      class="toggle-input"
+                      [checked]="useCustomRate()"
+                      (change)="toggleCustomRate()"
+                      [disabled]="customToggleSaving()"
+                    />
+                    <span class="toggle-switch"></span>
+                  </label>
+                </div>
+
+                <!-- Custom rate -->
+                <div class="rate-field" [class.rate-field-disabled]="!useCustomRate()">
+                  <label class="rate-field-label">Tasa Personalizada</label>
+                  <div class="rate-input-wrapper">
+                    <input
+                      type="text"
+                      class="rate-input rate-input-readonly"
+                      [class.rate-input-active]="useCustomRate()"
+                      [value]="(exchangeRateService.customRate() ?? 0) | number:'1.2-2'"
+                      readonly
+                      tabindex="-1"
+                    />
+                    <span class="rate-input-suffix">Bs</span>
+                  </div>
+                  <button
+                    type="button"
+                    class="btn-refresh-rate"
+                    [disabled]="!useCustomRate()"
+                    (click)="openEditCustomModal()"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-refresh-icon">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Z" />
+                    </svg>
+                    Editar
+                  </button>
+                  <p class="refresh-hint">Modificar la tasa manualmente</p>
+                  @if (customRateSuccess()) {
+                    <p class="rate-message rate-changed">{{ customRateSuccess() }}</p>
                   }
                 </div>
               </div>
 
-              @if (rateError()) {
-                <p class="rate-error">{{ rateError() }}</p>
-              }
-              @if (rateSuccess()) {
-                <p class="rate-success">Tasa actualizada correctamente</p>
-              }
-
               @if (exchangeRateService.rateData(); as rateData) {
-                <div class="rate-footer">
-                  <span class="rate-updated">Última actualización: {{ rateData.updatedAt | date:'dd/MM/yyyy, h:mm a' }}</span>
+                <div class="rate-meta">
+                  <span class="rate-source-badge">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="meta-icon">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 0 1 7.843 4.582M12 3a8.997 8.997 0 0 0-7.843 4.582" />
+                    </svg>
+                    {{ useCustomRate() ? 'Personalizada' : (rateData.source === 'bcv' ? 'BCV (Automática)' : 'Manual') }}
+                  </span>
+                  <span class="rate-updated">Actualizado: {{ rateData.updatedAt | date:'dd/MM/yyyy, h:mm a' }}</span>
                 </div>
               }
             </div>
 
             <p class="exchange-note">
-              La tasa se actualiza automáticamente del BCV a las 11:00 AM y 7:00 PM (hora Venezuela).
+              La tasa se actualiza automáticamente del BCV todos los días a las 12:00 AM (hora Venezuela).
             </p>
           </div>
         </div>
@@ -724,6 +738,62 @@
         </svg>
       </button>
       <img [src]="heroImagePreview()" alt="Vista completa" class="lightbox-image" (click)="$event.stopPropagation()" />
+    </div>
+  }
+
+  <!-- Modal tasa personalizada -->
+  @if (showCustomRateModal()) {
+    <div class="modal-overlay" (click)="closeCustomRateModal()">
+      <div class="custom-rate-modal" (click)="$event.stopPropagation()">
+        <div class="custom-rate-modal-header">
+          <h3>{{ isEditingCustom() ? 'Editar Tasa Personalizada' : 'Tasa Personalizada' }}</h3>
+          <button type="button" class="modal-close-btn" (click)="closeCustomRateModal()">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div class="custom-rate-modal-body">
+          <p class="custom-rate-modal-desc">
+            {{ isEditingCustom() ? 'Ingresa el nuevo valor para la tasa personalizada.' : 'Ingresa el valor de la tasa personalizada que deseas utilizar en lugar de la tasa oficial BCV.' }}
+          </p>
+          <div class="custom-rate-modal-input-group">
+            <label>1 USD =</label>
+            <input
+              type="number"
+              class="custom-rate-modal-input"
+              [value]="customRateInput()"
+              (input)="onCustomRateModalInput($event)"
+              step="0.01"
+              min="0.01"
+              placeholder="0.00"
+              autofocus
+            />
+            <span>Bs</span>
+          </div>
+          @if (customRateError()) {
+            <p class="custom-rate-modal-error">{{ customRateError() }}</p>
+          }
+        </div>
+        <div class="custom-rate-modal-actions">
+          <button type="button" class="btn-modal-cancel" (click)="closeCustomRateModal()" [disabled]="customRateSaving()">
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="btn-modal-confirm"
+            [disabled]="customRateSaving()"
+            (click)="isEditingCustom() ? confirmEditCustomRate() : confirmCustomRate()"
+          >
+            @if (customRateSaving()) {
+              <span class="spinner-xs"></span>
+              Guardando...
+            } @else {
+              Confirmar
+            }
+          </button>
+        </div>
+      </div>
     </div>
   }
 </div>

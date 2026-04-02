@@ -48,13 +48,20 @@ export class SettingsComponent implements OnInit {
   protected readonly methodToDelete = signal<PaymentMethodConfig | null>(null);
 
   // Exchange Rate
-  protected readonly isEditingRate = signal(false);
-  protected readonly rateSaving = signal(false);
-  protected readonly rateSuccess = signal(false);
+  protected readonly isRefreshing = signal(false);
+  protected readonly refreshMessage = signal<string | null>(null);
+  protected readonly refreshChanged = signal<boolean | null>(null);
   protected readonly rateError = signal<string | null>(null);
-  protected readonly editableRate = signal<number | null>(null);
   protected readonly showBsPrice = signal(false);
   protected readonly toggleSaving = signal(false);
+  protected readonly useCustomRate = signal(false);
+  protected readonly customToggleSaving = signal(false);
+  protected readonly showCustomRateModal = signal(false);
+  protected readonly customRateInput = signal<number | null>(null);
+  protected readonly customRateSaving = signal(false);
+  protected readonly customRateError = signal<string | null>(null);
+  protected readonly customRateSuccess = signal<string | null>(null);
+  protected readonly isEditingCustom = signal(false);
 
   // Estados de guardado por sección
   protected readonly isSaving = signal<Record<SectionKey, boolean>>({
@@ -229,6 +236,7 @@ export class SettingsComponent implements OnInit {
         // Exchange rate config
         if (data.exchangeRate) {
           this.showBsPrice.set(data.exchangeRate.showBsPrice);
+          this.useCustomRate.set(data.exchangeRate.useCustomRate ?? false);
         }
 
         // Load current exchange rate
@@ -602,46 +610,133 @@ export class SettingsComponent implements OnInit {
     });
   }
 
-  startEditingRate(): void {
-    const currentRate = this.exchangeRateService.currentRate();
-    this.editableRate.set(currentRate);
-    this.isEditingRate.set(true);
-    this.rateError.set(null);
+  toggleCustomRate(): void {
+    if (this.useCustomRate()) {
+      // Turning OFF → disable custom rate
+      this.customToggleSaving.set(true);
+      this.settingsService.updateExchangeRateConfig({ useCustomRate: false }).subscribe({
+        next: () => {
+          this.useCustomRate.set(false);
+          this.customToggleSaving.set(false);
+        },
+        error: () => this.customToggleSaving.set(false),
+      });
+    } else {
+      // Turning ON → open modal to set custom rate
+      this.customRateInput.set(null);
+      this.customRateError.set(null);
+      this.showCustomRateModal.set(true);
+    }
   }
 
-  cancelEditingRate(): void {
-    this.isEditingRate.set(false);
-    this.editableRate.set(null);
-    this.rateError.set(null);
+  onCustomRateModalInput(event: Event): void {
+    const value = parseFloat((event.target as HTMLInputElement).value);
+    this.customRateInput.set(isNaN(value) ? null : value);
   }
 
-  saveRate(): void {
-    const rate = this.editableRate();
-    if (!rate || rate <= 0) {
-      this.rateError.set('La tasa debe ser un número mayor a 0');
+  cancelCustomRateModal(): void {
+    this.showCustomRateModal.set(false);
+    this.customRateInput.set(null);
+    this.customRateError.set(null);
+    // Toggle stays OFF
+  }
+
+  confirmCustomRate(): void {
+    const value = this.customRateInput();
+    if (!value || value <= 0) {
+      this.customRateError.set('Ingresa un valor mayor a 0');
       return;
     }
 
-    this.rateSaving.set(true);
-    this.rateError.set(null);
+    this.customRateSaving.set(true);
+    this.customRateError.set(null);
 
-    this.exchangeRateService.updateRate(rate).subscribe({
+    this.exchangeRateService.updateCustomRate(value).subscribe({
       next: () => {
-        this.rateSaving.set(false);
-        this.isEditingRate.set(false);
-        this.rateSuccess.set(true);
-        setTimeout(() => this.rateSuccess.set(false), 3000);
+        // Save custom rate, then enable useCustomRate in settings
+        this.settingsService.updateExchangeRateConfig({ useCustomRate: true }).subscribe({
+          next: () => {
+            this.useCustomRate.set(true);
+            this.customRateSaving.set(false);
+            this.showCustomRateModal.set(false);
+          },
+          error: () => {
+            this.customRateSaving.set(false);
+            this.showCustomRateModal.set(false);
+          },
+        });
       },
       error: (error) => {
-        this.rateSaving.set(false);
-        this.rateError.set(error.error?.message || 'Error al guardar la tasa');
+        this.customRateSaving.set(false);
+        this.customRateError.set(error.error?.message || 'Error al guardar la tasa');
       },
     });
   }
 
-  onRateInput(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    this.editableRate.set(parseFloat(input.value) || null);
+  openEditCustomModal(): void {
+    const current = this.exchangeRateService.customRate();
+    this.customRateInput.set(current);
+    this.customRateError.set(null);
+    this.isEditingCustom.set(true);
+    this.showCustomRateModal.set(true);
+  }
+
+  confirmEditCustomRate(): void {
+    const value = this.customRateInput();
+    if (!value || value <= 0) {
+      this.customRateError.set('Ingresa un valor mayor a 0');
+      return;
+    }
+
+    this.customRateSaving.set(true);
+    this.customRateError.set(null);
+
+    this.exchangeRateService.updateCustomRate(value).subscribe({
+      next: () => {
+        this.customRateSaving.set(false);
+        this.showCustomRateModal.set(false);
+        this.isEditingCustom.set(false);
+        this.customRateSuccess.set('Tasa personalizada actualizada');
+        setTimeout(() => this.customRateSuccess.set(null), 3000);
+      },
+      error: (error) => {
+        this.customRateSaving.set(false);
+        this.customRateError.set(error.error?.message || 'Error al guardar la tasa');
+      },
+    });
+  }
+
+  closeCustomRateModal(): void {
+    if (this.isEditingCustom()) {
+      this.isEditingCustom.set(false);
+      this.showCustomRateModal.set(false);
+    } else {
+      this.cancelCustomRateModal();
+    }
+  }
+
+  refreshRate(): void {
+    this.isRefreshing.set(true);
+    this.rateError.set(null);
+    this.refreshMessage.set(null);
+    this.refreshChanged.set(null);
+
+    this.exchangeRateService.refreshRate().subscribe({
+      next: (response) => {
+        this.isRefreshing.set(false);
+        this.refreshChanged.set(response.changed ?? false);
+        this.refreshMessage.set(response.message ?? 'Consulta realizada');
+        setTimeout(() => {
+          this.refreshMessage.set(null);
+          this.refreshChanged.set(null);
+        }, 5000);
+      },
+      error: (error) => {
+        this.isRefreshing.set(false);
+        this.rateError.set(error.error?.message || 'Error al consultar la tasa BCV');
+        setTimeout(() => this.rateError.set(null), 5000);
+      },
+    });
   }
 
   // ========== Helpers ==========

@@ -67,6 +67,7 @@ export interface DispatchConfig {
 
 export interface ExchangeRateConfig {
   showBsPrice: boolean;
+  useCustomRate: boolean;
 }
 
 export const PAGINATION_OPTIONS = [10, 20, 50, 100] as const;
@@ -142,6 +143,7 @@ export const DEFAULT_SETTINGS: Settings = {
   },
   exchangeRate: {
     showBsPrice: false,
+    useCustomRate: false,
   },
 };
 
