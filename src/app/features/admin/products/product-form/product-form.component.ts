@@ -16,6 +16,8 @@ import {
   Line,
   Category,
   Brand,
+  VehicleType,
+  VEHICLE_TYPE_LABELS,
 } from '../../../../models';
 import { ImageCarouselComponent } from '../../../../shared/components/image-carousel/image-carousel.component';
 
@@ -142,6 +144,11 @@ export class ProductFormComponent implements OnInit {
       + this.newBranchProducts().length;
   });
 
+  // Vehicle type options for select
+  protected readonly vehicleTypeOptions = Object.entries(VEHICLE_TYPE_LABELS).map(
+    ([value, label]) => ({ value, label })
+  );
+
   // Sección activa (simplificado a 3 secciones)
   protected readonly activeSection = signal<'basic' | 'vehicle' | 'images'>('basic');
 
@@ -159,6 +166,7 @@ export class ProductFormComponent implements OnInit {
     // Detalles adicionales (opcionales)
     brand: [''],
     productModel: [''],
+    vehicleType: [VehicleType.ALL],
 
     // Precio
     price: [0, [Validators.required, Validators.min(0)]],
@@ -280,6 +288,7 @@ export class ProductFormComponent implements OnInit {
           line: lineId,
           brand: product.brand,
           productModel: product.productModel,
+          vehicleType: (product as any).vehicleType || VehicleType.ALL,
           price: product.price,
           comparePrice: product.comparePrice,
           isActive: product.isActive,
@@ -419,6 +428,7 @@ export class ProductFormComponent implements OnInit {
       categories: this.selectedCategories().map(c => c.id),
       line: formValue.line || undefined,
       brand: this.selectedBrand()?.id || undefined,
+      vehicleType: formValue.vehicleType || VehicleType.ALL,
       isCombo: formValue.isCombo || false,
       freeOilChangeService: formValue.freeOilChangeService || false,
       // TODO: branches assigned via BranchProduct
@@ -584,7 +594,7 @@ export class ProductFormComponent implements OnInit {
   addBranch(branch: Branch): void {
     this.newBranchProducts.update(list => [...list, { branch, stock: 0 }]);
     this.branchSearchTerm.set('');
-    this.showBranchDropdown.set(false);
+    // Keep dropdown open so the user can select multiple branches consecutively
   }
 
   /**

@@ -70,7 +70,7 @@
 }
 
 .filters-grid {
-  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4;
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4;
 }
 
 .filter-group {
@@ -86,19 +86,6 @@
     @apply focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent;
   }
 
-  &.price-range {
-    .price-inputs {
-      @apply flex items-center gap-2;
-
-      input {
-        @apply w-full;
-      }
-
-      span {
-        @apply text-gray-400;
-      }
-    }
-  }
 }
 
 .btn-clear-filters {
@@ -310,7 +297,6 @@
       color: #ffffff;
     }
 
-    &.price-range .price-inputs span { color: #6b7280; }
   }
 
   .btn-clear-filters {

@@ -13,15 +13,16 @@ import {
   Product,
   Brand,
   Category,
+  VehicleType,
+  VEHICLE_TYPE_LABELS,
 } from '../../models';
 import { PAGINATION_OPTIONS } from '../../models/settings.model';
 
 interface FilterState {
   search: string;
+  vehicleType: string;
   brand: string;
   category: string;
-  minPrice: number | null;
-  maxPrice: number | null;
   sortBy: string;
 }
 
@@ -41,6 +42,11 @@ export class CatalogComponent implements OnInit {
   protected readonly vehicleService = inject(VehicleService);
   protected readonly locationService = inject(LocationService);
   private readonly route = inject(ActivatedRoute);
+
+  // Vehicle type filter options
+  protected readonly vehicleTypeOptions = Object.entries(VEHICLE_TYPE_LABELS).map(
+    ([value, label]) => ({ value, label })
+  );
 
   // Filtro de vehículo (activo cuando se navega desde el garaje)
   protected readonly vehicleFilterActive = signal(false);
@@ -73,10 +79,9 @@ export class CatalogComponent implements OnInit {
   // Filtros
   protected readonly filters = signal<FilterState>({
     search: '',
+    vehicleType: '',
     brand: '',
     category: '',
-    minPrice: null,
-    maxPrice: null,
     sortBy: 'createdAt',
   });
 
@@ -106,10 +111,9 @@ export class CatalogComponent implements OnInit {
   protected readonly activeFiltersCount = computed(() => {
     const f = this.filters();
     let count = 0;
+    if (f.vehicleType) count++;
     if (f.brand) count++;
     if (f.category) count++;
-    if (f.minPrice !== null) count++;
-    if (f.maxPrice !== null) count++;
     return count;
   });
 
@@ -191,10 +195,9 @@ export class CatalogComponent implements OnInit {
       page: this.currentPage(),
       limit: this.currentLimit(),
       search: f.search || undefined,
+      vehicleType: (f.vehicleType as VehicleType) || undefined,
       brand: f.brand || undefined,
       category: f.category || undefined,
-      minPrice: f.minPrice ?? undefined,
-      maxPrice: f.maxPrice ?? undefined,
       sortBy,
       sortOrder,
       isActive: true,
@@ -231,10 +234,9 @@ export class CatalogComponent implements OnInit {
   clearFilters(): void {
     this.filters.set({
       search: '',
+      vehicleType: '',
       brand: '',
       category: '',
-      minPrice: null,
-      maxPrice: null,
       sortBy: 'createdAt',
     });
     this.currentPage.set(1);

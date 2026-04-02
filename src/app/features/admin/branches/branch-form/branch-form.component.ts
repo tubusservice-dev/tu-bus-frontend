@@ -232,7 +232,7 @@ export class BranchFormComponent implements OnInit {
 
     this.newBranchZones.update(zones => [...zones, { zone, deliveryConfig }]);
     this.zoneSearchTerm.set('');
-    this.showZoneDropdown.set(false);
+    // Keep dropdown open so the user can select multiple zones consecutively
   }
 
   removeExistingZone(bzId: string): void {

@@ -384,6 +384,14 @@ export const routes: Routes = [
           import('./features/profile/profile.component').then((m) => m.ProfileComponent),
         canActivate: [authGuard],
       },
+      {
+        path: 'perfil/pedidos/:id',
+        loadComponent: () =>
+          import('./features/orders/order-detail/order-detail.component').then(
+            (m) => m.OrderDetailComponent
+          ),
+        canActivate: [authGuard],
+      },
     ],
   },
   // Callback de OAuth

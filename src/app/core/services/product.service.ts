@@ -9,6 +9,7 @@ import {
   CreateProductRequest,
   UpdateProductRequest,
   FuelType,
+  VehicleType,
 } from '../../models/product.model';
 
 export interface ProductQueryParams {
@@ -17,6 +18,7 @@ export interface ProductQueryParams {
   line?: string;
   brand?: string;
   category?: string;
+  vehicleType?: VehicleType;
   minPrice?: number;
   maxPrice?: number;
   isActive?: boolean;

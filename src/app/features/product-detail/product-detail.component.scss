@@ -270,11 +270,16 @@
   @apply text-sm;
 
   .in-stock {
-    @apply flex items-center gap-1.5;
+    @apply flex items-center gap-1.5 flex-wrap;
     color: #16a34a;
 
     svg {
       @apply w-4 h-4;
+    }
+
+    .branch-hint {
+      @apply text-xs font-normal;
+      color: #6b7280;
     }
   }
 

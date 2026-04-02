@@ -357,32 +357,44 @@
             @if (availableBranches().length === 0) {
               <p class="branch-empty-hint">No hay sucursales disponibles para este servicio.</p>
             } @else {
-              <div class="branch-selector-list">
-                @for (branch of availableBranches(); track branch.id) {
-                  <button
-                    type="button"
-                    class="branch-selector-card"
-                    [class.selected]="checkoutService.selectedBranch()?.id === branch.id"
-                    (click)="selectBranch(branch)"
-                  >
-                    <div class="branch-selector-info">
-                      <span class="branch-selector-name">{{ branch.name }}</span>
-                      <span class="branch-selector-address">{{ branch.address }}</span>
-                      <span class="branch-selector-phone">{{ branch.whatsappPhone }}</span>
-                    </div>
-                    <div class="branch-selector-badges">
-                      @if (branch.hasInStoreOilChange) {
-                        <span class="branch-badge branch-badge-oil">Cambio de aceite</span>
-                      }
-                      @if (checkoutService.selectedBranch()?.id === branch.id) {
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="branch-check-icon">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                        </svg>
-                      }
-                    </div>
-                  </button>
-                }
-              </div>
+              @if (isLoadingBranchStock()) {
+                <div class="loading-state"><div class="spinner"></div><p>Verificando disponibilidad...</p></div>
+              } @else {
+                <div class="branch-selector-list">
+                  @for (branch of availableBranches(); track branch.id) {
+                    <button
+                      type="button"
+                      class="branch-selector-card"
+                      [class.selected]="checkoutService.selectedBranch()?.id === branch.id"
+                      [class.disabled]="branch.insufficientStock"
+                      [disabled]="branch.insufficientStock"
+                      (click)="selectBranch(branch)"
+                    >
+                      <div class="branch-selector-info">
+                        <span class="branch-selector-name">{{ branch.name }}</span>
+                        <span class="branch-selector-address">{{ branch.address }}</span>
+                        @if (!branch.insufficientStock) {
+                          <span class="branch-selector-phone">{{ branch.whatsappPhone }}</span>
+                        }
+                      </div>
+                      <div class="branch-selector-badges">
+                        @if (branch.insufficientStock) {
+                          <span class="branch-badge branch-badge-no-stock">Stock insuficiente</span>
+                        } @else {
+                          @if (branch.hasInStoreOilChange) {
+                            <span class="branch-badge branch-badge-oil">Cambio de aceite</span>
+                          }
+                          @if (checkoutService.selectedBranch()?.id === branch.id) {
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="branch-check-icon">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                            </svg>
+                          }
+                        }
+                      </div>
+                    </button>
+                  }
+                </div>
+              }
             }
             @if (!isBranchMandatory()) {
               <p class="branch-optional-hint">Seleccionar sucursal es opcional para este tipo de despacho.</p>

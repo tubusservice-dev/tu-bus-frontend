@@ -70,16 +70,24 @@
                 <span class="help-text">Incluye detalles que lo diferencien de otros productos</span>
               </div>
 
-              <!-- Precio y Stock -->
+              <!-- Precio -->
               <div class="form-group">
-                <label for="price">Precio <span class="required">*</span></label>
+                <label for="price">Precio actual <span class="required">*</span></label>
                 <div class="input-with-prefix">
                   <span class="prefix">$</span>
                   <input type="number" id="price" formControlName="price" min="0" step="0.01" />
                 </div>
               </div>
 
-              <!-- TODO: Stock is now managed per-branch via BranchProduct -->
+              <!-- Precio anterior (descuento) -->
+              <div class="form-group">
+                <label for="comparePrice">Precio anterior <span class="optional">(opcional)</span></label>
+                <div class="input-with-prefix">
+                  <span class="prefix">$</span>
+                  <input type="number" id="comparePrice" formControlName="comparePrice" min="0" step="0.01" placeholder="0.00" />
+                </div>
+                <span class="help-text">Si es mayor al precio actual, se mostrará tachado como descuento</span>
+              </div>
 
               <!-- Línea -->
               <div class="form-group">
@@ -136,7 +144,18 @@
           <p class="section-description">Información adicional del producto (todo opcional)</p>
 
             <div class="form-grid">
-              <!-- Fila 1: Categorías (ocupa toda la fila) -->
+              <!-- Tipo de vehículo -->
+              <div class="form-group col-span-2">
+                <label for="vehicleType">Tipo de vehículo <span class="optional">(opcional)</span></label>
+                <select id="vehicleType" formControlName="vehicleType">
+                  @for (option of vehicleTypeOptions; track option.value) {
+                    <option [value]="option.value">{{ option.label }}</option>
+                  }
+                </select>
+                <span class="help-text">Si no seleccionas un tipo, el producto aplicará a todos los vehículos</span>
+              </div>
+
+              <!-- Fila: Categorías (ocupa toda la fila) -->
               <div class="form-group col-span-2">
                 <label>Categorías <span class="optional">(opcional)</span></label>
                 <div class="category-selector">

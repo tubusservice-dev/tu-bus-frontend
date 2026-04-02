@@ -136,6 +136,22 @@
   @apply hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors;
   &:first-child { @apply rounded-t-lg; }
   &:last-child { @apply rounded-b-lg; }
+
+  &.zone-option {
+    @apply flex flex-col gap-0.5 px-4 py-2.5;
+  }
+}
+
+.zone-option-name {
+  @apply text-sm font-medium text-gray-900 dark:text-white;
+}
+
+.zone-option-meta {
+  @apply flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500;
+}
+
+.zone-option-separator {
+  @apply text-gray-300 dark:text-gray-600;
 }
 
 // Selected badge (green)

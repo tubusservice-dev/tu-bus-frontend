@@ -183,17 +183,20 @@
                   <p class="product-description">{{ product.description }}</p>
                 }
 
-                <!-- Categorías -->
-                @if (product.categories && product.categories.length > 0) {
-                  <div class="product-categories">
+                <!-- Categorías y tipo de vehículo -->
+                <div class="product-categories">
+                  @if (getVehicleTypeLabel(product); as vehicleLabel) {
+                    <span class="category-tag vehicle-type">{{ vehicleLabel }}</span>
+                  }
+                  @if (product.categories && product.categories.length > 0) {
                     @for (cat of product.categories.slice(0, 2); track $index) {
                       <span class="category-tag">{{ getCategoryName(cat) }}</span>
                     }
                     @if (product.categories.length > 2) {
                       <span class="category-more">+{{ product.categories.length - 2 }}</span>
                     }
-                  </div>
-                }
+                  }
+                </div>
 
                 <!-- Footer con precio y stock -->
                 <div class="product-footer">
@@ -264,16 +267,22 @@
                   </div>
                 </td>
                 <td>
-                  @if (product.categories && product.categories.length > 0) {
-                    @for (cat of product.categories.slice(0, 1); track $index) {
-                      {{ getCategoryName(cat) }}
+                  <div class="flex flex-wrap gap-1">
+                    @if (getVehicleTypeLabel(product); as vehicleLabel) {
+                      <span class="inline-flex px-1.5 py-0.5 text-xs font-medium rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">{{ vehicleLabel }}</span>
                     }
-                    @if (product.categories.length > 1) {
-                      <span class="text-gray-400"> +{{ product.categories.length - 1 }}</span>
+                    @if (product.categories && product.categories.length > 0) {
+                      @for (cat of product.categories.slice(0, 1); track $index) {
+                        <span>{{ getCategoryName(cat) }}</span>
+                      }
+                      @if (product.categories.length > 1) {
+                        <span class="text-gray-400"> +{{ product.categories.length - 1 }}</span>
+                      }
                     }
-                  } @else {
-                    <span class="text-gray-400">-</span>
-                  }
+                    @if (!getVehicleTypeLabel(product) && (!product.categories || product.categories.length === 0)) {
+                      <span class="text-gray-400">-</span>
+                    }
+                  </div>
                 </td>
                 <td class="font-semibold">${{ product.price | number:'1.2-2' }}</td>
                 <td>
@@ -519,6 +528,12 @@
               <div class="detail-details-section">
                 <h3>Detalles del producto</h3>
                 <div class="detail-details-grid">
+                  @if (getVehicleTypeLabel(product)) {
+                    <div class="detail-detail-item">
+                      <span class="label">Tipo de vehículo</span>
+                      <span class="value">{{ getVehicleTypeLabel(product) }}</span>
+                    </div>
+                  }
                   @if (product.brand) {
                     <div class="detail-detail-item">
                       <span class="label">Marca</span>

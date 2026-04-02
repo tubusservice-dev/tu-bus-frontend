@@ -2,6 +2,7 @@ import { Component, inject, signal, OnInit, computed } from '@angular/core';
 import { Router } from '@angular/router';
 import { CurrencyPipe, CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 import { CheckoutService } from '../services/checkout.service';
 import { CartService } from '../../../core/services/cart.service';
 import { OrderService } from '../../../core/services/order.service';
@@ -9,6 +10,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { LocationService, BranchSummary } from '../../../core/services/location.service';
 import { PaymentMethodService } from '../../../core/services/payment-method.service';
 import { UploadService } from '../../../core/services/upload.service';
+import { BranchProductService } from '../../../core/services/branch-product.service';
 import { CreateOrderRequest, PaymentSubmission } from '../../../models/order.model';
 import {
   PaymentMethodConfig,
@@ -36,6 +38,7 @@ export class CheckoutSummaryComponent implements OnInit {
   private readonly paymentMethodService = inject(PaymentMethodService);
   private readonly fb = inject(FormBuilder);
   protected readonly locationService = inject(LocationService);
+  private readonly branchProductService = inject(BranchProductService);
   private readonly router = inject(Router);
 
   // State signals
@@ -128,11 +131,45 @@ export class CheckoutSummaryComponent implements OnInit {
     return dt === 'store_pickup' || dt === 'in_store_oil_change';
   });
 
-  /** Branches available for selection based on dispatch type */
-  protected readonly availableBranches = computed<BranchSummary[]>(() => {
+  /** All branches based on dispatch type (before stock filtering) */
+  private readonly allBranches = computed<BranchSummary[]>(() => {
     const dt = this.checkoutService.dispatchType();
     if (dt === 'in_store_oil_change') return this.locationService.branchesWithOilChange();
     return this.locationService.branches();
+  });
+
+  /**
+   * Per-branch stock map: branchId → Map<productId, stock>
+   * Used to determine which branches can fulfill the entire cart.
+   */
+  protected readonly branchStockMap = signal<Map<string, Map<string, number>>>(new Map());
+  protected readonly isLoadingBranchStock = signal(false);
+
+  /** Branches that have sufficient stock for ALL cart items */
+  protected readonly availableBranches = computed<(BranchSummary & { insufficientStock?: boolean })[]>(() => {
+    const branches = this.allBranches();
+    const stockMap = this.branchStockMap();
+    const cartItems = this.cartService.items();
+
+    // If stock data not loaded yet, show all branches without stock info
+    if (stockMap.size === 0) return branches;
+
+    return branches.map(branch => {
+      const branchStock = stockMap.get(branch.id);
+      if (!branchStock) return { ...branch, insufficientStock: true };
+
+      const hasEnough = cartItems.every(item => {
+        const stock = branchStock.get(item.id) ?? 0;
+        return stock >= item.quantity;
+      });
+
+      return { ...branch, insufficientStock: !hasEnough };
+    }).sort((a, b) => {
+      // Branches with sufficient stock first
+      if (a.insufficientStock && !b.insufficientStock) return 1;
+      if (!a.insufficientStock && b.insufficientStock) return -1;
+      return 0;
+    });
   });
 
   // ========== Vehicle Selection (Multi-vehicle) ==========
@@ -307,11 +344,8 @@ export class CheckoutSummaryComponent implements OnInit {
       referencePoint: [''],
     });
 
-    // Auto-select branch if only one available (for ALL dispatch types)
-    const branches = this.availableBranches();
-    if (branches.length === 1 && !this.checkoutService.selectedBranch()) {
-      this.checkoutService.selectBranch(branches[0]);
-    }
+    // Load per-branch stock to determine which branches can fulfill the cart
+    this.loadBranchStockForCart();
 
     // Default billing address to profile
     if (!this.checkoutService.billingAddress()) {
@@ -330,6 +364,59 @@ export class CheckoutSummaryComponent implements OnInit {
         this.loadingMethods.set(false);
       },
     });
+  }
+
+  /**
+   * Load per-branch stock for each cart product.
+   * Builds a map: branchId → Map<productId, stock>
+   */
+  private loadBranchStockForCart(): void {
+    const cartItems = this.cartService.items();
+    const branchIds = this.locationService.branchIds();
+    if (cartItems.length === 0 || branchIds.length === 0) return;
+
+    this.isLoadingBranchStock.set(true);
+
+    const requests = cartItems.map(item =>
+      this.branchProductService.getAggregatedStock(item.id, branchIds)
+    );
+
+    forkJoin(requests).subscribe({
+      next: (responses) => {
+        const map = new Map<string, Map<string, number>>();
+
+        responses.forEach((res, idx) => {
+          const productId = cartItems[idx].id;
+          for (const entry of res.data.byBranch) {
+            if (!map.has(entry.branchId)) {
+              map.set(entry.branchId, new Map());
+            }
+            map.get(entry.branchId)!.set(productId, entry.stock);
+          }
+        });
+
+        this.branchStockMap.set(map);
+        this.isLoadingBranchStock.set(false);
+
+        // Auto-select best branch if only one has sufficient stock or only one branch
+        this.autoSelectBestBranch();
+      },
+      error: () => {
+        this.isLoadingBranchStock.set(false);
+      },
+    });
+  }
+
+  /**
+   * Auto-select the branch with highest stock if appropriate.
+   */
+  private autoSelectBestBranch(): void {
+    const branches = this.availableBranches();
+    const validBranches = branches.filter(b => !b.insufficientStock);
+
+    if (validBranches.length === 1 && !this.checkoutService.selectedBranch()) {
+      this.checkoutService.selectBranch(validBranches[0]);
+    }
   }
 
   // ========== Getters ==========
@@ -446,7 +533,8 @@ export class CheckoutSummaryComponent implements OnInit {
 
   // ========== Branch Selection ==========
 
-  selectBranch(branch: BranchSummary): void {
+  selectBranch(branch: BranchSummary & { insufficientStock?: boolean }): void {
+    if (branch.insufficientStock) return; // Prevent selecting branch with insufficient stock
     this.checkoutService.selectBranch(branch);
   }
 

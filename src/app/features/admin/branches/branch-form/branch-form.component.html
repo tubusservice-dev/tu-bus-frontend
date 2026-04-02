@@ -145,12 +145,15 @@
             @if (showZoneDropdown() && filteredZones().length > 0) {
               <div class="custom-select-dropdown" (mousedown)="$event.preventDefault()">
                 @for (zone of filteredZones(); track zone.id) {
-                  <button type="button" class="custom-select-option" (mousedown)="$event.preventDefault()" (click)="addZone(zone)">
+                  <button type="button" class="custom-select-option zone-option" (mousedown)="$event.preventDefault()" (click)="addZone(zone)">
                     <span class="zone-option-name">{{ zone.name }}</span>
-                    @if (getZoneCityName(zone)) {
-                      <span class="zone-option-city">{{ getZoneCityName(zone) }}</span>
-                    }
-                    <span class="zone-option-count">{{ getZoneMunicipalityCount(zone) }} mun.</span>
+                    <span class="zone-option-meta">
+                      @if (getZoneCityName(zone)) {
+                        <span>{{ getZoneCityName(zone) }}</span>
+                        <span class="zone-option-separator">·</span>
+                      }
+                      <span>{{ getZoneMunicipalityCount(zone) }} municipios</span>
+                    </span>
                   </button>
                 }
               </div>

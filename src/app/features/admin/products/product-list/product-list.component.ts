@@ -13,6 +13,8 @@ import {
   Line,
   Category,
   Brand,
+  VehicleType,
+  VEHICLE_TYPE_LABELS,
 } from '../../../../models';
 import { ImageCarouselComponent } from '../../../../shared/components/image-carousel/image-carousel.component';
 
@@ -250,6 +252,15 @@ export class ProductListComponent implements OnInit {
         error: () => {},
       });
     }
+  }
+
+  /**
+   * Get vehicle type label for display (returns null for 'all' to skip rendering)
+   */
+  getVehicleTypeLabel(product: Product): string | null {
+    const type = (product as any).vehicleType as VehicleType;
+    if (!type || type === VehicleType.ALL) return null;
+    return VEHICLE_TYPE_LABELS[type] || null;
   }
 
   /**

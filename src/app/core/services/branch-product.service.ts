@@ -29,7 +29,11 @@ export class BranchProductService {
   getAggregatedStock(
     productId: string,
     branchIds: string[]
-  ): Observable<{ success: boolean; data: { totalStock: number; byBranch: { branchId: string; branchName: string; stock: number }[] } }> {
+  ): Observable<{ success: boolean; data: {
+    totalStock: number;
+    bestBranch: { branchId: string; branchName: string; stock: number } | null;
+    byBranch: { branchId: string; branchName: string; stock: number }[];
+  } }> {
     const params = new HttpParams()
       .set('productId', productId)
       .set('branchIds', branchIds.join(','));

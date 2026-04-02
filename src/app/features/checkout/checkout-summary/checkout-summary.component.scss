@@ -264,6 +264,17 @@
     background-color: rgba(var(--accent-primary-rgb, 220, 38, 38), 0.05);
     box-shadow: 0 0 0 1px var(--accent-primary);
   }
+
+  &.disabled {
+    @apply opacity-50 cursor-not-allowed;
+    border-color: var(--border-color);
+    background-color: var(--bg-secondary);
+
+    &:hover {
+      border-color: var(--border-color);
+      background-color: var(--bg-secondary);
+    }
+  }
 }
 
 .branch-selector-info {
@@ -297,8 +308,17 @@
   @apply bg-amber-100 text-amber-700;
 }
 
+.branch-badge-no-stock {
+  @apply bg-red-100 text-red-600 text-[10px] font-medium px-2 py-0.5 rounded-full;
+}
+
 :host-context(.dark) .branch-badge-oil {
   @apply bg-amber-900/30 text-amber-400;
+}
+
+:host-context(.dark) .branch-badge-no-stock {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #f87171;
 }
 
 .branch-check-icon {

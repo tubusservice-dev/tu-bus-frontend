@@ -64,8 +64,9 @@ export class ProductDetailComponent implements OnInit {
   protected readonly relatedProducts = signal<ProductCardData[]>([]);
   protected readonly loadingRelated = signal(false);
 
-  // Stock from BranchProduct aggregation
+  // Stock from BranchProduct aggregation (best single branch)
   protected readonly productStock = signal<number | null>(null); // null = loading
+  protected readonly bestBranchName = signal<string | null>(null);
   protected readonly isLoadingStock = signal(false);
 
   // Cart feedback
@@ -189,6 +190,7 @@ export class ProductDetailComponent implements OnInit {
     const branchIds = this.locationService.branchIds();
     if (branchIds.length === 0) {
       this.productStock.set(0);
+      this.bestBranchName.set(null);
       return;
     }
 
@@ -197,11 +199,15 @@ export class ProductDetailComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (res) => {
-          this.productStock.set(res.data.totalStock);
+          // Use best branch stock (highest single branch) instead of aggregated total
+          const best = res.data.bestBranch;
+          this.productStock.set(best?.stock ?? 0);
+          this.bestBranchName.set(best?.branchName ?? null);
           this.isLoadingStock.set(false);
         },
         error: () => {
           this.productStock.set(0);
+          this.bestBranchName.set(null);
           this.isLoadingStock.set(false);
         },
       });
