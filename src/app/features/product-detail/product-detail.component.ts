@@ -204,7 +204,14 @@ export class ProductDetailComponent implements OnInit {
           // Use best branch stock (highest single branch) instead of aggregated total
           const best = res.data.bestBranch;
           this.productStock.set(best?.stock ?? 0);
-          this.bestBranchName.set(best?.branchName ?? null);
+
+          // Show branch name ONLY when the zone has multiple branches
+          // AND the product is available in exactly one of them
+          const zoneBranchCount = this.locationService.branches().length;
+          const branchesWithStock = res.data.byBranch.filter(b => b.stock > 0);
+          const shouldShowBranch = zoneBranchCount > 1 && branchesWithStock.length === 1;
+          this.bestBranchName.set(shouldShowBranch ? best?.branchName ?? null : null);
+
           this.isLoadingStock.set(false);
         },
         error: () => {

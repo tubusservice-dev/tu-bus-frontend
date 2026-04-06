@@ -88,7 +88,7 @@
 // CARD
 // ============================================
 .dispatch-card {
-  @apply relative flex items-start gap-4 p-5 rounded-xl transition-all duration-200 text-left;
+  @apply relative flex items-center gap-4 p-5 rounded-xl transition-all duration-200 text-left;
   background-color: var(--bg-primary);
   border: 1.5px solid var(--border-color);
 
@@ -134,7 +134,7 @@
 // RADIO
 // ============================================
 .radio-indicator {
-  @apply flex-shrink-0 w-5 h-5 rounded-full mt-1 transition-colors;
+  @apply flex-shrink-0 w-5 h-5 rounded-full transition-colors;
   border: 2px solid var(--border-color);
 
   .radio-filled {

@@ -118,13 +118,12 @@ export class CheckoutSummaryComponent implements OnInit {
   protected readonly submittedPayment = signal<PaymentSubmission | null>(null);
   protected readonly submittedMethodType = signal<PaymentMethodType | null>(null);
 
-  // ========== Branch Selection (Universal) ==========
+  // ========== Branch Selection (Pickup & In-Store Only) ==========
 
-  /** Whether branch selection should be shown (all types if multiple branches) */
+  /** Whether branch selection should be shown (only store_pickup and in_store_oil_change) */
   protected readonly needsBranchSelection = computed(() => {
     const dt = this.checkoutService.dispatchType();
-    if (dt === 'store_pickup' || dt === 'in_store_oil_change') return true;
-    return this.locationService.branches().length > 1;
+    return dt === 'store_pickup' || dt === 'in_store_oil_change';
   });
 
   /** Whether branch selection is mandatory (only pickup/in-store) */
