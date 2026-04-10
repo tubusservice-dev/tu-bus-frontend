@@ -5,6 +5,14 @@
   transition: background-color var(--transition-normal), border-color var(--transition-normal);
 }
 
+.notif-desktop-only {
+  display: none;
+
+  @media (min-width: 640px) {
+    display: block;
+  }
+}
+
 .header-container {
   @apply flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto;
 }

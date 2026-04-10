@@ -43,9 +43,11 @@
 
     <!-- Acciones (Derecha) -->
     <div class="header-right">
-      <!-- Notificaciones -->
+      <!-- Notificaciones (hidden on mobile — available in user menu) -->
       @if (isLoggedIn()) {
-        <app-user-notifications-bell />
+        <div class="notif-desktop-only">
+          <app-user-notifications-bell />
+        </div>
       }
 
       <!-- Tema (solo desktop) -->

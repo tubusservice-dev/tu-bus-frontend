@@ -25,7 +25,7 @@ export class UserMenuComponent {
   protected readonly isMenuOpen = signal(false);
   protected readonly showLogoutModal = signal(false);
 
-  private readonly userNotifService = inject(UserNotificationService);
+  protected readonly userNotifService = inject(UserNotificationService);
 
   toggleMenu(): void {
     this.isMenuOpen.update(value => !value);

@@ -29,9 +29,11 @@
       <!-- Carrito de compras -->
       <app-cart-popover />
 
-      <!-- Notificaciones (solo si logueado) -->
+      <!-- Notificaciones (solo si logueado, hidden on mobile — moved to user menu) -->
       @if (isLoggedIn()) {
-        <app-user-notifications-bell />
+        <div class="notif-desktop-only">
+          <app-user-notifications-bell />
+        </div>
       }
 
       <!-- Botón Login o Menú de Usuario -->

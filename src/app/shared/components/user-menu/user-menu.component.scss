@@ -12,9 +12,29 @@
   }
 }
 
+.avatar-wrapper {
+  @apply relative;
+}
+
 .user-avatar {
   @apply w-8 h-8 rounded-full object-cover ring-2;
   ring-color: var(--accent-primary);
+}
+
+.avatar-notif-dot {
+  @apply absolute w-2.5 h-2.5 rounded-full border-2 border-white;
+  background-color: #ef4444;
+  top: -1px;
+  right: -1px;
+  display: block;
+
+  @media (min-width: 640px) {
+    display: none;
+  }
+
+  :host-context(.dark) & {
+    border-color: #1f2937;
+  }
 }
 
 .user-name {
@@ -106,6 +126,17 @@
   &:hover .menu-icon {
     color: #ef4444;
   }
+}
+
+// Notifications item (mobile only)
+.mobile-only {
+  @apply block sm:hidden;
+}
+
+.notif-badge {
+  @apply ml-auto text-xs font-bold text-white rounded-full w-5 h-5 flex items-center justify-center;
+  background-color: #ef4444;
+  font-size: 0.65rem;
 }
 
 // Theme toggle solo visible en mobile
