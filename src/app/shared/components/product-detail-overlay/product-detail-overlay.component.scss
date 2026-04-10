@@ -11,11 +11,15 @@
   position: sticky;
   top: 0;
   z-index: 1010;
-  display: flex;
-  align-items: center;
-  padding: 0.75rem 1.5rem;
   background-color: var(--bg-primary, #ffffff);
   border-bottom: 1px solid var(--border-color, #e5e7eb);
+}
+
+.overlay-top-bar-inner {
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: 0.75rem 1rem;
+  padding-left: 0;
 }
 
 .overlay-back-btn {

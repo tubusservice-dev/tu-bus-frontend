@@ -1,12 +1,14 @@
 <div class="overlay-backdrop">
   <!-- Top bar with back button -->
   <div class="overlay-top-bar">
-    <button type="button" class="overlay-back-btn" (click)="close()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
-      </svg>
-      <span>Volver</span>
-    </button>
+    <div class="overlay-top-bar-inner">
+      <button type="button" class="overlay-back-btn" (click)="close()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+        </svg>
+        <span>Volver</span>
+      </button>
+    </div>
   </div>
 
   <!-- Product detail content (same layout as product-detail page) -->
