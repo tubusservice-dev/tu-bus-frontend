@@ -27,6 +27,10 @@ export class TubusCombosComponent {
   protected readonly selectedFilter = signal<string>('all');
   protected readonly isLoading = signal(true);
 
+  // Whether we're in fallback mode (no featured products exist)
+  private readonly useFallback = signal(false);
+  private hasFeaturedChecked = false;
+
   // Computed: static filters from VehicleType enum
   protected readonly filters = computed(() => {
     const vehicleTypeFilters = Object.entries(VEHICLE_TYPE_LABELS)
@@ -48,8 +52,35 @@ export class TubusCombosComponent {
       .subscribe({
         next: (response) => {
           if (response.success) {
-            this.products.set(response.data);
-            this.totalProducts.set(response.pagination?.total || response.data.length);
+            let data = response.data;
+            const total = response.pagination?.total || data.length;
+
+            // First load with "all" filter: check if featured products exist
+            if (!this.hasFeaturedChecked && this.selectedFilter() === 'all') {
+              this.hasFeaturedChecked = true;
+              if (total === 0) {
+                this.useFallback.set(true);
+                this.loadProducts();
+                return;
+              }
+            }
+
+            // When a specific vehicleType filter is active, prioritize products
+            // that actually match that type over generic "all" products
+            const filter = this.selectedFilter();
+            if (filter !== 'all') {
+              const specific = data.filter(p => p.vehicleType === filter);
+              if (specific.length >= 4) {
+                data = specific.slice(0, 4);
+              } else if (specific.length > 0) {
+                // Fill remaining with generic products
+                const generic = data.filter(p => p.vehicleType === 'all' || p.vehicleType !== filter);
+                data = [...specific, ...generic].slice(0, 4);
+              }
+            }
+
+            this.products.set(data);
+            this.totalProducts.set(total);
           }
           this.isLoading.set(false);
         },
@@ -67,25 +98,32 @@ export class TubusCombosComponent {
 
       if (!resolved) return;
 
-      // Read branchIds without tracking to avoid circular dependency
-      const branchIds = untracked(() => this.locationService.branchIds());
-
-      const params: ProductQueryParams = {
-        isFeatured: true,
-        isActive: true,
-        limit: 4,
-        branchIds: branchIds.length > 0 ? branchIds.join(',') : undefined,
-      };
-
-      if (filter !== 'all') {
-        params.vehicleType = filter as VehicleType;
-      }
-
       untracked(() => {
         this.isLoading.set(true);
-        this.fetchTrigger$.next(params);
+        this.loadProducts();
       });
     });
+  }
+
+  private loadProducts(): void {
+    const branchIds = this.locationService.branchIds();
+    const filter = this.selectedFilter();
+
+    const params: ProductQueryParams = {
+      isActive: true,
+      limit: filter !== 'all' ? 12 : 4,
+      branchIds: branchIds.length > 0 ? branchIds.join(',') : undefined,
+    };
+
+    if (!this.useFallback()) {
+      params.isFeatured = true;
+    }
+
+    if (filter !== 'all') {
+      params.vehicleType = filter as VehicleType;
+    }
+
+    this.fetchTrigger$.next(params);
   }
 
   setFilter(filterId: string): void {

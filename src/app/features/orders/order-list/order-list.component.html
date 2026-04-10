@@ -47,11 +47,11 @@
           </div>
           <div class="order-card-body">
             <div class="order-items-preview">
-              @for (item of order.items.slice(0, 3); track item.product) {
+              @for (item of order.items.slice(0, 2); track item.product) {
                 <span class="item-name">{{ item.name }} x{{ item.quantity }}</span>
               }
-              @if (order.items.length > 3) {
-                <span class="more-items">+{{ order.items.length - 3 }} mas</span>
+              @if (order.items.length > 2) {
+                <span class="more-items">+{{ order.items.length - 2 }} más</span>
               }
             </div>
             <div class="order-meta">

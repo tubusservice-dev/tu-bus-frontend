@@ -6,6 +6,7 @@ import { UserMenuComponent } from '../../../../../shared/components/user-menu/us
 import { CartPopoverComponent } from '../../../../../shared/components/cart-popover/cart-popover.component';
 import { AuthModalComponent } from '../../../../../shared/components/auth-modal/auth-modal.component';
 import { ZoningModalComponent } from '../../../../../shared/components/zoning-modal/zoning-modal.component';
+import { UserNotificationsBellComponent } from '../../../../../shared/components/user-notifications-bell/user-notifications-bell.component';
 import { AuthService } from '../../../../../core/services';
 import { LocationService } from '../../../../../core/services/location.service';
 import { CartService } from '../../../../../core/services/cart.service';
@@ -20,6 +21,7 @@ import { CartService } from '../../../../../core/services/cart.service';
     CartPopoverComponent,
     AuthModalComponent,
     ZoningModalComponent,
+    UserNotificationsBellComponent,
   ],
   templateUrl: './tubus-header.component.html',
   styleUrl: './tubus-header.component.scss'

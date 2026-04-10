@@ -1,7 +1,7 @@
 <div class="product-form-page">
   <!-- Header -->
   <div class="page-header">
-    <a routerLink="/admin/products" class="back-link">
+    <a class="back-link" style="cursor:pointer" (click)="location.back()">
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
       </svg>
@@ -491,7 +491,7 @@
 
         <!-- Acciones del formulario -->
         <div class="form-actions">
-          <a routerLink="/admin/products" class="btn-cancel">Cancelar</a>
+          <a class="btn-cancel" style="cursor:pointer" (click)="location.back()">Cancelar</a>
           <button type="submit" class="btn-submit" [disabled]="isSubmitting()">
             @if (isSubmitting()) {
               <span class="loading-spinner-sm"></span>

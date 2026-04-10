@@ -19,6 +19,16 @@ export class ChangePasswordModalComponent {
   protected readonly isLoading = signal(false);
   protected readonly successMessage = signal<string | null>(null);
   protected readonly errorMessage = signal<string | null>(null);
+
+  // Password visibility toggles
+  protected readonly showCurrentPassword = signal(false);
+  protected readonly showNewPassword = signal(false);
+  protected readonly showConfirmPassword = signal(false);
+
+  // Mismatch tracking (signal-driven since reactive forms don't trigger computed)
+  protected readonly passwordsMismatch = signal(false);
+  protected readonly canSubmit = signal(false);
+
   protected passwordForm: FormGroup;
 
   constructor() {
@@ -31,6 +41,24 @@ export class ChangePasswordModalComponent {
 
   onClose(): void {
     this.close.emit();
+  }
+
+  toggleVisibility(field: 'current' | 'new' | 'confirm'): void {
+    switch (field) {
+      case 'current': this.showCurrentPassword.update(v => !v); break;
+      case 'new': this.showNewPassword.update(v => !v); break;
+      case 'confirm': this.showConfirmPassword.update(v => !v); break;
+    }
+  }
+
+  /** Recheck passwords match when input changes */
+  onPasswordInput(): void {
+    this.errorMessage.set(null);
+    const newPass = this.passwordForm.get('newPassword')?.value || '';
+    const confirm = this.passwordForm.get('confirmPassword')?.value || '';
+    const hasBoth = newPass.length > 0 && confirm.length > 0;
+    this.passwordsMismatch.set(hasBoth && newPass !== confirm);
+    this.canSubmit.set(this.passwordForm.valid && hasBoth && newPass === confirm && !this.isLoading());
   }
 
   changePassword(): void {

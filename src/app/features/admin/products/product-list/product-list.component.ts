@@ -1,6 +1,6 @@
 import { Component, DestroyRef, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -34,6 +34,8 @@ export class ProductListComponent implements OnInit {
   private readonly settingsService = inject(SettingsService);
   private readonly branchProductService = inject(BranchProductService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   private readonly searchSubject$ = new Subject<string>();
 
@@ -97,6 +99,16 @@ export class ProductListComponent implements OnInit {
         this.filters.update((f) => ({ ...f, search: value || undefined, page: 1 }));
         this.loadProducts();
       });
+
+    // Restore page from URL
+    const pageParam = this.route.snapshot.queryParamMap.get('page');
+    if (pageParam) {
+      const page = parseInt(pageParam, 10);
+      if (page > 0) {
+        this.currentPage.set(page);
+        this.filters.update((f) => ({ ...f, page }));
+      }
+    }
 
     this.loadBrands();
     this.loadCategories();
@@ -185,7 +197,34 @@ export class ProductListComponent implements OnInit {
   goToPage(page: number): void {
     if (page < 1 || page > this.totalPages()) return;
     this.filters.update((f) => ({ ...f, page }));
+    this.syncPageToUrl(page);
     this.loadProducts();
+  }
+
+  private syncPageToUrl(page: number): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: page > 1 ? { page } : {},
+      queryParamsHandling: page > 1 ? 'merge' : '',
+      replaceUrl: false,
+    });
+  }
+
+  /** Visible pages with ellipsis support: 1, 2, ..., 10 */
+  get visiblePages(): (number | '...')[] {
+    const total = this.totalPages();
+    const current = this.currentPage();
+    if (total <= 7) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    const pages: (number | '...')[] = [1];
+    if (current > 3) pages.push('...');
+    const start = Math.max(2, current - 1);
+    const end = Math.min(total - 1, current + 1);
+    for (let i = start; i <= end; i++) pages.push(i);
+    if (current < total - 2) pages.push('...');
+    pages.push(total);
+    return pages;
   }
 
   /**

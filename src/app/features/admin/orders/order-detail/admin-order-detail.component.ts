@@ -8,8 +8,8 @@ import {
   OrderStatus,
   ORDER_STATUS_LABELS,
   ORDER_STATUS_COLORS,
-  DISPATCH_STATUS_LABELS,
-  DISPATCH_STATUS_COLORS,
+  isOilChangeService,
+  getAvailableStatuses,
 } from '../../../../models/order.model';
 import { PAYMENT_METHOD_TYPE_LABELS, PaymentMethodType } from '../../../../models/payment-method.model';
 import { OrderDispatchModalComponent } from '../order-dispatch-modal/order-dispatch-modal.component';
@@ -36,19 +36,13 @@ export class AdminOrderDetailComponent implements OnInit {
   protected readonly statusNote = signal('');
   protected readonly isChangingStatus = signal(false);
 
-  // Reject modal
-  protected readonly showRejectModal = signal(false);
-  protected readonly rejectReason = signal('');
-  protected readonly isRejecting = signal(false);
+  // Cancel modal (oil change)
+  protected readonly showCancelModal = signal(false);
+  protected readonly cancelNote = signal('');
 
   // Dispatch modal
   protected readonly dispatchModalOpen = signal(false);
-
-  // Dispatch status
-  protected readonly showDispatchStatusModal = signal(false);
-  protected readonly newDispatchStatus = signal('');
-  protected readonly dispatchStatusNote = signal('');
-  protected readonly isChangingDispatchStatus = signal(false);
+  protected readonly proofPreview = signal<string | null>(null);
 
   // Notes editing
   protected readonly isEditingNotes = signal(false);
@@ -118,14 +112,27 @@ export class AdminOrderDetailComponent implements OnInit {
     return labels[type] || type;
   }
 
-  getDispatchStatusLabel(status?: string): string {
-    if (!status) return '-';
-    return DISPATCH_STATUS_LABELS[status] || status;
+  isOilChange(): boolean {
+    const o = this.order();
+    return o ? isOilChangeService(o) : false;
   }
 
-  getDispatchStatusColor(status?: string): string {
-    if (!status) return '';
-    return DISPATCH_STATUS_COLORS[status] || '';
+  isMechanicAssigned(): boolean {
+    const o = this.order();
+    if (!o) return false;
+    const mechanicStatuses: string[] = [
+      OrderStatus.MECHANIC_ASSIGNED,
+      OrderStatus.EN_ROUTE,
+      OrderStatus.IN_SERVICE,
+      OrderStatus.COMPLETED,
+    ];
+    return mechanicStatuses.includes(o.status);
+  }
+
+  availableStatuses(): OrderStatus[] {
+    const o = this.order();
+    if (!o) return [];
+    return getAvailableStatuses(o.dispatchType, o.status);
   }
 
   getPaymentMethodLabel(type?: string): string {
@@ -182,33 +189,6 @@ export class AdminOrderDetailComponent implements OnInit {
 
   // ========== Dispatch Status ==========
 
-  openDispatchStatusModal(): void {
-    const order = this.order();
-    if (!order) return;
-    this.newDispatchStatus.set(order.dispatchStatus || 'pending');
-    this.dispatchStatusNote.set('');
-    this.showDispatchStatusModal.set(true);
-  }
-
-  closeDispatchStatusModal(): void {
-    this.showDispatchStatusModal.set(false);
-  }
-
-  confirmDispatchStatusChange(): void {
-    const order = this.order();
-    if (!order || !this.newDispatchStatus()) return;
-
-    this.isChangingDispatchStatus.set(true);
-    this.orderService.updateDispatchStatus(order.id, this.newDispatchStatus(), this.dispatchStatusNote() || undefined).subscribe({
-      next: (res) => {
-        this.order.set(res.data);
-        this.isChangingDispatchStatus.set(false);
-        this.closeDispatchStatusModal();
-      },
-      error: () => this.isChangingDispatchStatus.set(false),
-    });
-  }
-
   // ========== Notes Editing ==========
 
   startEditingNotes(): void {
@@ -245,57 +225,42 @@ export class AdminOrderDetailComponent implements OnInit {
     return labels[source || ''] || source || '-';
   }
 
-  goBack(): void {
-    this.router.navigate(['/admin/orders']);
+  openCancelModal(): void {
+    this.cancelNote.set('');
+    this.showCancelModal.set(true);
   }
 
-  approveOrder(): void {
+  closeCancelModal(): void {
+    this.showCancelModal.set(false);
+  }
+
+  confirmCancelOrder(): void {
     const order = this.order();
     if (!order) return;
 
     this.isChangingStatus.set(true);
-    this.orderService.updateOrderStatus(order.id, OrderStatus.CONFIRMED, 'Orden aprobada por administrador').subscribe({
-      next: (res) => {
-        this.order.set(res.data);
-        this.isChangingStatus.set(false);
-      },
-      error: () => {
-        this.isChangingStatus.set(false);
-      },
-    });
-  }
-
-  openRejectModal(): void {
-    this.rejectReason.set('');
-    this.showRejectModal.set(true);
-  }
-
-  closeRejectModal(): void {
-    this.showRejectModal.set(false);
-  }
-
-  confirmReject(): void {
-    const order = this.order();
-    if (!order) return;
-
-    this.isRejecting.set(true);
-    const note = this.rejectReason().trim() || 'Orden rechazada por administrador';
+    const note = this.cancelNote().trim() || 'Orden cancelada por administrador';
     this.orderService.updateOrderStatus(order.id, OrderStatus.CANCELLED, note).subscribe({
       next: (res) => {
         this.order.set(res.data);
-        this.isRejecting.set(false);
-        this.closeRejectModal();
+        this.isChangingStatus.set(false);
+        this.closeCancelModal();
       },
       error: () => {
-        this.isRejecting.set(false);
+        this.isChangingStatus.set(false);
       },
     });
+  }
+
+  goBack(): void {
+    this.router.navigate(['/admin/orders']);
   }
 
   openStatusModal(): void {
     const order = this.order();
     if (!order) return;
-    this.newStatus.set(order.status);
+    const available = this.availableStatuses();
+    this.newStatus.set(available.length > 0 ? available[0] : order.status);
     this.statusNote.set('');
     this.showStatusModal.set(true);
   }

@@ -76,6 +76,7 @@
                 formControlName="fullName"
                 placeholder="Ej: Juan Carlos Pérez García"
                 class="input"
+                maxlength="100"
                 [class.error]="hasError('fullName')"
               />
               @if (hasError('fullName')) {
@@ -105,6 +106,8 @@
                 formControlName="documentNumber"
                 placeholder="Ej: 12345678"
                 class="input"
+                maxlength="10"
+                inputmode="numeric"
                 [class.error]="hasError('documentNumber')"
               />
               @if (hasError('documentNumber')) {
@@ -121,6 +124,8 @@
                 formControlName="phone"
                 placeholder="Ej: 04141234567"
                 class="input"
+                maxlength="12"
+                inputmode="tel"
                 [class.error]="hasError('phone')"
               />
               @if (hasError('phone')) {
@@ -136,6 +141,8 @@
                 formControlName="alternativePhone"
                 placeholder="Ej: 04241234567"
                 class="input"
+                maxlength="12"
+                inputmode="tel"
                 [class.error]="hasError('alternativePhone')"
               />
               @if (hasError('alternativePhone')) {
@@ -152,6 +159,8 @@
                 formControlName="email"
                 placeholder="Ej: correo@ejemplo.com"
                 class="input"
+                maxlength="100"
+                inputmode="email"
                 [class.error]="hasError('email')"
               />
               @if (hasError('email')) {
@@ -254,6 +263,7 @@
                 placeholder="Ej: Av. Libertador, Edificio Torre Centro, Piso 5, Oficina 5-A, Urbanización Los Caobos"
                 class="input textarea"
                 rows="3"
+                maxlength="300"
                 [class.error]="hasError('address')"
               ></textarea>
               @if (hasError('address')) {
@@ -270,6 +280,7 @@
                 formControlName="referencePoint"
                 placeholder="Ej: Frente al Centro Comercial XYZ, cerca de la estación del Metro"
                 class="input"
+                maxlength="200"
               />
             </div>
           </div>
@@ -294,6 +305,7 @@
                 formControlName="agencyOfficeCode"
                 placeholder="Ej: CCS-001, VLN-005 (si conoces el código de la oficina destino)"
                 class="input"
+                maxlength="50"
               />
               <span class="hint">Si conoces el código de la oficina de {{ selectedAgency()?.name }} donde retirarás el paquete, ingrésalo aquí</span>
             </div>
@@ -318,6 +330,7 @@
                 placeholder="Ej: Llamar antes de enviar, horario preferido de entrega, instrucciones especiales..."
                 class="input textarea"
                 rows="3"
+                maxlength="500"
               ></textarea>
             </div>
           </div>

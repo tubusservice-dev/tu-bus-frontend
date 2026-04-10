@@ -1,0 +1,261 @@
+<div class="detail-page">
+  <header class="page-header">
+    <a routerLink="/admin/mechanics" class="back-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" /></svg>
+      Volver a mecanicos
+    </a>
+  </header>
+
+  @if (isLoading()) {
+    <div class="loading-state"><div class="spinner"></div><span>Cargando...</span></div>
+  } @else if (mechanic()) {
+    <!-- Hero Card -->
+    <div class="hero-card">
+      <div class="hero-left">
+        <div class="hero-avatar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.586-3.586l6.837-5.63" /></svg>
+        </div>
+        <div class="hero-info">
+          <h1 class="hero-name">{{ mechanic()!.name }}</h1>
+          <div class="hero-meta">
+            @if (mechanic()!.isActive) { <span class="tag tag-green">Activo</span> }
+            @else { <span class="tag tag-red">Inactivo</span> }
+            <span class="meta-sep">&bull;</span>
+            <span class="meta-text">{{ mechanic()!.serviceDurationMinutes }}min</span>
+          </div>
+          <div class="hero-contact">
+            <a [href]="'https://wa.me/' + mechanic()!.whatsapp" target="_blank" class="contact-link">{{ mechanic()!.whatsapp }}</a>
+            @if (mechanic()!.email) { <span class="contact-text">{{ mechanic()!.email }}</span> }
+          </div>
+        </div>
+      </div>
+      <div class="hero-actions">
+        <a [routerLink]="['/admin/mechanics/edit', mechanic()!.id]" class="btn-outline">Editar</a>
+        <a [routerLink]="['/admin/mechanics', mechanic()!.id, 'calendar']" class="btn-primary">Calendario</a>
+      </div>
+    </div>
+
+    <!-- Info Row -->
+    <div class="info-row-grid">
+      <div class="info-pill">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="pill-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 21v-7.5a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 .75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349M3.75 21V9.349" /></svg>
+        <div class="pill-content">
+          <span class="pill-label">Sucursales</span>
+          <span class="pill-value">{{ getBranchNames(mechanic()!).join(', ') || 'Sin asignar' }}</span>
+        </div>
+      </div>
+      <div class="info-pill">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="pill-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+        <div class="pill-content">
+          <span class="pill-label">Horario</span>
+          <div class="schedule-chips">
+            @for (day of mechanic()!.schedule; track day.day) {
+              <span class="schedule-chip" [class.closed]="day.isClosed" [title]="day.isClosed ? 'Cerrado' : day.openTime + ' - ' + day.closeTime">{{ day.dayName.substring(0, 3) }}</span>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card"><span class="stat-num">{{ stats().total }}</span><span class="stat-lbl">Total</span></div>
+      <div class="stat-card stat-blue"><span class="stat-num">{{ stats().scheduled }}</span><span class="stat-lbl">Programadas</span></div>
+      <div class="stat-card stat-orange"><span class="stat-num">{{ stats().inProgress }}</span><span class="stat-lbl">En Servicio</span></div>
+      <div class="stat-card stat-green"><span class="stat-num">{{ stats().completed }}</span><span class="stat-lbl">Completadas</span></div>
+      <div class="stat-card stat-red"><span class="stat-num">{{ stats().expired }}</span><span class="stat-lbl">Expiradas</span></div>
+      <div class="stat-card stat-gray"><span class="stat-num">{{ stats().cancelled }}</span><span class="stat-lbl">Canceladas</span></div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-bar">
+      <span class="filter-label">Filtrar:</span>
+      @for (f of filters; track f.key) {
+        <button class="filter-btn" [class.active]="activeFilter() === f.key" (click)="setFilter(f.key)">{{ f.label }}</button>
+      }
+    </div>
+
+    <!-- Assignments Table (compact) -->
+    @if (paginatedAssignments().length > 0) {
+      <div class="table-card">
+        <table class="assign-table">
+          <thead>
+            <tr>
+              <th>Orden</th>
+              <th>Fecha</th>
+              <th>Horario</th>
+              <th>Estado</th>
+              <th class="text-right">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (a of paginatedAssignments(); track $index) {
+              <tr [class.row-expired]="a.status === 'expired'" [class.row-cancelled]="a.status === 'cancelled'" class="row-click" (click)="openDetail(a)">
+                <td class="cell-order">{{ getOrderNumber(a) }}</td>
+                <td class="cell-date">{{ a.scheduledDate | date:'dd/MM/yy' }}</td>
+                <td class="cell-time">{{ a.startTime }} - {{ a.endTime }}</td>
+                <td><span class="badge" [ngClass]="getStatusClass(a.status)">{{ getStatusLabel(a.status) }}</span></td>
+                <td class="cell-total">${{ getOrderTotal(a) | number:'1.2-2' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+
+        <!-- Pagination -->
+        @if (totalPages() > 1) {
+          <div class="pagination">
+            <span class="page-info">{{ currentPage() }} de {{ totalPages() }} ({{ filteredAssignments().length }} registros)</span>
+            <div class="page-btns">
+              <button class="page-btn" [disabled]="currentPage() === 1" (click)="prevPage()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
+              </button>
+              <button class="page-btn" [disabled]="currentPage() === totalPages()" (click)="nextPage()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    } @else {
+      <div class="empty-state">No hay asignaciones {{ activeFilter() !== 'all' ? 'con este filtro' : '' }}</div>
+    }
+
+    <!-- Detail Modal -->
+    @if (showDetailModal() && selectedAssignment()) {
+      <div class="modal-overlay" (click)="closeDetail()">
+        <div class="modal-box" (click)="$event.stopPropagation()">
+          <div class="modal-head">
+            <h3>Detalle de Asignacion</h3>
+            <button (click)="closeDetail()" class="modal-close">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+            </button>
+          </div>
+
+          <div class="modal-body-content">
+            <!-- Order + Status -->
+            <div class="modal-info-row">
+              <span class="modal-order">{{ getOrderNumber(selectedAssignment()!) }}</span>
+              <span class="badge" [ngClass]="getStatusClass(selectedAssignment()!.status)">{{ getStatusLabel(selectedAssignment()!.status) }}</span>
+            </div>
+            <div class="modal-schedule">
+              {{ selectedAssignment()!.scheduledDate | date:'dd/MM/yyyy' }} &bull; {{ selectedAssignment()!.startTime }} - {{ selectedAssignment()!.endTime }}
+              @if (getOrderTotal(selectedAssignment()!) > 0) {
+                &bull; <strong>${{ getOrderTotal(selectedAssignment()!) | number:'1.2-2' }}</strong>
+              }
+            </div>
+
+            <!-- Service Location -->
+            @if (getDispatchDetail(selectedAssignment()!, 'recipientAddress')) {
+              <div class="modal-location">
+                <h4 class="modal-section-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="section-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" /></svg>
+                  Lugar del servicio
+                </h4>
+                <div class="location-grid">
+                  @if (getDispatchDetail(selectedAssignment()!, 'recipientName')) {
+                    <div class="loc-item"><span class="loc-label">Cliente</span><span class="loc-value">{{ getDispatchDetail(selectedAssignment()!, 'recipientName') }}</span></div>
+                  }
+                  <div class="loc-item"><span class="loc-label">Direccion</span><span class="loc-value">{{ getDispatchDetail(selectedAssignment()!, 'recipientAddress') }}</span></div>
+                  @if (getDispatchDetail(selectedAssignment()!, 'recipientCity')) {
+                    <div class="loc-item"><span class="loc-label">Ciudad</span><span class="loc-value">{{ getDispatchDetail(selectedAssignment()!, 'recipientCity') }}</span></div>
+                  }
+                  @if (getDispatchDetail(selectedAssignment()!, 'recipientPhone')) {
+                    <div class="loc-item"><span class="loc-label">Telefono</span><span class="loc-value">{{ getDispatchDetail(selectedAssignment()!, 'recipientPhone') }}</span></div>
+                  }
+                  @if (getDispatchDetail(selectedAssignment()!, 'referencePoint')) {
+                    <div class="loc-item"><span class="loc-label">Referencia</span><span class="loc-value">{{ getDispatchDetail(selectedAssignment()!, 'referencePoint') }}</span></div>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- Vehicles -->
+            @if (getVehicles(selectedAssignment()!).length > 0) {
+              <div class="modal-vehicles">
+                <h4 class="modal-section-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="section-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 0 0-3.213-9.193 2.056 2.056 0 0 0-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 0 0-10.026 0 1.106 1.106 0 0 0-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" /></svg>
+                  Vehiculo
+                </h4>
+                @for (v of getVehicles(selectedAssignment()!); track $index) {
+                  <div class="vehicle-chip">{{ v.marca }} {{ v.modelo }} {{ v.year }} — <span class="plate">{{ v.placa }}</span></div>
+                }
+              </div>
+            }
+
+            <!-- Progress Steps -->
+            <div class="modal-steps-section">
+              <h4 class="modal-section-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="section-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 0 1 0 3.75H5.625a1.875 1.875 0 0 1 0-3.75Z" /></svg>
+                Progreso
+              </h4>
+              <div class="modal-steps">
+                @for (step of selectedAssignment()!.progressSteps; track step.step; let last = $last) {
+                  <div class="modal-step" [class.done]="step.completedAt" [class.is-expired]="selectedAssignment()!.status === 'expired' && !step.completedAt">
+                    <div class="modal-step-dot">
+                      @if (step.completedAt) {
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
+                      } @else if (selectedAssignment()!.status === 'expired') {
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+                      } @else {
+                        <span class="dot-num">{{ $index + 1 }}</span>
+                      }
+                    </div>
+                    <div class="modal-step-info">
+                      <span class="modal-step-label">{{ step.label }}</span>
+                      @if (step.completedAt) {
+                        <span class="modal-step-time">{{ step.completedAt | date:'HH:mm - dd/MM' }}</span>
+                      }
+                    </div>
+                  </div>
+                  @if (!last) { <div class="modal-step-line" [class.done]="step.completedAt"></div> }
+                }
+              </div>
+            </div>
+
+            @if (selectedAssignment()!.cancelledReason) {
+              <div class="modal-reason">{{ selectedAssignment()!.cancelledReason }}</div>
+            }
+          </div>
+
+          <div class="modal-foot">
+            @if (isAssignmentActive(selectedAssignment()!)) {
+              <button class="btn-cancel-assign" (click)="openCancelConfirm()">Cancelar asignacion</button>
+              <a class="btn-go-order" [routerLink]="['/admin/orders', getOrderId(selectedAssignment()!)]" (click)="closeDetail()">
+                Ir a la orden
+              </a>
+            }
+            @if (!isAssignmentActive(selectedAssignment()!) && getOrderId(selectedAssignment()!)) {
+              <a class="btn-go-order" [routerLink]="['/admin/orders', getOrderId(selectedAssignment()!)]" (click)="closeDetail()">
+                Ver orden
+              </a>
+            }
+            <button class="btn-close-modal" (click)="closeDetail()">Cerrar</button>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Cancel Confirmation Modal -->
+    @if (showCancelConfirm()) {
+      <div class="confirm-overlay" (click)="closeCancelConfirm()">
+        <div class="confirm-box" (click)="$event.stopPropagation()">
+          <div class="confirm-icon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" /></svg>
+          </div>
+          <h3 class="confirm-title">Cancelar asignacion</h3>
+          <p class="confirm-text">Esta accion cancelara la asignacion del mecanico y la orden quedara disponible para reasignacion. ¿Deseas continuar?</p>
+          <div class="confirm-actions">
+            <button class="confirm-btn-no" (click)="closeCancelConfirm()" [disabled]="isCancelling()">No, volver</button>
+            <button class="confirm-btn-yes" (click)="confirmCancelAssignment()" [disabled]="isCancelling()">
+              @if (isCancelling()) {
+                <span class="confirm-spinner"></span> Cancelando...
+              } @else {
+                Si, cancelar
+              }
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+  }
+</div>

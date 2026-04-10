@@ -239,6 +239,20 @@ export const routes: Routes = [
                 (m) => m.MechanicFormComponent
               ),
           },
+          {
+            path: 'mechanics/detail/:id',
+            loadComponent: () =>
+              import('./features/admin/mechanics/mechanic-detail/mechanic-detail.component').then(
+                (m) => m.MechanicDetailComponent
+              ),
+          },
+          {
+            path: 'mechanics/:id/calendar',
+            loadComponent: () =>
+              import('./features/admin/mechanics/mechanic-calendar/mechanic-calendar.component').then(
+                (m) => m.MechanicCalendarComponent
+              ),
+          },
           // Ordenes (admin)
           {
             path: 'orders',
@@ -385,6 +399,14 @@ export const routes: Routes = [
         canActivate: [authGuard],
       },
       {
+        path: 'perfil/pedidos/:id/servicio',
+        loadComponent: () =>
+          import('./features/orders/service-tracking/service-tracking.component').then(
+            (m) => m.ServiceTrackingComponent
+          ),
+        canActivate: [authGuard],
+      },
+      {
         path: 'perfil/pedidos/:id',
         loadComponent: () =>
           import('./features/orders/order-detail/order-detail.component').then(
@@ -393,6 +415,14 @@ export const routes: Routes = [
         canActivate: [authGuard],
       },
     ],
+  },
+  // Pagina publica de progreso del mecanico (sin layout, sin auth)
+  {
+    path: 'mechanic/progress/:token',
+    loadComponent: () =>
+      import('./features/mechanic-progress/mechanic-progress.component').then(
+        (m) => m.MechanicProgressComponent
+      ),
   },
   // Callback de OAuth
   {

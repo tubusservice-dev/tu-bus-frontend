@@ -121,6 +121,71 @@
   @apply flex items-center gap-4 ml-auto;
 }
 
+// Notification Bell
+.notif-wrapper { @apply relative; }
+.notif-bell {
+  @apply relative p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors;
+  svg { @apply w-5 h-5; }
+}
+.notif-badge {
+  @apply absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center;
+  min-width: 18px; height: 18px; width: 18px;
+}
+
+// Notification Popover
+.notif-popover {
+  @apply absolute right-0 top-full mt-2 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden;
+}
+.notif-popover-header {
+  @apply flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700;
+  span:first-child { @apply text-sm font-semibold text-gray-900 dark:text-white; }
+}
+.notif-count-label { @apply text-[10px] font-medium text-red-500; }
+.notif-popover-list { @apply max-h-80 overflow-y-auto; }
+.notif-empty { @apply py-8 text-center text-sm text-gray-400 dark:text-gray-500; }
+.notif-item {
+  @apply w-full flex items-start gap-3 p-3 text-left border-b border-gray-100 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors;
+  &.unread { @apply bg-blue-50/50 dark:bg-blue-900/10; }
+}
+.notif-item-icon {
+  @apply w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0;
+  svg { @apply w-4 h-4; }
+  &.mechanic { @apply bg-orange-100 dark:bg-orange-900/30; svg { @apply text-orange-600; } }
+  &.customer { @apply bg-red-100 dark:bg-red-900/30; svg { @apply text-red-600; } }
+}
+.notif-item-content { @apply flex flex-col min-w-0; }
+.notif-item-title { @apply text-xs font-semibold text-gray-900 dark:text-white truncate; }
+.notif-item-preview { @apply text-[11px] text-gray-500 dark:text-gray-400 truncate; }
+.notif-item-time { @apply text-[10px] text-gray-400 dark:text-gray-500 mt-0.5; }
+
+// Notification Detail Modal
+.notif-modal-overlay { @apply fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4; }
+.notif-modal { @apply bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md overflow-hidden; }
+.notif-modal-header {
+  @apply flex items-center justify-between px-5 py-3 border-b border-gray-200 dark:border-gray-700;
+}
+.notif-modal-type {
+  @apply px-3 py-1 text-xs font-semibold rounded-full;
+  &.mechanic { @apply bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400; }
+  &.customer { @apply bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400; }
+}
+.notif-modal-close {
+  @apply p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors;
+  svg { @apply w-5 h-5; }
+}
+.notif-modal-body { @apply px-5 py-4 space-y-3; }
+.notif-modal-title { @apply text-base font-semibold text-gray-900 dark:text-white; }
+.notif-modal-msg { @apply text-sm text-gray-600 dark:text-gray-400; }
+.notif-modal-details { @apply p-3 bg-gray-50 dark:bg-gray-700/30 rounded-xl space-y-2; }
+.notif-detail-row { @apply flex justify-between text-xs; }
+.nd-label { @apply text-gray-400 dark:text-gray-500; }
+.nd-value { @apply text-gray-900 dark:text-white font-medium text-right; }
+.nd-reason { @apply text-red-600 dark:text-red-400 italic; }
+.notif-modal-time { @apply text-[10px] text-gray-400 dark:text-gray-500; }
+.notif-modal-footer { @apply flex items-center justify-end gap-2 px-5 py-3 border-t border-gray-200 dark:border-gray-700; }
+.notif-btn-order { @apply px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors; }
+.notif-btn-close { @apply px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors; }
+
 .user-info {
   @apply flex items-center gap-3;
 }

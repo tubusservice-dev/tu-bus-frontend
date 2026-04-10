@@ -33,29 +33,12 @@
   @apply flex items-center gap-2;
 }
 
-.btn-approve {
-  @apply inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all;
+.btn-mechanic-assigned {
+  @apply inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white cursor-pointer transition-all;
   background-color: #16a34a;
 
-  &:hover:not(:disabled) {
-    background-color: #15803d;
-  }
-
-  &:disabled {
-    @apply opacity-60 cursor-not-allowed;
-  }
-
-  svg {
-    @apply w-4 h-4;
-  }
-}
-
-.btn-reject {
-  @apply inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all;
-  background-color: #dc2626;
-
   &:hover {
-    background-color: #b91c1c;
+    background-color: #15803d;
   }
 
   svg {
@@ -74,6 +57,23 @@
   svg {
     @apply w-4 h-4;
   }
+}
+
+.btn-cancel-order {
+  @apply inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white cursor-pointer transition-all;
+  background-color: #dc2626;
+
+  &:hover {
+    background-color: #b91c1c;
+  }
+
+  svg {
+    @apply w-4 h-4;
+  }
+}
+
+.btn-confirm-cancel {
+  @apply px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors;
 }
 
 .btn-dispatch, .btn-dispatch-status {
@@ -283,8 +283,27 @@
 }
 
 .proof-image {
-  @apply max-w-full max-h-64 rounded-lg border border-gray-200 dark:border-gray-700 object-contain;
+  @apply max-w-full max-h-64 rounded-lg border border-gray-200 dark:border-gray-700 object-contain cursor-pointer;
+  @apply hover:opacity-90 transition-opacity;
 }
+
+// Lightbox
+.lightbox-overlay {
+  @apply fixed inset-0 z-50 flex items-center justify-center;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.2s ease;
+}
+.lightbox-close {
+  @apply absolute top-4 right-4 p-2 text-white/70 hover:text-white transition-colors;
+  svg { @apply w-8 h-8; }
+}
+.lightbox-image {
+  @apply max-w-[90vw] max-h-[90vh] object-contain rounded-lg;
+  animation: scaleIn 0.25s ease;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
 // ============================================
 // TIMELINE
@@ -414,10 +433,6 @@
 
 .btn-confirm {
   @apply px-4 py-2 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors;
-}
-
-.btn-reject-confirm {
-  @apply px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors;
 }
 
 // ============================================

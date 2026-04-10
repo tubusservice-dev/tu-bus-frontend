@@ -40,9 +40,9 @@ export class OrderListComponent implements OnInit {
   protected readonly filterStatuses = [
     { value: '', label: 'Todas' },
     { value: OrderStatus.PENDING, label: 'Pendientes' },
-    { value: OrderStatus.CONFIRMED, label: 'Confirmadas' },
-    { value: OrderStatus.PROCESSING, label: 'En Proceso' },
-    { value: OrderStatus.SHIPPED, label: 'Enviadas' },
+    { value: OrderStatus.APPROVED, label: 'Aprobadas' },
+    { value: OrderStatus.DISPATCHED, label: 'Despachadas' },
+    { value: OrderStatus.MECHANIC_ASSIGNED, label: 'Mecánico Asignado' },
     { value: OrderStatus.COMPLETED, label: 'Completadas' },
     { value: OrderStatus.CANCELLED, label: 'Canceladas' },
   ];
@@ -124,8 +124,9 @@ export class OrderListComponent implements OnInit {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
-      hour: '2-digit',
+      hour: 'numeric',
       minute: '2-digit',
+      hour12: true,
     });
   }
 }

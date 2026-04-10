@@ -10,6 +10,10 @@ import { CreateBranchRequest } from '../../../../models/branch.model';
 import { Zone } from '../../../../models/zone.model';
 import { BranchZone, DeliveryConfigItem } from '../../../../models/branch-zone.model';
 import { City } from '../../../../models/city.model';
+import {
+  PHONE_VE_PATTERN, LANDLINE_VE_PATTERN, COORDINATES_PATTERN,
+  MAX_BRANCH_NAME_LENGTH, MAX_DESCRIPTION_LENGTH, MAX_ADDRESS_LENGTH,
+} from '../../../../shared/validators/form-validators';
 
 const DAY_NAMES = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
@@ -68,12 +72,12 @@ export class BranchFormComponent implements OnInit {
   });
 
   form: FormGroup = this.fb.group({
-    name: ['', [Validators.required, Validators.minLength(2)]],
-    description: [''],
-    address: ['', [Validators.required]],
-    whatsappPhone: [''],
-    landlinePhone: [''],
-    coordinatesRaw: [''],
+    name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(MAX_BRANCH_NAME_LENGTH)]],
+    description: ['', [Validators.maxLength(MAX_DESCRIPTION_LENGTH)]],
+    address: ['', [Validators.required, Validators.maxLength(MAX_ADDRESS_LENGTH)]],
+    whatsappPhone: ['', [Validators.pattern(PHONE_VE_PATTERN)]],
+    landlinePhone: ['', [Validators.pattern(LANDLINE_VE_PATTERN)]],
+    coordinatesRaw: ['', [Validators.pattern(COORDINATES_PATTERN)]],
     hasInStoreOilChange: [false],
     isActive: [true],
     schedule: this.fb.array([]),

@@ -220,6 +220,10 @@
   }
 }
 
+.page-ellipsis {
+  @apply w-10 h-10 flex items-center justify-center text-sm text-gray-400 dark:text-gray-500;
+}
+
 .limit-selector {
   @apply flex items-center gap-2;
 

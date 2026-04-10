@@ -112,14 +112,6 @@
               <span class="info-label">Tipo</span>
               <span class="info-value">{{ getDispatchLabel(o.dispatchType) }}</span>
             </div>
-            @if (o.dispatchStatus && o.dispatchStatus !== 'pending') {
-              <div class="info-row">
-                <span class="info-label">Estado despacho</span>
-                <span class="dispatch-status-badge" [ngClass]="getDispatchStatusClass(o.dispatchStatus)">
-                  {{ getDispatchStatusLabel(o.dispatchStatus) }}
-                </span>
-              </div>
-            }
             @if (o.dispatchDetails.selectedBranchName) {
               <div class="info-row">
                 <span class="info-label">Sucursal</span>
@@ -272,7 +264,7 @@
                 @if (o.paymentSubmission.proofUrl) {
                   <div class="proof-section">
                     <span class="info-label">Comprobante</span>
-                    <img [src]="o.paymentSubmission.proofUrl" alt="Comprobante de pago" class="proof-image" />
+                    <img [src]="o.paymentSubmission.proofUrl" alt="Comprobante de pago" class="proof-image" (click)="proofPreview.set(o.paymentSubmission.proofUrl)" />
                   </div>
                 }
               </div>
@@ -360,15 +352,27 @@
             <div class="info-rows">
               <div class="info-row">
                 <span class="info-label">Nombre</span>
-                <span class="info-value">{{ $any(o.mechanic).name }}</span>
+                <span class="info-value">{{ getMechanicField(o, 'name') }}</span>
               </div>
-              @if ($any(o.mechanic).phone) {
+              @if (getMechanicField(o, 'whatsapp')) {
                 <div class="info-row">
                   <span class="info-label">Teléfono</span>
-                  <span class="info-value">{{ $any(o.mechanic).phone }}</span>
+                  <span class="info-value">{{ getMechanicField(o, 'whatsapp') }}</span>
                 </div>
               }
+              <div class="info-row">
+                <span class="info-label">Estado</span>
+                <span class="status-badge" [ngClass]="getStatusClass(o.status)">
+                  {{ getStatusLabel(o.status) }}
+                </span>
+              </div>
             </div>
+            <a [routerLink]="['/perfil/pedidos', o.id, 'servicio']" class="btn-tracking-link">
+              Ver seguimiento del servicio
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+              </svg>
+            </a>
           </section>
         }
 
@@ -387,28 +391,23 @@
           </section>
         }
 
-        <!-- Timeline -->
+        <!-- Current Status -->
         @if (o.statusHistory && o.statusHistory.length > 0) {
           <section class="detail-card">
             <h3 class="card-title">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
               </svg>
-              Historial de Estados
+              Estado de la Orden
             </h3>
-            <div class="timeline">
-              @for (entry of o.statusHistory; track entry.timestamp) {
-                <div class="timeline-item">
-                  <div class="timeline-dot" [ngClass]="getStatusClass(entry.status)"></div>
-                  <div class="timeline-content">
-                    <span class="timeline-status">{{ getStatusLabel(entry.status) }}</span>
-                    @if (entry.note) {
-                      <span class="timeline-note">{{ entry.note }}</span>
-                    }
-                    <span class="timeline-date">{{ formatDate(entry.timestamp) }}</span>
-                  </div>
-                </div>
+            <div class="current-status-row">
+              <span class="status-badge" [ngClass]="getStatusClass(o.statusHistory[o.statusHistory.length - 1].status)">
+                {{ getStatusLabel(o.statusHistory[o.statusHistory.length - 1].status) }}
+              </span>
+              @if (o.statusHistory[o.statusHistory.length - 1].note) {
+                <span class="current-status-note">{{ o.statusHistory[o.statusHistory.length - 1].note }}</span>
               }
+              <span class="current-status-date">{{ formatDate(o.statusHistory[o.statusHistory.length - 1].timestamp) }}</span>
             </div>
           </section>
         }
@@ -479,5 +478,15 @@
         </div>
       }
     </div>
+  </div>
+}
+
+<!-- Image Lightbox -->
+@if (proofPreview()) {
+  <div class="lightbox-overlay" (click)="proofPreview.set(null)">
+    <button type="button" class="lightbox-close" (click)="proofPreview.set(null)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+    </button>
+    <img [src]="proofPreview()" alt="Comprobante" class="lightbox-image" (click)="$event.stopPropagation()" />
   </div>
 }

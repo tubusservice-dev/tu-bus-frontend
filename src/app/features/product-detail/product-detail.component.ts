@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal, computed, DestroyRef, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Location } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ProductService } from '../../core/services/product.service';
 import { CartService } from '../../core/services/cart.service';
@@ -26,6 +27,7 @@ const PLACEHOLDER_IMAGE = 'https://placehold.co/400x400/e5e7eb/9ca3af?text=Sin+i
 export class ProductDetailComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly location = inject(Location);
   private readonly productService = inject(ProductService);
   private readonly cartService = inject(CartService);
   private readonly authService = inject(AuthService);
@@ -357,7 +359,7 @@ export class ProductDetailComponent implements OnInit {
 
   // Navigation
   goBack(): void {
-    this.router.navigate(['/catalogo']);
+    this.location.back();
   }
 
   // Template helpers

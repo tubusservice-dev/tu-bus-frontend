@@ -1,8 +1,14 @@
-import { Component, inject, signal, OnInit, computed } from '@angular/core';
+import { Component, inject, signal, OnInit, computed, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { AuthService, UserService, UploadService } from '../../../core';
 import { getStates, getCitiesByState, getMunicipalitiesByState } from '../../../shared/data/venezuela-states';
+import {
+  NAME_PATTERN, PHONE_VE_PATTERN, DOCUMENT_NUMBER_PATTERN, RIF_PATTERN, ZIPCODE_PATTERN,
+  MAX_NAME_LENGTH, MAX_ADDRESS_LENGTH, MAX_REFERENCE_LENGTH, MAX_COMPANY_NAME_LENGTH,
+  MAX_STREET_LENGTH, MAX_HOUSE_NUMBER_LENGTH, MAX_ZIPCODE_LENGTH, MAX_DOCUMENT_LENGTH,
+  noNumbersValidator,
+} from '../../../shared/validators/form-validators';
 import { ChangePasswordModalComponent } from '../change-password-modal/change-password-modal.component';
 
 @Component({
@@ -20,6 +26,7 @@ export class ProfileInfoComponent implements OnInit {
 
   protected readonly user = this.authService.currentUser;
   protected readonly userAvatar = this.authService.userAvatar;
+  protected readonly todayStr = new Date().toISOString().split('T')[0];
   protected readonly isEditing = signal(false);
   protected readonly isPasswordModalOpen = signal(false);
   protected readonly isLoading = signal(false);
@@ -28,6 +35,16 @@ export class ProfileInfoComponent implements OnInit {
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly avatarPreview = signal<string | null>(null);
   private selectedAvatarFile: File | null = null;
+
+  // Document type custom dropdown
+  protected readonly showDocDropdown = signal(false);
+  protected readonly docTypeOptions = [
+    { code: 'V', label: 'Venezolano' },
+    { code: 'E', label: 'Extranjero' },
+    { code: 'J', label: 'Jurídico' },
+    { code: 'P', label: 'Pasaporte' },
+    { code: 'G', label: 'Gubernamental' },
+  ];
 
   // Zone data for selects (all Venezuela reference data)
   protected readonly allStates = signal<any[]>([]);
@@ -51,29 +68,29 @@ export class ProfileInfoComponent implements OnInit {
     const user = this.user();
     this.profileForm = this.fb.group({
       // Datos personales
-      firstName: [user?.firstName || '', [Validators.required, Validators.minLength(2)]],
-      lastName: [user?.lastName || '', [Validators.required, Validators.minLength(2)]],
+      firstName: [user?.firstName || '', [Validators.required, Validators.minLength(2), Validators.maxLength(MAX_NAME_LENGTH), Validators.pattern(NAME_PATTERN), noNumbersValidator]],
+      lastName: [user?.lastName || '', [Validators.required, Validators.minLength(2), Validators.maxLength(MAX_NAME_LENGTH), Validators.pattern(NAME_PATTERN), noNumbersValidator]],
       birthDate: [user?.birthDate ? this.formatDateForInput(user.birthDate) : ''],
       email: [{ value: user?.email || '', disabled: true }],
       // Documento
       documentType: [user?.documentType || ''],
-      documentNumber: [user?.documentNumber || ''],
+      documentNumber: [user?.documentNumber || '', [Validators.pattern(DOCUMENT_NUMBER_PATTERN)]],
       // Contacto
-      phone: [user?.phone || '', [Validators.pattern(/^(0414|0424|0412|0416|0426)\d{7}$/)]],
-      alternativePhone: [user?.alternativePhone || ''],
+      phone: [user?.phone || '', [Validators.pattern(PHONE_VE_PATTERN)]],
+      alternativePhone: [user?.alternativePhone || '', [Validators.pattern(PHONE_VE_PATTERN)]],
       // Direccion
       stateCode: [user?.stateCode || ''],
       cityCode: [user?.cityCode || ''],
       municipalityCode: [user?.municipalityCode || ''],
-      neighborhood: [user?.neighborhood || ''],
-      street: [user?.street || ''],
-      houseNumber: [user?.houseNumber || ''],
-      referencePoint: [user?.referencePoint || ''],
-      zipCode: [user?.zipCode || ''],
-      address: [user?.address || ''],
+      neighborhood: [user?.neighborhood || '', [Validators.maxLength(MAX_STREET_LENGTH)]],
+      street: [user?.street || '', [Validators.maxLength(MAX_STREET_LENGTH)]],
+      houseNumber: [user?.houseNumber || '', [Validators.maxLength(MAX_HOUSE_NUMBER_LENGTH)]],
+      referencePoint: [user?.referencePoint || '', [Validators.maxLength(MAX_REFERENCE_LENGTH)]],
+      zipCode: [user?.zipCode || '', [Validators.pattern(ZIPCODE_PATTERN)]],
+      address: [user?.address || '', [Validators.maxLength(MAX_ADDRESS_LENGTH)]],
       // Datos fiscales (juridico)
-      companyName: [user?.companyName || ''],
-      companyRif: [user?.companyRif || ''],
+      companyName: [user?.companyName || '', [Validators.maxLength(MAX_COMPANY_NAME_LENGTH)]],
+      companyRif: [user?.companyRif || '', [Validators.pattern(RIF_PATTERN)]],
     });
 
     // Load cities/municipalities if user already has data
@@ -119,8 +136,14 @@ export class ProfileInfoComponent implements OnInit {
 
 
   private formatDateForInput(date: string | Date): string {
+    if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(date)) {
+      return date.substring(0, 10);
+    }
     const d = new Date(date);
-    return d.toISOString().split('T')[0];
+    const year = d.getUTCFullYear();
+    const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(d.getUTCDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   private loadProfile(): void {
@@ -128,6 +151,20 @@ export class ProfileInfoComponent implements OnInit {
       next: () => this.initForm(),
       error: () => this.errorMessage.set('Error al cargar el perfil'),
     });
+  }
+
+  @HostListener('document:click')
+  onDocumentClick(): void {
+    this.showDocDropdown.set(false);
+  }
+
+  toggleDocDropdown(): void {
+    this.showDocDropdown.update(v => !v);
+  }
+
+  selectDocType(code: string): void {
+    this.profileForm.get('documentType')?.setValue(code);
+    this.showDocDropdown.set(false);
   }
 
   startEditing(): void {
@@ -261,9 +298,14 @@ export class ProfileInfoComponent implements OnInit {
     if (!control || !control.errors) return '';
     if (control.errors['required']) return 'Este campo es requerido';
     if (control.errors['minlength']) return `Mínimo ${control.errors['minlength'].requiredLength} caracteres`;
+    if (control.errors['maxlength']) return `Máximo ${control.errors['maxlength'].requiredLength} caracteres`;
+    if (control.errors['noNumbers']) return 'No se permiten números';
     if (control.errors['pattern']) {
-      if (field === 'phone') return 'Formato: 04XX-XXXXXXX';
+      if (field === 'phone' || field === 'alternativePhone') return 'Formato: 04XX-XXXXXXX (ej: 04141234567)';
       if (field === 'companyRif') return 'Formato: J-12345678-9';
+      if (field === 'documentNumber') return 'Solo números, entre 6 y 10 dígitos';
+      if (field === 'zipCode') return 'Código postal: 4-5 dígitos';
+      if (field === 'firstName' || field === 'lastName') return 'Solo letras, sin números';
       return 'Formato inválido';
     }
     return 'Campo inválido';
@@ -271,7 +313,9 @@ export class ProfileInfoComponent implements OnInit {
 
   formatDate(date: Date | string): string {
     if (!date) return 'No especificado';
-    return new Date(date).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+    // Use UTC to avoid timezone offset shifting the day
+    const d = new Date(date);
+    return d.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
   }
 
   // Build full address string for display

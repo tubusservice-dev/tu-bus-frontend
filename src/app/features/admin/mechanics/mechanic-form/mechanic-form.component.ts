@@ -1,11 +1,21 @@
 import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, FormArray, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MechanicService } from '../../../../core/services/mechanic.service';
-import { ZoneService } from '../../../../core/services/zone.service';
-import { Zone } from '../../../../models/zone.model';
-import { City } from '../../../../models/city.model';
+import { BranchService } from '../../../../core/services/branch.service';
+import { ScheduleDay } from '../../../../models/mechanic.model';
+import {
+  NAME_PATTERN, PHONE_VE_PATTERN, EMAIL_PATTERN, MAX_NAME_LENGTH, noNumbersValidator,
+} from '../../../../shared/validators/form-validators';
+
+interface BranchItem {
+  id: string;
+  name: string;
+  address: string;
+}
+
+const DAY_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
 
 @Component({
   selector: 'app-mechanic-form',
@@ -19,44 +29,43 @@ export class MechanicFormComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly mechanicService = inject(MechanicService);
-  private readonly zoneService = inject(ZoneService);
+  private readonly branchService = inject(BranchService);
 
   protected readonly mechanicId = signal<string | null>(null);
   protected readonly isEditMode = signal(false);
   protected readonly isLoading = signal(false);
   protected readonly isSubmitting = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
-  protected readonly zones = signal<Zone[]>([]);
-  protected readonly selectedZoneId = signal<string>('');
 
-  protected readonly availableMunicipalities = computed<Array<{ slug: string; name: string }>>(() => {
-    const zoneId = this.selectedZoneId();
-    if (!zoneId) return [];
-    const zone = this.zones().find(z => z.id === zoneId);
-    if (!zone) return [];
+  // Branch search + select
+  protected readonly availableBranches = signal<BranchItem[]>([]);
+  protected readonly selectedBranches = signal<BranchItem[]>([]);
+  protected readonly branchSearchTerm = signal('');
+  protected readonly showBranchDropdown = signal(false);
 
-    // Resolve slugs to display names from the city reference
-    const city = zone.city as City;
-    if (!city || typeof city === 'string') {
-      return zone.municipalities.map(slug => ({ slug, name: slug }));
-    }
-
-    return zone.municipalities.map(slug => {
-      const found = city.municipalities?.find(m => m.slug === slug);
-      return { slug, name: found?.name || slug };
-    });
+  protected readonly filteredBranches = computed(() => {
+    const term = this.branchSearchTerm().toLowerCase();
+    const selectedIds = new Set(this.selectedBranches().map(b => b.id));
+    return this.availableBranches()
+      .filter(b => !selectedIds.has(b.id))
+      .filter(b => !term || b.name.toLowerCase().includes(term) || b.address.toLowerCase().includes(term));
   });
 
   protected readonly form: FormGroup = this.fb.group({
-    name: ['', [Validators.required, Validators.minLength(2)]],
-    whatsapp: ['', [Validators.required]],
-    email: ['', [Validators.email]],
-    zone: [''],
-    municipality: [''],
+    name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(MAX_NAME_LENGTH), Validators.pattern(NAME_PATTERN), noNumbersValidator]],
+    whatsapp: ['', [Validators.required, Validators.pattern(PHONE_VE_PATTERN)]],
+    email: ['', [Validators.pattern(EMAIL_PATTERN)]],
+    serviceDurationMinutes: [90, [Validators.required, Validators.min(15), Validators.max(720)]],
+    schedule: this.fb.array([]),
   });
 
+  get scheduleArray(): FormArray {
+    return this.form.get('schedule') as FormArray;
+  }
+
   ngOnInit(): void {
-    this.loadZones();
+    this.loadBranches();
+    this.initSchedule();
 
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
@@ -66,44 +75,92 @@ export class MechanicFormComponent implements OnInit {
     }
   }
 
-  private loadZones(): void {
-    this.zoneService.getAllAdmin().subscribe({
-      next: (response) => {
-        this.zones.set(response.data);
+  private initSchedule(): void {
+    const arr = this.scheduleArray;
+    arr.clear();
+    DAY_NAMES.forEach((dayName, index) => {
+      arr.push(this.fb.group({
+        day: [index], dayName: [dayName],
+        openTime: ['08:00'], closeTime: ['18:00'],
+        isClosed: [index === 0 || index === 6],
+      }));
+    });
+  }
+
+  private loadBranches(): void {
+    this.branchService.getAll().subscribe({
+      next: (res) => {
+        this.availableBranches.set(
+          res.data.filter((b: any) => b.isActive).map((b: any) => ({
+            id: b.id, name: b.name, address: b.address || '',
+          }))
+        );
       },
-      error: () => {
-        // Zones are optional, silently fail
-      },
+      error: () => {},
     });
   }
 
   private loadMechanic(id: string): void {
     this.isLoading.set(true);
     this.mechanicService.getById(id).subscribe({
-      next: (response) => {
-        const mechanic = response.data;
-        const zoneId = typeof mechanic.zone === 'object' && mechanic.zone ? mechanic.zone.id : (mechanic.zone || '');
-        this.selectedZoneId.set(zoneId);
-        this.form.patchValue({
-          name: mechanic.name,
-          whatsapp: mechanic.whatsapp || '',
-          email: mechanic.email || '',
-          zone: zoneId,
-          municipality: mechanic.municipality || '',
+      next: (res) => {
+        const m = res.data;
+
+        // Map branches to BranchItem[]
+        const branches: BranchItem[] = (m.branches || []).map((b: any) => {
+          if (typeof b === 'object' && b) return { id: b.id, name: b.name, address: b.address || '' };
+          return { id: String(b), name: String(b), address: '' };
         });
+        this.selectedBranches.set(branches);
+
+        this.form.patchValue({
+          name: m.name, whatsapp: m.whatsapp || '', email: m.email || '',
+          serviceDurationMinutes: m.serviceDurationMinutes || 2,
+        });
+
+        if (m.schedule?.length > 0) {
+          const arr = this.scheduleArray;
+          arr.clear();
+          m.schedule.forEach((d: ScheduleDay) => {
+            arr.push(this.fb.group({
+              day: [d.day], dayName: [d.dayName],
+              openTime: [d.openTime], closeTime: [d.closeTime], isClosed: [d.isClosed],
+            }));
+          });
+        }
         this.isLoading.set(false);
       },
-      error: (error) => {
-        this.errorMessage.set(error.error?.message || 'Error al cargar mecanico');
+      error: (err) => {
+        this.errorMessage.set(err.error?.message || 'Error al cargar mecanico');
         this.isLoading.set(false);
       },
     });
   }
 
-  onZoneChange(event: Event): void {
-    const zoneId = (event.target as HTMLSelectElement).value;
-    this.selectedZoneId.set(zoneId);
-    this.form.patchValue({ municipality: '' });
+  // Branch search handlers
+  onBranchSearch(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.branchSearchTerm.set(value);
+    this.showBranchDropdown.set(true);
+  }
+
+  onBranchInputFocus(): void {
+    this.showBranchDropdown.set(true);
+  }
+
+  onBranchInputBlur(): void {
+    // Delay to allow click on dropdown items
+    setTimeout(() => this.showBranchDropdown.set(false), 200);
+  }
+
+  addBranch(branch: BranchItem): void {
+    this.selectedBranches.update(list => [...list, branch]);
+    this.branchSearchTerm.set('');
+    this.showBranchDropdown.set(false);
+  }
+
+  removeBranch(branchId: string): void {
+    this.selectedBranches.update(list => list.filter(b => b.id !== branchId));
   }
 
   onSubmit(): void {
@@ -115,37 +172,36 @@ export class MechanicFormComponent implements OnInit {
     this.isSubmitting.set(true);
     this.errorMessage.set(null);
 
-    const formValue = this.form.value;
+    const val = this.form.value;
     const data = {
-      name: formValue.name,
-      whatsapp: formValue.whatsapp,
-      email: formValue.email || undefined,
-      zone: formValue.zone || undefined,
-      municipality: formValue.municipality || undefined,
+      name: val.name,
+      whatsapp: val.whatsapp,
+      email: val.email || undefined,
+      branches: this.selectedBranches().map(b => b.id),
+      serviceDurationMinutes: val.serviceDurationMinutes,
+      schedule: val.schedule,
     };
 
-    const request$ = this.isEditMode()
+    const req$ = this.isEditMode()
       ? this.mechanicService.update(this.mechanicId()!, data)
       : this.mechanicService.create(data);
 
-    request$.subscribe({
-      next: () => {
-        this.router.navigate(['/admin/mechanics']);
-      },
-      error: (error) => {
-        this.errorMessage.set(error.error?.message || 'Error al guardar mecanico');
+    req$.subscribe({
+      next: () => this.router.navigate(['/admin/mechanics']),
+      error: (err) => {
+        this.errorMessage.set(err.error?.message || 'Error al guardar mecanico');
         this.isSubmitting.set(false);
       },
     });
   }
 
   hasError(field: string, error: string): boolean {
-    const control = this.form.get(field);
-    return !!(control?.hasError(error) && control?.touched);
+    const c = this.form.get(field);
+    return !!(c?.hasError(error) && c?.touched);
   }
 
   isInvalid(field: string): boolean {
-    const control = this.form.get(field);
-    return !!(control?.invalid && control?.touched);
+    const c = this.form.get(field);
+    return !!(c?.invalid && c?.touched);
   }
 }

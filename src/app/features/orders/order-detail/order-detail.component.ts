@@ -1,18 +1,17 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { OrderService } from '../../../core/services/order.service';
 import { ExchangeRateService } from '../../../core/services/exchange-rate.service';
 import {
   Order, OrderStatus,
   ORDER_STATUS_LABELS, ORDER_STATUS_COLORS,
-  DISPATCH_STATUS_LABELS, DISPATCH_STATUS_COLORS,
 } from '../../../models/order.model';
 
 @Component({
   selector: 'app-order-detail',
   standalone: true,
-  imports: [CommonModule, CurrencyPipe],
+  imports: [CommonModule, CurrencyPipe, RouterLink],
   templateUrl: './order-detail.component.html',
   styleUrl: './order-detail.component.scss',
 })
@@ -24,14 +23,13 @@ export class OrderDetailComponent implements OnInit {
 
   // Order data
   protected readonly order = signal<Order | null>(null);
+  protected readonly proofPreview = signal<string | null>(null);
   protected readonly isLoading = signal(true);
   protected readonly error = signal<string | null>(null);
 
   // Labels
   protected readonly statusLabels = ORDER_STATUS_LABELS;
   protected readonly statusColors = ORDER_STATUS_COLORS;
-  protected readonly dispatchStatusLabels = DISPATCH_STATUS_LABELS;
-  protected readonly dispatchStatusColors = DISPATCH_STATUS_COLORS;
 
   // Cancel flow (2-step: reason → confirm)
   protected readonly showReasonModal = signal(false);
@@ -105,12 +103,9 @@ export class OrderDetailComponent implements OnInit {
     return labels[type] || type;
   }
 
-  getDispatchStatusLabel(status: string): string {
-    return this.dispatchStatusLabels[status] || status;
-  }
-
-  getDispatchStatusClass(status: string): string {
-    return this.dispatchStatusColors[status] || '';
+  getMechanicField(order: Order, field: string): string {
+    if (!order.mechanic || typeof order.mechanic === 'string') return '';
+    return (order.mechanic as any)[field] || '';
   }
 
   getBillingSourceLabel(source: string): string {

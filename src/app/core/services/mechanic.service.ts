@@ -8,6 +8,7 @@ import {
   MechanicResponse,
   CreateMechanicRequest,
   UpdateMechanicRequest,
+  AddDateBlockRequest,
 } from '../../models/mechanic.model';
 
 @Injectable({
@@ -56,5 +57,13 @@ export class MechanicService {
 
   delete(id: string): Observable<{ success: boolean; message: string }> {
     return this.http.delete<{ success: boolean; message: string }>(`${this.apiUrl}/${id}`);
+  }
+
+  addDateBlock(id: string, data: AddDateBlockRequest): Observable<MechanicResponse> {
+    return this.http.post<MechanicResponse>(`${this.apiUrl}/${id}/date-blocks`, data);
+  }
+
+  removeDateBlock(id: string, index: number): Observable<MechanicResponse> {
+    return this.http.delete<MechanicResponse>(`${this.apiUrl}/${id}/date-blocks/${index}`);
   }
 }

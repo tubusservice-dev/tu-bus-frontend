@@ -43,7 +43,7 @@ export class CheckoutSellerAgreementFormComponent implements OnInit {
       fullName: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(100)]],
       documentType: ['V', Validators.required],
       documentNumber: ['', [Validators.required, Validators.pattern(/^\d{6,10}$/)]],
-      phone: ['', [Validators.required, Validators.pattern(/^(0414|0424|0412|0416|0426)\d{7}$/)]],
+      phone: ['', [Validators.required, Validators.pattern(/^(0414|0424|0412|0416|0426)-?\d{7}$/)]],
       email: ['', [Validators.email]],
       notes: ['', [Validators.maxLength(500)]],
     });

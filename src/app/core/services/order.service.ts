@@ -2,6 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { MechanicAssignmentResponse } from '../../models/mechanic-assignment.model';
 import {
   Order,
   OrderListResponse,
@@ -71,19 +72,16 @@ export class OrderService {
     return this.http.get<OrderResponse>(`${this.adminApiUrl}/${id}`);
   }
 
-  assignMechanic(orderId: string, mechanicId: string): Observable<OrderResponse> {
-    return this.http.post<OrderResponse>(`${this.adminApiUrl}/${orderId}/assign-mechanic`, { mechanicId });
-  }
-
   updateOrderStatus(orderId: string, status: OrderStatus, note?: string): Observable<OrderResponse> {
     return this.http.put<OrderResponse>(`${this.adminApiUrl}/${orderId}/status`, { status, note });
-  }
-
-  updateDispatchStatus(orderId: string, dispatchStatus: string, note?: string): Observable<OrderResponse> {
-    return this.http.patch<OrderResponse>(`${this.adminApiUrl}/${orderId}/dispatch-status`, { dispatchStatus, note });
   }
 
   updateNotes(orderId: string, notes: string): Observable<OrderResponse> {
     return this.http.patch<OrderResponse>(`${this.adminApiUrl}/${orderId}/notes`, { notes });
   }
+
+  getServiceTracking(orderId: string): Observable<MechanicAssignmentResponse> {
+    return this.http.get<MechanicAssignmentResponse>(`${this.apiUrl}/${orderId}/service-tracking`);
+  }
+
 }

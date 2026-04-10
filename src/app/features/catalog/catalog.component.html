@@ -176,14 +176,18 @@
               </svg>
             </button>
 
-            @for (page of getPageNumbers(); track page) {
-              <button
-                class="page-btn"
-                [class.active]="page === currentPage()"
-                (click)="goToPage(page)"
-              >
-                {{ page }}
-              </button>
+            @for (p of getVisiblePages(); track $index) {
+              @if (p === '...') {
+                <span class="page-ellipsis">...</span>
+              } @else {
+                <button
+                  class="page-btn"
+                  [class.active]="p === currentPage()"
+                  (click)="goToPage(+p)"
+                >
+                  {{ p }}
+                </button>
+              }
             }
 
             <button

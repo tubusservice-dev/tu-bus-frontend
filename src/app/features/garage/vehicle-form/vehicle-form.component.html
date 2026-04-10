@@ -10,7 +10,7 @@
     <div class="form-grid">
       <div class="form-group">
         <label class="form-label">Placa <span class="required">*</span></label>
-        <input type="text" formControlName="placa" class="form-input" [class.error]="hasError('placa')" placeholder="DFY-H37" style="text-transform: uppercase" />
+        <input type="text" formControlName="placa" class="form-input" [class.error]="hasError('placa')" placeholder="DFY-H37" style="text-transform: uppercase" maxlength="9" />
         @if (hasError('placa')) {
           <span class="form-error">{{ getErrorMessage('placa') }}</span>
         }
@@ -31,7 +31,7 @@
 
       <div class="form-group">
         <label class="form-label">Modelo <span class="required">*</span></label>
-        <input type="text" formControlName="modelo" class="form-input" [class.error]="hasError('modelo')" placeholder="Corolla, Aveo, etc." />
+        <input type="text" formControlName="modelo" class="form-input" [class.error]="hasError('modelo')" placeholder="Corolla, Aveo, etc." maxlength="50" />
         @if (hasError('modelo')) {
           <span class="form-error">{{ getErrorMessage('modelo') }}</span>
         }

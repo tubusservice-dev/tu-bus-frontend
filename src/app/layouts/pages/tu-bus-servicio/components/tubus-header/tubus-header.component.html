@@ -43,6 +43,11 @@
 
     <!-- Acciones (Derecha) -->
     <div class="header-right">
+      <!-- Notificaciones -->
+      @if (isLoggedIn()) {
+        <app-user-notifications-bell />
+      }
+
       <!-- Tema (solo desktop) -->
       <span class="hidden sm:inline-flex">
         <app-theme-toggle />

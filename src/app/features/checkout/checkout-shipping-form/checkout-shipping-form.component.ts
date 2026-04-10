@@ -6,6 +6,11 @@ import { CheckoutService, ShippingRecipientInfo } from '../services/checkout.ser
 import { CartService } from '../../../core/services/cart.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { getStates, getCitiesByState, getMunicipalitiesByState } from '../../../shared/data/venezuela-states';
+import {
+  NAME_PATTERN, PHONE_VE_PATTERN, DOCUMENT_NUMBER_PATTERN, EMAIL_PATTERN,
+  MAX_FULLNAME_LENGTH, MAX_ADDRESS_LENGTH, MAX_REFERENCE_LENGTH, MAX_NOTES_LENGTH,
+  MAX_PHONE_LENGTH, MAX_DOCUMENT_LENGTH, noNumbersValidator,
+} from '../../../shared/validators/form-validators';
 
 @Component({
   selector: 'app-checkout-shipping-form',
@@ -54,19 +59,19 @@ export class CheckoutShippingFormComponent implements OnInit {
 
   private initForm(): void {
     this.shippingForm = this.fb.group({
-      fullName: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(100)]],
+      fullName: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(MAX_FULLNAME_LENGTH), Validators.pattern(NAME_PATTERN), noNumbersValidator]],
       documentType: ['V', Validators.required],
-      documentNumber: ['', [Validators.required, Validators.pattern(/^\d{6,10}$/)]],
-      phone: ['', [Validators.required, Validators.pattern(/^(0414|0424|0412|0416|0426)\d{7}$/)]],
-      alternativePhone: ['', [Validators.pattern(/^(0414|0424|0412|0416|0426)\d{7}$/)]],
-      email: ['', [Validators.email]],
+      documentNumber: ['', [Validators.required, Validators.pattern(DOCUMENT_NUMBER_PATTERN)]],
+      phone: ['', [Validators.required, Validators.pattern(PHONE_VE_PATTERN)]],
+      alternativePhone: ['', [Validators.pattern(PHONE_VE_PATTERN)]],
+      email: ['', [Validators.pattern(EMAIL_PATTERN)]],
       stateCode: ['', Validators.required],
       cityCode: ['', Validators.required],
       municipalityCode: [''],
-      address: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(300)]],
-      referencePoint: ['', Validators.maxLength(200)],
+      address: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(MAX_ADDRESS_LENGTH)]],
+      referencePoint: ['', Validators.maxLength(MAX_REFERENCE_LENGTH)],
       agencyOfficeCode: ['', Validators.maxLength(50)],
-      notes: ['', Validators.maxLength(500)],
+      notes: ['', Validators.maxLength(MAX_NOTES_LENGTH)],
     });
   }
 
@@ -294,9 +299,13 @@ export class CheckoutShippingFormComponent implements OnInit {
     if (control.errors['required']) return 'Este campo es obligatorio';
     if (control.errors['minlength']) return `Mínimo ${control.errors['minlength'].requiredLength} caracteres`;
     if (control.errors['maxlength']) return `Máximo ${control.errors['maxlength'].requiredLength} caracteres`;
+    if (control.errors['noNumbers']) return 'No se permiten números en este campo';
     if (control.errors['pattern']) {
-      if (field === 'documentNumber') return 'Ingresa un número de documento válido (6-10 dígitos)';
-      if (field === 'phone' || field === 'alternativePhone') return 'Formato: 04XX-XXXXXXX';
+      if (field === 'documentNumber') return 'Solo números, entre 6 y 10 dígitos';
+      if (field === 'phone' || field === 'alternativePhone') return 'Formato: 04XX-XXXXXXX (ej: 04141234567)';
+      if (field === 'email') return 'Ingresa un email válido (ej: nombre@correo.com)';
+      if (field === 'fullName') return 'Solo letras, sin números';
+      return 'Formato inválido';
     }
     if (control.errors['email']) return 'Ingresa un email válido';
 

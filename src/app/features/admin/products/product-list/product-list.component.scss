@@ -416,16 +416,27 @@
 
 // Paginación
 .pagination {
-  @apply flex items-center justify-center gap-4 mt-6;
+  @apply flex items-center justify-center gap-1 mt-6;
 }
 
 .pagination-btn {
-  @apply px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium;
-  @apply hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors;
+  @apply w-10 h-10 flex items-center justify-center rounded-lg text-sm font-medium transition-colors;
+  @apply text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800;
+  @apply disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent;
+
+  svg { @apply w-5 h-5; }
+
+  &.active {
+    @apply bg-blue-600 text-white hover:bg-blue-700;
+  }
+}
+
+.pagination-ellipsis {
+  @apply w-10 h-10 flex items-center justify-center text-sm text-gray-400 dark:text-gray-500;
 }
 
 .pagination-info {
-  @apply text-sm text-gray-500 dark:text-gray-400;
+  @apply text-xs text-gray-500 dark:text-gray-400 ml-3;
 }
 
 // Modal

@@ -1,0 +1,67 @@
+@if (isOpen()) {
+  <div class="modal-overlay" (click)="close()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Agregar Bloqueo de Fecha</h3>
+        <button (click)="close()" class="close-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      @if (errorMessage()) {
+        <div class="modal-error">{{ errorMessage() }}</div>
+      }
+
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="startDate">Fecha inicio <span class="required">*</span></label>
+            <input type="date" id="startDate" formControlName="startDate" />
+          </div>
+          <div class="form-group">
+            <label for="endDate">Fecha fin <span class="required">*</span></label>
+            <input type="date" id="endDate" formControlName="endDate" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="toggle-row">
+            <input type="checkbox" formControlName="isAllDay" />
+            <span>Todo el dia</span>
+          </label>
+        </div>
+
+        @if (!form.get('isAllDay')?.value) {
+          <div class="form-row">
+            <div class="form-group">
+              <label for="blockStartTime">Hora inicio</label>
+              <input type="time" id="blockStartTime" formControlName="startTime" />
+            </div>
+            <div class="form-group">
+              <label for="blockEndTime">Hora fin</label>
+              <input type="time" id="blockEndTime" formControlName="endTime" />
+            </div>
+          </div>
+        }
+
+        <div class="form-group">
+          <label for="reason">Razon (opcional)</label>
+          <input type="text" id="reason" formControlName="reason" placeholder="Ej: Vacaciones, cita medica..." />
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" (click)="close()" class="btn-cancel">Cancelar</button>
+          <button type="submit" class="btn-submit" [disabled]="isSubmitting()">
+            @if (isSubmitting()) {
+              Guardando...
+            } @else {
+              Agregar Bloqueo
+            }
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

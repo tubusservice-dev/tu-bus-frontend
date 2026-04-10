@@ -35,9 +35,9 @@ export class VehicleFormComponent implements OnInit {
     this.form = this.fb.group({
       placa: [v?.placa || '', [Validators.required, Validators.pattern(PLACA_VE_REGEX), this.duplicatePlacaValidator.bind(this)]],
       marca: [v?.marca || '', [Validators.required]],
-      modelo: [v?.modelo || '', [Validators.required]],
+      modelo: [v?.modelo || '', [Validators.required, Validators.maxLength(50)]],
       year: [v?.year || '', [Validators.required, Validators.min(1960), Validators.max(this.currentYear + 1)]],
-      kilometraje: [v?.kilometraje || 0, [Validators.min(0)]],
+      kilometraje: [v?.kilometraje || 0, [Validators.min(0), Validators.max(9999999)]],
       fuelType: [v?.engineType?.fuelType || 'gasolina', [Validators.required]],
       displacement: [v?.engineType?.displacement || '', [Validators.required]],
       cylinders: [v?.engineType?.cylinders || 4, [Validators.required, Validators.min(1), Validators.max(16)]],

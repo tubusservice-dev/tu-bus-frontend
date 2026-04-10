@@ -69,9 +69,14 @@
   color: var(--text-primary);
 
   &:hover {
-    background-color: var(--bg-tertiary);
-    color: var(--accent-primary);
+    background-color: rgba(0, 0, 0, 0.04);
+    color: var(--text-primary);
     text-decoration: none;
+  }
+
+  &.active {
+    background-color: rgba(0, 0, 0, 0.06);
+    font-weight: 600;
   }
 }
 
@@ -80,11 +85,11 @@
   color: var(--text-secondary);
 
   .menu-item:hover & {
-    color: var(--accent-primary);
+    color: var(--text-primary);
   }
 
-  .logout-btn:hover & {
-    color: var(--accent-primary);
+  .menu-item.active & {
+    color: var(--text-primary);
   }
 }
 
@@ -94,8 +99,12 @@
   background-color: transparent;
 
   &:hover {
-    background-color: var(--accent-light);
-    color: var(--accent-primary);
+    background-color: rgba(239, 68, 68, 0.06);
+    color: #ef4444;
+  }
+
+  &:hover .menu-icon {
+    color: #ef4444;
   }
 }
 
@@ -148,19 +157,31 @@
   .menu-item {
     color: #d1d5db;
     &:hover {
-      background-color: #374151;
-      color: var(--tubus-text-accent, #4d94ff);
+      background-color: rgba(255, 255, 255, 0.06);
+      color: #f3f4f6;
+    }
+    &.active {
+      background-color: rgba(255, 255, 255, 0.08);
+      color: #f3f4f6;
+      font-weight: 600;
     }
   }
 
   .menu-icon {
     color: #6b7280;
+    .menu-item:hover &,
+    .menu-item.active & {
+      color: #f3f4f6;
+    }
   }
 
   .logout-btn {
     color: #d1d5db;
     &:hover {
-      background-color: rgba(239, 68, 68, 0.1);
+      background-color: rgba(239, 68, 68, 0.08);
+      color: #f87171;
+    }
+    &:hover .menu-icon {
       color: #f87171;
     }
   }

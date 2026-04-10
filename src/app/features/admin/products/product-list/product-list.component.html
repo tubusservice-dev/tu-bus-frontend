@@ -331,25 +331,20 @@
     <!-- Paginación -->
     @if (totalPages() > 1) {
       <div class="pagination">
-        <button
-          type="button"
-          class="pagination-btn"
-          [disabled]="currentPage() === 1"
-          (click)="goToPage(currentPage() - 1)"
-        >
-          Anterior
+        <button class="pagination-btn" [disabled]="currentPage() === 1" (click)="goToPage(currentPage() - 1)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
         </button>
-        <span class="pagination-info">
-          Página {{ currentPage() }} de {{ totalPages() }}
-        </span>
-        <button
-          type="button"
-          class="pagination-btn"
-          [disabled]="currentPage() === totalPages()"
-          (click)="goToPage(currentPage() + 1)"
-        >
-          Siguiente
+        @for (p of visiblePages; track $index) {
+          @if (p === '...') {
+            <span class="pagination-ellipsis">...</span>
+          } @else {
+            <button class="pagination-btn" [class.active]="p === currentPage()" (click)="goToPage(+p)">{{ p }}</button>
+          }
+        }
+        <button class="pagination-btn" [disabled]="currentPage() === totalPages()" (click)="goToPage(currentPage() + 1)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
         </button>
+        <span class="pagination-info">{{ totalProducts() }} productos</span>
       </div>
     }
   }

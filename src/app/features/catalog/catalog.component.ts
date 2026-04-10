@@ -1,7 +1,7 @@
 import { Component, DestroyRef, inject, signal, OnInit, computed, HostListener, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ProductService } from '../../core/services/product.service';
@@ -44,6 +44,7 @@ export class CatalogComponent implements OnInit {
   protected readonly vehicleService = inject(VehicleService);
   protected readonly locationService = inject(LocationService);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
   private readonly searchSubject$ = new Subject<string>();
@@ -148,6 +149,13 @@ export class CatalogComponent implements OnInit {
         this.loadProducts();
       });
 
+    // Restore page from URL query params (browser back button support)
+    const pageParam = this.route.snapshot.queryParamMap.get('page');
+    if (pageParam) {
+      const page = parseInt(pageParam, 10);
+      if (page > 0) this.currentPage.set(page);
+    }
+
     // Activate vehicle filter if navigating from garage
     const fromGarage = this.route.snapshot.queryParamMap.get('fromGarage');
     if (fromGarage === 'true' && this.vehicleService.selectedVehicle()) {
@@ -245,6 +253,7 @@ export class CatalogComponent implements OnInit {
   updateFilter<K extends keyof FilterState>(key: K, value: FilterState[K]): void {
     this.filters.update((f) => ({ ...f, [key]: value }));
     this.currentPage.set(1);
+    this.syncPageToUrl();
     this.loadProducts();
   }
 
@@ -257,6 +266,7 @@ export class CatalogComponent implements OnInit {
       sortBy: 'createdAt',
     });
     this.currentPage.set(1);
+    this.syncPageToUrl();
     this.loadProducts();
   }
 
@@ -267,8 +277,20 @@ export class CatalogComponent implements OnInit {
   goToPage(page: number): void {
     if (page < 1 || page > this.totalPages()) return;
     this.currentPage.set(page);
+    this.syncPageToUrl();
     this.loadProducts();
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  /** Sync current page to URL query params for browser back button support */
+  private syncPageToUrl(): void {
+    const page = this.currentPage();
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: page > 1 ? { page } : {},
+      queryParamsHandling: page > 1 ? 'merge' : '',
+      replaceUrl: false,
+    });
   }
 
   onLimitChange(newLimit: number | string): void {
@@ -319,23 +341,20 @@ export class CatalogComponent implements OnInit {
     });
   }
 
-  getPageNumbers(): number[] {
+  /** Visible pages with ellipsis: 1, 2, ..., 10 */
+  getVisiblePages(): (number | '...')[] {
     const total = this.totalPages();
     const current = this.currentPage();
-    const pages: number[] = [];
-
-    if (total <= 5) {
-      for (let i = 1; i <= total; i++) pages.push(i);
-    } else {
-      if (current <= 3) {
-        pages.push(1, 2, 3, 4, 5);
-      } else if (current >= total - 2) {
-        pages.push(total - 4, total - 3, total - 2, total - 1, total);
-      } else {
-        pages.push(current - 2, current - 1, current, current + 1, current + 2);
-      }
+    if (total <= 7) {
+      return Array.from({ length: total }, (_, i) => i + 1);
     }
-
+    const pages: (number | '...')[] = [1];
+    if (current > 3) pages.push('...');
+    const start = Math.max(2, current - 1);
+    const end = Math.min(total - 1, current + 1);
+    for (let i = start; i <= end; i++) pages.push(i);
+    if (current < total - 2) pages.push('...');
+    pages.push(total);
     return pages;
   }
 }

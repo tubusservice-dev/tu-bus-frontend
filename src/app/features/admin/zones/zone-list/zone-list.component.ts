@@ -29,6 +29,7 @@ export class ZoneListComponent implements OnInit {
   protected readonly deleteModalOpen = signal(false);
   protected readonly zoneToDelete = signal<Zone | null>(null);
   protected readonly isDeleting = signal(false);
+  protected readonly errorMessage = signal<string | null>(null);
 
   ngOnInit(): void {
     this.loadZones();
@@ -89,7 +90,7 @@ export class ZoneListComponent implements OnInit {
   }
 
   getCityName(zone: Zone): string {
-    if (typeof zone.city === 'object') {
+    if (zone.city && typeof zone.city === 'object') {
       return (zone.city as City).name;
     }
     return '';
@@ -134,8 +135,12 @@ export class ZoneListComponent implements OnInit {
         this.closeDeleteModal();
         this.isDeleting.set(false);
       },
-      error: () => {
+      error: (err) => {
         this.isDeleting.set(false);
+        this.closeDeleteModal();
+        const msg = err.error?.message || 'No se pudo eliminar la zona';
+        this.errorMessage.set(msg);
+        setTimeout(() => this.errorMessage.set(null), 5000);
       },
     });
   }

@@ -131,6 +131,16 @@
   &.vehicle-value { @apply text-left font-medium; }
 }
 
+.btn-tracking-link {
+  @apply flex items-center justify-between w-full mt-3 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors cursor-pointer;
+  @apply text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20;
+  text-decoration: none;
+
+  svg {
+    @apply w-4 h-4 flex-shrink-0;
+  }
+}
+
 .no-data {
   @apply px-5 py-4 text-sm text-gray-400 dark:text-gray-500 text-center;
 }
@@ -278,6 +288,18 @@
 .timeline-note { @apply text-xs text-gray-500 dark:text-gray-400 italic; }
 .timeline-date { @apply text-xs text-gray-400 dark:text-gray-500; }
 
+.current-status-row {
+  @apply flex flex-col gap-1.5 px-4 sm:px-5 py-3;
+}
+
+.current-status-note {
+  @apply text-sm text-gray-600 dark:text-gray-400 italic;
+}
+
+.current-status-date {
+  @apply text-xs text-gray-400 dark:text-gray-500;
+}
+
 // ============================================
 // NOTES
 // ============================================
@@ -314,8 +336,26 @@
 }
 
 .proof-image {
-  @apply max-w-full max-h-64 rounded-lg border border-gray-200 dark:border-gray-700 object-contain;
+  @apply max-w-full max-h-64 rounded-lg border border-gray-200 dark:border-gray-700 object-contain cursor-pointer;
+  @apply hover:opacity-90 transition-opacity;
 }
+
+.lightbox-overlay {
+  @apply fixed inset-0 z-50 flex items-center justify-center;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.2s ease;
+}
+.lightbox-close {
+  @apply absolute top-4 right-4 p-2 text-white/70 hover:text-white transition-colors;
+  svg { @apply w-8 h-8; }
+}
+.lightbox-image {
+  @apply max-w-[90vw] max-h-[90vh] object-contain rounded-lg;
+  animation: scaleIn 0.25s ease;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
 // ============================================
 // PAYMENT NOTE SECTION

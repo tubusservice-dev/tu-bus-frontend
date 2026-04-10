@@ -672,11 +672,11 @@
 }
 
 .disclaimer-label {
-  @apply flex items-start gap-3 cursor-pointer;
+  @apply flex items-center gap-3 cursor-pointer;
 }
 
 .disclaimer-checkbox {
-  @apply w-5 h-5 mt-0.5 flex-shrink-0 rounded;
+  @apply w-5 h-5 flex-shrink-0 rounded;
   accent-color: var(--accent-primary);
 }
 
@@ -1180,6 +1180,11 @@
     }
   }
 
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.6;
+  }
+
   select {
     cursor: pointer;
     appearance: none;
@@ -1670,6 +1675,11 @@
         border-color: var(--tubus-text-accent, #4d94ff);
         box-shadow: 0 0 0 2px rgba(77, 148, 255, 0.15);
       }
+    }
+
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: invert(1);
+      opacity: 0.7;
     }
 
     select {

@@ -557,11 +557,11 @@
 
 // Vista desktop: grid con product cards
 .related-grid {
-  @apply hidden sm:flex flex-wrap justify-center gap-6;
+  @apply hidden sm:grid gap-6;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
 
   app-product-card {
-    @apply w-full sm:w-[calc(50%-12px)] lg:w-[calc(25%-18px)];
-    @apply max-w-[300px];
+    @apply w-full h-full;
   }
 }
 

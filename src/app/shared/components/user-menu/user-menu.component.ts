@@ -1,7 +1,8 @@
 import { Component, signal, inject, computed } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services';
 import { ThemeService } from '../../../core/services/theme.service';
+import { UserNotificationService } from '../../../core/services/user-notification.service';
 import { ClickOutsideDirective } from '../../directives/click-outside.directive';
 
 @Component({
@@ -13,6 +14,7 @@ import { ClickOutsideDirective } from '../../directives/click-outside.directive'
 })
 export class UserMenuComponent {
   private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
   protected readonly themeService = inject(ThemeService);
 
   protected readonly user = this.authService.currentUser;
@@ -23,8 +25,11 @@ export class UserMenuComponent {
   protected readonly isMenuOpen = signal(false);
   protected readonly showLogoutModal = signal(false);
 
+  private readonly userNotifService = inject(UserNotificationService);
+
   toggleMenu(): void {
     this.isMenuOpen.update(value => !value);
+    if (this.isMenuOpen()) this.userNotifService.closePopover();
   }
 
   closeMenu(): void {
@@ -46,6 +51,15 @@ export class UserMenuComponent {
     this.showLogoutModal.set(false);
     document.body.style.overflow = '';
     this.authService.logout();
+  }
+
+  isActive(path: string, fragment?: string): boolean {
+    const url = this.router.url.split('?')[0];
+    if (fragment) {
+      return url === `${path}#${fragment}`;
+    }
+    // "Mi Perfil" active only when no fragment or unknown fragments
+    return url === path || (url.startsWith(path + '#') && !url.includes('#pedidos') && !url.includes('#garaje'));
   }
 
   onAvatarError(event: Event): void {

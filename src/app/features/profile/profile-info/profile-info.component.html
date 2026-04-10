@@ -47,10 +47,6 @@
           <span class="account-label">Miembro desde</span>
           <span class="account-value">{{ formatDate(user()?.createdAt || '') }}</span>
         </div>
-        <div class="account-item">
-          <span class="account-label">Rol</span>
-          <span class="account-value capitalize">{{ user()?.role }}</span>
-        </div>
       </div>
     </div>
   </aside>
@@ -75,34 +71,43 @@
           <div class="form-grid">
             <div class="form-group">
               <label for="firstName" class="form-label">Nombre <span class="required">*</span></label>
-              <input type="text" id="firstName" formControlName="firstName" class="form-input" [class.error]="hasError('firstName')" placeholder="Tu nombre" />
+              <input type="text" id="firstName" formControlName="firstName" class="form-input" [class.error]="hasError('firstName')" placeholder="Tu nombre" maxlength="20" />
               @if (hasError('firstName')) { <span class="field-error">{{ getErrorMessage('firstName') }}</span> }
             </div>
 
             <div class="form-group">
               <label for="lastName" class="form-label">Apellido <span class="required">*</span></label>
-              <input type="text" id="lastName" formControlName="lastName" class="form-input" [class.error]="hasError('lastName')" placeholder="Tu apellido" />
+              <input type="text" id="lastName" formControlName="lastName" class="form-input" [class.error]="hasError('lastName')" placeholder="Tu apellido" maxlength="20" />
               @if (hasError('lastName')) { <span class="field-error">{{ getErrorMessage('lastName') }}</span> }
             </div>
 
             <div class="form-group">
               <label class="form-label">Documento de identidad</label>
               <div class="input-group">
-                <select formControlName="documentType" class="form-select-prefix">
-                  <option value="">-</option>
-                  <option value="V">V</option>
-                  <option value="E">E</option>
-                  <option value="J">J</option>
-                  <option value="P">P</option>
-                  <option value="G">G</option>
-                </select>
-                <input type="text" formControlName="documentNumber" class="form-input flex-1" placeholder="12345678" />
+                <div class="custom-doc-select" (click)="toggleDocDropdown(); $event.stopPropagation()" [class.open]="showDocDropdown()">
+                  <span class="doc-select-value">{{ profileForm.get('documentType')?.value || '-' }}</span>
+                  <svg class="doc-select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                  </svg>
+                  @if (showDocDropdown()) {
+                    <div class="doc-dropdown" (click)="$event.stopPropagation()">
+                      @for (opt of docTypeOptions; track opt.code) {
+                        <button type="button" class="doc-dropdown-item" [class.selected]="profileForm.get('documentType')?.value === opt.code" (click)="selectDocType(opt.code)">
+                          <span class="doc-opt-code">{{ opt.code }}</span>
+                          <span class="doc-opt-label">{{ opt.label }}</span>
+                        </button>
+                      }
+                    </div>
+                  }
+                </div>
+                <input type="text" formControlName="documentNumber" class="form-input flex-1" placeholder="12345678" maxlength="10" inputmode="numeric" [class.error]="hasError('documentNumber')" />
               </div>
+              @if (hasError('documentNumber')) { <span class="field-error">{{ getErrorMessage('documentNumber') }}</span> }
             </div>
 
             <div class="form-group">
               <label for="birthDate" class="form-label">Fecha de nacimiento</label>
-              <input type="date" id="birthDate" formControlName="birthDate" class="form-input" />
+              <input type="date" id="birthDate" formControlName="birthDate" class="form-input" [attr.max]="todayStr" />
             </div>
 
             <div class="form-group">
@@ -122,13 +127,14 @@
           <div class="form-grid">
             <div class="form-group">
               <label for="phone" class="form-label">Teléfono principal</label>
-              <input type="tel" id="phone" formControlName="phone" class="form-input" [class.error]="hasError('phone')" placeholder="04141234567" />
+              <input type="tel" id="phone" formControlName="phone" class="form-input" [class.error]="hasError('phone')" placeholder="04141234567" maxlength="12" inputmode="tel" />
               @if (hasError('phone')) { <span class="field-error">{{ getErrorMessage('phone') }}</span> }
             </div>
 
             <div class="form-group">
               <label for="alternativePhone" class="form-label">Teléfono alternativo</label>
-              <input type="tel" id="alternativePhone" formControlName="alternativePhone" class="form-input" placeholder="04241234567" />
+              <input type="tel" id="alternativePhone" formControlName="alternativePhone" class="form-input" [class.error]="hasError('alternativePhone')" placeholder="04241234567" maxlength="12" inputmode="tel" />
+              @if (hasError('alternativePhone')) { <span class="field-error">{{ getErrorMessage('alternativePhone') }}</span> }
             </div>
           </div>
 
@@ -167,27 +173,28 @@
 
             <div class="form-group">
               <label for="neighborhood" class="form-label">Urbanización / Sector</label>
-              <input type="text" id="neighborhood" formControlName="neighborhood" class="form-input" placeholder="Ej: Urb. La California" />
+              <input type="text" id="neighborhood" formControlName="neighborhood" class="form-input" placeholder="Ej: Urb. La California" maxlength="100" />
             </div>
 
             <div class="form-group">
               <label for="street" class="form-label">Calle / Avenida</label>
-              <input type="text" id="street" formControlName="street" class="form-input" placeholder="Ej: Av. Principal" />
+              <input type="text" id="street" formControlName="street" class="form-input" placeholder="Ej: Av. Principal" maxlength="100" />
             </div>
 
             <div class="form-group">
               <label for="houseNumber" class="form-label">Casa / Edificio / Apto</label>
-              <input type="text" id="houseNumber" formControlName="houseNumber" class="form-input" placeholder="Ej: Edif. Torre A, Piso 5, Apto 5-B" />
+              <input type="text" id="houseNumber" formControlName="houseNumber" class="form-input" placeholder="Ej: Edif. Torre A, Piso 5, Apto 5-B" maxlength="20" />
             </div>
 
             <div class="form-group full-width">
               <label for="referencePoint" class="form-label">Punto de referencia</label>
-              <input type="text" id="referencePoint" formControlName="referencePoint" class="form-input" placeholder="Ej: Frente al Centro Comercial..." />
+              <input type="text" id="referencePoint" formControlName="referencePoint" class="form-input" placeholder="Ej: Frente al Centro Comercial..." maxlength="200" />
             </div>
 
             <div class="form-group">
               <label for="zipCode" class="form-label">Código postal</label>
-              <input type="text" id="zipCode" formControlName="zipCode" class="form-input" placeholder="1010" />
+              <input type="text" id="zipCode" formControlName="zipCode" class="form-input" placeholder="1010" maxlength="5" inputmode="numeric" [class.error]="hasError('zipCode')" />
+              @if (hasError('zipCode')) { <span class="field-error">{{ getErrorMessage('zipCode') }}</span> }
             </div>
           </div>
 
@@ -197,12 +204,13 @@
             <div class="form-grid">
               <div class="form-group">
                 <label for="companyName" class="form-label">Razón social</label>
-                <input type="text" id="companyName" formControlName="companyName" class="form-input" placeholder="Nombre de la empresa" />
+                <input type="text" id="companyName" formControlName="companyName" class="form-input" placeholder="Nombre de la empresa" maxlength="100" />
               </div>
 
               <div class="form-group">
                 <label for="companyRif" class="form-label">RIF de la empresa</label>
-                <input type="text" id="companyRif" formControlName="companyRif" class="form-input" placeholder="J-12345678-9" />
+                <input type="text" id="companyRif" formControlName="companyRif" class="form-input" placeholder="J-12345678-9" maxlength="12" [class.error]="hasError('companyRif')" />
+                @if (hasError('companyRif')) { <span class="field-error">{{ getErrorMessage('companyRif') }}</span> }
               </div>
             </div>
           }

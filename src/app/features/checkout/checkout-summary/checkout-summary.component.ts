@@ -43,6 +43,8 @@ export class CheckoutSummaryComponent implements OnInit {
   private readonly router = inject(Router);
   protected readonly exchangeRateService = inject(ExchangeRateService);
 
+  protected readonly todayStr = new Date().toISOString().split('T')[0];
+
   // State signals
   protected readonly isGenerating = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
@@ -633,10 +635,16 @@ export class CheckoutSummaryComponent implements OnInit {
     };
 
     if (this.isFormType(group.type)) {
+      // Validate payment date is not in the future
+      const paymentDate = this.formPaymentDate();
+      if (paymentDate && paymentDate > this.todayStr) {
+        this.errorMessage.set('La fecha de pago no puede ser futura');
+        return;
+      }
       submission.referenceNumber = this.formReferenceNumber().trim();
       submission.sourceBank = this.formSourceBank().trim();
       submission.amount = parseFloat(this.formAmount()) || 0;
-      submission.paymentDate = this.formPaymentDate();
+      submission.paymentDate = paymentDate;
     }
 
     // Upload proof file if selected, then finalize

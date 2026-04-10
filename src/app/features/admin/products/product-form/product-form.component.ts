@@ -1,6 +1,7 @@
 import { Component, inject, signal, OnInit, computed, ElementRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, ActivatedRoute, RouterLink } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
+import { Location } from '@angular/common';
 import { FormBuilder, FormGroup, FormArray, ReactiveFormsModule, Validators } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { ProductService } from '../../../../core/services/product.service';
@@ -24,13 +25,14 @@ import { ImageCarouselComponent } from '../../../../shared/components/image-caro
 @Component({
   selector: 'app-product-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, ImageCarouselComponent],
+  imports: [CommonModule, ReactiveFormsModule, ImageCarouselComponent],
   templateUrl: './product-form.component.html',
   styleUrl: './product-form.component.scss',
 })
 export class ProductFormComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
+  protected readonly location = inject(Location);
   private readonly route = inject(ActivatedRoute);
   private readonly productService = inject(ProductService);
   private readonly lineService = inject(LineService);
@@ -661,21 +663,21 @@ export class ProductFormComponent implements OnInit {
           if (newAssignments.length > 0) {
             this.createNewBranchProducts(productId);
           } else {
-            this.router.navigate(['/admin/products']);
+            this.location.back();
           }
         },
         error: () => {
           if (newAssignments.length > 0) {
             this.createNewBranchProducts(productId);
           } else {
-            this.router.navigate(['/admin/products']);
+            this.location.back();
           }
         },
       });
     } else if (newAssignments.length > 0) {
       this.createNewBranchProducts(productId);
     } else {
-      this.router.navigate(['/admin/products']);
+      this.location.back();
     }
   }
 
@@ -691,8 +693,8 @@ export class ProductFormComponent implements OnInit {
       })),
     };
     this.branchProductService.createBatch(data).subscribe({
-      next: () => this.router.navigate(['/admin/products']),
-      error: () => this.router.navigate(['/admin/products']),
+      next: () => this.location.back(),
+      error: () => this.location.back(),
     });
   }
 

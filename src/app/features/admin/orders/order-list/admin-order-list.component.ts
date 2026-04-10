@@ -10,8 +10,6 @@ import {
   OrderStatus,
   ORDER_STATUS_LABELS,
   ORDER_STATUS_COLORS,
-  DISPATCH_STATUS_LABELS,
-  DISPATCH_STATUS_COLORS,
 } from '../../../../models/order.model';
 
 @Component({
@@ -35,10 +33,20 @@ export class AdminOrderListComponent implements OnInit {
   protected readonly totalItems = signal(0);
   protected readonly statusFilter = signal<string>('');
   protected readonly searchQuery = signal('');
-  protected readonly activeTab = signal<'active' | 'history'>('active');
 
-  protected readonly orderStatuses = Object.values(OrderStatus);
   protected readonly ORDER_STATUS_LABELS = ORDER_STATUS_LABELS;
+
+  /** Statuses relevant for admin filtering (excludes mechanic intermediate steps) */
+  protected readonly adminFilterStatuses: OrderStatus[] = [
+    OrderStatus.PENDING,
+    OrderStatus.APPROVED,
+    OrderStatus.DISPATCHED,
+    OrderStatus.MECHANIC_ASSIGNED,
+    OrderStatus.IN_SERVICE,
+    OrderStatus.COMPLETED,
+    OrderStatus.CANCELLATION_REQUESTED,
+    OrderStatus.CANCELLED,
+  ];
 
   ngOnInit(): void {
     this.searchSubject$
@@ -80,26 +88,8 @@ export class AdminOrderListComponent implements OnInit {
     this.searchSubject$.next(value);
   }
 
-  switchTab(tab: 'active' | 'history'): void {
-    this.activeTab.set(tab);
-    this.statusFilter.set('');
-    this.loadOrders(1);
-  }
-
-  /** Statuses shown per tab */
-  get activeStatuses(): OrderStatus[] {
-    if (this.activeTab() === 'history') {
-      return [OrderStatus.CONFIRMED, OrderStatus.COMPLETED, OrderStatus.CANCELLED];
-    }
-    return this.orderStatuses;
-  }
-
-  /** Filter statuses for the dropdown based on current tab */
   get filterableStatuses(): OrderStatus[] {
-    if (this.activeTab() === 'history') {
-      return [OrderStatus.CONFIRMED, OrderStatus.COMPLETED, OrderStatus.CANCELLED];
-    }
-    return this.orderStatuses;
+    return this.adminFilterStatuses;
   }
 
   getClientName(order: Order): string {
@@ -116,16 +106,6 @@ export class AdminOrderListComponent implements OnInit {
 
   getStatusColor(status: OrderStatus): string {
     return ORDER_STATUS_COLORS[status] || '';
-  }
-
-  getDispatchStatusLabel(status?: string): string {
-    if (!status) return '-';
-    return DISPATCH_STATUS_LABELS[status] || status;
-  }
-
-  getDispatchStatusColor(status?: string): string {
-    if (!status) return '';
-    return DISPATCH_STATUS_COLORS[status] || '';
   }
 
   formatDate(date: string): string {

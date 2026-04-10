@@ -33,30 +33,30 @@
         <div class="form-grid">
           <div class="form-group col-span-2">
             <label class="form-label">Nombre de la sucursal <span class="required">*</span></label>
-            <input type="text" formControlName="name" class="form-input" [class.error]="isInvalid('name')" placeholder="Ej: Sucursal Chacao" autocomplete="nope" />
+            <input type="text" formControlName="name" class="form-input" [class.error]="isInvalid('name')" placeholder="Ej: Sucursal Chacao" autocomplete="nope" maxlength="100" />
             @if (hasError('name', 'required')) { <span class="form-error">El nombre es obligatorio</span> }
           </div>
 
           <div class="form-group col-span-2">
             <label class="form-label">Direccion <span class="required">*</span></label>
-            <input type="text" formControlName="address" class="form-input" [class.error]="isInvalid('address')" placeholder="Ej: Av. Principal, Centro Comercial..." autocomplete="nope" />
+            <input type="text" formControlName="address" class="form-input" [class.error]="isInvalid('address')" placeholder="Ej: Av. Principal, Centro Comercial..." autocomplete="nope" maxlength="300" />
             @if (hasError('address', 'required')) { <span class="form-error">La direccion es obligatoria</span> }
           </div>
 
           <div class="form-group col-span-2">
             <label class="form-label">Descripcion</label>
-            <textarea formControlName="description" class="form-input form-textarea" rows="3" placeholder="Breve descripcion de la sucursal..." autocomplete="nope"></textarea>
+            <textarea formControlName="description" class="form-input form-textarea" rows="3" placeholder="Breve descripcion de la sucursal..." autocomplete="nope" maxlength="500"></textarea>
           </div>
 
           <div class="form-group">
             <label class="form-label">Telefono WhatsApp <span class="required">*</span></label>
-            <input type="text" formControlName="whatsappPhone" class="form-input" [class.error]="isInvalid('whatsappPhone')" placeholder="Ej: 04141234567" autocomplete="nope" />
+            <input type="text" formControlName="whatsappPhone" class="form-input" [class.error]="isInvalid('whatsappPhone')" placeholder="Ej: 04141234567" autocomplete="nope" maxlength="12" inputmode="tel" />
             @if (hasError('whatsappPhone', 'required')) { <span class="form-error">El WhatsApp es obligatorio</span> }
           </div>
 
           <div class="form-group">
             <label class="form-label">Telefono Fijo</label>
-            <input type="text" formControlName="landlinePhone" class="form-input" placeholder="Ej: 02121234567" autocomplete="nope" />
+            <input type="text" formControlName="landlinePhone" class="form-input" placeholder="Ej: 02121234567" autocomplete="nope" maxlength="12" inputmode="tel" />
           </div>
         </div>
 
@@ -66,7 +66,7 @@
           <p class="subsection-hint">Clic derecho en Google Maps - "Copiar coordenadas" y pegalas aqui</p>
           <div class="form-group" style="max-width: 400px;">
             <label class="form-label">Coordenadas</label>
-            <input type="text" formControlName="coordinatesRaw" class="form-input" placeholder="Ej: 10.4806, -66.9036" autocomplete="nope" />
+            <input type="text" formControlName="coordinatesRaw" class="form-input" placeholder="Ej: 10.4806, -66.9036" autocomplete="nope" maxlength="50" />
           </div>
         </div>
 

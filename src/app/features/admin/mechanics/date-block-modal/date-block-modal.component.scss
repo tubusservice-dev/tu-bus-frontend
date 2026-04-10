@@ -1,0 +1,73 @@
+.modal-overlay {
+  @apply fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4;
+}
+
+.modal-content {
+  @apply bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md;
+}
+
+.modal-header {
+  @apply flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-700;
+
+  h3 {
+    @apply text-lg font-semibold text-gray-900 dark:text-white;
+  }
+}
+
+.close-btn {
+  @apply p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 transition-colors;
+}
+
+.modal-error {
+  @apply mx-5 mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm rounded-lg;
+}
+
+.modal-body {
+  @apply p-5 space-y-4;
+}
+
+.form-row {
+  @apply grid grid-cols-2 gap-3;
+}
+
+.form-group {
+  label {
+    @apply block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1;
+  }
+
+  input[type="date"],
+  input[type="time"],
+  input[type="text"] {
+    @apply w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg;
+    @apply text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent;
+  }
+}
+
+.required {
+  @apply text-red-500;
+}
+
+.toggle-row {
+  @apply flex items-center gap-2 cursor-pointer;
+
+  input[type="checkbox"] {
+    @apply w-4 h-4 text-red-600 rounded focus:ring-red-500;
+  }
+
+  span {
+    @apply text-sm text-gray-700 dark:text-gray-300;
+  }
+}
+
+.modal-actions {
+  @apply flex gap-3 justify-end pt-2;
+}
+
+.btn-cancel {
+  @apply px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors;
+}
+
+.btn-submit {
+  @apply px-4 py-2 text-sm font-medium text-white bg-red-700 hover:bg-red-800 rounded-lg transition-colors;
+  @apply disabled:opacity-50 disabled:cursor-not-allowed;
+}

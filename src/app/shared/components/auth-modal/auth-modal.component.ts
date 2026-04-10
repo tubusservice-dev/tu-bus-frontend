@@ -30,6 +30,12 @@ export class AuthModalComponent implements OnInit, OnDestroy {
   protected readonly currentStep = signal(1);
   protected readonly isJuridical = signal(false);
 
+  // Password visibility
+  protected readonly showLoginPassword = signal(false);
+  protected readonly showRegPassword = signal(false);
+  protected readonly showRegConfirm = signal(false);
+  protected readonly passwordsMismatch = signal(false);
+
   // Login form
   protected readonly loginForm: FormGroup = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
@@ -50,7 +56,7 @@ export class AuthModalComponent implements OnInit, OnDestroy {
     documentType: ['', [Validators.required]],
     documentNumber: ['', [Validators.required]],
     birthDate: [''],
-    phone: ['', [Validators.required, Validators.pattern(/^(0414|0424|0412|0416|0426)\d{7}$/)]],
+    phone: ['', [Validators.required, Validators.pattern(/^(0414|0424|0412|0416|0426)-?\d{7}$/)]],
     companyName: [''],
   });
 
@@ -111,6 +117,13 @@ export class AuthModalComponent implements OnInit, OnDestroy {
   }
 
   // ========== Navigation ==========
+
+  onRegPasswordInput(): void {
+    this.errorMessage.set(null);
+    const pw = this.step1Form.get('password')?.value || '';
+    const confirm = this.step1Form.get('confirmPassword')?.value || '';
+    this.passwordsMismatch.set(pw.length > 0 && confirm.length > 0 && pw !== confirm);
+  }
 
   nextStep(): void {
     if (this.step1Form.invalid) {
