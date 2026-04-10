@@ -1,0 +1,59 @@
+.overlay-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  overflow-y: auto;
+  background-color: var(--bg-primary, #ffffff);
+  animation: overlayFadeIn 0.2s ease-out;
+}
+
+.overlay-top-bar {
+  position: sticky;
+  top: 0;
+  z-index: 1010;
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1.5rem;
+  background-color: var(--bg-primary, #ffffff);
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+}
+
+.overlay-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.15s;
+  background-color: transparent;
+  color: var(--text-primary, #1f2937);
+
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+
+  svg { width: 1.25rem; height: 1.25rem; }
+}
+
+:host-context(.dark) {
+  .overlay-backdrop {
+    background-color: var(--bg-primary, #0f172a);
+  }
+  .overlay-top-bar {
+    background-color: var(--bg-primary, #0f172a);
+    border-bottom-color: var(--border-color, #1e293b);
+  }
+  .overlay-back-btn {
+    color: #e5e7eb;
+    &:hover { background-color: rgba(255, 255, 255, 0.08); }
+  }
+}
+
+@keyframes overlayFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

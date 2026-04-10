@@ -1,14 +1,16 @@
 <div class="product-detail-container">
-  <!-- Breadcrumb -->
-  <nav class="breadcrumb">
-    <a routerLink="/">Inicio</a>
-    <span class="separator">/</span>
-    <a routerLink="/catalogo">Catálogo</a>
-    @if (product(); as prod) {
+  <!-- Breadcrumb (only in route mode, hidden in overlay) -->
+  @if (!overlayProductId) {
+    <nav class="breadcrumb">
+      <a routerLink="/">Inicio</a>
       <span class="separator">/</span>
-      <span class="current">{{ prod.name }}</span>
-    }
-  </nav>
+      <a routerLink="/catalogo">Catálogo</a>
+      @if (product(); as prod) {
+        <span class="separator">/</span>
+        <span class="current">{{ prod.name }}</span>
+      }
+    </nav>
+  }
 
   <!-- Loading State -->
   @if (isLoading()) {
@@ -290,7 +292,7 @@
         <!-- Vista móvil: scroll horizontal con mini cards -->
         <div class="related-scroll">
           @for (relatedProduct of relatedProducts(); track relatedProduct.id) {
-            <a class="related-mini-card" [routerLink]="['/producto', relatedProduct.id]">
+            <a class="related-mini-card" [routerLink]="['/producto', relatedProduct.id]" (click)="onRelatedProductClick(relatedProduct.id, $event)">
               <div class="mini-card-image">
                 <img [src]="relatedProduct.images[0]" [alt]="relatedProduct.name" (error)="onImageError($event)" />
               </div>

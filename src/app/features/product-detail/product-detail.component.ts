@@ -1,9 +1,10 @@
-import { Component, OnInit, inject, signal, computed, DestroyRef, effect } from '@angular/core';
+import { Component, OnInit, OnChanges, SimpleChanges, Input, inject, signal, computed, DestroyRef, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Location } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ProductService } from '../../core/services/product.service';
+import { ProductDetailOverlayService } from '../../core/services/product-detail-overlay.service';
 import { CartService } from '../../core/services/cart.service';
 import { AuthService } from '../../core/services/auth.service';
 import { LocationService } from '../../core/services/location.service';
@@ -24,7 +25,8 @@ const PLACEHOLDER_IMAGE = 'https://placehold.co/400x400/e5e7eb/9ca3af?text=Sin+i
   templateUrl: './product-detail.component.html',
   styleUrl: './product-detail.component.scss',
 })
-export class ProductDetailComponent implements OnInit {
+export class ProductDetailComponent implements OnInit, OnChanges {
+  @Input() overlayProductId: string | null = null;
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly location = inject(Location);
@@ -35,6 +37,7 @@ export class ProductDetailComponent implements OnInit {
   private readonly branchProductService = inject(BranchProductService);
   protected readonly exchangeRateService = inject(ExchangeRateService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly overlayService = inject(ProductDetailOverlayService);
 
   constructor() {
     // Re-load stock and related products when location resolves after OAuth redirect
@@ -146,6 +149,13 @@ export class ProductDetailComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    // Overlay mode: product ID provided via input
+    if (this.overlayProductId) {
+      this.loadProduct(this.overlayProductId);
+      return;
+    }
+
+    // Route mode: existing behavior
     this.route.params
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((params) => {
@@ -157,6 +167,12 @@ export class ProductDetailComponent implements OnInit {
           this.isLoading.set(false);
         }
       });
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['overlayProductId'] && !changes['overlayProductId'].firstChange && this.overlayProductId) {
+      this.loadProduct(this.overlayProductId);
+    }
   }
 
   private loadProduct(id: string): void {
@@ -359,7 +375,19 @@ export class ProductDetailComponent implements OnInit {
 
   // Navigation
   goBack(): void {
-    this.location.back();
+    if (this.overlayProductId) {
+      this.overlayService.close();
+    } else {
+      this.location.back();
+    }
+  }
+
+  onRelatedProductClick(productId: string, event: Event): void {
+    if (this.overlayProductId) {
+      event.preventDefault();
+      event.stopPropagation();
+      this.overlayService.open(productId);
+    }
   }
 
   // Template helpers
