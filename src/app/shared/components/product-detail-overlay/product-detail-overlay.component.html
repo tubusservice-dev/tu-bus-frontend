@@ -1,0 +1,196 @@
+<div class="overlay-backdrop">
+  <!-- Top bar with back button -->
+  <div class="overlay-top-bar">
+    <button type="button" class="overlay-back-btn" (click)="close()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+      </svg>
+      <span>Volver</span>
+    </button>
+  </div>
+
+  <!-- Product detail content (same layout as product-detail page) -->
+  <div class="product-detail-container">
+    <!-- Loading State -->
+    @if (isLoading()) {
+      <div class="loading-container">
+        <div class="loading-grid">
+          <div class="skeleton-gallery">
+            <div class="skeleton-main"></div>
+            <div class="skeleton-thumbs">
+              @for (i of [1, 2, 3, 4]; track i) { <div class="skeleton-thumb"></div> }
+            </div>
+          </div>
+          <div class="skeleton-info">
+            <div class="skeleton-title"></div>
+            <div class="skeleton-price"></div>
+            <div class="skeleton-text"></div>
+            <div class="skeleton-text short"></div>
+            <div class="skeleton-button"></div>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Error State -->
+    @if (error()) {
+      <div class="error-container">
+        <div class="error-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+          </svg>
+        </div>
+        <h2>{{ error() }}</h2>
+        <p>El producto que buscas no existe o ha sido eliminado.</p>
+        <button class="btn-primary" (click)="close()">Volver</button>
+      </div>
+    }
+
+    <!-- Product Content -->
+    @if (!isLoading() && !error() && product(); as prod) {
+      <div class="product-grid">
+        <!-- Gallery -->
+        <div class="gallery-section">
+          <div class="main-image-container">
+            @if (hasDiscount()) { <div class="discount-badge">-{{ discountPercentage() }}%</div> }
+            @if (isOutOfStock()) { <div class="out-of-stock-overlay"><span>Agotado</span></div> }
+            <img [src]="selectedImage()" [alt]="prod.name" (error)="onImageError($event)" class="main-image" />
+            @if (images().length > 1) {
+              <button class="nav-arrow prev" (click)="prevImage()">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
+              </button>
+              <button class="nav-arrow next" (click)="nextImage()">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
+              </button>
+            }
+          </div>
+          @if (images().length > 1) {
+            <div class="thumbnails">
+              @for (img of images(); track img; let i = $index) {
+                <button class="thumbnail" [class.active]="i === selectedImageIndex()" (click)="selectImage(i)">
+                  <img [src]="img" [alt]="'Imagen ' + (i + 1)" (error)="onImageError($event)" />
+                </button>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- Info -->
+        <div class="info-section">
+          <div class="meta-tags">
+            @if (prod.categories?.length) {
+              @for (cat of prod.categories; track $index) {
+                <span class="tag category">{{ getCategoryName(cat) }}</span>
+              }
+            }
+          </div>
+
+          <h1 class="product-name">{{ prod.name }}</h1>
+          @if (prod.sku) { <p class="sku">SKU: {{ prod.sku }}</p> }
+
+          <!-- Price -->
+          <div class="price-section">
+            <span class="price-label">Precio</span>
+            <div class="price-values">
+              <span class="current-price">${{ prod.price | number:'1.2-2' }}</span>
+              @if (hasDiscount()) { <span class="compare-price">${{ prod.comparePrice | number:'1.2-2' }}</span> }
+              @if (exchangeRateService.showBsPrice()) {
+                <span class="price-bs-detail">{{ exchangeRateService.formatBsPrice(prod.price) }}</span>
+              }
+            </div>
+          </div>
+
+          <!-- Stock -->
+          <div class="stock-info">
+            @if (isLoadingStock()) {
+              <span class="stock-loading">Verificando stock...</span>
+            } @else if (isOutOfStock()) {
+              <span class="out-of-stock-text">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                Agotado
+              </span>
+            } @else {
+              <span class="in-stock">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                {{ productStock() }} disponibles
+                @if (bestBranchName()) { <span class="branch-hint">en {{ bestBranchName() }}</span> }
+              </span>
+            }
+          </div>
+
+          <!-- Cart info -->
+          @if (quantityInCart() > 0) {
+            <div class="cart-info">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" /></svg>
+              <span>Ya tienes {{ quantityInCart() }} en tu carrito</span>
+              @if (availableStock() > 0) { <span class="available-text">({{ availableStock() }} disponibles para agregar)</span> }
+            </div>
+          }
+
+          <!-- Quantity + Add to cart -->
+          <div class="add-to-cart-section">
+            <div class="quantity-selector" [class.disabled]="availableStock() === 0">
+              <button class="qty-btn" (click)="decrementQuantity()" [disabled]="!canRemove()">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12h-15" /></svg>
+              </button>
+              <span class="qty-value">{{ quantity() }}</span>
+              <button class="qty-btn" (click)="incrementQuantity()" [disabled]="!canAddMore()">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+              </button>
+            </div>
+            <div class="add-to-cart-container">
+              <button class="btn-add-to-cart" [class.adding]="isAddingToCart()" [class.added]="justAddedToCart()" [disabled]="isOutOfStock() || !canAddToCart() || isAddingToCart()" (click)="addToCart()">
+                @if (isAddingToCart()) {
+                  <svg class="spinner" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-dasharray="31.4 31.4" /></svg>
+                  Agregando...
+                } @else if (justAddedToCart()) {
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                  ¡Agregado!
+                } @else if (isOutOfStock()) {
+                  Agotado
+                } @else if (availableStock() === 0) {
+                  Máximo en carrito
+                } @else {
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" /></svg>
+                  Agregar al carrito
+                }
+              </button>
+              @if (showStockError()) { <div class="stock-error-message">{{ stockErrorMessage() }}</div> }
+            </div>
+          </div>
+
+          <!-- Description -->
+          @if (prod.description) {
+            <div class="description-section">
+              <h3>Descripción</h3>
+              <p>{{ prod.description }}</p>
+            </div>
+          }
+
+          <!-- Details -->
+          <div class="details-section">
+            <h3>Detalles del producto</h3>
+            <div class="details-grid">
+              @if (prod.brand) { <div class="detail-item"><span class="label">Marca</span><span class="value">{{ getBrandName(prod.brand) }}</span></div> }
+              @if (prod.categories?.length) { <div class="detail-item"><span class="label">Categoría</span><span class="value">{{ getCategoryName(prod.categories[0]) }}</span></div> }
+              @if (prod.line) { <div class="detail-item"><span class="label">Línea</span><span class="value">{{ getLineName(prod.line) }}</span></div> }
+              @if (prod.productModel) { <div class="detail-item"><span class="label">Modelo</span><span class="value">{{ prod.productModel }}</span></div> }
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Related products -->
+      @if (relatedProducts().length > 0) {
+        <section class="related-section">
+          <h2>Productos relacionados</h2>
+          <div class="related-grid">
+            @for (relatedProduct of relatedProducts(); track relatedProduct.id) {
+              <app-product-card [product]="relatedProduct" [showAddToCart]="true" [linkToDetail]="true" />
+            }
+          </div>
+        </section>
+      }
+    }
+  </div>
+</div>

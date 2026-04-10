@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { ImageCarouselComponent } from '../image-carousel/image-carousel.component';
 import { CartService } from '../../../core/services/cart.service';
+import { ProductDetailOverlayService } from '../../../core/services/product-detail-overlay.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { ExchangeRateService } from '../../../core/services/exchange-rate.service';
 import { Line, Category, Brand } from '../../../models';
@@ -155,9 +156,11 @@ export class ProductCardComponent {
     }
   }
 
+  private readonly overlayService = inject(ProductDetailOverlayService);
+
   navigateToDetail(): void {
     if (this.linkToDetail) {
-      this.router.navigate(['/producto', this.product.id]);
+      this.overlayService.open(this.product.id);
     }
   }
 }

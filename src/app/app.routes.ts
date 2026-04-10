@@ -384,14 +384,7 @@ export const routes: Routes = [
           ),
         canActivate: [authGuard],
       },
-      // checkout/pago/detalles route removed - payment is now handled in the summary page
-      {
-        path: 'producto/:id',
-        loadComponent: () =>
-          import('./features/product-detail/product-detail.component').then(
-            (m) => m.ProductDetailComponent
-          ),
-      },
+      // Product detail is now handled by ProductDetailOverlayComponent (modal)
       {
         path: 'perfil',
         loadComponent: () =>

@@ -1,1 +1,4 @@
 <router-outlet />
+@if (overlayService.isOpen()) {
+  <app-product-detail-overlay />
+}

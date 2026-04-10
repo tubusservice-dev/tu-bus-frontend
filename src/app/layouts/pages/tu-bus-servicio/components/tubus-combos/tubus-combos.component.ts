@@ -2,9 +2,9 @@ import { Component, DestroyRef, inject, signal, computed, effect, untracked } fr
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Subject, switchMap } from 'rxjs';
-import { ProductService, ProductQueryParams } from '../../../../../core/services/product.service';
+import { ProductService } from '../../../../../core/services/product.service';
 import { LocationService } from '../../../../../core/services/location.service';
+import { ProductDetailOverlayService } from '../../../../../core/services/product-detail-overlay.service';
 import { Product, VehicleType, VEHICLE_TYPE_LABELS } from '../../../../../models/product.model';
 
 @Component({
@@ -17,21 +17,17 @@ import { Product, VehicleType, VEHICLE_TYPE_LABELS } from '../../../../../models
 export class TubusCombosComponent {
   private readonly productService = inject(ProductService);
   private readonly locationService = inject(LocationService);
+  private readonly overlayService = inject(ProductDetailOverlayService);
   private readonly destroyRef = inject(DestroyRef);
 
-  private readonly fetchTrigger$ = new Subject<ProductQueryParams>();
+  // All products fetched once
+  private allProducts: Product[] = [];
 
   // Signals
   protected readonly products = signal<Product[]>([]);
-  protected readonly totalProducts = signal<number>(0);
   protected readonly selectedFilter = signal<string>('all');
   protected readonly isLoading = signal(true);
 
-  // Whether we're in fallback mode (no featured products exist)
-  private readonly useFallback = signal(false);
-  private hasFeaturedChecked = false;
-
-  // Computed: static filters from VehicleType enum
   protected readonly filters = computed(() => {
     const vehicleTypeFilters = Object.entries(VEHICLE_TYPE_LABELS)
       .filter(([key]) => key !== VehicleType.ALL)
@@ -39,95 +35,124 @@ export class TubusCombosComponent {
     return [{ id: 'all', label: 'Todos' }, ...vehicleTypeFilters];
   });
 
-  // Computed: show "view all" button based on backend total
-  protected readonly showViewAllButton = computed(() => this.totalProducts() > 4);
+  protected readonly showViewAllButton = computed(() => this.allProducts.length > 4);
 
   constructor() {
-    // Single subscription with switchMap to cancel in-flight requests
-    this.fetchTrigger$
-      .pipe(
-        switchMap(params => this.productService.getAll(params)),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe({
-        next: (response) => {
-          if (response.success) {
-            let data = response.data;
-            const total = response.pagination?.total || data.length;
-
-            // First load with "all" filter: check if featured products exist
-            if (!this.hasFeaturedChecked && this.selectedFilter() === 'all') {
-              this.hasFeaturedChecked = true;
-              if (total === 0) {
-                this.useFallback.set(true);
-                this.loadProducts();
-                return;
-              }
-            }
-
-            // When a specific vehicleType filter is active, prioritize products
-            // that actually match that type over generic "all" products
-            const filter = this.selectedFilter();
-            if (filter !== 'all') {
-              const specific = data.filter(p => p.vehicleType === filter);
-              if (specific.length >= 4) {
-                data = specific.slice(0, 4);
-              } else if (specific.length > 0) {
-                // Fill remaining with generic products
-                const generic = data.filter(p => p.vehicleType === 'all' || p.vehicleType !== filter);
-                data = [...specific, ...generic].slice(0, 4);
-              }
-            }
-
-            this.products.set(data);
-            this.totalProducts.set(total);
-          }
-          this.isLoading.set(false);
-        },
-        error: () => {
-          this.products.set([]);
-          this.totalProducts.set(0);
-          this.isLoading.set(false);
-        },
-      });
-
-    // Reactive effect: triggers on location resolved OR filter change
+    // Load once when location resolves
     effect(() => {
       const resolved = this.locationService.isResolved();
-      const filter = this.selectedFilter();
-
       if (!resolved) return;
 
-      untracked(() => {
-        this.isLoading.set(true);
-        this.loadProducts();
-      });
+      untracked(() => this.fetchAllProducts());
+    });
+
+    // Re-filter locally when filter changes (no new API call)
+    effect(() => {
+      const filter = this.selectedFilter();
+      // Only apply if products already loaded
+      if (this.allProducts.length > 0) {
+        untracked(() => this.applyFilter(filter));
+      }
     });
   }
 
-  private loadProducts(): void {
+  private fetchAllProducts(): void {
+    this.isLoading.set(true);
     const branchIds = this.locationService.branchIds();
-    const filter = this.selectedFilter();
 
-    const params: ProductQueryParams = {
+    // First try featured products
+    this.productService.getAll({
       isActive: true,
-      limit: filter !== 'all' ? 12 : 4,
+      isFeatured: true,
+      limit: 50,
       branchIds: branchIds.length > 0 ? branchIds.join(',') : undefined,
-    };
+    }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (response) => {
+        if (response.success && response.data.length > 0) {
+          this.allProducts = this.deduplicate(response.data);
+          this.applyFilter(this.selectedFilter());
+          this.isLoading.set(false);
+        } else {
+          // No featured — fallback: fetch all active products
+          this.fetchFallbackProducts(branchIds);
+        }
+      },
+      error: () => {
+        this.fetchFallbackProducts(branchIds);
+      },
+    });
+  }
 
-    if (!this.useFallback()) {
-      params.isFeatured = true;
+  private fetchFallbackProducts(branchIds: string[]): void {
+    this.productService.getAll({
+      isActive: true,
+      limit: 50,
+      branchIds: branchIds.length > 0 ? branchIds.join(',') : undefined,
+    }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.allProducts = this.shuffle(this.deduplicate(response.data));
+        }
+        this.applyFilter(this.selectedFilter());
+        this.isLoading.set(false);
+      },
+      error: () => {
+        this.allProducts = [];
+        this.products.set([]);
+        this.isLoading.set(false);
+      },
+    });
+  }
+
+  private applyFilter(filter: string): void {
+    let filtered: Product[];
+
+    if (filter === 'all') {
+      filtered = this.allProducts;
+    } else {
+      // Products specifically for this vehicle type
+      const specific = this.allProducts.filter(p => p.vehicleType === filter);
+      // Products for all vehicle types
+      const generic = this.allProducts.filter(p => p.vehicleType === 'all');
+      // Prioritize specific, fill with generic, no duplicates
+      const seen = new Set<string>();
+      filtered = [];
+      for (const p of [...specific, ...generic]) {
+        if (!seen.has(p.id)) {
+          seen.add(p.id);
+          filtered.push(p);
+        }
+      }
     }
 
-    if (filter !== 'all') {
-      params.vehicleType = filter as VehicleType;
-    }
+    this.products.set(filtered.slice(0, 4));
+  }
 
-    this.fetchTrigger$.next(params);
+  private deduplicate(products: Product[]): Product[] {
+    const seen = new Set<string>();
+    return products.filter(p => {
+      if (seen.has(p.id)) return false;
+      seen.add(p.id);
+      return true;
+    });
+  }
+
+  /** Fisher-Yates shuffle */
+  private shuffle<T>(array: T[]): T[] {
+    const arr = [...array];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
   }
 
   setFilter(filterId: string): void {
     this.selectedFilter.set(filterId);
+  }
+
+  openProductDetail(productId: string): void {
+    this.overlayService.open(productId);
   }
 
   formatPrice(price: number): string {
