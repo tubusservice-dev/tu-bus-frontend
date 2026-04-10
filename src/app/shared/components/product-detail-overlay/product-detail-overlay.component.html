@@ -68,7 +68,7 @@
             <div class="thumbnails">
               @for (img of images(); track img; let i = $index) {
                 <button class="thumbnail" [class.active]="i === selectedImageIndex()" (click)="selectImage(i)">
-                  <img [src]="img" [alt]="'Imagen ' + (i + 1)" (error)="onImageError($event)" />
+                  <img [src]="img" [alt]="'Imagen ' + (i + 1)" (error)="onImageError($event)" loading="lazy" />
                 </button>
               }
             </div>

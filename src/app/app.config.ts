@@ -7,46 +7,38 @@ import {
 } from '@angular/core';
 import { provideRouter, withViewTransitions, withInMemoryScrolling } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
-
 import { routes } from './app.routes';
 import { authInterceptor } from './core/interceptors';
 import { AuthService, SettingsService } from './core/services';
 import { ExchangeRateService } from './core/services/exchange-rate.service';
 
 /**
- * Inicializa la sesión del usuario si existe un token guardado
+ * Initializes user session if a stored token exists (non-blocking)
  */
-function initializeAuth(): () => Promise<void> {
+function initializeAuth(): () => void {
   const authService = inject(AuthService);
 
-  return async () => {
+  return () => {
     const token = authService.getToken();
     if (token) {
-      try {
-        await firstValueFrom(authService.loadUserProfile());
-      } catch {
-        // Si falla, el token es inválido - se limpia en el servicio
-      }
+      authService.loadUserProfile().subscribe();
     }
   };
 }
 
 /**
- * Carga las configuraciones globales de la aplicación
+ * Loads global application settings (non-blocking)
  */
-function initializeSettings(): () => Promise<void> {
+function initializeSettings(): () => void {
   const settingsService = inject(SettingsService);
   const exchangeRateService = inject(ExchangeRateService);
 
-  return async () => {
-    try {
-      await firstValueFrom(settingsService.loadSettings());
-      // Load exchange rate after settings (non-blocking)
-      exchangeRateService.loadCurrentRate();
-    } catch {
-      // Si falla, usa valores por defecto (ya manejado en el servicio)
-    }
+  return () => {
+    settingsService.loadSettings().subscribe({
+      next: () => {
+        exchangeRateService.loadCurrentRate();
+      }
+    });
   };
 }
 

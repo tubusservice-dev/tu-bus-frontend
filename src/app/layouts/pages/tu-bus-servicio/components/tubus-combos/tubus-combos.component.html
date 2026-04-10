@@ -52,7 +52,7 @@
             <!-- Image -->
             <div class="combo-image">
               @if (getProductImage(product)) {
-                <img [src]="getProductImage(product)" [alt]="product.name" />
+                <img [src]="getProductImage(product)" [alt]="product.name" loading="lazy" />
               } @else {
                 <div class="image-placeholder">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor">

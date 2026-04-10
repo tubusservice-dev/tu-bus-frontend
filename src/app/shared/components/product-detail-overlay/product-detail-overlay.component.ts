@@ -187,7 +187,7 @@ export class ProductDetailOverlayComponent {
 
   private loadRelatedProducts(currentProduct: Product): void {
     const firstCat = currentProduct.categories?.[0];
-    const catId = typeof firstCat === 'string' ? firstCat : firstCat?.id;
+    const catId = typeof firstCat === 'string' ? firstCat : (firstCat?.id || (firstCat as any)?._id);
     if (!catId) return;
 
     const branchIds = this.locationService.branchIds();

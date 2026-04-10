@@ -13,7 +13,7 @@
         @for (brand of brands(); track brand.id) {
           <div class="brand-item">
             @if (brand.image) {
-              <img [src]="brand.image" [alt]="brand.name" class="brand-image" />
+              <img [src]="brand.image" [alt]="brand.name" class="brand-image" loading="lazy" />
             } @else {
               <div class="brand-placeholder">
                 <span>{{ brand.name.charAt(0) }}</span>
