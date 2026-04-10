@@ -557,8 +557,13 @@
 
 // Vista desktop: grid con product cards
 .related-grid {
-  @apply grid justify-center gap-6;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 280px));
+  @apply grid gap-4;
+  grid-template-columns: 1fr;
+
+  @media (min-width: 768px) {
+    @apply gap-6 justify-center;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 280px));
+  }
 
   app-product-card {
     @apply w-full h-full;

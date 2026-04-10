@@ -36,8 +36,12 @@
 // ===== IMAGEN =====
 .card-image {
   @apply relative overflow-hidden flex-shrink-0;
-  height: 200px;
+  height: 150px;
   background-color: var(--bg-secondary);
+
+  @media (min-width: 640px) {
+    height: 200px;
+  }
 
   app-image-carousel ::ng-deep img {
     transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
@@ -82,7 +86,7 @@
 
 // ===== CONTENIDO =====
 .card-content {
-  @apply p-4 flex flex-col flex-1;
+  @apply p-2.5 sm:p-4 flex flex-col flex-1;
   min-height: 0;
 }
 
@@ -113,9 +117,13 @@
   @apply text-xs leading-relaxed mb-1;
   color: var(--text-secondary);
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
+
+  @media (min-width: 640px) {
+    -webkit-line-clamp: 2;
+  }
 }
 
 .card-model {
@@ -129,7 +137,7 @@
 
 // ===== FOOTER =====
 .card-footer {
-  @apply flex items-stretch gap-3 pt-4 mt-1 pb-1;
+  @apply flex items-stretch gap-2 sm:gap-3 pt-3 sm:pt-4 mt-1 pb-1;
   border-top: 1px solid var(--border-color);
 }
 
@@ -149,8 +157,12 @@
 
 .price {
   @apply font-black;
-  font-size: 24px;
+  font-size: 18px;
   color: var(--text-primary);
+
+  @media (min-width: 640px) {
+    font-size: 24px;
+  }
 
   &.discount {
     color: #dc2626;
@@ -169,12 +181,16 @@
 }
 
 .btn-cart {
-  @apply inline-flex items-center justify-center gap-1.5 w-full;
+  @apply inline-flex items-center justify-center gap-1 sm:gap-1.5 w-full;
   @apply text-white rounded-lg;
-  @apply text-sm font-semibold;
+  @apply text-xs sm:text-sm font-semibold;
   @apply disabled:opacity-40 disabled:cursor-not-allowed;
   @apply transition-all duration-200;
-  padding: 10px 12px;
+  padding: 8px 8px;
+
+  @media (min-width: 640px) {
+    padding: 10px 12px;
+  }
   background-color: var(--accent-primary);
 
   &:hover:not(:disabled) {
