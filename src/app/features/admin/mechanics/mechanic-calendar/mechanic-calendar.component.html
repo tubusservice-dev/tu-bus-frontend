@@ -1,0 +1,209 @@
+<div class="calendar-page">
+  <header class="page-header">
+    <a routerLink="/admin/mechanics" class="back-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+      </svg>
+      Volver a mecanicos
+    </a>
+    <h1 class="page-title">Calendario: {{ mechanic()?.name || 'Cargando...' }}</h1>
+    @if (mechanic()) {
+      <p class="page-subtitle">{{ mechanic()!.serviceDurationMinutes }}min por servicio &bull; {{ mechanic()!.whatsapp }}</p>
+    }
+  </header>
+
+  @if (isLoading()) {
+    <div class="loading-container"><div class="loading-spinner"></div><span>Cargando calendario...</span></div>
+  } @else {
+    <!-- View Toggle + Navigation -->
+    <div class="toolbar">
+      <div class="view-toggle">
+        <button [class.active]="viewMode() === 'month'" (click)="viewMode.set('month')">Mensual</button>
+        <button [class.active]="viewMode() === 'week'" (click)="viewMode.set('week')">Semanal</button>
+      </div>
+      <button class="btn-today" (click)="goToToday()">Hoy</button>
+      <div class="nav-group">
+        @if (viewMode() === 'month') {
+          <button (click)="prevMonth()" class="nav-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
+          </button>
+          <h2 class="nav-label">{{ monthName() }}</h2>
+          <button (click)="nextMonth()" class="nav-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
+          </button>
+        } @else {
+          <button (click)="prevWeek()" class="nav-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
+          </button>
+          <h2 class="nav-label">{{ weekLabel() }}</h2>
+          <button (click)="nextWeek()" class="nav-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="calendar-layout">
+      <!-- ========== MONTHLY VIEW ========== -->
+      @if (viewMode() === 'month') {
+        <div class="calendar-card">
+          <div class="weekday-headers">
+            @for (day of weekDayHeaders; track day) {
+              <div class="weekday-header">{{ day }}</div>
+            }
+          </div>
+          <div class="calendar-grid">
+            @for (day of calendarDays(); track $index) {
+              <div class="calendar-cell"
+                [class.other-month]="!day.isCurrentMonth"
+                [class.today]="day.isToday"
+                [class.closed]="day.isClosed && day.isCurrentMonth"
+                [class.blocked]="day.isBlocked && day.isCurrentMonth"
+                [class.has-assignments]="day.assignments.length > 0"
+                [class.selected]="selectedDay()?.date?.getTime() === day.date.getTime()"
+                (click)="selectDay(day)">
+                <span class="day-number">{{ day.dayNumber }}</span>
+                @if (day.isCurrentMonth && day.usedSlots > 0) {
+                  <span class="capacity-badge">{{ day.usedSlots }}</span>
+                }
+                @if (day.isCurrentMonth && day.isClosed) {
+                  <span class="closed-label">Cerrado</span>
+                }
+                @if (day.isBlocked && day.isCurrentMonth) {
+                  <span class="block-indicator">B</span>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Date Blocks Management -->
+          <div class="block-actions">
+            <button type="button" class="btn-add-block" (click)="openDateBlockModal()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+              Agregar Bloqueo
+            </button>
+          </div>
+          @if (mechanic()?.dateBlocks?.length) {
+            <div class="date-blocks-list">
+              <h4 class="blocks-title">Bloqueos activos</h4>
+              @for (block of mechanic()!.dateBlocks; track $index; let i = $index) {
+                <div class="block-item">
+                  <div class="block-info">
+                    <span class="block-dates">{{ block.startDate | date:'dd/MM/yyyy' }}@if (block.startDate !== block.endDate) { - {{ block.endDate | date:'dd/MM/yyyy' }}}</span>
+                    @if (block.reason) { <span class="block-reason">{{ block.reason }}</span> }
+                    <span class="block-type">{{ block.isAllDay ? 'Todo el dia' : block.startTime + ' - ' + block.endTime }}</span>
+                  </div>
+                  <button type="button" class="btn-remove-block" (click)="removeDateBlock(i)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+                  </button>
+                </div>
+              }
+            </div>
+          }
+
+          <div class="calendar-legend">
+            <div class="legend-item"><span class="legend-dot available"></span> Disponible</div>
+            <div class="legend-item"><span class="legend-dot scheduled"></span> Programado</div>
+            <div class="legend-item"><span class="legend-dot completed"></span> Completado</div>
+            <div class="legend-item"><span class="legend-dot blocked"></span> Bloqueado</div>
+            <div class="legend-item"><span class="legend-dot closed-dot"></span> Cerrado</div>
+          </div>
+        </div>
+
+        <!-- Day Detail Panel -->
+        <div class="detail-panel">
+          @if (selectedDay()) {
+            <h3 class="detail-title">{{ selectedDay()!.date | date:'dd/MM/yyyy' }}</h3>
+            @if (selectedDay()!.isClosed) {
+              <div class="detail-empty">Dia cerrado</div>
+            } @else if (selectedDay()!.isBlocked) {
+              <div class="detail-blocked">
+                <span class="blocked-badge">Bloqueado</span>
+                @if (selectedDay()!.blockReason) { <p>{{ selectedDay()!.blockReason }}</p> }
+              </div>
+            } @else {
+              <div class="slots-list">
+                @for (slot of selectedDaySlots(); track slot.startTime) {
+                  <div class="slot-item" [class]="'slot-' + slot.status">
+                    <div class="slot-time">{{ slot.startTime }} - {{ slot.endTime }}</div>
+                    <div class="slot-status">
+                      @if (slot.status === 'available') {
+                        <span class="badge badge-green">Disponible</span>
+                      } @else if (slot.status === 'assigned' && slot.assignment) {
+                        <span class="badge" [class]="getStatusClass(slot.assignment)">{{ getStatusLabel(slot.assignment.status) }}</span>
+                        @if (getOrderNumber(slot.assignment)) {
+                          <span class="slot-order">{{ getOrderNumber(slot.assignment) }}</span>
+                        }
+                      } @else if (slot.status === 'blocked') {
+                        <span class="badge badge-gray">Bloqueado</span>
+                      }
+                    </div>
+                  </div>
+                }
+                @if (selectedDaySlots().length === 0) {
+                  <div class="detail-empty">No hay slots para este dia</div>
+                }
+              </div>
+            }
+          } @else {
+            <div class="detail-empty">Selecciona un dia para ver los detalles</div>
+          }
+        </div>
+      }
+
+      <!-- ========== WEEKLY VIEW ========== -->
+      @if (viewMode() === 'week') {
+        <div class="week-card">
+          <div class="week-grid">
+            <!-- Time column -->
+            <div class="week-time-col">
+              <div class="week-header-cell"></div>
+              @for (label of weekTimeLabels(); track label) {
+                <div class="week-time-label">{{ label }}</div>
+              }
+            </div>
+
+            <!-- Day columns -->
+            @for (day of weekDays(); track day.dayNumber) {
+              <div class="week-day-col" [class.today-col]="day.isToday" [class.closed-col]="day.isClosed || day.isBlocked">
+                <div class="week-header-cell">
+                  <span class="week-day-name">{{ day.dayName }}</span>
+                  <span class="week-day-date" [class.today-date]="day.isToday">{{ day.dayNumber }}</span>
+                  <span class="week-day-month">{{ day.monthName }}</span>
+                </div>
+                <div class="week-slots-container">
+                  @if (day.isClosed) {
+                    <div class="week-closed-overlay">Cerrado</div>
+                  } @else if (day.isBlocked) {
+                    <div class="week-blocked-overlay">Bloqueado</div>
+                  } @else {
+                    @for (slot of day.slots; track slot.startTime) {
+                      <div class="week-slot"
+                        [class]="'week-slot-' + slot.status"
+                        [style.top.%]="getSlotTopPercent(slot)"
+                        [style.height.%]="getSlotHeightPercent(slot)">
+                        <span class="week-slot-time">{{ slot.startTime }}</span>
+                        @if (slot.status === 'assigned' && slot.assignment) {
+                          <span class="week-slot-label">{{ getOrderNumber(slot.assignment) || getStatusLabel(slot.assignment.status) }}</span>
+                        } @else if (slot.status === 'available') {
+                          <span class="week-slot-label">Disponible</span>
+                        }
+                      </div>
+                    }
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+
+    <app-date-block-modal
+      [mechanicId]="mechanicId()"
+      [isOpen]="showDateBlockModal()"
+      (closed)="showDateBlockModal.set(false)"
+      (saved)="onDateBlockSaved($event)"
+    />
+  }
+</div>

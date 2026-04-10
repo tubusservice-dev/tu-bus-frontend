@@ -93,6 +93,24 @@
   }
 }
 
+  .clear-section-btn {
+    @apply ml-auto flex items-center gap-1 text-xs font-normal px-3 py-1.5 rounded-lg;
+    color: #6b7280;
+    background: transparent;
+    border: 1px solid #d1d5db;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+
+    svg { @apply w-4 h-4; color: inherit; }
+
+    &:hover {
+      color: #ef4444;
+      border-color: #ef4444;
+      background: rgba(239, 68, 68, 0.05);
+    }
+  }
+
 .form-grid {
   @apply grid grid-cols-1 md:grid-cols-2 gap-4;
 }
@@ -204,6 +222,17 @@
     border-bottom-color: #374151;
 
     svg { color: var(--tubus-text-accent, #4d94ff); }
+  }
+
+  .clear-section-btn {
+    color: #9ca3af;
+    border-color: #4b5563;
+
+    &:hover {
+      color: #f87171;
+      border-color: #f87171;
+      background: rgba(239, 68, 68, 0.1);
+    }
   }
 
   .form-group label { color: #d1d5db; }

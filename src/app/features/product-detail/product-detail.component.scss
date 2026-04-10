@@ -252,7 +252,7 @@
   }
 
   .price-values {
-    @apply flex items-baseline gap-3;
+    @apply flex items-baseline gap-3 flex-wrap;
   }
 
   .compare-price {
@@ -264,17 +264,27 @@
     @apply text-3xl font-bold;
     color: var(--accent-primary);
   }
+
+  .price-bs-detail {
+    @apply text-base font-medium ml-auto;
+    color: #9ca3af;
+  }
 }
 
 .stock-info {
   @apply text-sm;
 
   .in-stock {
-    @apply flex items-center gap-1.5;
+    @apply flex items-center gap-1.5 flex-wrap;
     color: #16a34a;
 
     svg {
       @apply w-4 h-4;
+    }
+
+    .branch-hint {
+      @apply text-xs font-normal;
+      color: #6b7280;
     }
   }
 
@@ -540,13 +550,18 @@
   color: var(--accent-primary);
 }
 
+.mini-card-price-bs {
+  @apply block text-xs font-semibold;
+  color: #9ca3af;
+}
+
 // Vista desktop: grid con product cards
 .related-grid {
-  @apply hidden sm:flex flex-wrap justify-center gap-6;
+  @apply hidden sm:grid gap-6;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
 
   app-product-card {
-    @apply w-full sm:w-[calc(50%-12px)] lg:w-[calc(25%-18px)];
-    @apply max-w-[300px];
+    @apply w-full h-full;
   }
 }
 

@@ -2,6 +2,8 @@ import { Component, inject, computed, signal, OnInit, OnDestroy } from '@angular
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { AuthService, AdminNotificationService } from '../../../core/services';
+import { AdminNotificationsService } from '../../../core/services/admin-notifications.service';
+import { AdminNotification } from '../../../models/notification.model';
 import { environment } from '../../../../environments/environment';
 
 @Component({
@@ -15,6 +17,8 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   protected readonly notificationService = inject(AdminNotificationService);
+  protected readonly adminNotifications = inject(AdminNotificationsService);
+  protected readonly selectedNotification = signal<AdminNotification | null>(null);
 
   /** Nombre de la aplicación */
   protected readonly appName = environment.appName;
@@ -99,6 +103,12 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
       exact: false,
     },
     {
+      label: 'Sucursales',
+      icon: 'branch',
+      route: '/admin/branches',
+      exact: false,
+    },
+    {
       label: 'Mecanicos',
       icon: 'wrench',
       route: '/admin/mechanics',
@@ -118,12 +128,46 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     },
   ];
 
+  private originalBodyBg = '';
+
   ngOnInit(): void {
     this.notificationService.startPolling();
+    this.adminNotifications.startPolling();
+    this.originalBodyBg = document.body.style.backgroundColor;
+    this.updateBodyBg();
+    this.mutationObserver = new MutationObserver(() => this.updateBodyBg());
+    this.mutationObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+  }
+
+  private mutationObserver?: MutationObserver;
+
+  private updateBodyBg(): void {
+    const isDark = document.documentElement.classList.contains('dark');
+    document.body.style.backgroundColor = isDark ? '#111827' : '#f3f4f6';
   }
 
   ngOnDestroy(): void {
     this.notificationService.stopPolling();
+    this.adminNotifications.stopPolling();
+    document.body.style.backgroundColor = this.originalBodyBg;
+    this.mutationObserver?.disconnect();
+  }
+
+  openNotification(n: AdminNotification): void {
+    this.selectedNotification.set(n);
+    this.adminNotifications.closePopover();
+    if (!n.isRead) {
+      this.adminNotifications.markAsRead(n.id).subscribe();
+    }
+  }
+
+  closeNotification(): void {
+    this.selectedNotification.set(null);
+  }
+
+  getOrderId(n: AdminNotification): string {
+    if (n.relatedOrder && typeof n.relatedOrder === 'object') return n.relatedOrder.id || n.relatedOrder._id || '';
+    return String(n.relatedOrder || '');
   }
 
   /** Toggle del sidebar en móvil */

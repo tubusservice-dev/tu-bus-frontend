@@ -69,6 +69,7 @@
           <img
             [src]="selectedImage()"
             [alt]="prod.name"
+            (error)="onImageError($event)"
             class="main-image"
           />
 
@@ -96,7 +97,7 @@
                 [class.active]="i === selectedImageIndex()"
                 (click)="selectImage(i)"
               >
-                <img [src]="img" [alt]="'Imagen ' + (i + 1)" />
+                <img [src]="img" [alt]="'Imagen ' + (i + 1)" (error)="onImageError($event)" />
               </button>
             }
           </div>
@@ -126,35 +127,36 @@
         <div class="price-section">
           <span class="price-label">Precio</span>
           <div class="price-values">
+            <span class="current-price">${{ prod.price | number:'1.2-2' }}</span>
             @if (hasDiscount()) {
               <span class="compare-price">${{ prod.comparePrice | number:'1.2-2' }}</span>
             }
-            <span class="current-price">${{ prod.price | number:'1.2-2' }}</span>
+            @if (exchangeRateService.showBsPrice()) {
+              <span class="price-bs-detail">{{ exchangeRateService.formatBsPrice(prod.price) }}</span>
+            }
           </div>
         </div>
 
         <!-- Stock -->
-        <div class="stock-info" [class.low-stock]="prod.stock > 0 && prod.stock <= 5">
-          @if (prod.stock > 5) {
+        <div class="stock-info">
+          @if (isLoadingStock()) {
+            <span class="stock-loading">Verificando stock...</span>
+          } @else if (isOutOfStock()) {
+            <span class="out-of-stock-text">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
+              </svg>
+              Agotado
+            </span>
+          } @else {
             <span class="in-stock">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
               </svg>
-              En stock ({{ prod.stock }} disponibles)
-            </span>
-          } @else if (prod.stock > 0) {
-            <span class="low-stock-text">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-              </svg>
-              ¡Solo quedan {{ prod.stock }}!
-            </span>
-          } @else {
-            <span class="out-of-stock-text">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-              Agotado
+              {{ productStock() }} disponibles
+              @if (bestBranchName()) {
+                <span class="branch-hint">en {{ bestBranchName() }}</span>
+              }
             </span>
           }
         </div>
@@ -290,7 +292,7 @@
           @for (relatedProduct of relatedProducts(); track relatedProduct.id) {
             <a class="related-mini-card" [routerLink]="['/producto', relatedProduct.id]">
               <div class="mini-card-image">
-                <img [src]="relatedProduct.images[0]" [alt]="relatedProduct.name" />
+                <img [src]="relatedProduct.images[0]" [alt]="relatedProduct.name" (error)="onImageError($event)" />
               </div>
               <div class="mini-card-info">
                 <span class="mini-card-brand">{{ $any(relatedProduct.brand)?.name || '' }}</span>
@@ -299,6 +301,9 @@
                   <p class="mini-card-desc">{{ relatedProduct.description }}</p>
                 }
                 <span class="mini-card-price">${{ relatedProduct.price | number:'1.2-2' }}</span>
+                @if (exchangeRateService.showBsPrice()) {
+                  <span class="mini-card-price-bs">{{ exchangeRateService.formatBsPrice(relatedProduct.price) }}</span>
+                }
               </div>
             </a>
           }

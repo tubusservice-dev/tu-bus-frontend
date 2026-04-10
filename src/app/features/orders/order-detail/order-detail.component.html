@@ -1,0 +1,492 @@
+<div class="order-detail-page">
+  <!-- Header -->
+  <header class="page-header">
+    <div class="header-left">
+      <button type="button" class="btn-back" (click)="goBack()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+        </svg>
+        Mis Pedidos
+      </button>
+      @if (order(); as o) {
+        <div class="header-info">
+          <h1 class="page-title">Orden #{{ o.orderNumber }}</h1>
+          <span class="status-badge" [ngClass]="getStatusClass(o.status)">
+            {{ getStatusLabel(o.status) }}
+          </span>
+        </div>
+      }
+    </div>
+  </header>
+
+  <!-- Loading -->
+  @if (isLoading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <span>Cargando orden...</span>
+    </div>
+  }
+
+  <!-- Error -->
+  @else if (error()) {
+    <div class="error-state">
+      <p>{{ error() }}</p>
+      <button type="button" class="btn-back-link" (click)="goBack()">Volver a mis pedidos</button>
+    </div>
+  }
+
+  <!-- Content -->
+  @else if (order(); as o) {
+    <div class="detail-grid">
+      <!-- ===================== LEFT COLUMN ===================== -->
+      <div class="detail-column">
+
+        <!-- Productos -->
+        <section class="detail-card">
+          <h3 class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m21 7.5-9-5.25L3 7.5m18 0-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
+            </svg>
+            Productos ({{ o.items.length }})
+          </h3>
+          <div class="products-list">
+            @for (item of o.items; track item.product) {
+              <div class="product-row">
+                @if (item.image) {
+                  <img [src]="item.image" [alt]="item.name" class="product-img" />
+                }
+                <div class="product-info">
+                  <span class="product-name">{{ item.name }}</span>
+                  <span class="product-qty">x{{ item.quantity }} &middot; {{ item.price | currency:'USD' }} c/u</span>
+                </div>
+                <div class="product-total-col">
+                  <span class="product-total">{{ item.price * item.quantity | currency:'USD' }}</span>
+                  @if (exchangeRateService.showBsPrice()) {
+                    <span class="product-total-bs">{{ exchangeRateService.formatBsPrice(item.price * item.quantity) }}</span>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+          <div class="totals-section">
+            <div class="total-row">
+              <span>Subtotal</span>
+              <div class="total-row-values">
+                <span>{{ o.subtotal | currency:'USD' }}</span>
+                @if (exchangeRateService.showBsPrice()) {
+                  <span class="total-row-bs">{{ exchangeRateService.formatBsPrice(o.subtotal) }}</span>
+                }
+              </div>
+            </div>
+            <div class="total-row">
+              <span>Envío</span>
+              <div class="total-row-values">
+                <span>{{ o.shippingCost === 0 ? 'Gratis' : (o.shippingCost | currency:'USD') }}</span>
+                @if (exchangeRateService.showBsPrice() && o.shippingCost > 0) {
+                  <span class="total-row-bs">{{ exchangeRateService.formatBsPrice(o.shippingCost) }}</span>
+                }
+              </div>
+            </div>
+            <div class="total-row total-final">
+              <span>Total</span>
+              <div class="total-row-values">
+                <span>{{ o.total | currency:'USD' }}</span>
+                @if (exchangeRateService.showBsPrice()) {
+                  <span class="total-row-bs total-bs-final">{{ exchangeRateService.formatBsPrice(o.total) }}</span>
+                }
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Despacho -->
+        <section class="detail-card">
+          <h3 class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 0 0-3.213-9.193 2.056 2.056 0 0 0-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 0 0-10.026 0 1.106 1.106 0 0 0-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+            </svg>
+            Despacho
+          </h3>
+          <div class="info-rows">
+            <div class="info-row">
+              <span class="info-label">Tipo</span>
+              <span class="info-value">{{ getDispatchLabel(o.dispatchType) }}</span>
+            </div>
+            @if (o.dispatchDetails.selectedBranchName) {
+              <div class="info-row">
+                <span class="info-label">Sucursal</span>
+                <span class="info-value">{{ o.dispatchDetails.selectedBranchName }}</span>
+              </div>
+            }
+            @if (o.dispatchDetails.selectedBranchAddress) {
+              <div class="info-row">
+                <span class="info-label">Dirección</span>
+                <span class="info-value">{{ o.dispatchDetails.selectedBranchAddress }}</span>
+              </div>
+            }
+            @if (o.dispatchDetails.agencyName) {
+              <div class="info-row">
+                <span class="info-label">Agencia</span>
+                <span class="info-value">{{ o.dispatchDetails.agencyName }}</span>
+              </div>
+            }
+            @if (o.dispatchDetails.recipientName) {
+              <div class="info-row">
+                <span class="info-label">Destinatario</span>
+                <span class="info-value">{{ o.dispatchDetails.recipientName }}</span>
+              </div>
+            }
+            @if (o.dispatchDetails.recipientPhone) {
+              <div class="info-row">
+                <span class="info-label">Teléfono</span>
+                <span class="info-value">{{ o.dispatchDetails.recipientPhone }}</span>
+              </div>
+            }
+            @if (o.dispatchDetails.recipientAddress) {
+              <div class="info-row">
+                <span class="info-label">Dirección envío</span>
+                <span class="info-value">{{ o.dispatchDetails.recipientAddress }}</span>
+              </div>
+            }
+            @if (o.dispatchDetails.recipientCity || o.dispatchDetails.recipientState) {
+              <div class="info-row">
+                <span class="info-label">Ubicación</span>
+                <span class="info-value">
+                  {{ o.dispatchDetails.recipientMunicipality ? o.dispatchDetails.recipientMunicipality + ', ' : '' }}{{ o.dispatchDetails.recipientCity }}{{ o.dispatchDetails.recipientState ? ', ' + o.dispatchDetails.recipientState : '' }}
+                </span>
+              </div>
+            }
+            @if (o.dispatchDetails.referencePoint) {
+              <div class="info-row">
+                <span class="info-label">Referencia</span>
+                <span class="info-value">{{ o.dispatchDetails.referencePoint }}</span>
+              </div>
+            }
+          </div>
+        </section>
+
+        <!-- Vehiculos -->
+        @if (o.vehicles.length) {
+          <section class="detail-card">
+            <h3 class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124" />
+              </svg>
+              {{ o.vehicles.length > 1 ? 'Vehículos' : 'Vehículo' }}
+            </h3>
+            <div class="info-rows">
+              @for (v of o.vehicles; track $index) {
+                <div class="info-row">
+                  <span class="info-value vehicle-value">{{ getVehicleLabel(v) }}</span>
+                </div>
+              }
+            </div>
+          </section>
+        } @else if (o.vehicle) {
+          <section class="detail-card">
+            <h3 class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124" />
+              </svg>
+              Vehículo
+            </h3>
+            <div class="info-rows">
+              <div class="info-row">
+                <span class="info-value vehicle-value">{{ getVehicleLabel(o.vehicle) }}</span>
+              </div>
+            </div>
+          </section>
+        }
+      </div>
+
+      <!-- ===================== RIGHT COLUMN ===================== -->
+      <div class="detail-column">
+
+        <!-- Pago -->
+        <section class="detail-card">
+          <h3 class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" />
+            </svg>
+            Datos del Pago
+            @if (o.paymentSubmission) {
+              <button type="button" class="btn-toggle-detail" (click)="togglePaymentDetail()">
+                @if (isPaymentExpanded()) {
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
+                  </svg>
+                } @else {
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                  </svg>
+                }
+              </button>
+            }
+          </h3>
+
+          @if (o.paymentSubmission) {
+            <!-- Summary row (always visible) -->
+            <div class="info-rows">
+              <div class="info-row">
+                <span class="info-label">Método</span>
+                <span class="info-value fw-600">{{ o.paymentSubmission.methodLabel }}</span>
+              </div>
+              @if (o.paymentSubmission.amount) {
+                <div class="info-row">
+                  <span class="info-label">Monto</span>
+                  <span class="info-value fw-600">{{ getCurrencySymbol(o.paymentSubmission.methodType) }} {{ o.paymentSubmission.amount }}</span>
+                </div>
+              }
+            </div>
+
+            <!-- Expanded details -->
+            @if (isPaymentExpanded()) {
+              <div class="info-rows payment-expanded">
+                @if (o.paymentSubmission.referenceNumber) {
+                  <div class="info-row">
+                    <span class="info-label">Referencia</span>
+                    <span class="info-value mono">{{ o.paymentSubmission.referenceNumber }}</span>
+                  </div>
+                }
+                @if (o.paymentSubmission.sourceBank) {
+                  <div class="info-row">
+                    <span class="info-label">Banco</span>
+                    <span class="info-value">{{ o.paymentSubmission.sourceBank }}</span>
+                  </div>
+                }
+                @if (o.paymentSubmission.paymentDate) {
+                  <div class="info-row">
+                    <span class="info-label">Fecha pago</span>
+                    <span class="info-value">{{ o.paymentSubmission.paymentDate }}</span>
+                  </div>
+                }
+                @if (o.paymentSubmission.proofUrl) {
+                  <div class="proof-section">
+                    <span class="info-label">Comprobante</span>
+                    <img [src]="o.paymentSubmission.proofUrl" alt="Comprobante de pago" class="proof-image" (click)="proofPreview.set(o.paymentSubmission.proofUrl)" />
+                  </div>
+                }
+              </div>
+            }
+
+            <!-- Payment note (always visible) -->
+            <div class="payment-note-section">
+              @if (noteSuccess()) {
+                <div class="alert-success-inline">{{ noteSuccess() }}</div>
+              }
+              @if (noteError()) {
+                <div class="alert-error-inline">{{ noteError() }}</div>
+              }
+              <label class="note-label">Comentario sobre el pago</label>
+              <textarea
+                class="note-textarea"
+                rows="2"
+                placeholder="Escribe un comentario sobre tu pago..."
+                [value]="paymentNote()"
+                (input)="paymentNote.set($any($event.target).value)"
+              ></textarea>
+              <div class="note-actions">
+                <button
+                  type="button"
+                  class="btn-save-note"
+                  [disabled]="isSavingNote()"
+                  (click)="savePaymentNote()"
+                >
+                  @if (isSavingNote()) { Guardando... } @else { Enviar comentario }
+                </button>
+              </div>
+            </div>
+          } @else {
+            <p class="no-data">No se han registrado datos de pago.</p>
+          }
+        </section>
+
+        <!-- Dirección de Facturación -->
+        @if (o.billingAddress) {
+          <section class="detail-card">
+            <h3 class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+              </svg>
+              Dirección de Facturación
+            </h3>
+            <div class="info-rows">
+              <div class="info-row">
+                <span class="info-label">Fuente</span>
+                <span class="info-value">{{ getBillingSourceLabel(o.billingAddress.source) }}</span>
+              </div>
+              @if (o.billingAddress.fullName) {
+                <div class="info-row">
+                  <span class="info-label">Nombre</span>
+                  <span class="info-value">{{ o.billingAddress.fullName }}</span>
+                </div>
+              }
+              @if (o.billingAddress.address) {
+                <div class="info-row">
+                  <span class="info-label">Dirección</span>
+                  <span class="info-value">{{ o.billingAddress.address }}</span>
+                </div>
+              }
+              @if (o.billingAddress.city || o.billingAddress.state) {
+                <div class="info-row">
+                  <span class="info-label">Ubicación</span>
+                  <span class="info-value">
+                    {{ o.billingAddress.city }}{{ o.billingAddress.municipality ? ', ' + o.billingAddress.municipality : '' }}{{ o.billingAddress.state ? ', ' + o.billingAddress.state : '' }}
+                  </span>
+                </div>
+              }
+            </div>
+          </section>
+        }
+
+        <!-- Mecánico asignado -->
+        @if (o.mechanic && typeof o.mechanic === 'object') {
+          <section class="detail-card">
+            <h3 class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 0 0 4.486-6.336l-3.276 3.277a3.004 3.004 0 0 1-2.25-2.25l3.276-3.276a4.5 4.5 0 0 0-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437 1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008Z" />
+              </svg>
+              Mecánico Asignado
+            </h3>
+            <div class="info-rows">
+              <div class="info-row">
+                <span class="info-label">Nombre</span>
+                <span class="info-value">{{ getMechanicField(o, 'name') }}</span>
+              </div>
+              @if (getMechanicField(o, 'whatsapp')) {
+                <div class="info-row">
+                  <span class="info-label">Teléfono</span>
+                  <span class="info-value">{{ getMechanicField(o, 'whatsapp') }}</span>
+                </div>
+              }
+              <div class="info-row">
+                <span class="info-label">Estado</span>
+                <span class="status-badge" [ngClass]="getStatusClass(o.status)">
+                  {{ getStatusLabel(o.status) }}
+                </span>
+              </div>
+            </div>
+            <a [routerLink]="['/perfil/pedidos', o.id, 'servicio']" class="btn-tracking-link">
+              Ver seguimiento del servicio
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+              </svg>
+            </a>
+          </section>
+        }
+
+        <!-- Notas -->
+        @if (o.notes) {
+          <section class="detail-card">
+            <h3 class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 0 1 1.037-.443 48.282 48.282 0 0 0 5.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />
+              </svg>
+              Notas
+            </h3>
+            <div class="card-body-padded">
+              <p class="order-notes-text">{{ o.notes }}</p>
+            </div>
+          </section>
+        }
+
+        <!-- Current Status -->
+        @if (o.statusHistory && o.statusHistory.length > 0) {
+          <section class="detail-card">
+            <h3 class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+              </svg>
+              Estado de la Orden
+            </h3>
+            <div class="current-status-row">
+              <span class="status-badge" [ngClass]="getStatusClass(o.statusHistory[o.statusHistory.length - 1].status)">
+                {{ getStatusLabel(o.statusHistory[o.statusHistory.length - 1].status) }}
+              </span>
+              @if (o.statusHistory[o.statusHistory.length - 1].note) {
+                <span class="current-status-note">{{ o.statusHistory[o.statusHistory.length - 1].note }}</span>
+              }
+              <span class="current-status-date">{{ formatDate(o.statusHistory[o.statusHistory.length - 1].timestamp) }}</span>
+            </div>
+          </section>
+        }
+      </div>
+
+    </div>
+
+      <!-- Cancelar orden (solo pendiente) -->
+      @if (o.status === 'pending') {
+        <div class="cancel-section">
+          <p class="cancel-inline-text">
+            Si deseas cancelar esta orden, los productos reservados volverán al inventario y deberás realizar una nueva compra.
+            <a class="cancel-inline-link" (click)="openReasonModal()">Cancelar orden</a>
+          </p>
+        </div>
+      }
+  }
+</div>
+
+<!-- Modal 1: Motivo de cancelación -->
+@if (showReasonModal() && order(); as o) {
+  <div class="cancel-overlay" (click)="closeReasonModal()">
+    <div class="cancel-modal" (click)="$event.stopPropagation()">
+      <div class="cancel-modal-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 0 1 1.037-.443 48.282 48.282 0 0 0 5.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />
+        </svg>
+      </div>
+      <h3 class="cancel-modal-title">Motivo de cancelación</h3>
+      <p class="cancel-modal-order">#{{ o.orderNumber }}</p>
+      <p class="cancel-modal-text">Cuéntanos por qué deseas cancelar tu orden. Esta información será revisada por nuestro equipo.</p>
+      <textarea
+        class="cancel-reason-textarea"
+        rows="3"
+        placeholder="Escribe el motivo de tu cancelación..."
+        [value]="cancelReason()"
+        (input)="cancelReason.set($any($event.target).value)"
+      ></textarea>
+      <div class="cancel-modal-actions">
+        <button type="button" class="cancel-modal-back" (click)="closeReasonModal()">Cancelar</button>
+        <button type="button" class="cancel-modal-confirm" (click)="proceedToConfirm()">Continuar</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Modal 2: Confirmación final -->
+@if (showConfirmModal() && order(); as o) {
+  <div class="cancel-overlay">
+    <div class="cancel-modal" (click)="$event.stopPropagation()">
+      @if (isCancelling()) {
+        <div class="cancel-loading">
+          <div class="cancel-spinner"></div>
+          <p>Enviando solicitud de cancelación...</p>
+        </div>
+      } @else {
+        <div class="cancel-modal-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+          </svg>
+        </div>
+        <h3 class="cancel-modal-title">Confirmar cancelación</h3>
+        <p class="cancel-modal-order">#{{ o.orderNumber }}</p>
+        <p class="cancel-modal-text">Al confirmar, se notificará al administrador sobre tu solicitud de cancelación. Si ya realizaste un pago, el equipo se pondrá en contacto contigo para gestionar tu reembolso, si cumples con las políticas de reembolso.</p>
+        <div class="cancel-modal-actions">
+          <button type="button" class="cancel-modal-back" (click)="closeConfirmModal()">Cancelar</button>
+          <button type="button" class="cancel-modal-confirm" (click)="confirmCancelOrder()">Confirmar</button>
+        </div>
+      }
+    </div>
+  </div>
+}
+
+<!-- Image Lightbox -->
+@if (proofPreview()) {
+  <div class="lightbox-overlay" (click)="proofPreview.set(null)">
+    <button type="button" class="lightbox-close" (click)="proofPreview.set(null)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+    </button>
+    <img [src]="proofPreview()" alt="Comprobante" class="lightbox-image" (click)="$event.stopPropagation()" />
+  </div>
+}

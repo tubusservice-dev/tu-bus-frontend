@@ -12,7 +12,21 @@ export interface UpdateProfileRequest {
   documentType?: DocumentType;
   documentNumber?: string;
   phone?: string;
+  alternativePhone?: string;
+  stateCode?: string;
+  stateName?: string;
+  cityCode?: string;
+  cityName?: string;
+  municipalityCode?: string;
+  municipalityName?: string;
+  neighborhood?: string;
+  street?: string;
+  houseNumber?: string;
+  referencePoint?: string;
+  zipCode?: string;
   address?: string;
+  companyName?: string;
+  companyRif?: string;
 }
 
 export interface ChangePasswordRequest {

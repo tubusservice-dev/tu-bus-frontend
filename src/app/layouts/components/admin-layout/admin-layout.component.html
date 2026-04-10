@@ -78,6 +78,11 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
               </svg>
             }
+            @case ('branch') {
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 21v-7.5a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 .75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349M3.75 21V9.349m0 0a3.001 3.001 0 0 0 3.75-.615A2.993 2.993 0 0 0 9.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 0 0 2.25 1.016c.896 0 1.7-.393 2.25-1.015a3.001 3.001 0 0 0 3.75.614m-16.5 0a3.004 3.004 0 0 1-.621-4.72l1.189-1.19A1.5 1.5 0 0 1 5.378 3h13.243a1.5 1.5 0 0 1 1.06.44l1.19 1.189a3 3 0 0 1-.621 4.72M6.75 18h3.75a.75.75 0 0 0 .75-.75V13.5a.75.75 0 0 0-.75-.75H6.75a.75.75 0 0 0-.75.75v3.75c0 .414.336.75.75.75Z" />
+              </svg>
+            }
             @case ('wrench') {
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 0 0 4.486-6.336l-3.276 3.277a3.004 3.004 0 0 1-2.25-2.25l3.276-3.276a4.5 4.5 0 0 0-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437 1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008Z" />
@@ -130,6 +135,51 @@
       </button>
 
       <div class="header-right">
+        <!-- Notification Bell -->
+        <div class="notif-wrapper">
+          <button type="button" class="notif-bell" (click)="adminNotifications.togglePopover()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+            </svg>
+            @if (adminNotifications.unreadCount() > 0) {
+              <span class="notif-badge">{{ adminNotifications.unreadCount() }}</span>
+            }
+          </button>
+
+          @if (adminNotifications.showPopover()) {
+            <div class="notif-popover">
+              <div class="notif-popover-header">
+                <span>Notificaciones</span>
+                @if (adminNotifications.unreadCount() > 0) {
+                  <span class="notif-count-label">{{ adminNotifications.unreadCount() }} sin leer</span>
+                }
+              </div>
+              <div class="notif-popover-list">
+                @if (adminNotifications.notifications().length === 0) {
+                  <div class="notif-empty">No hay notificaciones</div>
+                } @else {
+                  @for (n of adminNotifications.notifications(); track n.id) {
+                    <button type="button" class="notif-item" [class.unread]="!n.isRead" (click)="openNotification(n)">
+                      <div class="notif-item-icon" [class.mechanic]="n.type === 'mechanic_rejection'" [class.customer]="n.type === 'customer_cancellation'">
+                        @if (n.type === 'mechanic_rejection') {
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877" /></svg>
+                        } @else {
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                        }
+                      </div>
+                      <div class="notif-item-content">
+                        <span class="notif-item-title">{{ n.title }}</span>
+                        <span class="notif-item-preview">{{ n.message | slice:0:60 }}...</span>
+                        <span class="notif-item-time">{{ n.createdAt | date:'dd/MM HH:mm' }}</span>
+                      </div>
+                    </button>
+                  }
+                }
+              </div>
+            </div>
+          }
+        </div>
+
         <div class="user-info">
           <img [src]="userAvatar()" [alt]="userName()" class="user-avatar" />
           <div class="user-details">
@@ -138,6 +188,57 @@
           </div>
         </div>
       </div>
+
+      <!-- Notification Detail Modal -->
+      @if (selectedNotification()) {
+        <div class="notif-modal-overlay" (click)="closeNotification()">
+          <div class="notif-modal" (click)="$event.stopPropagation()">
+            <div class="notif-modal-header">
+              <div class="notif-modal-type" [class.mechanic]="selectedNotification()!.type === 'mechanic_rejection'" [class.customer]="selectedNotification()!.type === 'customer_cancellation'">
+                {{ selectedNotification()!.type === 'mechanic_rejection' ? 'Rechazo de mecanico' : 'Cancelacion de cliente' }}
+              </div>
+              <button (click)="closeNotification()" class="notif-modal-close">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div class="notif-modal-body">
+              <h3 class="notif-modal-title">{{ selectedNotification()!.title }}</h3>
+              <p class="notif-modal-msg">{{ selectedNotification()!.message }}</p>
+
+              @if (selectedNotification()!.metadata) {
+                <div class="notif-modal-details">
+                  @if (selectedNotification()!.metadata!['orderNumber']) {
+                    <div class="notif-detail-row"><span class="nd-label">Orden</span><span class="nd-value">{{ selectedNotification()!.metadata!['orderNumber'] }}</span></div>
+                  }
+                  @if (selectedNotification()!.metadata!['mechanicName']) {
+                    <div class="notif-detail-row"><span class="nd-label">Mecanico</span><span class="nd-value">{{ selectedNotification()!.metadata!['mechanicName'] }}</span></div>
+                  }
+                  @if (selectedNotification()!.metadata!['recipientAddress']) {
+                    <div class="notif-detail-row"><span class="nd-label">Direccion</span><span class="nd-value">{{ selectedNotification()!.metadata!['recipientAddress'] }}</span></div>
+                  }
+                  @if (selectedNotification()!.metadata!['scheduledDate']) {
+                    <div class="notif-detail-row"><span class="nd-label">Fecha</span><span class="nd-value">{{ selectedNotification()!.metadata!['scheduledDate'] | date:'dd/MM/yyyy' }}</span></div>
+                  }
+                  @if (selectedNotification()!.metadata!['startTime']) {
+                    <div class="notif-detail-row"><span class="nd-label">Horario</span><span class="nd-value">{{ selectedNotification()!.metadata!['startTime'] }} - {{ selectedNotification()!.metadata!['endTime'] }}</span></div>
+                  }
+                  @if (selectedNotification()!.metadata!['reason']) {
+                    <div class="notif-detail-row"><span class="nd-label">Motivo</span><span class="nd-value nd-reason">{{ selectedNotification()!.metadata!['reason'] }}</span></div>
+                  }
+                </div>
+              }
+
+              <div class="notif-modal-time">{{ selectedNotification()!.createdAt | date:'dd/MM/yyyy HH:mm' }}</div>
+            </div>
+            <div class="notif-modal-footer">
+              @if (selectedNotification()!.metadata?.['orderNumber']) {
+                <a class="notif-btn-order" [routerLink]="['/admin/orders', getOrderId(selectedNotification()!)]">Ver orden</a>
+              }
+              <button class="notif-btn-close" (click)="closeNotification()">Cerrar</button>
+            </div>
+          </div>
+        </div>
+      }
     </header>
 
     <!-- Contenido -->

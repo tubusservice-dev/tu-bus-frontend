@@ -19,20 +19,36 @@
     </div>
     @if (order()) {
       <div class="header-actions">
-        @if (order()!.status === 'pending') {
-          <button type="button" class="btn-approve" [disabled]="isChangingStatus()" (click)="approveOrder()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-            </svg>
-            Aprobar
-          </button>
-          <button type="button" class="btn-reject" (click)="openRejectModal()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-            </svg>
-            Rechazar
-          </button>
-        } @else {
+        <!-- Oil change service: mechanic button -->
+        @if (isOilChange()) {
+          @if (order()!.status === 'pending') {
+            <button type="button" class="btn-dispatch" (click)="openDispatchModal()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 0 0 4.486-6.336l-3.276 3.277a3.004 3.004 0 0 1-2.25-2.25l3.276-3.276a4.5 4.5 0 0 0-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437 1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008Z" />
+              </svg>
+              Asignar Mecánico
+            </button>
+          } @else if (isMechanicAssigned()) {
+            <button type="button" class="btn-mechanic-assigned" (click)="openDispatchModal()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+              </svg>
+              Mecánico Asignado
+            </button>
+          }
+        }
+        <!-- Oil change: direct cancel button instead of status selector -->
+        @if (isOilChange()) {
+          @if (order()!.status !== 'cancelled' && order()!.status !== 'completed') {
+            <button type="button" class="btn-cancel-order" (click)="openCancelModal()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+              </svg>
+              Cancelar Orden
+            </button>
+          }
+        } @else if (availableStatuses().length > 0) {
+          <!-- Other dispatch types: status selector -->
           <button type="button" class="btn-change-status" (click)="openStatusModal()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182" />
@@ -40,12 +56,6 @@
             Cambiar Estado
           </button>
         }
-        <button type="button" class="btn-dispatch" (click)="openDispatchModal()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 0 0 4.486-6.336l-3.276 3.277a3.004 3.004 0 0 1-2.25-2.25l3.276-3.276a4.5 4.5 0 0 0-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437 1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008Z" />
-          </svg>
-          Asignar Despacho
-        </button>
       </div>
     }
   </header>
@@ -150,14 +160,6 @@
               <span class="info-label">Tipo</span>
               <span class="info-value">{{ getDispatchLabel(o.dispatchType) }}</span>
             </div>
-            @if (o.dispatchStatus) {
-              <div class="info-row">
-                <span class="info-label">Estado</span>
-                <span class="status-badge sm" [ngClass]="getDispatchStatusColor(o.dispatchStatus)">
-                  {{ getDispatchStatusLabel(o.dispatchStatus) }}
-                </span>
-              </div>
-            }
             @if (o.dispatchDetails) {
               @if (o.dispatchDetails.storeAddress) {
                 <div class="info-row">
@@ -220,6 +222,29 @@
 
       <!-- Col Right: Payment + Status History -->
       <div class="detail-column">
+        <!-- Solicitud de Cancelación -->
+        @if (o.status === 'cancellation_requested') {
+          <section class="detail-card cancellation-card">
+            <h3 class="card-title cancellation-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+              </svg>
+              Solicitud de Cancelación
+            </h3>
+            <div class="cancellation-body">
+              @for (entry of o.statusHistory; track $index) {
+                @if (entry.status === 'cancellation_requested' && entry.note) {
+                  <div class="cancellation-reason">
+                    <span class="cancellation-reason-label">Motivo del cliente</span>
+                    <p class="cancellation-reason-text">{{ entry.note }}</p>
+                  </div>
+                }
+              }
+              <p class="cancellation-hint">El cliente ha solicitado la cancelación de esta orden. Puedes aprobar la cancelación usando el botón "Cambiar Estado".</p>
+            </div>
+          </section>
+        }
+
         <!-- Pago -->
         <section class="detail-card">
           <h3 class="card-title">
@@ -261,7 +286,13 @@
               @if (o.paymentSubmission.proofUrl) {
                 <div class="proof-section">
                   <span class="info-label">Comprobante</span>
-                  <img [src]="o.paymentSubmission.proofUrl" alt="Comprobante de pago" class="proof-image" />
+                  <img [src]="o.paymentSubmission.proofUrl" alt="Comprobante de pago" class="proof-image" (click)="proofPreview.set(o.paymentSubmission.proofUrl)" />
+                </div>
+              }
+              @if (o.paymentSubmission.notes) {
+                <div class="info-row">
+                  <span class="info-label">Nota del cliente</span>
+                  <span class="info-value" style="font-style:italic">{{ o.paymentSubmission.notes }}</span>
                 </div>
               }
             </div>
@@ -276,6 +307,50 @@
             <p class="no-data">Sin datos de pago registrados</p>
           }
         </section>
+
+        <!-- Dirección de Facturación -->
+        @if (o.billingAddress) {
+          <section class="detail-card">
+            <h3 class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+              </svg>
+              Dirección de Facturación
+            </h3>
+            <div class="info-rows">
+              <div class="info-row">
+                <span class="info-label">Fuente</span>
+                <span class="info-value">{{ getBillingSourceLabel(o.billingAddress.source) }}</span>
+              </div>
+              @if (o.billingAddress.fullName) {
+                <div class="info-row">
+                  <span class="info-label">Nombre</span>
+                  <span class="info-value">{{ o.billingAddress.fullName }}</span>
+                </div>
+              }
+              @if (o.billingAddress.documentType && o.billingAddress.documentNumber) {
+                <div class="info-row">
+                  <span class="info-label">Documento</span>
+                  <span class="info-value">{{ o.billingAddress.documentType }}-{{ o.billingAddress.documentNumber }}</span>
+                </div>
+              }
+              @if (o.billingAddress.address) {
+                <div class="info-row">
+                  <span class="info-label">Dirección</span>
+                  <span class="info-value">{{ o.billingAddress.address }}</span>
+                </div>
+              }
+              @if (o.billingAddress.city || o.billingAddress.state) {
+                <div class="info-row">
+                  <span class="info-label">Ubicación</span>
+                  <span class="info-value">
+                    {{ o.billingAddress.city }}{{ o.billingAddress.municipality ? ', ' + o.billingAddress.municipality : '' }}{{ o.billingAddress.state ? ', ' + o.billingAddress.state : '' }}
+                  </span>
+                </div>
+              }
+            </div>
+          </section>
+        }
 
         <!-- Info general -->
         <section class="detail-card">
@@ -296,66 +371,59 @@
                 {{ o.disclaimerAccepted ? 'Aceptado' : 'No aceptado' }}
               </span>
             </div>
-            @if (o.notes) {
-              <div class="info-row">
-                <span class="info-label">Notas</span>
-                <span class="info-value" style="font-size:0.75rem">{{ o.notes }}</span>
-              </div>
-            }
-          </div>
-        </section>
-
-        <!-- Historial de estados -->
-        @if (o.statusHistory && o.statusHistory.length > 0) {
-          <section class="detail-card">
-            <h3 class="card-title">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-              </svg>
-              Historial de Estados
-            </h3>
-            <div class="timeline">
-              @for (entry of o.statusHistory; track $index) {
-                <div class="timeline-item">
-                  <div class="timeline-dot" [ngClass]="getStatusColor(entry.status)"></div>
-                  <div class="timeline-content">
-                    <span class="timeline-status">{{ getStatusLabel(entry.status) }}</span>
-                    @if (entry.note) {
-                      <span class="timeline-note">{{ entry.note }}</span>
-                    }
-                    <span class="timeline-date">{{ formatDate(entry.timestamp) }}</span>
+            <!-- Notes editable -->
+            <div class="info-row">
+              <span class="info-label">Notas</span>
+              @if (!isEditingNotes()) {
+                <div class="info-value notes-value">
+                  <span>{{ o.notes || 'Sin notas' }}</span>
+                  <button type="button" class="btn-edit-inline" (click)="startEditingNotes()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="14">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Z" />
+                    </svg>
+                  </button>
+                </div>
+              } @else {
+                <div class="notes-edit-area">
+                  <textarea [(ngModel)]="editNotesValue" rows="3" placeholder="Agregar notas internas..."></textarea>
+                  <div class="notes-edit-actions">
+                    <button type="button" class="btn-notes-cancel" (click)="cancelEditingNotes()">Cancelar</button>
+                    <button type="button" class="btn-notes-save" [disabled]="isSavingNotes()" (click)="saveNotes()">
+                      @if (isSavingNotes()) { Guardando... } @else { Guardar }
+                    </button>
                   </div>
                 </div>
               }
             </div>
-          </section>
-        }
+          </div>
+        </section>
+
       </div>
     </div>
   }
 </div>
 
-<!-- Reject Modal -->
-@if (showRejectModal()) {
-  <div class="modal-overlay" (click)="closeRejectModal()">
+<!-- Cancel Order Modal (oil change service) -->
+@if (showCancelModal()) {
+  <div class="modal-overlay" (click)="closeCancelModal()">
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h3>Rechazar Orden</h3>
-        <button type="button" class="btn-modal-close" (click)="closeRejectModal()">
+        <h3>Cancelar Orden</h3>
+        <button type="button" class="btn-modal-close" (click)="closeCancelModal()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
         </button>
       </div>
       <div class="modal-body">
-        <p>¿Estás seguro de rechazar la orden <strong>#{{ order()?.orderNumber }}</strong>?</p>
+        <p>¿Estás seguro de cancelar la orden <strong>#{{ order()?.orderNumber }}</strong>? Los productos reservados volverán al inventario.</p>
         <div class="form-group">
-          <label for="reject-reason">Razón (opcional)</label>
-          <textarea id="reject-reason" [(ngModel)]="rejectReason" rows="3" placeholder="Escribe la razón del rechazo..."></textarea>
+          <label for="cancel-note">Razón (opcional)</label>
+          <textarea id="cancel-note" [(ngModel)]="cancelNote" rows="3" placeholder="Escribe la razón de la cancelación..."></textarea>
         </div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn-cancel" (click)="closeRejectModal()">Cancelar</button>
-        <button type="button" class="btn-reject-confirm" [disabled]="isRejecting()" (click)="confirmReject()">
-          @if (isRejecting()) { Rechazando... } @else { Confirmar Rechazo }
+        <button type="button" class="btn-cancel" (click)="closeCancelModal()">Volver</button>
+        <button type="button" class="btn-confirm-cancel" [disabled]="isChangingStatus()" (click)="confirmCancelOrder()">
+          @if (isChangingStatus()) { Cancelando... } @else { Confirmar Cancelación }
         </button>
       </div>
     </div>
@@ -376,7 +444,7 @@
         <div class="form-group">
           <label for="new-status">Nuevo Estado</label>
           <select id="new-status" [(ngModel)]="newStatus">
-            @for (status of orderStatuses; track status) {
+            @for (status of availableStatuses(); track status) {
               <option [value]="status">{{ ORDER_STATUS_LABELS[status] }}</option>
             }
           </select>
@@ -396,10 +464,22 @@
   </div>
 }
 
-<!-- Dispatch Modal -->
-<app-order-dispatch-modal
-  [order]="order()"
-  [isOpen]="dispatchModalOpen()"
-  (close)="closeDispatchModal()"
-  (assigned)="onMechanicAssigned($event)"
-/>
+<!-- Image Lightbox -->
+@if (proofPreview()) {
+  <div class="lightbox-overlay" (click)="proofPreview.set(null)">
+    <button type="button" class="lightbox-close" (click)="proofPreview.set(null)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+    </button>
+    <img [src]="proofPreview()" alt="Comprobante" class="lightbox-image" (click)="$event.stopPropagation()" />
+  </div>
+}
+
+<!-- Dispatch Modal (only for oil change service) -->
+@if (isOilChange()) {
+  <app-order-dispatch-modal
+    [order]="order()"
+    [isOpen]="dispatchModalOpen()"
+    (close)="closeDispatchModal()"
+    (assigned)="onMechanicAssigned($event)"
+  />
+}

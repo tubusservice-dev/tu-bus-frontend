@@ -8,8 +8,8 @@ import {
   OrderStatus,
   ORDER_STATUS_LABELS,
   ORDER_STATUS_COLORS,
-  DISPATCH_STATUS_LABELS,
-  DISPATCH_STATUS_COLORS,
+  isOilChangeService,
+  getAvailableStatuses,
 } from '../../../../models/order.model';
 import { PAYMENT_METHOD_TYPE_LABELS, PaymentMethodType } from '../../../../models/payment-method.model';
 import { OrderDispatchModalComponent } from '../order-dispatch-modal/order-dispatch-modal.component';
@@ -36,13 +36,18 @@ export class AdminOrderDetailComponent implements OnInit {
   protected readonly statusNote = signal('');
   protected readonly isChangingStatus = signal(false);
 
-  // Reject modal
-  protected readonly showRejectModal = signal(false);
-  protected readonly rejectReason = signal('');
-  protected readonly isRejecting = signal(false);
+  // Cancel modal (oil change)
+  protected readonly showCancelModal = signal(false);
+  protected readonly cancelNote = signal('');
 
   // Dispatch modal
   protected readonly dispatchModalOpen = signal(false);
+  protected readonly proofPreview = signal<string | null>(null);
+
+  // Notes editing
+  protected readonly isEditingNotes = signal(false);
+  protected readonly editNotesValue = signal('');
+  protected readonly isSavingNotes = signal(false);
 
   protected readonly orderStatuses = Object.values(OrderStatus);
   protected readonly ORDER_STATUS_LABELS = ORDER_STATUS_LABELS;
@@ -101,18 +106,33 @@ export class AdminOrderDetailComponent implements OnInit {
       shipping_agency: 'Agencia de Envío',
       local_delivery: 'Delivery Local',
       seller_agreement: 'Acordar con Vendedor',
+      oil_change_service: 'Cambio de Aceite a Domicilio',
+      in_store_oil_change: 'Cambio de Aceite en Tienda',
     };
     return labels[type] || type;
   }
 
-  getDispatchStatusLabel(status?: string): string {
-    if (!status) return '-';
-    return DISPATCH_STATUS_LABELS[status] || status;
+  isOilChange(): boolean {
+    const o = this.order();
+    return o ? isOilChangeService(o) : false;
   }
 
-  getDispatchStatusColor(status?: string): string {
-    if (!status) return '';
-    return DISPATCH_STATUS_COLORS[status] || '';
+  isMechanicAssigned(): boolean {
+    const o = this.order();
+    if (!o) return false;
+    const mechanicStatuses: string[] = [
+      OrderStatus.MECHANIC_ASSIGNED,
+      OrderStatus.EN_ROUTE,
+      OrderStatus.IN_SERVICE,
+      OrderStatus.COMPLETED,
+    ];
+    return mechanicStatuses.includes(o.status);
+  }
+
+  availableStatuses(): OrderStatus[] {
+    const o = this.order();
+    if (!o) return [];
+    return getAvailableStatuses(o.dispatchType, o.status);
   }
 
   getPaymentMethodLabel(type?: string): string {
@@ -145,12 +165,12 @@ export class AdminOrderDetailComponent implements OnInit {
   }
 
   getVehicleInfo(order: Order): string {
-    if (!order.vehicle) return '-';
-    if (typeof order.vehicle === 'object') {
-      const v = order.vehicle;
-      return `${v.marca} ${v.modelo} ${v.year} - ${v.placa}`;
-    }
-    return String(order.vehicle);
+    const vehicles = order.vehicles?.length ? order.vehicles : (order.vehicle ? [order.vehicle] : []);
+    if (!vehicles.length) return '-';
+    return vehicles.map(v => {
+      if (typeof v === 'object') return `${v.marca} ${v.modelo} ${v.year} - ${v.placa}`;
+      return String(v);
+    }).join(' | ');
   }
 
   // ========== Actions ==========
@@ -167,57 +187,80 @@ export class AdminOrderDetailComponent implements OnInit {
     this.order.set(updatedOrder);
   }
 
-  goBack(): void {
-    this.router.navigate(['/admin/orders']);
+  // ========== Dispatch Status ==========
+
+  // ========== Notes Editing ==========
+
+  startEditingNotes(): void {
+    const order = this.order();
+    this.editNotesValue.set(order?.notes || '');
+    this.isEditingNotes.set(true);
   }
 
-  approveOrder(): void {
+  cancelEditingNotes(): void {
+    this.isEditingNotes.set(false);
+  }
+
+  saveNotes(): void {
+    const order = this.order();
+    if (!order) return;
+
+    this.isSavingNotes.set(true);
+    this.orderService.updateNotes(order.id, this.editNotesValue()).subscribe({
+      next: (res) => {
+        this.order.set(res.data);
+        this.isSavingNotes.set(false);
+        this.isEditingNotes.set(false);
+      },
+      error: () => this.isSavingNotes.set(false),
+    });
+  }
+
+  getBillingSourceLabel(source?: string): string {
+    const labels: Record<string, string> = {
+      shipping: 'Dirección de envío',
+      profile: 'Dirección del perfil',
+      custom: 'Dirección personalizada',
+    };
+    return labels[source || ''] || source || '-';
+  }
+
+  openCancelModal(): void {
+    this.cancelNote.set('');
+    this.showCancelModal.set(true);
+  }
+
+  closeCancelModal(): void {
+    this.showCancelModal.set(false);
+  }
+
+  confirmCancelOrder(): void {
     const order = this.order();
     if (!order) return;
 
     this.isChangingStatus.set(true);
-    this.orderService.updateOrderStatus(order.id, OrderStatus.CONFIRMED, 'Orden aprobada por administrador').subscribe({
-      next: (res) => {
-        this.order.set(res.data);
-        this.isChangingStatus.set(false);
-      },
-      error: () => {
-        this.isChangingStatus.set(false);
-      },
-    });
-  }
-
-  openRejectModal(): void {
-    this.rejectReason.set('');
-    this.showRejectModal.set(true);
-  }
-
-  closeRejectModal(): void {
-    this.showRejectModal.set(false);
-  }
-
-  confirmReject(): void {
-    const order = this.order();
-    if (!order) return;
-
-    this.isRejecting.set(true);
-    const note = this.rejectReason().trim() || 'Orden rechazada por administrador';
+    const note = this.cancelNote().trim() || 'Orden cancelada por administrador';
     this.orderService.updateOrderStatus(order.id, OrderStatus.CANCELLED, note).subscribe({
       next: (res) => {
         this.order.set(res.data);
-        this.isRejecting.set(false);
-        this.closeRejectModal();
+        this.isChangingStatus.set(false);
+        this.closeCancelModal();
       },
       error: () => {
-        this.isRejecting.set(false);
+        this.isChangingStatus.set(false);
       },
     });
+  }
+
+  goBack(): void {
+    this.router.navigate(['/admin/orders']);
   }
 
   openStatusModal(): void {
     const order = this.order();
     if (!order) return;
-    this.newStatus.set(order.status);
+    const available = this.availableStatuses();
+    this.newStatus.set(available.length > 0 ? available[0] : order.status);
     this.statusNote.set('');
     this.showStatusModal.set(true);
   }

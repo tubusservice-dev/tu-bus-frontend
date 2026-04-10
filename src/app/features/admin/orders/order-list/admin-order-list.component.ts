@@ -1,15 +1,15 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, DestroyRef, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { OrderService } from '../../../../core/services/order.service';
 import {
   Order,
   OrderStatus,
   ORDER_STATUS_LABELS,
   ORDER_STATUS_COLORS,
-  DISPATCH_STATUS_LABELS,
-  DISPATCH_STATUS_COLORS,
 } from '../../../../models/order.model';
 
 @Component({
@@ -22,6 +22,9 @@ import {
 export class AdminOrderListComponent implements OnInit {
   private readonly orderService = inject(OrderService);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
+
+  private readonly searchSubject$ = new Subject<string>();
 
   protected readonly isLoading = signal(true);
   protected readonly orders = signal<Order[]>([]);
@@ -29,19 +32,39 @@ export class AdminOrderListComponent implements OnInit {
   protected readonly totalPages = signal(1);
   protected readonly totalItems = signal(0);
   protected readonly statusFilter = signal<string>('');
-  protected readonly activeTab = signal<'active' | 'history'>('active');
+  protected readonly searchQuery = signal('');
 
-  protected readonly orderStatuses = Object.values(OrderStatus);
   protected readonly ORDER_STATUS_LABELS = ORDER_STATUS_LABELS;
 
+  /** Statuses relevant for admin filtering (excludes mechanic intermediate steps) */
+  protected readonly adminFilterStatuses: OrderStatus[] = [
+    OrderStatus.PENDING,
+    OrderStatus.APPROVED,
+    OrderStatus.DISPATCHED,
+    OrderStatus.MECHANIC_ASSIGNED,
+    OrderStatus.IN_SERVICE,
+    OrderStatus.COMPLETED,
+    OrderStatus.CANCELLATION_REQUESTED,
+    OrderStatus.CANCELLED,
+  ];
+
   ngOnInit(): void {
+    this.searchSubject$
+      .pipe(
+        debounceTime(400),
+        distinctUntilChanged(),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(() => this.loadOrders(1));
+
     this.loadOrders();
   }
 
   loadOrders(page = 1): void {
     this.isLoading.set(true);
     const status = (this.statusFilter() as OrderStatus) || undefined;
-    this.orderService.getAdminOrders(page, 10, status).subscribe({
+    const search = this.searchQuery().trim() || undefined;
+    this.orderService.getAdminOrders(page, 10, status, search).subscribe({
       next: (response) => {
         this.orders.set(response.data);
         this.currentPage.set(response.pagination.page);
@@ -59,26 +82,14 @@ export class AdminOrderListComponent implements OnInit {
     this.loadOrders(1);
   }
 
-  switchTab(tab: 'active' | 'history'): void {
-    this.activeTab.set(tab);
-    this.statusFilter.set('');
-    this.loadOrders(1);
+  onSearchInput(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.searchQuery.set(value);
+    this.searchSubject$.next(value);
   }
 
-  /** Statuses shown per tab */
-  get activeStatuses(): OrderStatus[] {
-    if (this.activeTab() === 'history') {
-      return [OrderStatus.CONFIRMED, OrderStatus.COMPLETED, OrderStatus.CANCELLED];
-    }
-    return this.orderStatuses;
-  }
-
-  /** Filter statuses for the dropdown based on current tab */
   get filterableStatuses(): OrderStatus[] {
-    if (this.activeTab() === 'history') {
-      return [OrderStatus.CONFIRMED, OrderStatus.COMPLETED, OrderStatus.CANCELLED];
-    }
-    return this.orderStatuses;
+    return this.adminFilterStatuses;
   }
 
   getClientName(order: Order): string {
@@ -95,16 +106,6 @@ export class AdminOrderListComponent implements OnInit {
 
   getStatusColor(status: OrderStatus): string {
     return ORDER_STATUS_COLORS[status] || '';
-  }
-
-  getDispatchStatusLabel(status?: string): string {
-    if (!status) return '-';
-    return DISPATCH_STATUS_LABELS[status] || status;
-  }
-
-  getDispatchStatusColor(status?: string): string {
-    if (!status) return '';
-    return DISPATCH_STATUS_COLORS[status] || '';
   }
 
   formatDate(date: string): string {

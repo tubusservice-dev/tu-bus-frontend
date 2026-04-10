@@ -22,8 +22,7 @@
             type="text"
             placeholder="Buscar productos..."
             [ngModel]="filters().search"
-            (ngModelChange)="updateFilter('search', $event)"
-            (keyup.enter)="onSearch()"
+            (ngModelChange)="onSearchInput($event)"
           />
         </div>
 
@@ -53,9 +52,22 @@
     @if (showFilters()) {
       <div class="filters-panel">
         <div class="filters-grid">
-          <!-- Marca -->
+          <!-- Tipo de vehículo -->
           <div class="filter-group">
-            <label>Marca</label>
+            <label>Tipo de vehículo</label>
+            <select [ngModel]="filters().vehicleType" (ngModelChange)="updateFilter('vehicleType', $event)">
+              <option value="" selected>Todos los vehículos</option>
+              @for (option of vehicleTypeOptions; track option.value) {
+                @if (option.value !== 'all') {
+                  <option [value]="option.value">{{ option.label }}</option>
+                }
+              }
+            </select>
+          </div>
+
+          <!-- Marca de producto -->
+          <div class="filter-group">
+            <label>Marca de producto</label>
             <select [ngModel]="filters().brand" (ngModelChange)="updateFilter('brand', $event)">
               <option value="" selected>Todas las marcas</option>
               @for (brand of brands(); track brand.id) {
@@ -64,35 +76,15 @@
             </select>
           </div>
 
-          <!-- Categoría -->
+          <!-- Categoría de producto -->
           <div class="filter-group">
-            <label>Categoría</label>
+            <label>Categoría de producto</label>
             <select [ngModel]="filters().category" (ngModelChange)="updateFilter('category', $event)">
               <option value="" selected>Todas las categorías</option>
               @for (cat of categories(); track cat.id) {
                 <option [value]="cat.id">{{ cat.name }}</option>
               }
             </select>
-          </div>
-
-          <!-- Precio -->
-          <div class="filter-group price-range">
-            <label>Rango de precio</label>
-            <div class="price-inputs">
-              <input
-                type="number"
-                placeholder="Mín"
-                [ngModel]="filters().minPrice"
-                (ngModelChange)="updateFilter('minPrice', $event)"
-              />
-              <span>-</span>
-              <input
-                type="number"
-                placeholder="Máx"
-                [ngModel]="filters().maxPrice"
-                (ngModelChange)="updateFilter('maxPrice', $event)"
-              />
-            </div>
           </div>
         </div>
 
@@ -184,14 +176,18 @@
               </svg>
             </button>
 
-            @for (page of getPageNumbers(); track page) {
-              <button
-                class="page-btn"
-                [class.active]="page === currentPage()"
-                (click)="goToPage(page)"
-              >
-                {{ page }}
-              </button>
+            @for (p of getVisiblePages(); track $index) {
+              @if (p === '...') {
+                <span class="page-ellipsis">...</span>
+              } @else {
+                <button
+                  class="page-btn"
+                  [class.active]="p === currentPage()"
+                  (click)="goToPage(+p)"
+                >
+                  {{ p }}
+                </button>
+              }
             }
 
             <button

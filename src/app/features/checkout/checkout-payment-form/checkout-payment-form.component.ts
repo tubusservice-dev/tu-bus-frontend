@@ -1,6 +1,6 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
-import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { PaymentService } from '../../../core/services/payment.service';
 import { UploadService } from '../../../core/services/upload.service';
 import { CreatePaymentRequest, PaymentMethod } from '../../../models/payment.model';
@@ -59,15 +59,19 @@ import { CreatePaymentRequest, PaymentMethod } from '../../../models/payment.mod
 
             <!-- Fecha del pago -->
             <div class="form-group">
-              <label for="paymentDate" class="form-label">Fecha del pago</label>
+              <label for="paymentDate" class="form-label">Fecha del pago <span class="required">*</span></label>
               <input
                 type="date"
                 id="paymentDate"
                 formControlName="paymentDate"
                 class="form-input"
+                [attr.max]="todayStr"
               />
               @if (paymentForm.get('paymentDate')?.touched && paymentForm.get('paymentDate')?.hasError('required')) {
                 <span class="form-error">La fecha de pago es requerida</span>
+              }
+              @if (paymentForm.get('paymentDate')?.touched && paymentForm.get('paymentDate')?.hasError('futureDate')) {
+                <span class="form-error">La fecha no puede ser futura</span>
               }
             </div>
 
@@ -145,6 +149,7 @@ export class CheckoutPaymentFormComponent implements OnInit {
   private readonly paymentService = inject(PaymentService);
   private readonly uploadService = inject(UploadService);
 
+  protected readonly todayStr = new Date().toISOString().split('T')[0];
   protected readonly isSubmitting = signal(false);
   protected readonly isUploading = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
@@ -156,8 +161,15 @@ export class CheckoutPaymentFormComponent implements OnInit {
   protected readonly paymentForm = this.fb.group({
     referenceNumber: ['', Validators.required],
     transactionAmount: [null as number | null, Validators.required],
-    paymentDate: ['', Validators.required],
+    paymentDate: ['', [Validators.required, this.notFutureDateValidator]],
   });
+
+  private notFutureDateValidator(control: AbstractControl): ValidationErrors | null {
+    if (!control.value) return null;
+    const selected = new Date(control.value + 'T23:59:59');
+    if (selected > new Date()) return { futureDate: true };
+    return null;
+  }
 
   ngOnInit(): void {
     this.orderId = this.route.snapshot.params['orderId'];

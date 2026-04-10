@@ -1,0 +1,47 @@
+<div class="notif-page">
+  <div class="notif-header">
+    <h2 class="notif-page-title">Notificaciones</h2>
+    <button type="button" class="mark-all" (click)="markAllRead()">Marcar todas como leidas</button>
+  </div>
+
+  @if (isLoading()) {
+    <div class="loading"><div class="spinner"></div></div>
+  } @else if (notifications().length === 0) {
+    <div class="empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="empty-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" /></svg>
+      <p>No tienes notificaciones</p>
+    </div>
+  } @else {
+    <div class="notif-list">
+      @for (n of notifications(); track n.id) {
+        <div class="notif-row" [class.unread]="!n.isRead" (click)="openNotification(n)">
+          <div class="row-icon" [ngClass]="getIconClass(n.icon)">
+            @switch (n.icon) {
+              @case ('success') { <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg> }
+              @case ('mechanic') { <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877" /></svg> }
+              @case ('cancel') { <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728L5.636 5.636" /></svg> }
+              @case ('warning') { <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" /></svg> }
+              @default { <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5" /></svg> }
+            }
+          </div>
+          <div class="row-content">
+            <span class="row-title">{{ n.title }}</span>
+            <span class="row-msg">{{ n.message }}</span>
+            <span class="row-time">{{ n.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
+          </div>
+          @if (!n.isRead) {
+            <span class="unread-dot"></span>
+          }
+        </div>
+      }
+    </div>
+
+    @if (totalPages() > 1) {
+      <div class="pagination">
+        <button [disabled]="currentPage() === 1" (click)="loadPage(currentPage() - 1)">Anterior</button>
+        <span>{{ currentPage() }} de {{ totalPages() }}</span>
+        <button [disabled]="currentPage() === totalPages()" (click)="loadPage(currentPage() + 1)">Siguiente</button>
+      </div>
+    }
+  }
+</div>

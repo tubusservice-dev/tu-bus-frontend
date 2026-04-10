@@ -1,10 +1,11 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, DestroyRef, inject, signal, computed, effect, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { CategoryService } from '../../../../../core/services/category.service';
-import { ProductService } from '../../../../../core/services/product.service';
-import { ZoneService } from '../../../../../core/services/zone.service';
-import { Category, Product } from '../../../../../models/product.model';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Subject, switchMap } from 'rxjs';
+import { ProductService, ProductQueryParams } from '../../../../../core/services/product.service';
+import { LocationService } from '../../../../../core/services/location.service';
+import { Product, VehicleType, VEHICLE_TYPE_LABELS } from '../../../../../models/product.model';
 
 @Component({
   selector: 'app-tubus-combos',
@@ -13,103 +14,116 @@ import { Category, Product } from '../../../../../models/product.model';
   templateUrl: './tubus-combos.component.html',
   styleUrl: './tubus-combos.component.scss'
 })
-export class TubusCombosComponent implements OnInit {
-  private readonly categoryService = inject(CategoryService);
+export class TubusCombosComponent {
   private readonly productService = inject(ProductService);
-  private readonly zoneService = inject(ZoneService);
+  private readonly locationService = inject(LocationService);
+  private readonly destroyRef = inject(DestroyRef);
 
-  // Signals para datos
-  protected readonly categories = signal<Category[]>([]);
-  private readonly allProducts = signal<Product[]>([]);
-  protected readonly products = computed(() => this.filterByZone(this.allProducts()));
-  protected readonly totalCombos = signal<number>(0);
+  private readonly fetchTrigger$ = new Subject<ProductQueryParams>();
+
+  // Signals
+  protected readonly products = signal<Product[]>([]);
+  protected readonly totalProducts = signal<number>(0);
   protected readonly selectedFilter = signal<string>('all');
   protected readonly isLoading = signal(true);
 
-  // Computed para mostrar botón "Ver todo"
-  protected readonly showViewAllButton = computed(() => this.totalCombos() > 4);
+  // Whether we're in fallback mode (no featured products exist)
+  private readonly useFallback = signal(false);
+  private hasFeaturedChecked = false;
 
-  // Computed para filtros dinámicos (Todos + categorías del backend)
+  // Computed: static filters from VehicleType enum
   protected readonly filters = computed(() => {
-    const baseFilter = [{ id: 'all', label: 'Todos' }];
-    const categoryFilters = this.categories().map(cat => ({
-      id: cat.id,
-      label: cat.name
-    }));
-    return [...baseFilter, ...categoryFilters];
+    const vehicleTypeFilters = Object.entries(VEHICLE_TYPE_LABELS)
+      .filter(([key]) => key !== VehicleType.ALL)
+      .map(([id, label]) => ({ id, label }));
+    return [{ id: 'all', label: 'Todos' }, ...vehicleTypeFilters];
   });
 
-  // Computed para productos filtrados
-  protected readonly filteredProducts = computed(() => {
-    const filter = this.selectedFilter();
-    const allProducts = this.products();
+  // Computed: show "view all" button based on backend total
+  protected readonly showViewAllButton = computed(() => this.totalProducts() > 4);
 
-    if (filter === 'all') {
-      return allProducts;
-    }
+  constructor() {
+    // Single subscription with switchMap to cancel in-flight requests
+    this.fetchTrigger$
+      .pipe(
+        switchMap(params => this.productService.getAll(params)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (response) => {
+          if (response.success) {
+            let data = response.data;
+            const total = response.pagination?.total || data.length;
 
-    // Filtrar por categoría seleccionada
-    return allProducts.filter(product =>
-      product.categories.some(cat => {
-        if (typeof cat === 'string') {
-          return cat === filter;
-        }
-        return cat.id === filter;
-      })
-    );
-  });
+            // First load with "all" filter: check if featured products exist
+            if (!this.hasFeaturedChecked && this.selectedFilter() === 'all') {
+              this.hasFeaturedChecked = true;
+              if (total === 0) {
+                this.useFallback.set(true);
+                this.loadProducts();
+                return;
+              }
+            }
 
-  ngOnInit(): void {
-    this.loadData();
-  }
+            // When a specific vehicleType filter is active, prioritize products
+            // that actually match that type over generic "all" products
+            const filter = this.selectedFilter();
+            if (filter !== 'all') {
+              const specific = data.filter(p => p.vehicleType === filter);
+              if (specific.length >= 4) {
+                data = specific.slice(0, 4);
+              } else if (specific.length > 0) {
+                // Fill remaining with generic products
+                const generic = data.filter(p => p.vehicleType === 'all' || p.vehicleType !== filter);
+                data = [...specific, ...generic].slice(0, 4);
+              }
+            }
 
-  private loadData(): void {
-    this.isLoading.set(true);
+            this.products.set(data);
+            this.totalProducts.set(total);
+          }
+          this.isLoading.set(false);
+        },
+        error: () => {
+          this.products.set([]);
+          this.totalProducts.set(0);
+          this.isLoading.set(false);
+        },
+      });
 
-    // Cargar categorías
-    this.categoryService.getAll().subscribe({
-      next: (response) => {
-        if (response.success) {
-          this.categories.set(response.data);
-        }
-      },
-      error: (err) => console.error('Error cargando categorías:', err)
-    });
+    // Reactive effect: triggers on location resolved OR filter change
+    effect(() => {
+      const resolved = this.locationService.isResolved();
+      const filter = this.selectedFilter();
 
-    // Cargar productos (combos destacados, límite 4)
-    this.productService.getAll({
-      isCombo: true,
-      isFeatured: true,
-      isActive: true,
-      limit: 4,
-    }).subscribe({
-      next: (response) => {
-        if (response.success) {
-          this.allProducts.set(response.data);
-          this.totalCombos.set(response.pagination?.total || response.data.length);
-        }
-        this.isLoading.set(false);
-      },
-      error: (err) => {
-        console.error('Error cargando productos:', err);
-        this.isLoading.set(false);
-      }
-    });
-  }
+      if (!resolved) return;
 
-  private filterByZone(products: Product[]): Product[] {
-    const zone = this.zoneService.selectedZone();
-    if (!zone) return products;
-
-    return products.filter(product => {
-      if (product.allRegions) return true;
-      if (!product.regions || product.regions.length === 0) return true;
-
-      return product.regions.some(r => {
-        const cityId = typeof r.city === 'string' ? r.city : r.city?.id;
-        return cityId === zone.city.id && r.municipalityCode === zone.municipality.code;
+      untracked(() => {
+        this.isLoading.set(true);
+        this.loadProducts();
       });
     });
+  }
+
+  private loadProducts(): void {
+    const branchIds = this.locationService.branchIds();
+    const filter = this.selectedFilter();
+
+    const params: ProductQueryParams = {
+      isActive: true,
+      limit: filter !== 'all' ? 12 : 4,
+      branchIds: branchIds.length > 0 ? branchIds.join(',') : undefined,
+    };
+
+    if (!this.useFallback()) {
+      params.isFeatured = true;
+    }
+
+    if (filter !== 'all') {
+      params.vehicleType = filter as VehicleType;
+    }
+
+    this.fetchTrigger$.next(params);
   }
 
   setFilter(filterId: string): void {

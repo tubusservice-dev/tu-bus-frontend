@@ -1,30 +1,53 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 import { CheckoutService, OilChangeServiceInfo } from '../services/checkout.service';
 import { CartService } from '../../../core/services/cart.service';
-import { ZoneService, Municipality } from '../../../core/services/zone.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { LocationService } from '../../../core/services/location.service';
+import { BranchZoneService } from '../../../core/services/branch-zone.service';
+import { VehicleService } from '../../../core/services/vehicle.service';
+import { Vehicle } from '../../../models/vehicle.model';
+import {
+  NAME_PATTERN, PHONE_VE_PATTERN, DOCUMENT_NUMBER_PATTERN, EMAIL_PATTERN,
+  MAX_FULLNAME_LENGTH, MAX_ADDRESS_LENGTH, MAX_REFERENCE_LENGTH, MAX_NOTES_LENGTH,
+  noNumbersValidator,
+} from '../../../shared/validators/form-validators';
+import { VehicleFormComponent } from '../../garage/vehicle-form/vehicle-form.component';
 
 @Component({
   selector: 'app-checkout-oil-change-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, VehicleFormComponent],
   templateUrl: './checkout-oil-change-form.component.html',
   styleUrl: './checkout-oil-change-form.component.scss',
 })
 export class CheckoutOilChangeFormComponent implements OnInit {
   protected readonly checkoutService = inject(CheckoutService);
   protected readonly cartService = inject(CartService);
-  protected readonly zoneService = inject(ZoneService);
+  protected readonly authService = inject(AuthService);
+  private readonly locationService = inject(LocationService);
+  private readonly branchZoneService = inject(BranchZoneService);
+  protected readonly vehicleService = inject(VehicleService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
 
+  protected readonly lockedFields = signal<Record<string, boolean>>({});
+
   protected oilChangeForm!: FormGroup;
 
-  protected readonly activeCities = this.zoneService.activeCities;
-  protected readonly availableMunicipalities = signal<Municipality[]>([]);
+  // Zone data
+  protected readonly branchCities = signal<{ code: string; name: string }[]>([]);
+  private readonly allMunicipalities = signal<{ name: string; slug: string; citySlug: string }[]>([]);
+  protected readonly availableMunicipalities = signal<{ code: string; name: string }[]>([]);
   protected readonly selectedCityName = signal('');
+
+  // Vehicle selection (multi-select)
+  protected readonly vehicles = signal<Vehicle[]>([]);
+  protected readonly showVehicleForm = signal(false);
+  protected readonly isLoadingVehicles = signal(false);
 
   protected readonly documentTypes = [
     { code: 'V', name: 'V - Venezolano' },
@@ -39,39 +62,110 @@ export class CheckoutOilChangeFormComponent implements OnInit {
       return;
     }
 
-    if (this.zoneService.activeCities().length === 0) {
-      this.zoneService.loadCities().subscribe();
-    }
-
     this.initForm();
+    this.loadBranchZones();
+    this.loadVehicles();
     this.loadSavedData();
   }
 
   private initForm(): void {
     this.oilChangeForm = this.fb.group({
-      fullName: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(100)]],
+      fullName: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(MAX_FULLNAME_LENGTH), Validators.pattern(NAME_PATTERN), noNumbersValidator]],
       documentType: ['V', Validators.required],
-      documentNumber: ['', [Validators.required, Validators.pattern(/^\d{6,10}$/)]],
-      phone: ['', [Validators.required, Validators.pattern(/^(0414|0424|0412|0416|0426)\d{7}$/)]],
-      email: ['', [Validators.email]],
+      documentNumber: ['', [Validators.required, Validators.pattern(DOCUMENT_NUMBER_PATTERN)]],
+      phone: ['', [Validators.required, Validators.pattern(PHONE_VE_PATTERN)]],
+      email: ['', [Validators.pattern(EMAIL_PATTERN)]],
       cityCode: ['', Validators.required],
       municipalityCode: ['', Validators.required],
-      address: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(300)]],
-      referencePoint: ['', Validators.maxLength(200)],
-      vehicleInfo: ['', Validators.maxLength(200)],
-      notes: ['', Validators.maxLength(500)],
+      address: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(MAX_ADDRESS_LENGTH)]],
+      referencePoint: ['', Validators.maxLength(MAX_REFERENCE_LENGTH)],
+      vehicleInfo: ['', Validators.maxLength(MAX_REFERENCE_LENGTH)],
+      notes: ['', Validators.maxLength(MAX_NOTES_LENGTH)],
+    });
+  }
+
+  private loadBranchZones(): void {
+    const branches = this.locationService.branches();
+    if (branches.length === 0) return;
+
+    const requests = branches.map((b) => this.branchZoneService.getByBranch(b.id));
+
+    forkJoin(requests).subscribe({
+      next: (responses) => {
+        const cityMap = new Map<string, { code: string; name: string }>();
+        const muniList: { name: string; slug: string; citySlug: string }[] = [];
+
+        for (const res of responses) {
+          for (const bz of (res as any).data || []) {
+            const zone = bz.zone as any;
+            const city = zone?.city as any;
+            if (!city) continue;
+
+            cityMap.set(city.slug, { code: city.slug, name: city.name });
+
+            for (const dc of bz.deliveryConfig) {
+              const muni = city.municipalities?.find((m: any) => m.slug === dc.municipality);
+              if (muni && !muniList.some((m) => m.slug === muni.slug && m.citySlug === city.slug)) {
+                muniList.push({ name: muni.name, slug: muni.slug, citySlug: city.slug });
+              }
+            }
+          }
+        }
+
+        this.branchCities.set(Array.from(cityMap.values()));
+        this.allMunicipalities.set(muniList);
+      },
+    });
+  }
+
+  private loadVehicles(): void {
+    this.isLoadingVehicles.set(true);
+    this.vehicleService.getMyVehicles(1, 50).subscribe({
+      next: (res: any) => {
+        const vehicleList = res.data || [];
+        this.vehicles.set(vehicleList);
+        this.isLoadingVehicles.set(false);
+
+        // Auto-select if only one vehicle and none selected
+        if (vehicleList.length === 1 && this.checkoutService.selectedVehicles().length === 0) {
+          this.checkoutService.addVehicle(vehicleList[0]);
+        }
+      },
+      error: () => this.isLoadingVehicles.set(false),
+    });
+  }
+
+  protected isVehicleSelected(vehicleId: string): boolean {
+    return this.checkoutService.selectedVehicles().some((v) => v.id === vehicleId);
+  }
+
+  protected toggleVehicle(vehicle: Vehicle): void {
+    this.checkoutService.toggleVehicle(vehicle);
+  }
+
+  protected openInlineVehicleForm(): void {
+    this.showVehicleForm.set(true);
+  }
+
+  protected cancelInlineVehicle(): void {
+    this.showVehicleForm.set(false);
+  }
+
+  protected onInlineVehicleSave(data: any): void {
+    this.vehicleService.create(data).subscribe({
+      next: (res: any) => {
+        const newVehicle = res.data;
+        this.vehicles.update((list) => [newVehicle, ...list]);
+        this.checkoutService.addVehicle(newVehicle);
+        this.showVehicleForm.set(false);
+      },
     });
   }
 
   private loadSavedData(): void {
     const savedInfo = this.checkoutService.oilChangeServiceInfo();
     if (savedInfo) {
-      const city = this.activeCities().find(c => c.code === savedInfo.cityCode);
-      if (city) {
-        this.availableMunicipalities.set(city.municipalities.filter(m => m.isActive));
-        this.selectedCityName.set(city.name);
-      }
-
+      this.onCityChange(savedInfo.cityCode);
       this.oilChangeForm.patchValue({
         fullName: savedInfo.fullName,
         documentType: savedInfo.documentType,
@@ -86,32 +180,113 @@ export class CheckoutOilChangeFormComponent implements OnInit {
         notes: savedInfo.notes || '',
       });
     } else {
-      const selectedZone = this.zoneService.selectedZone();
-      if (selectedZone) {
-        this.onCityChange(selectedZone.city.code);
-        this.oilChangeForm.patchValue({
-          cityCode: selectedZone.city.code,
-          municipalityCode: selectedZone.municipality.code,
-        });
-      }
+      // Refresh user profile from server, then prefill
+      this.authService.loadUserProfile().subscribe({
+        next: () => this.prefillFromUserProfile(),
+        error: () => this.prefillFromUserProfile(),
+      });
+
     }
   }
 
-  onCityChange(cityCode: string): void {
-    const city = this.activeCities().find(c => c.code === cityCode);
-    if (city) {
-      const activeMunicipalities = city.municipalities.filter(m => m.isActive);
-      this.availableMunicipalities.set(activeMunicipalities);
-      this.selectedCityName.set(city.name);
-      this.oilChangeForm.patchValue({ municipalityCode: '' });
-      if (activeMunicipalities.length === 1) {
-        this.oilChangeForm.patchValue({ municipalityCode: activeMunicipalities[0].code });
-      }
-    } else {
-      this.availableMunicipalities.set([]);
-      this.selectedCityName.set('');
-      this.oilChangeForm.patchValue({ municipalityCode: '' });
+  private prefillFromUserProfile(): void {
+    const user = this.authService.currentUser();
+    if (!user) return;
+
+    const locked: Record<string, boolean> = {};
+    const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
+
+    if (fullName) {
+      this.oilChangeForm.patchValue({ fullName });
+      this.oilChangeForm.get('fullName')?.disable();
+      locked['fullName'] = true;
     }
+    if (user.documentType) {
+      this.oilChangeForm.patchValue({ documentType: user.documentType });
+      this.oilChangeForm.get('documentType')?.disable();
+      locked['documentType'] = true;
+    }
+    if (user.documentNumber) {
+      this.oilChangeForm.patchValue({ documentNumber: user.documentNumber });
+      this.oilChangeForm.get('documentNumber')?.disable();
+      locked['documentNumber'] = true;
+    }
+    if (user.phone) {
+      this.oilChangeForm.patchValue({ phone: user.phone });
+      this.oilChangeForm.get('phone')?.disable();
+      locked['phone'] = true;
+    }
+    if (user.email) {
+      this.oilChangeForm.patchValue({ email: user.email });
+      this.oilChangeForm.get('email')?.disable();
+      locked['email'] = true;
+    }
+
+    this.lockedFields.set(locked);
+  }
+
+  protected readonly hasLockedFields = computed(() => {
+    const locked = this.lockedFields();
+    return ['fullName', 'documentType', 'documentNumber', 'phone', 'email'].some(f => locked[f]);
+  });
+
+  protected readonly hasLockedAddressFields = computed(() => {
+    const locked = this.lockedFields();
+    return ['cityCode', 'municipalityCode', 'address', 'referencePoint'].some(f => locked[f]);
+  });
+
+  protected unlockPersonalFields(): void {
+    const fields = ['fullName', 'documentType', 'documentNumber', 'phone', 'email'];
+    fields.forEach(field => this.oilChangeForm.get(field)?.enable());
+    const updated = { ...this.lockedFields() };
+    fields.forEach(f => delete updated[f]);
+    this.lockedFields.set(updated);
+  }
+
+  protected clearPersonalFields(): void {
+    this.oilChangeForm.patchValue({
+      fullName: '',
+      documentType: 'V',
+      documentNumber: '',
+      phone: '',
+      email: '',
+    });
+  }
+
+  protected unlockAddressFields(): void {
+    const fields = ['cityCode', 'municipalityCode', 'address', 'referencePoint'];
+    fields.forEach(field => this.oilChangeForm.get(field)?.enable());
+    const updated = { ...this.lockedFields() };
+    fields.forEach(f => delete updated[f]);
+    this.lockedFields.set(updated);
+  }
+
+  protected clearServiceFields(): void {
+    const fields = ['cityCode', 'municipalityCode', 'address', 'referencePoint', 'vehicleInfo', 'notes'];
+    fields.forEach(field => this.oilChangeForm.get(field)?.enable());
+    this.oilChangeForm.patchValue({
+      cityCode: '',
+      municipalityCode: '',
+      address: '',
+      referencePoint: '',
+      vehicleInfo: '',
+      notes: '',
+    });
+    const updated = { ...this.lockedFields() };
+    fields.forEach(f => delete updated[f]);
+    this.lockedFields.set(updated);
+    this.availableMunicipalities.set([]);
+    this.selectedCityName.set('');
+  }
+
+  onCityChange(cityCode: string): void {
+    const munis = this.allMunicipalities()
+      .filter((m) => m.citySlug === cityCode)
+      .map((m) => ({ code: m.slug, name: m.name }));
+    this.availableMunicipalities.set(munis);
+    const city = this.branchCities().find((c) => c.code === cityCode);
+    this.selectedCityName.set(city?.name || '');
+    this.oilChangeForm.patchValue({ municipalityCode: '' });
   }
 
   onSubmit(): void {
@@ -120,8 +295,13 @@ export class CheckoutOilChangeFormComponent implements OnInit {
       return;
     }
 
-    const formValue = this.oilChangeForm.value;
-    const city = this.activeCities().find(c => c.code === formValue.cityCode);
+    // At least one vehicle is mandatory for oil change service
+    if (this.checkoutService.selectedVehicles().length === 0) {
+      return;
+    }
+
+    const formValue = this.oilChangeForm.getRawValue();
+    const city = this.branchCities().find(c => c.code === formValue.cityCode);
     const municipality = this.availableMunicipalities().find(m => m.code === formValue.municipalityCode);
 
     if (!city || !municipality) return;
@@ -162,9 +342,13 @@ export class CheckoutOilChangeFormComponent implements OnInit {
     if (control.errors['required']) return 'Este campo es obligatorio';
     if (control.errors['minlength']) return `Mínimo ${control.errors['minlength'].requiredLength} caracteres`;
     if (control.errors['maxlength']) return `Máximo ${control.errors['maxlength'].requiredLength} caracteres`;
+    if (control.errors['noNumbers']) return 'No se permiten números en este campo';
     if (control.errors['pattern']) {
-      if (field === 'documentNumber') return 'Ingresa un número de documento válido (6-10 dígitos)';
-      if (field === 'phone') return 'Formato: 04XX-XXXXXXX';
+      if (field === 'documentNumber') return 'Solo números, entre 6 y 10 dígitos';
+      if (field === 'phone') return 'Formato: 04XX-XXXXXXX (ej: 04141234567)';
+      if (field === 'email') return 'Ingresa un email válido (ej: nombre@correo.com)';
+      if (field === 'fullName') return 'Solo letras, sin números';
+      return 'Formato inválido';
     }
     if (control.errors['email']) return 'Ingresa un email válido';
 

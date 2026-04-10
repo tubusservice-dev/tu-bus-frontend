@@ -10,8 +10,11 @@ import {
   WhatsAppConfig,
   CarouselsConfig,
   HomeHeroConfig,
+  HeroImagesConfig,
+  UpdateHeroImagesDto,
   PaginationConfig,
   UpdateDispatchDto,
+  ExchangeRateConfig,
   DEFAULT_SETTINGS,
   STORE_COLORS,
   ADMIN_COLORS,
@@ -40,8 +43,10 @@ export class SettingsService {
   readonly whatsappConfig = computed(() => this._settings().whatsapp);
   readonly carouselsConfig = computed(() => this._settings().carousels);
   readonly homeHeroConfig = computed(() => this._settings().homeHero);
+  readonly heroImagesConfig = computed(() => this._settings().heroImages);
   readonly paginationConfig = computed(() => this._settings().pagination);
   readonly dispatchConfig = computed(() => this._settings().dispatch);
+  readonly exchangeRateConfig = computed(() => this._settings().exchangeRate);
 
   /**
    * Cargar configuraciones desde el servidor (público)
@@ -54,6 +59,14 @@ export class SettingsService {
           const mergedSettings: Settings = {
             ...DEFAULT_SETTINGS,
             ...response.data,
+            heroImages: {
+              images: response.data.heroImages?.images ?? DEFAULT_SETTINGS.heroImages.images,
+              carousel: {
+                ...DEFAULT_SETTINGS.heroImages.carousel,
+                ...response.data.heroImages?.carousel,
+              },
+              floatingStats: response.data.heroImages?.floatingStats ?? DEFAULT_SETTINGS.heroImages.floatingStats,
+            },
             pagination: {
               ...DEFAULT_SETTINGS.pagination,
               ...response.data.pagination,
@@ -67,6 +80,10 @@ export class SettingsService {
                 ...DEFAULT_SETTINGS.dispatch.storePickup,
                 ...response.data.dispatch?.storePickup,
               },
+            },
+            exchangeRate: {
+              ...DEFAULT_SETTINGS.exchangeRate,
+              ...response.data.exchangeRate,
             },
           };
           this._settings.set(mergedSettings);
@@ -147,6 +164,19 @@ export class SettingsService {
   }
 
   /**
+   * Actualizar imágenes del Hero
+   */
+  updateHeroImages(data: UpdateHeroImagesDto): Observable<SettingsResponse> {
+    return this.http.put<SettingsResponse>(`${this.adminUrl}/hero-images`, data).pipe(
+      tap((response) => {
+        if (response.data) {
+          this._settings.set(response.data);
+        }
+      })
+    );
+  }
+
+  /**
    * Actualizar configuración de paginación
    */
   updatePagination(data: Partial<PaginationConfig>): Observable<SettingsResponse> {
@@ -190,6 +220,25 @@ export class SettingsService {
             },
           };
           this._settings.set(mergedSettings);
+        }
+      })
+    );
+  }
+
+  /**
+   * Actualizar configuración de tasa de cambio
+   */
+  updateExchangeRateConfig(data: Partial<ExchangeRateConfig>): Observable<SettingsResponse> {
+    return this.http.put<SettingsResponse>(`${this.adminUrl}/exchange-rate`, data).pipe(
+      tap((response) => {
+        if (response.data) {
+          this._settings.set({
+            ...this._settings(),
+            exchangeRate: {
+              ...DEFAULT_SETTINGS.exchangeRate,
+              ...response.data.exchangeRate,
+            },
+          });
         }
       })
     );

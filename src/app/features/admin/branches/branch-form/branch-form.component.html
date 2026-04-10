@@ -1,0 +1,334 @@
+<div class="branch-form-page">
+  <!-- Header -->
+  <header class="page-header">
+    <a routerLink="/admin/branches" class="back-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+      </svg>
+      Volver a Sucursales
+    </a>
+    <h1 class="page-title">{{ isEditMode() ? 'Editar Sucursal' : 'Nueva Sucursal' }}</h1>
+  </header>
+
+  @if (isLoading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <span>Cargando datos...</span>
+    </div>
+  } @else {
+    <!-- Error/Success -->
+    @if (errorMessage()) {
+      <div class="alert alert-error">
+        <span>{{ errorMessage() }}</span>
+        <button (click)="errorMessage.set(null)">&times;</button>
+      </div>
+    }
+
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="form-container" autocomplete="nope">
+      <!-- SECCION 1: Info Basica + Horarios (side by side en desktop) -->
+      <div class="top-row">
+        <section class="form-section top-left">
+        <h2 class="section-title">Informacion Basica</h2>
+
+        <div class="form-grid">
+          <div class="form-group col-span-2">
+            <label class="form-label">Nombre de la sucursal <span class="required">*</span></label>
+            <input type="text" formControlName="name" class="form-input" [class.error]="isInvalid('name')" placeholder="Ej: Sucursal Chacao" autocomplete="nope" maxlength="100" />
+            @if (hasError('name', 'required')) { <span class="form-error">El nombre es obligatorio</span> }
+          </div>
+
+          <div class="form-group col-span-2">
+            <label class="form-label">Direccion <span class="required">*</span></label>
+            <input type="text" formControlName="address" class="form-input" [class.error]="isInvalid('address')" placeholder="Ej: Av. Principal, Centro Comercial..." autocomplete="nope" maxlength="300" />
+            @if (hasError('address', 'required')) { <span class="form-error">La direccion es obligatoria</span> }
+          </div>
+
+          <div class="form-group col-span-2">
+            <label class="form-label">Descripcion</label>
+            <textarea formControlName="description" class="form-input form-textarea" rows="3" placeholder="Breve descripcion de la sucursal..." autocomplete="nope" maxlength="500"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Telefono WhatsApp <span class="required">*</span></label>
+            <input type="text" formControlName="whatsappPhone" class="form-input" [class.error]="isInvalid('whatsappPhone')" placeholder="Ej: 04141234567" autocomplete="nope" maxlength="12" inputmode="tel" />
+            @if (hasError('whatsappPhone', 'required')) { <span class="form-error">El WhatsApp es obligatorio</span> }
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Telefono Fijo</label>
+            <input type="text" formControlName="landlinePhone" class="form-input" placeholder="Ej: 02121234567" autocomplete="nope" maxlength="12" inputmode="tel" />
+          </div>
+        </div>
+
+        <!-- Coordenadas GPS -->
+        <div class="subsection">
+          <h3 class="subsection-title">Coordenadas GPS</h3>
+          <p class="subsection-hint">Clic derecho en Google Maps - "Copiar coordenadas" y pegalas aqui</p>
+          <div class="form-group" style="max-width: 400px;">
+            <label class="form-label">Coordenadas</label>
+            <input type="text" formControlName="coordinatesRaw" class="form-input" placeholder="Ej: 10.4806, -66.9036" autocomplete="nope" maxlength="50" />
+          </div>
+        </div>
+
+        <!-- Toggles -->
+        <div class="toggle-group">
+          <label class="toggle-label">
+            <input type="checkbox" formControlName="hasInStoreOilChange" class="toggle-input" />
+            <span class="toggle-switch"></span>
+            <span class="toggle-text">Cambio de aceite en tienda</span>
+          </label>
+          <p class="toggle-hint">Habilitar servicio de cambio de aceite presencial en esta sucursal</p>
+        </div>
+
+        <div class="toggle-group">
+          <label class="toggle-label">
+            <input type="checkbox" formControlName="isActive" class="toggle-input" />
+            <span class="toggle-switch"></span>
+            <span class="toggle-text">Sucursal activa</span>
+          </label>
+        </div>
+        </section>
+
+        <section class="form-section top-right">
+          <h2 class="section-title">Horarios de Atencion</h2>
+
+          <div class="schedule-grid">
+            @for (dayGroup of scheduleArray.controls; track $index; let i = $index) {
+              <div class="schedule-row" [class.closed-day]="dayGroup.get('isClosed')?.value">
+                <div class="day-name">{{ dayGroup.get('dayName')?.value }}</div>
+
+                <label class="toggle-label toggle-compact">
+                  <input type="checkbox" [formControl]="$any(dayGroup.get('isClosed'))" class="toggle-input" />
+                  <span class="toggle-switch toggle-switch-sm"></span>
+                  <span class="toggle-text-sm">{{ dayGroup.get('isClosed')?.value ? 'Cerrado' : 'Abierto' }}</span>
+                </label>
+
+                @if (!dayGroup.get('isClosed')?.value) {
+                  <div class="time-inputs">
+                    <input type="time" [formControl]="$any(dayGroup.get('openTime'))" class="form-input form-input-time" />
+                    <span class="time-separator">a</span>
+                    <input type="time" [formControl]="$any(dayGroup.get('closeTime'))" class="form-input form-input-time" />
+                  </div>
+                } @else {
+                  <div class="closed-label">No disponible</div>
+                }
+              </div>
+            }
+          </div>
+        </section>
+      </div>
+
+      <!-- SECCION 2: Zonas de Servicio -->
+      <section class="form-section">
+        <div class="section-header-row">
+          <h2 class="section-title">Zonas de Servicio</h2>
+        </div>
+
+        <!-- Zone search/add dropdown -->
+        <div class="zone-add-section">
+          <div class="custom-select-wrapper">
+            <div class="custom-select-input-wrapper">
+              <input
+                type="text"
+                class="custom-select-search"
+                placeholder="Buscar zona para agregar..."
+                autocomplete="nope"
+                [value]="zoneSearchTerm()"
+                (input)="onZoneSearch($event)"
+                (blur)="closeZoneDropdown()"
+              />
+              <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+              </svg>
+            </div>
+            @if (showZoneDropdown() && filteredZones().length > 0) {
+              <div class="custom-select-dropdown" (mousedown)="$event.preventDefault()">
+                @for (zone of filteredZones(); track zone.id) {
+                  <button
+                    type="button"
+                    class="custom-select-option zone-option"
+                    [class.zone-option-disabled]="zone.isAssigned"
+                    [disabled]="zone.isAssigned"
+                    (mousedown)="$event.preventDefault()"
+                    (click)="addZone(zone)"
+                  >
+                    <div class="zone-option-row">
+                      <span class="zone-option-name">{{ zone.name }}</span>
+                      @if (zone.isAssigned) {
+                        <span class="zone-assigned-badge">Asignada</span>
+                      }
+                    </div>
+                    <span class="zone-option-meta">
+                      @if (getZoneCityName(zone)) {
+                        <span>{{ getZoneCityName(zone) }}</span>
+                        <span class="zone-option-separator">·</span>
+                      }
+                      <span>{{ getZoneMunicipalityCount(zone) }} municipios</span>
+                    </span>
+                  </button>
+                }
+              </div>
+            }
+            @if (showZoneDropdown() && filteredZones().length === 0) {
+              <div class="custom-select-dropdown">
+                <div class="municipality-no-results">No se encontraron zonas disponibles</div>
+              </div>
+            }
+          </div>
+        </div>
+
+        @if (visibleExistingBranchZones.length === 0 && newBranchZones().length === 0) {
+          <div class="empty-zones-hint">
+            <p>No hay zonas asignadas. Busca y agrega zonas de servicio.</p>
+          </div>
+        }
+
+        <!-- Existing branch zones -->
+        @for (bz of visibleExistingBranchZones; track bz.id) {
+          <div class="zone-card" [class.zone-collapsed]="isExistingCollapsed(bz.id)">
+            <!-- Zone header -->
+            <div class="zone-card-header" (click)="toggleExistingCollapse(bz.id)">
+              <div class="zone-card-title-row">
+                <svg class="zone-chevron" [class.rotated]="!isExistingCollapsed(bz.id)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m9 5 7 7-7 7" />
+                </svg>
+                <span class="zone-card-title">{{ getExistingZoneName(bz) }}</span>
+                @if (getExistingZoneCityName(bz)) {
+                  <span class="zone-muni-count">{{ getExistingZoneCityName(bz) }}</span>
+                }
+                <span class="zone-muni-count">{{ bz.deliveryConfig.length }} municipio{{ bz.deliveryConfig.length !== 1 ? 's' : '' }}</span>
+              </div>
+              <button type="button" class="zone-remove-btn" (click)="$event.stopPropagation(); removeExistingZone(bz.id)" title="Eliminar zona">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                </svg>
+              </button>
+            </div>
+
+            <!-- Zone body (collapsible) -->
+            @if (!isExistingCollapsed(bz.id)) {
+              <div class="zone-card-body">
+                @if (bz.deliveryConfig.length > 0) {
+                  <div class="muni-config-list">
+                    @for (dc of bz.deliveryConfig; track dc.municipality) {
+                      <div class="muni-config-row">
+                        <span class="muni-config-name">{{ getMunicipalityDisplayName(dc.municipality, $any(bz.zone)) }}</span>
+                        <div class="muni-config-toggles">
+                          <!-- Delivery toggle -->
+                          <label class="toggle-label toggle-inline">
+                            <input type="checkbox" class="toggle-input" [checked]="dc.hasDelivery" (change)="toggleExistingDelivery(bz.id, dc.municipality)" />
+                            <span class="toggle-switch toggle-switch-sm"></span>
+                            <span class="toggle-text-xs">Delivery</span>
+                          </label>
+
+                          @if (dc.hasDelivery) {
+                            <!-- Free delivery toggle -->
+                            <label class="toggle-label toggle-inline">
+                              <input type="checkbox" class="toggle-input" [checked]="dc.freeDelivery" (change)="toggleExistingFreeDelivery(bz.id, dc.municipality)" />
+                              <span class="toggle-switch toggle-switch-sm"></span>
+                              <span class="toggle-text-xs">Gratis</span>
+                            </label>
+
+                            @if (!dc.freeDelivery) {
+                              <div class="delivery-charge-inline">
+                                <span class="toggle-text-xs">$</span>
+                                <input type="number" class="form-input form-input-xs" min="0" step="0.01" [value]="dc.deliveryCharge" (input)="updateExistingDeliveryCharge(bz.id, dc.municipality, $event)" autocomplete="nope" />
+                              </div>
+                            }
+                          }
+
+                        </div>
+                      </div>
+                    }
+                  </div>
+                } @else {
+                  <p class="empty-zones-hint">Esta zona no tiene municipios configurados.</p>
+                }
+              </div>
+            }
+          </div>
+        }
+
+        <!-- New branch zones (not yet saved) -->
+        @for (nbz of newBranchZones(); track $index; let nIdx = $index) {
+          <div class="zone-card" [class.zone-collapsed]="isNewCollapsed(nIdx)">
+            <!-- Zone header -->
+            <div class="zone-card-header" (click)="toggleNewCollapse(nIdx)">
+              <div class="zone-card-title-row">
+                <svg class="zone-chevron" [class.rotated]="!isNewCollapsed(nIdx)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m9 5 7 7-7 7" />
+                </svg>
+                <span class="zone-card-title">{{ nbz.zone.name }}</span>
+                @if (getZoneCityName(nbz.zone)) {
+                  <span class="zone-muni-count">{{ getZoneCityName(nbz.zone) }}</span>
+                }
+                <span class="zone-muni-count">{{ nbz.deliveryConfig.length }} municipio{{ nbz.deliveryConfig.length !== 1 ? 's' : '' }}</span>
+                <span class="municipality-badge-sm" style="background: var(--accent-light, #e0f2fe); color: var(--accent, #0284c7);">Nueva</span>
+              </div>
+              <button type="button" class="zone-remove-btn" (click)="$event.stopPropagation(); removeNewZone(nIdx)" title="Eliminar zona">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                </svg>
+              </button>
+            </div>
+
+            <!-- Zone body (collapsible) -->
+            @if (!isNewCollapsed(nIdx)) {
+              <div class="zone-card-body">
+                @if (nbz.deliveryConfig.length > 0) {
+                  <div class="muni-config-list">
+                    @for (dc of nbz.deliveryConfig; track dc.municipality) {
+                      <div class="muni-config-row">
+                        <span class="muni-config-name">{{ getMunicipalityDisplayName(dc.municipality, nbz.zone) }}</span>
+                        <div class="muni-config-toggles">
+                          <!-- Delivery toggle -->
+                          <label class="toggle-label toggle-inline">
+                            <input type="checkbox" class="toggle-input" [checked]="dc.hasDelivery" (change)="toggleNewDelivery(nIdx, dc.municipality)" />
+                            <span class="toggle-switch toggle-switch-sm"></span>
+                            <span class="toggle-text-xs">Delivery</span>
+                          </label>
+
+                          @if (dc.hasDelivery) {
+                            <!-- Free delivery toggle -->
+                            <label class="toggle-label toggle-inline">
+                              <input type="checkbox" class="toggle-input" [checked]="dc.freeDelivery" (change)="toggleNewFreeDelivery(nIdx, dc.municipality)" />
+                              <span class="toggle-switch toggle-switch-sm"></span>
+                              <span class="toggle-text-xs">Gratis</span>
+                            </label>
+
+                            @if (!dc.freeDelivery) {
+                              <div class="delivery-charge-inline">
+                                <span class="toggle-text-xs">$</span>
+                                <input type="number" class="form-input form-input-xs" min="0" step="0.01" [value]="dc.deliveryCharge" (input)="updateNewDeliveryCharge(nIdx, dc.municipality, $event)" autocomplete="nope" />
+                              </div>
+                            }
+                          }
+
+                        </div>
+                      </div>
+                    }
+                  </div>
+                } @else {
+                  <p class="empty-zones-hint">Esta zona no tiene municipios configurados.</p>
+                }
+              </div>
+            }
+          </div>
+        }
+      </section>
+
+      <!-- Submit -->
+      <div class="form-actions">
+        <a routerLink="/admin/branches" class="btn-cancel">Cancelar</a>
+        <button type="submit" class="btn-submit" [disabled]="isSubmitting()">
+          @if (isSubmitting()) {
+            <span class="spinner-sm"></span>
+            Guardando...
+          } @else {
+            {{ isEditMode() ? 'Actualizar Sucursal' : 'Crear Sucursal' }}
+          }
+        </button>
+      </div>
+    </form>
+  }
+</div>

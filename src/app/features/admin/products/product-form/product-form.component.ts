@@ -1,6 +1,7 @@
 import { Component, inject, signal, OnInit, computed, ElementRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, ActivatedRoute, RouterLink } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
+import { Location } from '@angular/common';
 import { FormBuilder, FormGroup, FormArray, ReactiveFormsModule, Validators } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { ProductService } from '../../../../core/services/product.service';
@@ -8,32 +9,39 @@ import { LineService } from '../../../../core/services/line.service';
 import { CategoryService } from '../../../../core/services/category.service';
 import { BrandService } from '../../../../core/services/brand.service';
 import { UploadService } from '../../../../core/services/upload.service';
-import { ZoneService, City, Municipality } from '../../../../core/services/zone.service';
+import { BranchProductService } from '../../../../core/services/branch-product.service';
+import { BranchService } from '../../../../core/services/branch.service';
+import { BranchProduct } from '../../../../models/branch-product.model';
+import { Branch } from '../../../../models/branch.model';
 import {
   Line,
   Category,
   Brand,
+  VehicleType,
+  VEHICLE_TYPE_LABELS,
 } from '../../../../models';
 import { ImageCarouselComponent } from '../../../../shared/components/image-carousel/image-carousel.component';
 
 @Component({
   selector: 'app-product-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, ImageCarouselComponent],
+  imports: [CommonModule, ReactiveFormsModule, ImageCarouselComponent],
   templateUrl: './product-form.component.html',
   styleUrl: './product-form.component.scss',
 })
 export class ProductFormComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
+  protected readonly location = inject(Location);
   private readonly route = inject(ActivatedRoute);
   private readonly productService = inject(ProductService);
   private readonly lineService = inject(LineService);
   private readonly categoryService = inject(CategoryService);
   private readonly brandService = inject(BrandService);
   private readonly uploadService = inject(UploadService);
-  private readonly zoneService = inject(ZoneService);
   private readonly elementRef = inject(ElementRef);
+  private readonly branchProductService = inject(BranchProductService);
+  private readonly branchService = inject(BranchService);
 
   // Estado
   protected readonly productId = signal<string | null>(null);
@@ -94,27 +102,54 @@ export class ProductFormComponent implements OnInit {
     return filtered;
   });
 
-  // Zonas/Regiones - Selector de dos pasos (Ciudad -> Municipio)
-  protected readonly zones = signal<City[]>([]);
-  protected readonly selectedRegions = signal<Array<{ city: City; municipality: Municipality }>>([]);
-  protected readonly showZoneDropdown = signal(false);
-  protected readonly zoneSelectorStep = signal<'city' | 'municipality'>('city');
-  protected readonly selectedCityForMunicipality = signal<City | null>(null);
+  // Branch-Product assignment
+  protected readonly availableBranches = signal<Branch[]>([]);
+  protected readonly existingBranchProducts = signal<BranchProduct[]>([]);
+  protected readonly newBranchProducts = signal<Array<{ branch: Branch; stock: number }>>([]);
+  protected readonly deletedBranchProductIds = signal<string[]>([]);
+  protected readonly branchSearchTerm = signal('');
+  protected readonly showBranchDropdown = signal(false);
 
-  // Ciudades disponibles para seleccionar
-  protected readonly availableCities = computed(() => {
-    return this.zones().filter(z => z.isActive);
+  protected readonly filteredBranches = computed(() => {
+    const search = this.branchSearchTerm().toLowerCase().trim();
+    const assignedIds = new Set([
+      ...this.existingBranchProducts()
+        .filter(bp => !this.deletedBranchProductIds().includes(bp.id))
+        .map(bp => typeof bp.branch === 'string' ? bp.branch : (bp.branch as Branch).id),
+      ...this.newBranchProducts().map(nbp => nbp.branch.id),
+    ]);
+    let filtered = this.availableBranches().filter(b => b.isActive && !assignedIds.has(b.id));
+    if (search) {
+      filtered = filtered.filter(b => b.name.toLowerCase().includes(search));
+    }
+    return filtered;
   });
 
-  // Municipios disponibles de la ciudad seleccionada
-  protected readonly availableMunicipalities = computed(() => {
-    const city = this.selectedCityForMunicipality();
-    if (!city) return [];
-    const selectedMuniCodes = this.selectedRegions()
-      .filter(r => r.city.id === city.id)
-      .map(r => r.municipality.code);
-    return city.municipalities.filter(m => m.isActive && !selectedMuniCodes.includes(m.code));
+  protected readonly totalStock = computed(() => {
+    const existingStock = this.existingBranchProducts()
+      .filter(bp => !this.deletedBranchProductIds().includes(bp.id))
+      .reduce((sum, bp) => sum + bp.stock, 0);
+    const newStock = this.newBranchProducts().reduce((sum, nbp) => sum + nbp.stock, 0);
+    return existingStock + newStock;
   });
+
+  protected readonly outOfStockCount = computed(() => {
+    const existingOos = this.existingBranchProducts()
+      .filter(bp => !this.deletedBranchProductIds().includes(bp.id) && bp.stock === 0).length;
+    const newOos = this.newBranchProducts().filter(nbp => nbp.stock === 0).length;
+    return existingOos + newOos;
+  });
+
+  protected readonly activeBranchCount = computed(() => {
+    return this.existingBranchProducts()
+      .filter(bp => !this.deletedBranchProductIds().includes(bp.id)).length
+      + this.newBranchProducts().length;
+  });
+
+  // Vehicle type options for select
+  protected readonly vehicleTypeOptions = Object.entries(VEHICLE_TYPE_LABELS).map(
+    ([value, label]) => ({ value, label })
+  );
 
   // Sección activa (simplificado a 3 secciones)
   protected readonly activeSection = signal<'basic' | 'vehicle' | 'images'>('basic');
@@ -133,21 +168,20 @@ export class ProductFormComponent implements OnInit {
     // Detalles adicionales (opcionales)
     brand: [''],
     productModel: [''],
+    vehicleType: [VehicleType.ALL],
 
-    // Inventario (precio y stock requeridos)
+    // Precio
     price: [0, [Validators.required, Validators.min(0)]],
     comparePrice: [null],
-    stock: [1, [Validators.required, Validators.min(0)]],
-    lowStockThreshold: [5],
+    // TODO: stock is now managed per-branch via BranchProduct
 
     // Estado
     isActive: [true],
     isFeatured: [false],
 
-    // Combo, Delivery y Regiones
+    // Combo y Delivery
     isCombo: [false],
     freeOilChangeService: [false],
-    allRegions: [false],
   });
 
   ngOnInit(): void {
@@ -163,13 +197,13 @@ export class ProductFormComponent implements OnInit {
         lines: this.lineService.getAllAdmin(),
         categories: this.categoryService.getAllAdmin(),
         brands: this.brandService.getAllAdmin(),
-        zones: this.zoneService.getAllAdmin()
+        branches: this.branchService.getActive(),
       }).subscribe({
         next: (responses) => {
           this.lines.set(responses.lines.data);
           this.categories.set(responses.categories.data);
           this.brands.set(responses.brands.data);
-          this.zones.set(responses.zones);
+          this.availableBranches.set(responses.branches.data);
           // Ahora cargar el producto con las categorías y marcas ya disponibles
           this.loadProduct(id);
         },
@@ -183,7 +217,7 @@ export class ProductFormComponent implements OnInit {
       this.loadLines();
       this.loadCategories();
       this.loadBrands();
-      this.loadZones();
+      this.loadAvailableBranches();
     }
   }
 
@@ -224,13 +258,11 @@ export class ProductFormComponent implements OnInit {
   }
 
   /**
-   * Cargar zonas/regiones
+   * Load available branches for assignment
    */
-  private loadZones(): void {
-    this.zoneService.getAllAdmin().subscribe({
-      next: (zones) => {
-        this.zones.set(zones);
-      },
+  private loadAvailableBranches(): void {
+    this.branchService.getActive().subscribe({
+      next: (response) => this.availableBranches.set(response.data),
       error: () => {},
     });
   }
@@ -258,51 +290,15 @@ export class ProductFormComponent implements OnInit {
           line: lineId,
           brand: product.brand,
           productModel: product.productModel,
+          vehicleType: (product as any).vehicleType || VehicleType.ALL,
           price: product.price,
           comparePrice: product.comparePrice,
-          stock: product.stock,
           isActive: product.isActive,
           isFeatured: product.isFeatured,
           isCombo: product.isCombo || false,
           freeOilChangeService: product.freeOilChangeService || false,
-          allRegions: product.allRegions || false,
         });
         this.images.set(product.images || []);
-
-        // Cargar regiones seleccionadas (ciudad + municipio)
-        if (product.regions && Array.isArray(product.regions)) {
-          const regs: Array<{ city: City; municipality: Municipality }> = [];
-          for (const r of product.regions) {
-            // r tiene { city: {...}, municipalityCode: string }
-            const cityData: any = r.city;
-            const muniCode = r.municipalityCode;
-
-            if (cityData && muniCode) {
-              // Buscar la ciudad en las zonas cargadas o usar la del producto
-              let city: City;
-              if (typeof cityData === 'string') {
-                const found = this.zones().find(z => z.id === cityData);
-                if (found) city = found;
-                else continue;
-              } else {
-                city = {
-                  id: cityData.id || cityData._id,
-                  code: cityData.code || '',
-                  name: cityData.name || '',
-                  isActive: cityData.isActive !== false,
-                  municipalities: cityData.municipalities || []
-                };
-              }
-
-              // Buscar el municipio en la ciudad
-              const municipality = city.municipalities.find(m => m.code === muniCode);
-              if (municipality) {
-                regs.push({ city, municipality });
-              }
-            }
-          }
-          this.selectedRegions.set(regs);
-        }
 
         // Cargar categorías seleccionadas
         if (product.categories && Array.isArray(product.categories)) {
@@ -344,6 +340,12 @@ export class ProductFormComponent implements OnInit {
         }
 
         this.isLoading.set(false);
+
+        // Load BranchProducts for this product
+        this.branchProductService.getByProduct(id).subscribe({
+          next: (response) => this.existingBranchProducts.set(response.data),
+          error: () => {},
+        });
       },
       error: (error) => {
         this.errorMessage.set(error.error?.message || 'Error al cargar producto');
@@ -410,8 +412,8 @@ export class ProductFormComponent implements OnInit {
   onSubmit(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
-      // Ir a la sección con errores (solo nombre, precio y stock son requeridos)
-      if (this.hasErrors(['name', 'price', 'stock'])) {
+      // Ir a la sección con errores (solo nombre y precio son requeridos)
+      if (this.hasErrors(['name', 'price'])) {
         this.activeSection.set('basic');
       }
       return;
@@ -428,13 +430,10 @@ export class ProductFormComponent implements OnInit {
       categories: this.selectedCategories().map(c => c.id),
       line: formValue.line || undefined,
       brand: this.selectedBrand()?.id || undefined,
+      vehicleType: formValue.vehicleType || VehicleType.ALL,
       isCombo: formValue.isCombo || false,
       freeOilChangeService: formValue.freeOilChangeService || false,
-      allRegions: formValue.allRegions || false,
-      regions: formValue.allRegions ? [] : this.selectedRegions().map(r => ({
-        city: r.city.id,
-        municipalityCode: r.municipality.code
-      })),
+      // TODO: branches assigned via BranchProduct
     };
 
     const request$ = this.isEditMode()
@@ -442,8 +441,9 @@ export class ProductFormComponent implements OnInit {
       : this.productService.create(data);
 
     request$.subscribe({
-      next: () => {
-        this.router.navigate(['/admin/products']);
+      next: (response) => {
+        const productId = response.data.id || this.productId()!;
+        this.saveBranchProducts(productId);
       },
       error: (error) => {
         this.errorMessage.set(error.error?.message || 'Error al guardar producto');
@@ -526,9 +526,9 @@ export class ProductFormComponent implements OnInit {
     if (brandSelector && !brandSelector.contains(target)) {
       this.showBrandDropdown.set(false);
     }
-    const zoneSelector = this.elementRef.nativeElement.querySelector('.zone-selector');
-    if (zoneSelector && !zoneSelector.contains(target)) {
-      this.showZoneDropdown.set(false);
+    const branchSelector = this.elementRef.nativeElement.querySelector('.branch-selector');
+    if (branchSelector && !branchSelector.contains(target)) {
+      this.showBranchDropdown.set(false);
     }
   }
 
@@ -566,63 +566,136 @@ export class ProductFormComponent implements OnInit {
     this.selectedBrand.set(null);
   }
 
-  // ==================== ZONAS/REGIONES ====================
+  // ==================== SUCURSALES / BRANCH-PRODUCT ====================
 
   /**
-   * Abrir/cerrar dropdown de zonas
+   * Filter branch search input
    */
-  toggleZoneDropdown(): void {
-    if (this.showZoneDropdown()) {
-      this.closeZoneDropdown();
+  onBranchSearch(event: Event): void {
+    this.branchSearchTerm.set((event.target as HTMLInputElement).value);
+    this.showBranchDropdown.set(true);
+  }
+
+  /**
+   * Open branch dropdown
+   */
+  openBranchDropdown(): void {
+    this.showBranchDropdown.set(true);
+  }
+
+  /**
+   * Close branch dropdown with delay for click registration
+   */
+  closeBranchDropdown(): void {
+    setTimeout(() => this.showBranchDropdown.set(false), 200);
+  }
+
+  /**
+   * Add a branch with stock 0
+   */
+  addBranch(branch: Branch): void {
+    this.newBranchProducts.update(list => [...list, { branch, stock: 0 }]);
+    this.branchSearchTerm.set('');
+    // Keep dropdown open so the user can select multiple branches consecutively
+  }
+
+  /**
+   * Mark an existing BranchProduct for deletion
+   */
+  removeExistingBranchProduct(bpId: string): void {
+    this.deletedBranchProductIds.update(ids => [...ids, bpId]);
+  }
+
+  /**
+   * Remove a newly added branch product
+   */
+  removeNewBranchProduct(index: number): void {
+    this.newBranchProducts.update(list => list.filter((_, i) => i !== index));
+  }
+
+  /**
+   * Update stock on an existing BranchProduct (local state)
+   */
+  updateExistingStock(bpId: string, event: Event): void {
+    const value = parseInt((event.target as HTMLInputElement).value) || 0;
+    this.existingBranchProducts.update(list =>
+      list.map(bp => bp.id === bpId ? { ...bp, stock: Math.max(0, value) } : bp)
+    );
+  }
+
+  /**
+   * Update stock on a new branch product (local state)
+   */
+  updateNewStock(index: number, event: Event): void {
+    const value = parseInt((event.target as HTMLInputElement).value) || 0;
+    this.newBranchProducts.update(list =>
+      list.map((item, i) => i === index ? { ...item, stock: Math.max(0, value) } : item)
+    );
+  }
+
+  /**
+   * Get branch name from a BranchProduct (populated or string ID)
+   */
+  getBranchName(bp: BranchProduct): string {
+    if (typeof bp.branch === 'string') return bp.branch;
+    return (bp.branch as Branch)?.name || '';
+  }
+
+  /**
+   * Persist BranchProduct changes (deletions, updates, new assignments)
+   */
+  private saveBranchProducts(productId: string): void {
+    const deletions = this.deletedBranchProductIds().map(id =>
+      this.branchProductService.delete(id)
+    );
+
+    const updates = this.existingBranchProducts()
+      .filter(bp => !this.deletedBranchProductIds().includes(bp.id))
+      .map(bp => this.branchProductService.update(bp.id, { stock: bp.stock }));
+
+    const newAssignments = this.newBranchProducts();
+
+    const operations = [...deletions, ...updates];
+
+    if (operations.length > 0) {
+      forkJoin(operations).subscribe({
+        next: () => {
+          if (newAssignments.length > 0) {
+            this.createNewBranchProducts(productId);
+          } else {
+            this.location.back();
+          }
+        },
+        error: () => {
+          if (newAssignments.length > 0) {
+            this.createNewBranchProducts(productId);
+          } else {
+            this.location.back();
+          }
+        },
+      });
+    } else if (newAssignments.length > 0) {
+      this.createNewBranchProducts(productId);
     } else {
-      this.zoneSelectorStep.set('city');
-      this.selectedCityForMunicipality.set(null);
-      this.showZoneDropdown.set(true);
+      this.location.back();
     }
   }
 
   /**
-   * Cerrar dropdown de zonas
+   * Batch-create new BranchProduct assignments
    */
-  closeZoneDropdown(): void {
-    this.showZoneDropdown.set(false);
-    this.zoneSelectorStep.set('city');
-    this.selectedCityForMunicipality.set(null);
+  private createNewBranchProducts(productId: string): void {
+    const data = {
+      productId,
+      assignments: this.newBranchProducts().map(nbp => ({
+        branchId: nbp.branch.id,
+        stock: nbp.stock,
+      })),
+    };
+    this.branchProductService.createBatch(data).subscribe({
+      next: () => this.location.back(),
+      error: () => this.location.back(),
+    });
   }
 
-  /**
-   * Seleccionar una ciudad (paso 1)
-   */
-  selectCityForRegion(city: City): void {
-    this.selectedCityForMunicipality.set(city);
-    this.zoneSelectorStep.set('municipality');
-  }
-
-  /**
-   * Volver a selección de ciudad
-   */
-  backToCity(): void {
-    this.zoneSelectorStep.set('city');
-    this.selectedCityForMunicipality.set(null);
-  }
-
-  /**
-   * Seleccionar un municipio (paso 2) - agrega la región
-   */
-  selectMunicipalityForRegion(municipality: Municipality): void {
-    const city = this.selectedCityForMunicipality();
-    if (!city) return;
-
-    this.selectedRegions.update(regions => [...regions, { city, municipality }]);
-    this.closeZoneDropdown();
-  }
-
-  /**
-   * Eliminar una región seleccionada
-   */
-  removeRegion(region: { city: City; municipality: Municipality }): void {
-    this.selectedRegions.update(regions =>
-      regions.filter(r => !(r.city.id === region.city.id && r.municipality.code === region.municipality.code))
-    );
-  }
 }

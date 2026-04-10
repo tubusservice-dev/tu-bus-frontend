@@ -1,0 +1,45 @@
+.notif-page { @apply space-y-4; }
+
+.notif-header { @apply flex items-center justify-between; }
+.notif-page-title { @apply text-lg font-semibold text-gray-900 dark:text-white; }
+.mark-all { @apply text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline; }
+
+.loading { @apply flex justify-center py-12; }
+.spinner { @apply w-8 h-8 border-4 border-gray-200 dark:border-gray-700 border-t-red-700 rounded-full animate-spin; }
+
+.empty {
+  @apply flex flex-col items-center py-16 text-gray-400 dark:text-gray-500 gap-3;
+  .empty-icon { @apply w-10 h-10; }
+  p { @apply text-sm; }
+}
+
+.notif-list { @apply bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden; }
+
+.notif-row {
+  @apply flex items-center gap-3 px-4 py-3 border-b border-gray-100 dark:border-gray-700/50 cursor-pointer;
+  @apply hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors;
+  &.unread { @apply bg-blue-50/50 dark:bg-blue-900/10; }
+}
+
+.row-icon {
+  @apply w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0;
+  svg { @apply w-4 h-4; }
+  &.icon-success { @apply bg-green-100 dark:bg-green-900/30; svg { @apply text-green-600; } }
+  &.icon-mechanic { @apply bg-blue-100 dark:bg-blue-900/30; svg { @apply text-blue-600; } }
+  &.icon-order { @apply bg-indigo-100 dark:bg-indigo-900/30; svg { @apply text-indigo-600; } }
+  &.icon-cancel { @apply bg-red-100 dark:bg-red-900/30; svg { @apply text-red-600; } }
+  &.icon-warning { @apply bg-amber-100 dark:bg-amber-900/30; svg { @apply text-amber-600; } }
+  &.icon-payment { @apply bg-emerald-100 dark:bg-emerald-900/30; svg { @apply text-emerald-600; } }
+}
+
+.row-content { @apply flex flex-col min-w-0 flex-1; }
+.row-title { @apply text-sm font-semibold text-gray-900 dark:text-white truncate; }
+.row-msg { @apply text-xs text-gray-500 dark:text-gray-400 line-clamp-2; }
+.row-time { @apply text-[10px] text-gray-400 dark:text-gray-500 mt-0.5; }
+.unread-dot { @apply w-2.5 h-2.5 bg-blue-500 rounded-full flex-shrink-0; }
+
+.pagination {
+  @apply flex items-center justify-center gap-4 pt-4;
+  button { @apply px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed; }
+  span { @apply text-xs text-gray-500 dark:text-gray-400; }
+}

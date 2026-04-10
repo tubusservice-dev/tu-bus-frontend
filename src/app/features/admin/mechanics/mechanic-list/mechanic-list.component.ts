@@ -55,10 +55,11 @@ export class MechanicListComponent implements OnInit {
     );
   }
 
-  getZoneName(mechanic: Mechanic): string {
-    if (!mechanic.zone) return '-';
-    if (typeof mechanic.zone === 'string') return mechanic.zone;
-    return mechanic.zone.name;
+  getBranchNames(mechanic: Mechanic): string {
+    if (!mechanic.branches || mechanic.branches.length === 0) return '-';
+    return mechanic.branches
+      .map(b => typeof b === 'object' && b ? b.name : String(b))
+      .join(', ');
   }
 
   toggleStatus(mechanic: Mechanic): void {

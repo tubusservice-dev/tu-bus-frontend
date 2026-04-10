@@ -58,7 +58,7 @@
 }
 
 .filters-grid {
-  @apply grid grid-cols-1 sm:grid-cols-3 gap-3;
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3;
 }
 
 .filter-group {
@@ -262,6 +262,15 @@
 
 .category-tag {
   @apply px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full;
+
+  &.vehicle-type {
+    @apply bg-blue-100 text-blue-700 font-medium;
+  }
+}
+
+:host-context(.dark) .category-tag.vehicle-type {
+  background-color: rgba(59, 130, 246, 0.15);
+  color: #93c5fd;
 }
 
 .category-more {
@@ -407,16 +416,27 @@
 
 // Paginación
 .pagination {
-  @apply flex items-center justify-center gap-4 mt-6;
+  @apply flex items-center justify-center gap-1 mt-6;
 }
 
 .pagination-btn {
-  @apply px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium;
-  @apply hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors;
+  @apply w-10 h-10 flex items-center justify-center rounded-lg text-sm font-medium transition-colors;
+  @apply text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800;
+  @apply disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent;
+
+  svg { @apply w-5 h-5; }
+
+  &.active {
+    @apply bg-blue-600 text-white hover:bg-blue-700;
+  }
+}
+
+.pagination-ellipsis {
+  @apply w-10 h-10 flex items-center justify-center text-sm text-gray-400 dark:text-gray-500;
 }
 
 .pagination-info {
-  @apply text-sm text-gray-500 dark:text-gray-400;
+  @apply text-xs text-gray-500 dark:text-gray-400 ml-3;
 }
 
 // Modal

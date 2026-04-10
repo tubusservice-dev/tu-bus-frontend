@@ -8,6 +8,7 @@ export const environment = {
 
   // === URL del Backend ===
   apiUrl: 'https://tu-bus-backend-production.up.railway.app/api',
+  clientUrl: 'https://tubusexpress.web.app',
 
   appName: 'TuBus Express',
   version: '1.0.0',

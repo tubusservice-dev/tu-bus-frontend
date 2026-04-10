@@ -195,6 +195,28 @@ export const routes: Routes = [
                 (m) => m.ZoneFormComponent
               ),
           },
+          // Sucursales
+          {
+            path: 'branches',
+            loadComponent: () =>
+              import('./features/admin/branches/branch-list/branch-list.component').then(
+                (m) => m.BranchListComponent
+              ),
+          },
+          {
+            path: 'branches/create',
+            loadComponent: () =>
+              import('./features/admin/branches/branch-form/branch-form.component').then(
+                (m) => m.BranchFormComponent
+              ),
+          },
+          {
+            path: 'branches/edit/:id',
+            loadComponent: () =>
+              import('./features/admin/branches/branch-form/branch-form.component').then(
+                (m) => m.BranchFormComponent
+              ),
+          },
           // Mecanicos
           {
             path: 'mechanics',
@@ -215,6 +237,20 @@ export const routes: Routes = [
             loadComponent: () =>
               import('./features/admin/mechanics/mechanic-form/mechanic-form.component').then(
                 (m) => m.MechanicFormComponent
+              ),
+          },
+          {
+            path: 'mechanics/detail/:id',
+            loadComponent: () =>
+              import('./features/admin/mechanics/mechanic-detail/mechanic-detail.component').then(
+                (m) => m.MechanicDetailComponent
+              ),
+          },
+          {
+            path: 'mechanics/:id/calendar',
+            loadComponent: () =>
+              import('./features/admin/mechanics/mechanic-calendar/mechanic-calendar.component').then(
+                (m) => m.MechanicCalendarComponent
               ),
           },
           // Ordenes (admin)
@@ -362,7 +398,31 @@ export const routes: Routes = [
           import('./features/profile/profile.component').then((m) => m.ProfileComponent),
         canActivate: [authGuard],
       },
+      {
+        path: 'perfil/pedidos/:id/servicio',
+        loadComponent: () =>
+          import('./features/orders/service-tracking/service-tracking.component').then(
+            (m) => m.ServiceTrackingComponent
+          ),
+        canActivate: [authGuard],
+      },
+      {
+        path: 'perfil/pedidos/:id',
+        loadComponent: () =>
+          import('./features/orders/order-detail/order-detail.component').then(
+            (m) => m.OrderDetailComponent
+          ),
+        canActivate: [authGuard],
+      },
     ],
+  },
+  // Pagina publica de progreso del mecanico (sin layout, sin auth)
+  {
+    path: 'mechanic/progress/:token',
+    loadComponent: () =>
+      import('./features/mechanic-progress/mechanic-progress.component').then(
+        (m) => m.MechanicProgressComponent
+      ),
   },
   // Callback de OAuth
   {

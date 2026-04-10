@@ -33,6 +33,32 @@ export enum OilType {
 }
 
 /**
+ * Tipo de vehículo al que aplica el producto
+ */
+export enum VehicleType {
+  ALL = 'all',
+  CARRO = 'carro',
+  CAMIONETA = 'camioneta',
+  MOTO = 'moto',
+  CAMION = 'camion',
+  AUTOBUS = 'autobus',
+  MAQUINARIA_PESADA = 'maquinaria-pesada',
+}
+
+/**
+ * Labels para mostrar en UI del tipo de vehículo
+ */
+export const VEHICLE_TYPE_LABELS: Record<VehicleType, string> = {
+  [VehicleType.ALL]: 'Todos los vehículos',
+  [VehicleType.CARRO]: 'Carro',
+  [VehicleType.CAMIONETA]: 'Camioneta',
+  [VehicleType.MOTO]: 'Moto',
+  [VehicleType.CAMION]: 'Camión',
+  [VehicleType.AUTOBUS]: 'Autobús',
+  [VehicleType.MAQUINARIA_PESADA]: 'Maquinaria pesada',
+};
+
+/**
  * Motor compatible
  */
 export interface CompatibleEngine {
@@ -101,14 +127,6 @@ export interface ShippingAgency {
 }
 
 /**
- * Región del producto (ciudad + municipio)
- */
-export interface ProductRegion {
-  city: string | { id: string; name: string; code: string; municipalities?: Array<{ code: string; name: string; isActive: boolean }> };
-  municipalityCode: string;
-}
-
-/**
  * Producto
  */
 export interface Product {
@@ -120,6 +138,7 @@ export interface Product {
   images: string[];
   brand?: string | Brand;
   productModel: string;
+  vehicleType: VehicleType;
   compatibleEngines?: CompatibleEngine[];
   oilViscosity?: OilViscosity;
   oilType?: OilType;
@@ -127,7 +146,6 @@ export interface Product {
   disclaimerRequired?: boolean;
   price: number;
   comparePrice?: number;
-  stock: number;
   line?: string | Line;
   categories: (string | Category)[];
   tags: string[];
@@ -135,9 +153,9 @@ export interface Product {
   isFeatured: boolean;
   isCombo: boolean;
   freeOilChangeService: boolean;
-  allRegions: boolean;
-  regions?: ProductRegion[];
   createdAt: Date;
+  /** Aggregated stock across zone branches (present when branchIds filter used) */
+  totalStock?: number;
 }
 
 /**
@@ -150,6 +168,7 @@ export interface CreateProductRequest {
   images?: string[];
   brand?: string;
   productModel?: string;
+  vehicleType?: VehicleType;
   compatibleEngines?: CompatibleEngine[];
   oilViscosity?: OilViscosity;
   oilType?: OilType;
@@ -157,7 +176,6 @@ export interface CreateProductRequest {
   disclaimerRequired?: boolean;
   price: number;
   comparePrice?: number;
-  stock?: number;
   line?: string;
   categories?: string[];
   tags?: string[];
@@ -165,8 +183,6 @@ export interface CreateProductRequest {
   isFeatured?: boolean;
   isCombo?: boolean;
   freeOilChangeService?: boolean;
-  allRegions?: boolean;
-  regions?: Array<{ city: string; municipalityCode: string }>;
 }
 
 /**

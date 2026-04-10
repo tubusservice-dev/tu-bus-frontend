@@ -33,29 +33,12 @@
   @apply flex items-center gap-2;
 }
 
-.btn-approve {
-  @apply inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all;
+.btn-mechanic-assigned {
+  @apply inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white cursor-pointer transition-all;
   background-color: #16a34a;
 
-  &:hover:not(:disabled) {
-    background-color: #15803d;
-  }
-
-  &:disabled {
-    @apply opacity-60 cursor-not-allowed;
-  }
-
-  svg {
-    @apply w-4 h-4;
-  }
-}
-
-.btn-reject {
-  @apply inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all;
-  background-color: #dc2626;
-
   &:hover {
-    background-color: #b91c1c;
+    background-color: #15803d;
   }
 
   svg {
@@ -76,7 +59,24 @@
   }
 }
 
-.btn-dispatch {
+.btn-cancel-order {
+  @apply inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white cursor-pointer transition-all;
+  background-color: #dc2626;
+
+  &:hover {
+    background-color: #b91c1c;
+  }
+
+  svg {
+    @apply w-4 h-4;
+  }
+}
+
+.btn-confirm-cancel {
+  @apply px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors;
+}
+
+.btn-dispatch, .btn-dispatch-status {
   @apply inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium border transition-all;
   @apply border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800;
 
@@ -161,6 +161,58 @@
 }
 
 // ============================================
+// CANCELLATION REQUEST CARD
+// ============================================
+.cancellation-card {
+  border-color: #f59e0b;
+
+  :host-context(.dark) & {
+    border-color: #d97706;
+  }
+}
+
+.cancellation-title {
+  @apply bg-orange-50 text-orange-800 border-orange-200;
+
+  :host-context(.dark) & {
+    background-color: rgba(245, 158, 11, 0.1);
+    color: #fbbf24;
+    border-bottom-color: rgba(245, 158, 11, 0.2);
+  }
+
+  svg {
+    color: #f59e0b !important;
+  }
+}
+
+.cancellation-body {
+  @apply px-4 sm:px-5 py-4 flex flex-col gap-3;
+}
+
+.cancellation-reason {
+  @apply flex flex-col gap-1;
+}
+
+.cancellation-reason-label {
+  @apply text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide;
+}
+
+.cancellation-reason-text {
+  @apply text-sm leading-relaxed p-3 rounded-lg italic;
+  @apply bg-orange-50 text-orange-900 border border-orange-200;
+
+  :host-context(.dark) & {
+    background-color: rgba(245, 158, 11, 0.08);
+    color: #fbbf24;
+    border-color: rgba(245, 158, 11, 0.15);
+  }
+}
+
+.cancellation-hint {
+  @apply text-xs text-gray-500 dark:text-gray-400 leading-relaxed;
+}
+
+// ============================================
 // PRODUCTS
 // ============================================
 .products-list {
@@ -231,8 +283,27 @@
 }
 
 .proof-image {
-  @apply max-w-full max-h-64 rounded-lg border border-gray-200 dark:border-gray-700 object-contain;
+  @apply max-w-full max-h-64 rounded-lg border border-gray-200 dark:border-gray-700 object-contain cursor-pointer;
+  @apply hover:opacity-90 transition-opacity;
 }
+
+// Lightbox
+.lightbox-overlay {
+  @apply fixed inset-0 z-50 flex items-center justify-center;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.2s ease;
+}
+.lightbox-close {
+  @apply absolute top-4 right-4 p-2 text-white/70 hover:text-white transition-colors;
+  svg { @apply w-8 h-8; }
+}
+.lightbox-image {
+  @apply max-w-[90vw] max-h-[90vh] object-contain rounded-lg;
+  animation: scaleIn 0.25s ease;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
 // ============================================
 // TIMELINE
@@ -364,6 +435,38 @@
   @apply px-4 py-2 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors;
 }
 
-.btn-reject-confirm {
-  @apply px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors;
+// ============================================
+// NOTES EDITING
+// ============================================
+.notes-value {
+  @apply flex items-center gap-2;
+}
+
+.btn-edit-inline {
+  @apply w-6 h-6 flex items-center justify-center rounded transition-colors;
+  @apply text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20;
+}
+
+.notes-edit-area {
+  @apply flex-1 flex flex-col gap-2;
+
+  textarea {
+    @apply w-full px-3 py-2 rounded-lg border text-sm resize-none;
+    @apply border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100;
+    @apply focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500;
+  }
+}
+
+.notes-edit-actions {
+  @apply flex items-center justify-end gap-2;
+}
+
+.btn-notes-cancel {
+  @apply px-3 py-1.5 rounded-lg text-xs font-medium;
+  @apply text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors;
+}
+
+.btn-notes-save {
+  @apply px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700;
+  @apply disabled:opacity-60 disabled:cursor-not-allowed transition-colors;
 }

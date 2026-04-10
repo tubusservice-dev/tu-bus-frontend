@@ -58,6 +58,25 @@
   @apply dark:text-gray-400 dark:hover:text-gray-200 transition-colors;
 }
 
+// Section subtitles
+.section-subtitle {
+  @apply text-base font-semibold text-gray-900 dark:text-white;
+  @apply mt-6 mb-4 pb-2 border-b border-gray-200 dark:border-gray-700;
+  &:first-of-type { @apply mt-0; }
+}
+
+.info-sections { @apply p-6; }
+.info-section {
+  @apply mb-6;
+  &:last-child { @apply mb-0; }
+}
+.info-section-title {
+  @apply text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider;
+  @apply mb-4 pb-2 border-b border-gray-200 dark:border-gray-700;
+}
+
+.required { @apply text-red-500; }
+
 // Form
 .profile-form { @apply p-6; }
 .form-grid { @apply grid grid-cols-1 md:grid-cols-2 gap-5; }
@@ -76,21 +95,58 @@
   @apply focus:bg-white dark:focus:bg-gray-800;
   &.error { @apply border-red-500 focus:ring-red-500; }
   &.disabled { @apply bg-gray-100 dark:bg-gray-800/50 cursor-not-allowed opacity-60; }
+
+  &::-webkit-calendar-picker-indicator {
+    @apply dark:invert dark:opacity-70;
+  }
 }
 
 .input-group {
   @apply flex gap-2;
 }
 
-.form-select-prefix {
-  @apply w-20 px-2 py-3 rounded-xl;
+// Custom document type dropdown
+.custom-doc-select {
+  @apply relative w-20 flex items-center justify-between px-3 py-3 rounded-xl cursor-pointer select-none;
   @apply bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600;
-  @apply text-gray-900 dark:text-white text-sm;
-  @apply focus:outline-none focus:ring-2 focus:border-transparent;
-  &:focus { --tw-ring-color: var(--accent-primary); }
+  @apply text-gray-900 dark:text-white text-sm font-medium;
+  @apply transition-all duration-200;
+
+  &:hover { @apply border-gray-400 dark:border-gray-500; }
+  &.open { @apply ring-2 border-transparent; --tw-ring-color: var(--accent-primary); }
+
+  .doc-select-value { @apply flex-1 text-center; }
+  .doc-select-arrow {
+    @apply w-3.5 h-3.5 text-gray-400 transition-transform duration-200 flex-shrink-0;
+  }
+  &.open .doc-select-arrow { @apply rotate-180; }
 }
 
-.field-error { @apply text-xs text-red-500 dark:text-red-400 font-medium; }
+.doc-dropdown {
+  @apply absolute top-full left-0 mt-1 w-48 z-50 rounded-xl overflow-hidden shadow-lg;
+  @apply bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700;
+}
+
+.doc-dropdown-item {
+  @apply w-full flex items-center gap-2.5 px-3 py-2.5 text-left text-sm transition-colors;
+  @apply text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700;
+
+  &.selected {
+    @apply bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300;
+  }
+
+  .doc-opt-code {
+    @apply w-5 text-center font-semibold;
+  }
+  .doc-opt-label {
+    @apply text-gray-500 dark:text-gray-400 text-xs;
+  }
+  &.selected .doc-opt-label {
+    @apply text-blue-500 dark:text-blue-400;
+  }
+}
+
+.field-error { @apply block text-xs text-red-500 dark:text-red-400 font-medium mt-1; }
 .field-hint {
   @apply flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400;
   svg { @apply w-4 h-4; }

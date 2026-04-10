@@ -1,7 +1,22 @@
 <div class="orders-container">
   <div class="orders-header">
     <h2 class="orders-title">Mis Pedidos</h2>
-    <p class="orders-subtitle">Historial y seguimiento de tus órdenes</p>
+    <p class="orders-subtitle">Historial y seguimiento de tus ordenes</p>
+  </div>
+
+  <!-- Filters & Search -->
+  <div class="orders-toolbar">
+    <div class="toolbar-search">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="search-icon">
+        <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+      </svg>
+      <input type="text" placeholder="Buscar por número de orden..." [value]="searchQuery()" (input)="onSearchInput($event)" class="search-input" />
+    </div>
+    <select class="status-filter" [value]="statusFilter()" (change)="onStatusFilterChange($event)">
+      @for (fs of filterStatuses; track fs.value) {
+        <option [value]="fs.value">{{ fs.label }}</option>
+      }
+    </select>
   </div>
 
   @if (orderService.isLoading()) {
@@ -14,11 +29,10 @@
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor" class="empty-icon">
         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" />
       </svg>
-      <h3>No tienes pedidos aún</h3>
-      <p>Tus órdenes aparecerán aquí después de tu primera compra</p>
+      <h3>No tienes pedidos aun</h3>
+      <p>Tus ordenes apareceran aqui despues de tu primera compra</p>
     </div>
   } @else {
-    <!-- Lista de órdenes -->
     <div class="orders-list">
       @for (order of orderService.orders(); track order.id) {
         <div class="order-card" (click)="viewDetail(order)">
@@ -31,98 +45,43 @@
               {{ getStatusLabel(order.status) }}
             </span>
           </div>
-
           <div class="order-card-body">
             <div class="order-items-preview">
-              @for (item of order.items.slice(0, 3); track item.product) {
+              @for (item of order.items.slice(0, 2); track item.product) {
                 <span class="item-name">{{ item.name }} x{{ item.quantity }}</span>
               }
-              @if (order.items.length > 3) {
-                <span class="more-items">+{{ order.items.length - 3 }} más</span>
+              @if (order.items.length > 2) {
+                <span class="more-items">+{{ order.items.length - 2 }} más</span>
               }
             </div>
             <div class="order-meta">
               <span class="order-date">{{ formatDate(order.createdAt) }}</span>
-              <span class="order-total">{{ order.total | currency:'USD' }}</span>
+              <div class="order-total-col">
+                <span class="order-total">{{ order.total | currency:'USD' }}</span>
+                @if (exchangeRateService.showBsPrice()) {
+                  <span class="order-total-bs">{{ exchangeRateService.formatBsPrice(order.total) }}</span>
+                }
+              </div>
             </div>
           </div>
         </div>
       }
     </div>
-  }
 
-  <!-- Modal de detalle -->
-  @if (selectedOrder()) {
-    <div class="modal-overlay" (click)="closeDetail()">
-      <div class="modal-content" (click)="$event.stopPropagation()">
-        <div class="modal-header">
-          <div>
-            <h3 class="modal-title">Orden {{ selectedOrder()!.orderNumber }}</h3>
-            <span class="status-badge" [ngClass]="getStatusClass(selectedOrder()!.status)">
-              {{ getStatusLabel(selectedOrder()!.status) }}
-            </span>
-          </div>
-          <button type="button" class="modal-close" (click)="closeDetail()">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
-          </button>
-        </div>
-
-        <div class="modal-body">
-          <!-- Productos -->
-          <div class="detail-section">
-            <h4>Productos</h4>
-            @for (item of selectedOrder()!.items; track item.product) {
-              <div class="detail-item">
-                @if (item.image) {
-                  <img [src]="item.image" [alt]="item.name" class="item-image" />
-                }
-                <div class="item-info">
-                  <span class="item-name-detail">{{ item.name }}</span>
-                  <span class="item-qty">Cant: {{ item.quantity }} x {{ item.price | currency:'USD' }}</span>
-                </div>
-                <span class="item-total">{{ item.price * item.quantity | currency:'USD' }}</span>
-              </div>
-            }
-          </div>
-
-          <!-- Totales -->
-          <div class="detail-section totals">
-            <div class="total-row"><span>Subtotal</span><span>{{ selectedOrder()!.subtotal | currency:'USD' }}</span></div>
-            <div class="total-row"><span>Envío</span><span>{{ selectedOrder()!.shippingCost | currency:'USD' }}</span></div>
-            <div class="total-row total-final"><span>Total</span><span>{{ selectedOrder()!.total | currency:'USD' }}</span></div>
-          </div>
-
-          <!-- Timeline -->
-          @if (selectedOrder()!.statusHistory.length > 0) {
-            <div class="detail-section">
-              <h4>Historial</h4>
-              <div class="timeline">
-                @for (entry of selectedOrder()!.statusHistory; track entry.timestamp) {
-                  <div class="timeline-entry">
-                    <div class="timeline-dot"></div>
-                    <div class="timeline-content">
-                      <span class="timeline-status">{{ getStatusLabel(entry.status) }}</span>
-                      <span class="timeline-date">{{ formatDate(entry.timestamp) }}</span>
-                      @if (entry.note) {
-                        <span class="timeline-note">{{ entry.note }}</span>
-                      }
-                    </div>
-                  </div>
-                }
-              </div>
-            </div>
-          }
-
-          <!-- Acción cancelar -->
-          @if (selectedOrder()!.status === 'pending') {
-            <div class="detail-actions">
-              <button type="button" class="btn btn-danger" (click)="cancelOrder(selectedOrder()!); closeDetail()">
-                Cancelar Orden
-              </button>
-            </div>
-          }
-        </div>
+    <!-- Pagination -->
+    @if (totalPages() > 1) {
+      <div class="pagination">
+        <button class="pagination-btn" [disabled]="currentPage() === 1" (click)="goToPage(currentPage() - 1)">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
+        </button>
+        @for (p of visiblePages; track p) {
+          <button class="pagination-btn" [class.active]="p === currentPage()" (click)="goToPage(p)">{{ p }}</button>
+        }
+        <button class="pagination-btn" [disabled]="currentPage() === totalPages()" (click)="goToPage(currentPage() + 1)">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
+        </button>
+        <span class="pagination-info">Página {{ currentPage() }} de {{ totalPages() }} ({{ totalItems() }} órdenes)</span>
       </div>
-    </div>
+    }
   }
 </div>

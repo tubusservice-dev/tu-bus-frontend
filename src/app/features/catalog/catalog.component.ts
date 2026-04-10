@@ -1,27 +1,30 @@
-import { Component, inject, signal, OnInit, computed, effect, HostListener } from '@angular/core';
+import { Component, DestroyRef, inject, signal, OnInit, computed, HostListener, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ProductService } from '../../core/services/product.service';
 import { BrandService } from '../../core/services/brand.service';
 import { CategoryService } from '../../core/services/category.service';
 import { SettingsService } from '../../core/services/settings.service';
-import { ZoneService } from '../../core/services/zone.service';
 import { VehicleService } from '../../core/services/vehicle.service';
+import { LocationService } from '../../core/services/location.service';
 import { ProductCardComponent, ProductCardData } from '../../shared/components/product-card/product-card.component';
 import {
   Product,
   Brand,
   Category,
+  VehicleType,
+  VEHICLE_TYPE_LABELS,
 } from '../../models';
 import { PAGINATION_OPTIONS } from '../../models/settings.model';
 
 interface FilterState {
   search: string;
+  vehicleType: string;
   brand: string;
   category: string;
-  minPrice: number | null;
-  maxPrice: number | null;
   sortBy: string;
 }
 
@@ -38,18 +41,30 @@ export class CatalogComponent implements OnInit {
   private readonly categoryService = inject(CategoryService);
   private readonly settingsService = inject(SettingsService);
 
-  protected readonly zoneService = inject(ZoneService);
   protected readonly vehicleService = inject(VehicleService);
+  protected readonly locationService = inject(LocationService);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
+
+  private readonly searchSubject$ = new Subject<string>();
+
+  // Vehicle type filter options
+  protected readonly vehicleTypeOptions = Object.entries(VEHICLE_TYPE_LABELS).map(
+    ([value, label]) => ({ value, label })
+  );
 
   // Filtro de vehículo (activo cuando se navega desde el garaje)
   protected readonly vehicleFilterActive = signal(false);
+
+  // Tracks whether initial product load has been triggered
+  private initialLoadDone = false;
 
   // Estado
   protected readonly isLoading = signal(true);
   private readonly allProducts = signal<ProductCardData[]>([]);
   protected readonly products = computed(() => {
-    let filtered = this.filterByZone(this.allProducts());
+    let filtered = this.allProducts();
     if (this.vehicleFilterActive()) {
       filtered = this.filterByVehicle(filtered);
     }
@@ -70,10 +85,9 @@ export class CatalogComponent implements OnInit {
   // Filtros
   protected readonly filters = signal<FilterState>({
     search: '',
+    vehicleType: '',
     brand: '',
     category: '',
-    minPrice: null,
-    maxPrice: null,
     sortBy: 'createdAt',
   });
 
@@ -103,15 +117,46 @@ export class CatalogComponent implements OnInit {
   protected readonly activeFiltersCount = computed(() => {
     const f = this.filters();
     let count = 0;
+    if (f.vehicleType) count++;
     if (f.brand) count++;
     if (f.category) count++;
-    if (f.minPrice !== null) count++;
-    if (f.maxPrice !== null) count++;
     return count;
   });
 
+  constructor() {
+    // Wait for LocationService to resolve before loading products.
+    // This avoids a race condition where branchIds is empty because
+    // the HTTP call from resolveLocation() hasn't completed yet.
+    effect(() => {
+      const resolved = this.locationService.isResolved();
+      if (resolved && !this.initialLoadDone) {
+        this.initialLoadDone = true;
+        this.loadProducts();
+      }
+    });
+  }
+
   ngOnInit(): void {
-    // Activar filtro de vehículo si se navega desde el garaje
+    this.searchSubject$
+      .pipe(
+        debounceTime(400),
+        distinctUntilChanged(),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((value) => {
+        this.filters.update((f) => ({ ...f, search: value }));
+        this.currentPage.set(1);
+        this.loadProducts();
+      });
+
+    // Restore page from URL query params (browser back button support)
+    const pageParam = this.route.snapshot.queryParamMap.get('page');
+    if (pageParam) {
+      const page = parseInt(pageParam, 10);
+      if (page > 0) this.currentPage.set(page);
+    }
+
+    // Activate vehicle filter if navigating from garage
     const fromGarage = this.route.snapshot.queryParamMap.get('fromGarage');
     if (fromGarage === 'true' && this.vehicleService.selectedVehicle()) {
       this.vehicleFilterActive.set(true);
@@ -119,7 +164,12 @@ export class CatalogComponent implements OnInit {
 
     this.loadBrands();
     this.loadCategories();
-    this.loadProducts();
+
+    // If location is already resolved (e.g. no saved location), load immediately
+    if (this.locationService.isResolved() && !this.initialLoadDone) {
+      this.initialLoadDone = true;
+      this.loadProducts();
+    }
   }
 
   loadBrands(): void {
@@ -162,20 +212,29 @@ export class CatalogComponent implements OnInit {
       sortOrder = 'desc';
     }
 
+    // Include branchIds from user's selected location
+    const ids = this.locationService.branchIds();
+    const branchIds = ids.length > 0 ? ids.join(',') : undefined;
+
     this.productService.getAll({
       page: this.currentPage(),
       limit: this.currentLimit(),
       search: f.search || undefined,
+      vehicleType: (f.vehicleType as VehicleType) || undefined,
       brand: f.brand || undefined,
       category: f.category || undefined,
-      minPrice: f.minPrice ?? undefined,
-      maxPrice: f.maxPrice ?? undefined,
       sortBy,
       sortOrder,
       isActive: true,
+      branchIds,
     }).subscribe({
       next: (response) => {
-        this.allProducts.set(response.data);
+        // Map totalStock from backend to stock field for ProductCardData
+        const mapped = response.data.map((p: any) => ({
+          ...p,
+          stock: p.totalStock ?? p.stock ?? 0,
+        }));
+        this.allProducts.set(mapped);
         this.totalPages.set(response.pagination?.pages || 1);
         this.totalProducts.set(response.pagination?.total || 0);
         this.isLoading.set(false);
@@ -186,27 +245,28 @@ export class CatalogComponent implements OnInit {
     });
   }
 
-  onSearch(): void {
-    this.currentPage.set(1);
-    this.loadProducts();
+  onSearchInput(value: string): void {
+    this.filters.update((f) => ({ ...f, search: value }));
+    this.searchSubject$.next(value);
   }
 
   updateFilter<K extends keyof FilterState>(key: K, value: FilterState[K]): void {
     this.filters.update((f) => ({ ...f, [key]: value }));
     this.currentPage.set(1);
+    this.syncPageToUrl();
     this.loadProducts();
   }
 
   clearFilters(): void {
     this.filters.set({
       search: '',
+      vehicleType: '',
       brand: '',
       category: '',
-      minPrice: null,
-      maxPrice: null,
       sortBy: 'createdAt',
     });
     this.currentPage.set(1);
+    this.syncPageToUrl();
     this.loadProducts();
   }
 
@@ -217,8 +277,20 @@ export class CatalogComponent implements OnInit {
   goToPage(page: number): void {
     if (page < 1 || page > this.totalPages()) return;
     this.currentPage.set(page);
+    this.syncPageToUrl();
     this.loadProducts();
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  /** Sync current page to URL query params for browser back button support */
+  private syncPageToUrl(): void {
+    const page = this.currentPage();
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: page > 1 ? { page } : {},
+      queryParamsHandling: page > 1 ? 'merge' : '',
+      replaceUrl: false,
+    });
   }
 
   onLimitChange(newLimit: number | string): void {
@@ -269,43 +341,20 @@ export class CatalogComponent implements OnInit {
     });
   }
 
-  /**
-   * Filtra productos por la zona seleccionada.
-   * Si no hay zona o la zona es "all", muestra todos.
-   */
-  private filterByZone(products: ProductCardData[]): ProductCardData[] {
-    const zone = this.zoneService.selectedZone();
-    if (!zone) return products;
-
-    return products.filter(p => {
-      const product = p as unknown as Product;
-      if (product.allRegions) return true;
-      if (!product.regions || product.regions.length === 0) return true;
-
-      return product.regions.some(r => {
-        const cityId = typeof r.city === 'string' ? r.city : r.city?.id;
-        return cityId === zone.city.id && r.municipalityCode === zone.municipality.code;
-      });
-    });
-  }
-
-  getPageNumbers(): number[] {
+  /** Visible pages with ellipsis: 1, 2, ..., 10 */
+  getVisiblePages(): (number | '...')[] {
     const total = this.totalPages();
     const current = this.currentPage();
-    const pages: number[] = [];
-
-    if (total <= 5) {
-      for (let i = 1; i <= total; i++) pages.push(i);
-    } else {
-      if (current <= 3) {
-        pages.push(1, 2, 3, 4, 5);
-      } else if (current >= total - 2) {
-        pages.push(total - 4, total - 3, total - 2, total - 1, total);
-      } else {
-        pages.push(current - 2, current - 1, current, current + 1, current + 2);
-      }
+    if (total <= 7) {
+      return Array.from({ length: total }, (_, i) => i + 1);
     }
-
+    const pages: (number | '...')[] = [1];
+    if (current > 3) pages.push('...');
+    const start = Math.max(2, current - 1);
+    const end = Math.min(total - 1, current + 1);
+    for (let i = start; i <= end; i++) pages.push(i);
+    if (current < total - 2) pages.push('...');
+    pages.push(total);
     return pages;
   }
 }

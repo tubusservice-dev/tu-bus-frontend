@@ -15,43 +15,39 @@ export class CheckoutDispatchComponent implements OnInit {
   protected readonly cartService = inject(CartService);
   private readonly router = inject(Router);
 
-  /** Opciones de despacho */
+  /** Dispatch options (reactive — computed from LocationService + CartService) */
   protected readonly dispatchOptions = this.checkoutService.dispatchOptions;
 
-  /** Tipo seleccionado */
+  /** Currently selected type */
   protected readonly selectedType = this.checkoutService.dispatchType;
 
   ngOnInit(): void {
-    // Auto-seleccionar cambio de aceite si aplica y no hay selección previa
+    // Auto-select oil change service if applicable and no prior selection
     if (!this.selectedType() && this.cartService.hasOilChangeService()) {
       this.checkoutService.selectDispatchType('oil_change_service');
     }
   }
 
-  /**
-   * Seleccionar una opción de despacho
-   */
   selectOption(option: DispatchOption): void {
     if (!option.isAvailable) return;
     this.checkoutService.selectDispatchType(option.id);
   }
 
-  /**
-   * Verificar si una opción está seleccionada
-   */
   isSelected(option: DispatchOption): boolean {
     return this.selectedType() === option.id;
   }
 
-  /**
-   * Continuar al siguiente paso
-   */
   onContinue(): void {
     const dispatchType = this.selectedType();
 
     switch (dispatchType) {
       case 'store_pickup':
+      case 'in_store_oil_change':
+        // Direct to summary (no form needed)
         this.router.navigate(['/checkout/resumen']);
+        break;
+      case 'seller_agreement':
+        this.router.navigate(['/checkout/vendedor']);
         break;
       case 'shipping_agency':
         this.router.navigate(['/checkout/agencia']);
@@ -59,18 +55,12 @@ export class CheckoutDispatchComponent implements OnInit {
       case 'local_delivery':
         this.router.navigate(['/checkout/delivery']);
         break;
-      case 'seller_agreement':
-        this.router.navigate(['/checkout/vendedor']);
-        break;
       case 'oil_change_service':
         this.router.navigate(['/checkout/cambio-aceite']);
         break;
     }
   }
 
-  /**
-   * Volver al carrito
-   */
   goBack(): void {
     this.router.navigate(['/carrito']);
   }

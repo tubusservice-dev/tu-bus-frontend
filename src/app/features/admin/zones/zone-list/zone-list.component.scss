@@ -28,8 +28,12 @@
   }
 }
 
+.filters-row {
+  @apply flex flex-col sm:flex-row gap-3;
+}
+
 .search-box {
-  @apply relative max-w-md;
+  @apply relative flex-1 max-w-md;
 
   svg {
     @apply absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400;
@@ -39,6 +43,19 @@
     @apply w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg;
     @apply text-gray-900 dark:text-white placeholder-gray-400;
     @apply focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent;
+  }
+}
+
+.filter-select {
+  select {
+    @apply px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg;
+    @apply text-gray-900 dark:text-white text-sm;
+    @apply focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent;
+    @apply cursor-pointer appearance-none pr-8;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.5rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
   }
 }
 
@@ -65,6 +82,14 @@
   p {
     @apply text-gray-500 dark:text-gray-400 mb-6;
   }
+}
+
+.error-banner {
+  @apply flex items-center gap-2 px-4 py-3 mb-4 rounded-lg text-sm font-medium;
+  @apply bg-red-50 text-red-700 border border-red-200;
+  @apply dark:bg-red-900/20 dark:text-red-400 dark:border-red-800;
+
+  svg { @apply w-5 h-5 flex-shrink-0; }
 }
 
 // Grid de zonas
@@ -99,6 +124,10 @@
 
 .card-content {
   @apply p-4;
+}
+
+.zone-state {
+  @apply block text-xs text-gray-400 dark:text-gray-500 mb-0.5;
 }
 
 .zone-name {

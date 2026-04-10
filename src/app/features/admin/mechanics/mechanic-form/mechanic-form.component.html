@@ -1,134 +1,159 @@
 <div class="mechanic-form-page">
-  <!-- Header -->
   <header class="page-header">
     <a routerLink="/admin/mechanics" class="back-link">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
-      </svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" /></svg>
       Volver a mecanicos
     </a>
-    <h1 class="page-title">
-      {{ isEditMode() ? 'Editar Mecanico' : 'Nuevo Mecanico' }}
-    </h1>
+    <h1 class="page-title">{{ isEditMode() ? 'Editar Mecanico' : 'Nuevo Mecanico' }}</h1>
   </header>
 
-  <!-- Loading -->
   @if (isLoading()) {
-    <div class="loading-container">
-      <div class="loading-spinner"></div>
-      <span>Cargando mecanico...</span>
-    </div>
+    <div class="loading-container"><div class="loading-spinner"></div><span>Cargando mecanico...</span></div>
   } @else {
-    <!-- Error -->
     @if (errorMessage()) {
       <div class="alert error">
         <span>{{ errorMessage() }}</span>
         <button (click)="errorMessage.set(null)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-          </svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
         </button>
       </div>
     }
 
-    <!-- Formulario -->
     <form [formGroup]="form" (ngSubmit)="onSubmit()" class="form-container">
       <div class="form-grid">
-        <!-- Columna principal -->
         <div class="form-main">
+          <!-- Info basica -->
           <section class="form-section">
             <h2 class="section-title">Informacion del Mecanico</h2>
 
-            <!-- Nombre -->
             <div class="form-group">
-              <label for="name">
-                Nombre <span class="required">*</span>
-              </label>
-              <input
-                type="text"
-                id="name"
-                formControlName="name"
-                placeholder="Nombre completo del mecanico"
-                [class.error]="isInvalid('name')"
-              />
-              @if (hasError('name', 'required')) {
-                <span class="error-text">El nombre es requerido</span>
-              }
-              @if (hasError('name', 'minlength')) {
-                <span class="error-text">Minimo 2 caracteres</span>
-              }
+              <label for="name">Nombre <span class="required">*</span></label>
+              <input type="text" id="name" formControlName="name" placeholder="Nombre completo" [class.error]="isInvalid('name')" maxlength="50" />
+              @if (hasError('name', 'required')) { <span class="error-text">El nombre es requerido</span> }
+              @if (hasError('name', 'minlength')) { <span class="error-text">Minimo 2 caracteres</span> }
             </div>
 
-            <!-- WhatsApp -->
             <div class="form-group">
-              <label for="whatsapp">
-                WhatsApp <span class="required">*</span>
-              </label>
-              <input
-                type="tel"
-                id="whatsapp"
-                formControlName="whatsapp"
-                placeholder="Ej: 584121234567"
-                [class.error]="isInvalid('whatsapp')"
-              />
-              @if (hasError('whatsapp', 'required')) {
-                <span class="error-text">El WhatsApp es requerido</span>
-              }
+              <label for="whatsapp">WhatsApp <span class="required">*</span></label>
+              <input type="tel" id="whatsapp" formControlName="whatsapp" placeholder="Ej: 584121234567" [class.error]="isInvalid('whatsapp')" maxlength="12" inputmode="tel" />
+              @if (hasError('whatsapp', 'required')) { <span class="error-text">El WhatsApp es requerido</span> }
             </div>
 
-            <!-- Email -->
             <div class="form-group">
               <label for="email">Email</label>
-              <input
-                type="email"
-                id="email"
-                formControlName="email"
-                placeholder="correo@ejemplo.com"
-                [class.error]="isInvalid('email')"
-              />
-              @if (hasError('email', 'email')) {
-                <span class="error-text">Formato de email invalido</span>
+              <input type="email" id="email" formControlName="email" placeholder="correo&#64;ejemplo.com" [class.error]="isInvalid('email')" maxlength="100" inputmode="email" />
+              @if (hasError('email', 'email')) { <span class="error-text">Formato de email invalido</span> }
+            </div>
+
+            <div class="form-group">
+              <label for="serviceDurationMinutes">Duracion del servicio (minutos) <span class="required">*</span></label>
+              <input type="number" id="serviceDurationMinutes" formControlName="serviceDurationMinutes" min="15" max="720" step="15" [class.error]="isInvalid('serviceDurationMinutes')" />
+              <span class="help-text">Tiempo estimado en minutos para completar un cambio de aceite (ej: 90 = 1h 30min)</span>
+            </div>
+          </section>
+
+          <!-- Horario -->
+          <section class="form-section">
+            <h2 class="section-title">Horario de Disponibilidad</h2>
+            <p class="section-description">Configure los dias y horarios disponibles para asignaciones.</p>
+
+            <div class="schedule-grid" formArrayName="schedule">
+              @for (day of scheduleArray.controls; track $index; let i = $index) {
+                <div class="schedule-row" [formGroupName]="i" [class.closed]="day.get('isClosed')?.value">
+                  <div class="schedule-day-name">{{ day.get('dayName')?.value }}</div>
+                  <div class="schedule-toggle">
+                    <label class="toggle-label">
+                      <input type="checkbox" [checked]="!day.get('isClosed')?.value" (change)="day.get('isClosed')?.setValue(!day.get('isClosed')?.value)" />
+                      <span class="toggle-slider"></span>
+                    </label>
+                  </div>
+                  @if (!day.get('isClosed')?.value) {
+                    <div class="schedule-times">
+                      <input type="time" formControlName="openTime" class="time-input" />
+                      <span class="time-separator">a</span>
+                      <input type="time" formControlName="closeTime" class="time-input" />
+                    </div>
+                  } @else {
+                    <div class="schedule-closed-label">Cerrado</div>
+                  }
+                </div>
               }
             </div>
           </section>
         </div>
 
-        <!-- Columna lateral -->
+        <!-- Sidebar: Sucursales -->
         <div class="form-sidebar">
-          <!-- Zona -->
           <section class="form-section">
-            <h2 class="section-title">Zona de Cobertura</h2>
+            <h2 class="section-title">Sucursales</h2>
+            <p class="section-description">Asigne este mecanico a una o mas sucursales. La cobertura geografica se hereda de cada sucursal.</p>
 
-            <div class="form-group">
-              <label for="zone">Ciudad</label>
-              <select id="zone" formControlName="zone" (change)="onZoneChange($event)">
-                <option value="">Seleccionar ciudad...</option>
-                @for (zone of zones(); track zone.id) {
-                  <option [value]="zone.id">{{ zone.name }}</option>
-                }
-              </select>
+            <!-- Branch Search -->
+            <div class="branch-selector">
+              <div class="search-wrapper">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="search-icon">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                </svg>
+                <input
+                  type="text"
+                  class="branch-search"
+                  placeholder="Buscar y agregar sucursal..."
+                  [value]="branchSearchTerm()"
+                  (input)="onBranchSearch($event)"
+                  (focus)="onBranchInputFocus()"
+                  (blur)="onBranchInputBlur()"
+                />
+              </div>
+
+              <!-- Dropdown results -->
+              @if (showBranchDropdown() && filteredBranches().length > 0) {
+                <div class="branch-dropdown">
+                  @for (branch of filteredBranches(); track branch.id) {
+                    <button type="button" class="branch-option" (mousedown)="addBranch(branch)">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="branch-icon">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 21v-7.5a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 .75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349M3.75 21V9.349m0 0a3.001 3.001 0 0 0 3.75-.615A2.993 2.993 0 0 0 9.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 0 0 2.25 1.016c.896 0 1.7-.393 2.25-1.015a3.001 3.001 0 0 0 3.75.614m-16.5 0a3.004 3.004 0 0 1-.621-4.72l1.189-1.19A1.5 1.5 0 0 1 5.378 3h13.243a1.5 1.5 0 0 1 1.06.44l1.19 1.189a3 3 0 0 1-.621 4.72M6.75 18h3.75a.75.75 0 0 0 .75-.75V13.5a.75.75 0 0 0-.75-.75H6.75a.75.75 0 0 0-.75.75v3.75c0 .414.336.75.75.75Z" />
+                      </svg>
+                      <div class="branch-option-info">
+                        <span class="branch-option-name">{{ branch.name }}</span>
+                        <span class="branch-option-address">{{ branch.address }}</span>
+                      </div>
+                    </button>
+                  }
+                </div>
+              }
             </div>
 
-            <div class="form-group">
-              <label for="municipality">Municipio</label>
-              <select id="municipality" formControlName="municipality" [disabled]="!selectedZoneId()">
-                <option value="">Seleccionar municipio...</option>
-                @for (mun of availableMunicipalities(); track mun.code) {
-                  <option [value]="mun.name">{{ mun.name }}</option>
+            <!-- Selected Branches List -->
+            @if (selectedBranches().length > 0) {
+              <div class="selected-branches">
+                @for (branch of selectedBranches(); track branch.id) {
+                  <div class="selected-branch-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="item-icon">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 21v-7.5a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 .75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349M3.75 21V9.349" />
+                    </svg>
+                    <div class="item-info">
+                      <span class="item-name">{{ branch.name }}</span>
+                      <span class="item-address">{{ branch.address }}</span>
+                    </div>
+                    <button type="button" class="item-remove" (click)="removeBranch(branch.id)">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+                    </button>
+                  </div>
                 }
-              </select>
-            </div>
+              </div>
+              <p class="branch-count">{{ selectedBranches().length }} sucursal(es) asignada(s)</p>
+            } @else {
+              <p class="help-text" style="margin-top: 12px;">Busque y seleccione sucursales para este mecanico.</p>
+            }
           </section>
         </div>
       </div>
 
-      <!-- Acciones -->
       <div class="form-actions">
         <a routerLink="/admin/mechanics" class="btn-cancel">Cancelar</a>
         <button type="submit" class="btn-submit" [disabled]="isSubmitting()">
           @if (isSubmitting()) {
-            <span class="loading-spinner-sm"></span>
-            Guardando...
+            <span class="loading-spinner-sm"></span> Guardando...
           } @else {
             {{ isEditMode() ? 'Actualizar' : 'Crear' }} Mecanico
           }

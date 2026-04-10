@@ -1,12 +1,17 @@
 import { Component, inject, signal, OnInit, computed } from '@angular/core';
 import { Router } from '@angular/router';
-import { CurrencyPipe } from '@angular/common';
+import { CurrencyPipe, CommonModule } from '@angular/common';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 import { CheckoutService } from '../services/checkout.service';
 import { CartService } from '../../../core/services/cart.service';
 import { OrderService } from '../../../core/services/order.service';
-import { VehicleService } from '../../../core/services/vehicle.service';
-import { ZoneService } from '../../../core/services/zone.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { LocationService, BranchSummary } from '../../../core/services/location.service';
 import { PaymentMethodService } from '../../../core/services/payment-method.service';
+import { UploadService } from '../../../core/services/upload.service';
+import { BranchProductService } from '../../../core/services/branch-product.service';
+import { ExchangeRateService } from '../../../core/services/exchange-rate.service';
 import { CreateOrderRequest, PaymentSubmission } from '../../../models/order.model';
 import {
   PaymentMethodConfig,
@@ -21,7 +26,7 @@ import {
 @Component({
   selector: 'app-checkout-summary',
   standalone: true,
-  imports: [CurrencyPipe],
+  imports: [CurrencyPipe, CommonModule, ReactiveFormsModule],
   templateUrl: './checkout-summary.component.html',
   styleUrl: './checkout-summary.component.scss',
 })
@@ -29,10 +34,16 @@ export class CheckoutSummaryComponent implements OnInit {
   protected readonly checkoutService = inject(CheckoutService);
   protected readonly cartService = inject(CartService);
   private readonly orderService = inject(OrderService);
-  private readonly vehicleService = inject(VehicleService);
+  private readonly authService = inject(AuthService);
+  private readonly uploadService = inject(UploadService);
   private readonly paymentMethodService = inject(PaymentMethodService);
-  private readonly zoneService = inject(ZoneService);
+  private readonly fb = inject(FormBuilder);
+  protected readonly locationService = inject(LocationService);
+  private readonly branchProductService = inject(BranchProductService);
   private readonly router = inject(Router);
+  protected readonly exchangeRateService = inject(ExchangeRateService);
+
+  protected readonly todayStr = new Date().toISOString().split('T')[0];
 
   // State signals
   protected readonly isGenerating = signal(false);
@@ -109,10 +120,172 @@ export class CheckoutSummaryComponent implements OnInit {
   protected readonly submittedPayment = signal<PaymentSubmission | null>(null);
   protected readonly submittedMethodType = signal<PaymentMethodType | null>(null);
 
-  // Can generate order: disclaimer accepted AND payment submitted
-  protected readonly canGenerateOrder = computed(() =>
-    this.disclaimerAccepted() && this.paymentSubmitted()
-  );
+  // ========== Branch Selection (Pickup & In-Store Only) ==========
+
+  /** Whether branch selection should be shown (only store_pickup and in_store_oil_change) */
+  protected readonly needsBranchSelection = computed(() => {
+    const dt = this.checkoutService.dispatchType();
+    return dt === 'store_pickup' || dt === 'in_store_oil_change';
+  });
+
+  /** Whether branch selection is mandatory (only pickup/in-store) */
+  protected readonly isBranchMandatory = computed(() => {
+    const dt = this.checkoutService.dispatchType();
+    return dt === 'store_pickup' || dt === 'in_store_oil_change';
+  });
+
+  /** All branches based on dispatch type (before stock filtering) */
+  private readonly allBranches = computed<BranchSummary[]>(() => {
+    const dt = this.checkoutService.dispatchType();
+    if (dt === 'in_store_oil_change') return this.locationService.branchesWithOilChange();
+    return this.locationService.branches();
+  });
+
+  /**
+   * Per-branch stock map: branchId → Map<productId, stock>
+   * Used to determine which branches can fulfill the entire cart.
+   */
+  protected readonly branchStockMap = signal<Map<string, Map<string, number>>>(new Map());
+  protected readonly isLoadingBranchStock = signal(false);
+
+  /** Branches that have sufficient stock for ALL cart items */
+  protected readonly availableBranches = computed<(BranchSummary & { insufficientStock?: boolean })[]>(() => {
+    const branches = this.allBranches();
+    const stockMap = this.branchStockMap();
+    const cartItems = this.cartService.items();
+
+    // If stock data not loaded yet, show all branches without stock info
+    if (stockMap.size === 0) return branches;
+
+    return branches.map(branch => {
+      const branchStock = stockMap.get(branch.id);
+      if (!branchStock) return { ...branch, insufficientStock: true };
+
+      const hasEnough = cartItems.every(item => {
+        const stock = branchStock.get(item.id) ?? 0;
+        return stock >= item.quantity;
+      });
+
+      return { ...branch, insufficientStock: !hasEnough };
+    }).sort((a, b) => {
+      // Branches with sufficient stock first
+      if (a.insufficientStock && !b.insufficientStock) return 1;
+      if (!a.insufficientStock && b.insufficientStock) return -1;
+      return 0;
+    });
+  });
+
+  // ========== Vehicle Selection (Multi-vehicle) ==========
+
+  /** Whether vehicles are required for this dispatch type */
+  protected readonly needsVehicle = computed(() => {
+    const dt = this.checkoutService.dispatchType();
+    return dt === 'oil_change_service' || dt === 'in_store_oil_change';
+  });
+
+  // Vehicle selection is handled in oil-change-form; summary is read-only
+
+  // ========== Billing Address ==========
+
+  protected billingSource = signal<'shipping' | 'profile' | 'custom'>('profile');
+  protected billingForm!: FormGroup;
+
+  protected readonly canUseShippingAddress = computed(() => {
+    const dt = this.checkoutService.dispatchType();
+    return dt === 'local_delivery' || dt === 'shipping_agency' || dt === 'oil_change_service';
+  });
+
+  onBillingSourceChange(source: 'shipping' | 'profile' | 'custom'): void {
+    this.billingSource.set(source);
+
+    if (source === 'shipping') {
+      this.buildBillingFromShipping();
+    } else if (source === 'profile') {
+      this.buildBillingFromProfile();
+    }
+    // 'custom' waits for form submission
+  }
+
+  private buildBillingFromShipping(): void {
+    const dt = this.checkoutService.dispatchType();
+    let address = '', city = '', municipality = '', state = '', fullName = '', docType = '', docNum = '', refPoint = '';
+
+    if (dt === 'local_delivery') {
+      const info = this.localDeliveryInfo;
+      if (info) {
+        fullName = info.fullName; docType = info.documentType; docNum = info.documentNumber;
+        address = info.address; city = info.cityName; municipality = info.municipalityName;
+        refPoint = info.referencePoint || '';
+      }
+    } else if (dt === 'shipping_agency') {
+      const info = this.recipientInfo;
+      if (info) {
+        fullName = info.fullName; docType = info.documentType; docNum = info.documentNumber;
+        address = info.address; city = info.city; state = info.state;
+        municipality = info.municipality || ''; refPoint = info.referencePoint || '';
+      }
+    } else if (dt === 'oil_change_service') {
+      const info = this.oilChangeServiceInfo;
+      if (info) {
+        fullName = info.fullName; docType = info.documentType; docNum = info.documentNumber;
+        address = info.address; city = info.cityName; municipality = info.municipalityName;
+        refPoint = info.referencePoint || '';
+      }
+    }
+
+    this.checkoutService.setBillingAddress({
+      source: 'shipping', fullName, documentType: docType, documentNumber: docNum,
+      address, city, municipality, state, referencePoint: refPoint,
+    });
+  }
+
+  private buildBillingFromProfile(): void {
+    const user = this.authService.currentUser();
+    if (!user) return;
+
+    const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
+    const addressParts = [user.street, user.houseNumber, user.neighborhood].filter(Boolean);
+
+    this.checkoutService.setBillingAddress({
+      source: 'profile',
+      fullName,
+      documentType: user.documentType,
+      documentNumber: user.documentNumber,
+      address: addressParts.length > 0 ? addressParts.join(', ') : (user as any).address || '',
+      city: user.cityName || '',
+      municipality: user.municipalityName || '',
+      state: user.stateName || '',
+      referencePoint: user.referencePoint || '',
+    });
+  }
+
+  onBillingFormSubmit(): void {
+    if (this.billingForm.invalid) {
+      this.billingForm.markAllAsTouched();
+      return;
+    }
+    const v = this.billingForm.getRawValue();
+    this.checkoutService.setBillingAddress({
+      source: 'custom',
+      fullName: v.fullName?.trim(),
+      documentType: v.documentType,
+      documentNumber: v.documentNumber?.trim(),
+      address: v.address?.trim(),
+      city: v.city?.trim(),
+      municipality: v.municipality?.trim(),
+      state: v.state?.trim(),
+      referencePoint: v.referencePoint?.trim(),
+    });
+  }
+
+  // ========== Can Generate Order ==========
+
+  protected readonly canGenerateOrder = computed(() => {
+    if (!this.disclaimerAccepted() || !this.paymentSubmitted()) return false;
+    if (this.isBranchMandatory() && !this.checkoutService.hasBranch()) return false;
+    if (this.needsVehicle() && !this.checkoutService.hasVehicle()) return false;
+    return true;
+  });
 
   ngOnInit(): void {
     if (!this.checkoutService.hasDispatchType()) {
@@ -161,6 +334,26 @@ export class CheckoutSummaryComponent implements OnInit {
 
     // Load active payment methods from API
     this.loadPaymentMethods();
+
+    // Initialize billing form for custom address
+    this.billingForm = this.fb.group({
+      fullName: ['', [Validators.required, Validators.minLength(3)]],
+      documentType: ['V', Validators.required],
+      documentNumber: ['', [Validators.required, Validators.pattern(/^\d{6,10}$/)]],
+      address: ['', [Validators.required, Validators.minLength(10)]],
+      city: ['', Validators.required],
+      municipality: [''],
+      state: [''],
+      referencePoint: [''],
+    });
+
+    // Load per-branch stock to determine which branches can fulfill the cart
+    this.loadBranchStockForCart();
+
+    // Default billing address to profile
+    if (!this.checkoutService.billingAddress()) {
+      this.buildBillingFromProfile();
+    }
   }
 
   private loadPaymentMethods(): void {
@@ -174,6 +367,59 @@ export class CheckoutSummaryComponent implements OnInit {
         this.loadingMethods.set(false);
       },
     });
+  }
+
+  /**
+   * Load per-branch stock for each cart product.
+   * Builds a map: branchId → Map<productId, stock>
+   */
+  private loadBranchStockForCart(): void {
+    const cartItems = this.cartService.items();
+    const branchIds = this.locationService.branchIds();
+    if (cartItems.length === 0 || branchIds.length === 0) return;
+
+    this.isLoadingBranchStock.set(true);
+
+    const requests = cartItems.map(item =>
+      this.branchProductService.getAggregatedStock(item.id, branchIds)
+    );
+
+    forkJoin(requests).subscribe({
+      next: (responses) => {
+        const map = new Map<string, Map<string, number>>();
+
+        responses.forEach((res, idx) => {
+          const productId = cartItems[idx].id;
+          for (const entry of res.data.byBranch) {
+            if (!map.has(entry.branchId)) {
+              map.set(entry.branchId, new Map());
+            }
+            map.get(entry.branchId)!.set(productId, entry.stock);
+          }
+        });
+
+        this.branchStockMap.set(map);
+        this.isLoadingBranchStock.set(false);
+
+        // Auto-select best branch if only one has sufficient stock or only one branch
+        this.autoSelectBestBranch();
+      },
+      error: () => {
+        this.isLoadingBranchStock.set(false);
+      },
+    });
+  }
+
+  /**
+   * Auto-select the branch with highest stock if appropriate.
+   */
+  private autoSelectBestBranch(): void {
+    const branches = this.availableBranches();
+    const validBranches = branches.filter(b => !b.insufficientStock);
+
+    if (validBranches.length === 1 && !this.checkoutService.selectedBranch()) {
+      this.checkoutService.selectBranch(validBranches[0]);
+    }
   }
 
   // ========== Getters ==========
@@ -239,12 +485,14 @@ export class CheckoutSummaryComponent implements OnInit {
     return 0;
   }
 
-  private getLocalDeliveryConfig() {
-    const localDelivery = this.localDeliveryInfo;
-    if (!localDelivery) return null;
-    const cities = this.zoneService?.activeCities() || [];
-    const city = cities.find(c => c.code === localDelivery.cityCode);
-    return city?.deliveryConfig || null;
+  private getLocalDeliveryConfig(): { freeDelivery: boolean; additionalCharge: boolean; additionalChargeAmount: number } | null {
+    const dc = this.locationService.deliveryConfig();
+    if (!dc) return null;
+    return {
+      freeDelivery: dc.freeDelivery,
+      additionalCharge: !dc.freeDelivery && dc.deliveryCharge > 0,
+      additionalChargeAmount: dc.deliveryCharge,
+    };
   }
 
   get isPayOnDelivery(): boolean {
@@ -284,6 +532,13 @@ export class CheckoutSummaryComponent implements OnInit {
 
   isInfoOnlyType(type: PaymentMethodType): boolean {
     return PAYMENT_TYPES_INFO_ONLY.includes(type);
+  }
+
+  // ========== Branch Selection ==========
+
+  selectBranch(branch: BranchSummary & { insufficientStock?: boolean }): void {
+    if (branch.insufficientStock) return; // Prevent selecting branch with insufficient stock
+    this.checkoutService.selectBranch(branch);
   }
 
   // ========== Modal Actions ==========
@@ -380,17 +635,39 @@ export class CheckoutSummaryComponent implements OnInit {
     };
 
     if (this.isFormType(group.type)) {
+      // Validate payment date is not in the future
+      const paymentDate = this.formPaymentDate();
+      if (paymentDate && paymentDate > this.todayStr) {
+        this.errorMessage.set('La fecha de pago no puede ser futura');
+        return;
+      }
       submission.referenceNumber = this.formReferenceNumber().trim();
       submission.sourceBank = this.formSourceBank().trim();
       submission.amount = parseFloat(this.formAmount()) || 0;
-      submission.paymentDate = this.formPaymentDate();
+      submission.paymentDate = paymentDate;
     }
 
-    // TODO: Upload proof file to cloud storage if needed
-    // For now we store the submission data without the file
+    // Upload proof file if selected, then finalize
+    if (this.formProofFile()) {
+      this.uploadService.uploadImage(this.formProofFile()!, 'payment-proofs').subscribe({
+        next: (uploadRes) => {
+          submission.proofUrl = uploadRes.data.url;
+          submission.proofPublicId = uploadRes.data.publicId;
+          this.finalizePaymentSubmission(submission, group.type);
+        },
+        error: () => {
+          // Proceed without proof on upload failure
+          this.finalizePaymentSubmission(submission, group.type);
+        },
+      });
+    } else {
+      this.finalizePaymentSubmission(submission, group.type);
+    }
+  }
 
+  private finalizePaymentSubmission(submission: PaymentSubmission, methodType: PaymentMethodType): void {
     this.submittedPayment.set(submission);
-    this.submittedMethodType.set(group.type);
+    this.submittedMethodType.set(methodType);
     this.paymentSubmitted.set(true);
     this.closeModal();
   }
@@ -440,7 +717,72 @@ export class CheckoutSummaryComponent implements OnInit {
     const sellerAgreement = this.sellerAgreementInfo;
     const agency = this.shippingAgency;
     const store = this.storeInfo;
-    const selectedVehicle = this.vehicleService.selectedVehicle();
+    const selectedVehicles = this.checkoutService.selectedVehicles();
+    const selectedBranch = this.checkoutService.selectedBranch();
+
+    // Build dispatch details based on type
+    const dispatchDetails: any = {};
+
+    // Branch info for pickup/in-store types
+    if (selectedBranch) {
+      dispatchDetails.selectedBranchId = selectedBranch.id;
+      dispatchDetails.selectedBranchName = selectedBranch.name;
+      dispatchDetails.selectedBranchAddress = selectedBranch.address;
+      dispatchDetails.storeAddress = selectedBranch.address;
+    }
+
+    // Store pickup fallback
+    if (this.dispatchType === 'store_pickup' && !selectedBranch && store) {
+      dispatchDetails.storeAddress = store.address;
+      dispatchDetails.storeSchedule = store.schedule;
+    }
+
+    // Shipping agency + recipient
+    if (this.dispatchType === 'shipping_agency') {
+      if (agency) {
+        dispatchDetails.agencyName = agency.name;
+        dispatchDetails.agencyId = agency.id;
+      }
+      if (recipient) {
+        dispatchDetails.recipientName = recipient.fullName;
+        dispatchDetails.recipientDocument = `${recipient.documentType}-${recipient.documentNumber}`;
+        dispatchDetails.recipientPhone = recipient.phone;
+        dispatchDetails.recipientAddress = recipient.address;
+        dispatchDetails.recipientState = recipient.state;
+        dispatchDetails.recipientCity = recipient.city;
+        dispatchDetails.agencyOfficeCode = recipient.agencyOfficeCode;
+        dispatchDetails.referencePoint = recipient.referencePoint;
+      }
+    }
+
+    // Local delivery
+    if (this.dispatchType === 'local_delivery' && localDelivery) {
+      dispatchDetails.recipientName = localDelivery.fullName;
+      dispatchDetails.recipientDocument = `${localDelivery.documentType}-${localDelivery.documentNumber}`;
+      dispatchDetails.recipientPhone = localDelivery.phone;
+      dispatchDetails.recipientAddress = localDelivery.address;
+      dispatchDetails.recipientCity = localDelivery.cityName;
+      dispatchDetails.recipientMunicipality = localDelivery.municipalityName;
+      dispatchDetails.referencePoint = localDelivery.referencePoint;
+    }
+
+    // Seller agreement
+    if (this.dispatchType === 'seller_agreement' && sellerAgreement) {
+      dispatchDetails.recipientName = sellerAgreement.fullName;
+      dispatchDetails.recipientDocument = `${sellerAgreement.documentType}-${sellerAgreement.documentNumber}`;
+      dispatchDetails.recipientPhone = sellerAgreement.phone;
+    }
+
+    // Oil change service (home)
+    if (this.dispatchType === 'oil_change_service' && this.oilChangeServiceInfo) {
+      dispatchDetails.recipientName = this.oilChangeServiceInfo.fullName;
+      dispatchDetails.recipientDocument = `${this.oilChangeServiceInfo.documentType}-${this.oilChangeServiceInfo.documentNumber}`;
+      dispatchDetails.recipientPhone = this.oilChangeServiceInfo.phone;
+      dispatchDetails.recipientAddress = this.oilChangeServiceInfo.address;
+      dispatchDetails.recipientCity = this.oilChangeServiceInfo.cityName;
+      dispatchDetails.recipientMunicipality = this.oilChangeServiceInfo.municipalityName;
+      dispatchDetails.referencePoint = this.oilChangeServiceInfo.referencePoint;
+    }
 
     const orderData: CreateOrderRequest = {
       items,
@@ -450,57 +792,11 @@ export class CheckoutSummaryComponent implements OnInit {
       dispatchType: this.dispatchType as any,
       paymentMethod: this.submittedPayment()?.methodType as any,
       disclaimerAccepted: this.disclaimerAccepted(),
-      vehicle: selectedVehicle?.id,
+      vehicles: selectedVehicles.length > 0 ? selectedVehicles.map((v) => v.id) : undefined,
+      selectedBranch: selectedBranch?.id,
+      billingAddress: this.checkoutService.billingAddress() || undefined,
       paymentSubmission: this.submittedPayment() || undefined,
-      dispatchDetails: {
-        ...(this.dispatchType === 'store_pickup' && store
-          ? { storeAddress: store.address, storeSchedule: store.schedule }
-          : {}),
-        ...(this.dispatchType === 'shipping_agency' && agency
-          ? { agencyName: agency.name, agencyId: agency.id }
-          : {}),
-        ...(this.dispatchType === 'shipping_agency' && recipient
-          ? {
-              recipientName: recipient.fullName,
-              recipientDocument: `${recipient.documentType}-${recipient.documentNumber}`,
-              recipientPhone: recipient.phone,
-              recipientAddress: recipient.address,
-              recipientState: recipient.state,
-              recipientCity: recipient.city,
-              agencyOfficeCode: recipient.agencyOfficeCode,
-              referencePoint: recipient.referencePoint,
-            }
-          : {}),
-        ...(this.dispatchType === 'local_delivery' && localDelivery
-          ? {
-              recipientName: localDelivery.fullName,
-              recipientDocument: `${localDelivery.documentType}-${localDelivery.documentNumber}`,
-              recipientPhone: localDelivery.phone,
-              recipientAddress: localDelivery.address,
-              recipientCity: localDelivery.cityName,
-              recipientMunicipality: localDelivery.municipalityName,
-              referencePoint: localDelivery.referencePoint,
-            }
-          : {}),
-        ...(this.dispatchType === 'seller_agreement' && sellerAgreement
-          ? {
-              recipientName: sellerAgreement.fullName,
-              recipientDocument: `${sellerAgreement.documentType}-${sellerAgreement.documentNumber}`,
-              recipientPhone: sellerAgreement.phone,
-            }
-          : {}),
-        ...(this.dispatchType === 'oil_change_service' && this.oilChangeServiceInfo
-          ? {
-              recipientName: this.oilChangeServiceInfo.fullName,
-              recipientDocument: `${this.oilChangeServiceInfo.documentType}-${this.oilChangeServiceInfo.documentNumber}`,
-              recipientPhone: this.oilChangeServiceInfo.phone,
-              recipientAddress: this.oilChangeServiceInfo.address,
-              recipientCity: this.oilChangeServiceInfo.cityName,
-              recipientMunicipality: this.oilChangeServiceInfo.municipalityName,
-              referencePoint: this.oilChangeServiceInfo.referencePoint,
-            }
-          : {}),
-      },
+      dispatchDetails,
     };
 
     this.orderService.createOrder(orderData).subscribe({
@@ -525,16 +821,25 @@ export class CheckoutSummaryComponent implements OnInit {
 
   goBack(): void {
     const dispatchType = this.checkoutService.dispatchType();
-    if (dispatchType === 'shipping_agency') {
-      this.router.navigate(['/checkout/envio']);
-    } else if (dispatchType === 'local_delivery') {
-      this.router.navigate(['/checkout/delivery']);
-    } else if (dispatchType === 'seller_agreement') {
-      this.router.navigate(['/checkout/vendedor']);
-    } else if (dispatchType === 'oil_change_service') {
-      this.router.navigate(['/checkout/cambio-aceite']);
-    } else {
-      this.router.navigate(['/checkout/despacho']);
+    switch (dispatchType) {
+      case 'shipping_agency':
+        this.router.navigate(['/checkout/envio']);
+        break;
+      case 'local_delivery':
+        this.router.navigate(['/checkout/delivery']);
+        break;
+      case 'seller_agreement':
+        this.router.navigate(['/checkout/vendedor']);
+        break;
+      case 'store_pickup':
+      case 'in_store_oil_change':
+        this.router.navigate(['/checkout/despacho']);
+        break;
+      case 'oil_change_service':
+        this.router.navigate(['/checkout/cambio-aceite']);
+        break;
+      default:
+        this.router.navigate(['/checkout/despacho']);
     }
   }
 }

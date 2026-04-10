@@ -1,0 +1,236 @@
+.progress-page {
+  @apply min-h-screen bg-gray-50 dark:bg-gray-900 px-4 py-6 max-w-md mx-auto;
+}
+
+// Brand Header
+.brand-header {
+  @apply text-center mb-8;
+}
+
+.brand-name {
+  @apply text-2xl font-bold text-red-700 dark:text-red-500;
+}
+
+.brand-subtitle {
+  @apply text-sm text-gray-500 dark:text-gray-400 mt-1;
+}
+
+// Loading
+.loading-state {
+  @apply flex flex-col items-center justify-center py-20 text-gray-500 dark:text-gray-400;
+
+  p { @apply mt-3 text-sm; }
+}
+
+.spinner {
+  @apply w-10 h-10 border-4 border-gray-200 dark:border-gray-700 border-t-red-700 rounded-full animate-spin;
+}
+
+// Error
+.error-state {
+  @apply text-center py-16;
+
+  .error-icon { @apply w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4; }
+  h2 { @apply text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2; }
+  p { @apply text-sm text-gray-500 dark:text-gray-400; }
+}
+
+// Mechanic Card
+.mechanic-card {
+  @apply bg-white dark:bg-gray-800 rounded-xl p-6 text-center mb-6 shadow-sm border border-gray-200 dark:border-gray-700;
+}
+
+.mechanic-avatar {
+  @apply w-16 h-16 mx-auto bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mb-3;
+
+  svg { @apply w-8 h-8 text-red-600 dark:text-red-400; }
+}
+
+.mechanic-name-display {
+  @apply text-lg font-semibold text-gray-900 dark:text-white;
+}
+
+.schedule-display {
+  @apply text-sm text-gray-500 dark:text-gray-400 mt-1;
+}
+
+// Stepper
+.stepper {
+  @apply bg-white dark:bg-gray-800 rounded-xl p-6 mb-6 shadow-sm border border-gray-200 dark:border-gray-700;
+}
+
+.step {
+  @apply relative flex items-start gap-4 pb-8 last:pb-0;
+}
+
+.step-indicator {
+  @apply w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 border-2 transition-colors;
+  @apply border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800;
+
+  .step-check { @apply w-5 h-5; }
+  .step-number { @apply text-sm font-semibold text-gray-400 dark:text-gray-500; }
+
+  .completed & {
+    @apply border-green-500 bg-green-500;
+    .step-check { @apply text-white; }
+  }
+
+  .active & {
+    @apply border-red-500 bg-red-50 dark:bg-red-900/20;
+    .step-number { @apply text-red-600 dark:text-red-400; }
+  }
+}
+
+.step-content {
+  @apply pt-2;
+}
+
+.step-label {
+  @apply block text-sm font-medium text-gray-700 dark:text-gray-300;
+
+  .completed & { @apply text-green-700 dark:text-green-400; }
+  .active & { @apply text-red-700 dark:text-red-400 font-semibold; }
+}
+
+.step-time {
+  @apply block text-xs text-gray-400 dark:text-gray-500 mt-0.5;
+}
+
+.step-line {
+  @apply absolute left-5 top-12 w-0.5 h-[calc(100%-3rem)] bg-gray-200 dark:bg-gray-700;
+  transform: translateX(-50%);
+
+  &.filled { @apply bg-green-500; }
+}
+
+// Service Info
+.service-info {
+  @apply bg-white dark:bg-gray-800 rounded-xl p-6 mb-6 shadow-sm border border-gray-200 dark:border-gray-700;
+
+  h3 { @apply text-sm font-semibold text-gray-900 dark:text-white mb-4; }
+}
+
+.info-row {
+  @apply flex justify-between items-start py-2 border-b border-gray-100 dark:border-gray-700 last:border-0;
+}
+
+.info-label {
+  @apply text-xs font-medium text-gray-500 dark:text-gray-400 flex-shrink-0;
+}
+
+.info-value {
+  @apply text-xs text-gray-900 dark:text-white text-right;
+
+  a { @apply text-blue-600 dark:text-blue-400 underline; }
+}
+
+.vehicle-tag {
+  @apply block text-xs bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded mt-1;
+}
+
+// Action Buttons
+.action-buttons {
+  @apply space-y-3;
+}
+
+.btn-advance {
+  @apply w-full inline-flex items-center justify-center gap-2 px-6 py-4 bg-red-600 text-white text-base font-semibold rounded-xl;
+  @apply hover:bg-red-700 active:bg-red-800 transition-colors shadow-lg;
+  @apply disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.btn-reject {
+  @apply w-full py-3 text-sm font-medium text-red-600 dark:text-red-400 bg-white dark:bg-gray-800 border border-red-200 dark:border-red-800 rounded-xl;
+  @apply hover:bg-red-50 dark:hover:bg-red-900/20 active:bg-red-100 transition-colors;
+}
+
+// Reject Modal
+.reject-modal {
+  .reject-icon {
+    @apply w-16 h-16 mx-auto bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mb-4;
+    svg { @apply w-8 h-8 text-red-600 dark:text-red-400; }
+  }
+}
+
+.reject-textarea {
+  @apply w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-900 dark:text-white;
+  @apply placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none mb-4;
+}
+
+.reject-accept {
+  @apply flex-1 inline-flex items-center justify-center gap-2 py-3 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors;
+  @apply disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.spinner-white-sm { @apply w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin; }
+
+.spinner-white {
+  @apply w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin;
+}
+
+// Confirmation Modal
+.confirm-overlay {
+  @apply fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4;
+}
+
+.confirm-modal {
+  @apply bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm p-6 text-center;
+}
+
+.confirm-icon {
+  @apply w-16 h-16 mx-auto bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mb-4;
+
+  svg { @apply w-8 h-8 text-green-600 dark:text-green-400; }
+}
+
+.confirm-title {
+  @apply text-lg font-semibold text-gray-900 dark:text-white mb-2;
+}
+
+.confirm-text {
+  @apply text-sm text-gray-500 dark:text-gray-400 mb-3;
+}
+
+.confirm-step {
+  @apply inline-block px-4 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm font-semibold rounded-full mb-5;
+}
+
+.confirm-actions {
+  @apply flex gap-3;
+}
+
+.confirm-cancel {
+  @apply flex-1 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl transition-colors;
+}
+
+.confirm-accept {
+  @apply flex-1 inline-flex items-center justify-center gap-2 py-3 text-sm font-semibold text-white bg-green-600 hover:bg-green-700 rounded-xl transition-colors;
+  @apply disabled:opacity-70;
+}
+
+// Paused Banner
+.banner-amber {
+  @apply flex items-start gap-3 p-5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl mb-4;
+
+  .banner-icon { @apply w-8 h-8 text-amber-500 dark:text-amber-400 flex-shrink-0 mt-0.5; }
+  .banner-title { @apply block text-base font-semibold text-amber-700 dark:text-amber-400; }
+  .banner-text { @apply block text-sm text-amber-600 dark:text-amber-400/80 mt-1; }
+}
+
+// Expired Banner
+.expired-banner {
+  @apply flex items-start gap-3 p-5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl mb-4;
+
+  svg { @apply w-8 h-8 text-red-500 dark:text-red-400 flex-shrink-0 mt-0.5; }
+
+  .expired-title { @apply block text-base font-semibold text-red-700 dark:text-red-400; }
+  .expired-text { @apply block text-sm text-red-600 dark:text-red-400/80 mt-1; }
+}
+
+// Completed Banner
+.completed-banner {
+  @apply flex items-center justify-center gap-3 p-5 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl;
+
+  svg { @apply w-8 h-8 text-green-600 dark:text-green-400; }
+  span { @apply text-lg font-semibold text-green-700 dark:text-green-400; }
+}

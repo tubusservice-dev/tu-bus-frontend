@@ -7,7 +7,6 @@ import { TubusBrandsComponent } from './components/tubus-brands/tubus-brands.com
 import { TubusBenefitsComponent } from './components/tubus-benefits/tubus-benefits.component';
 import { TubusContactComponent } from './components/tubus-contact/tubus-contact.component';
 import { FooterComponent } from '../../components/footer/footer.component';
-import { ZoningModalComponent } from '../../../shared/components';
 
 @Component({
   selector: 'app-tu-bus-servicio',
@@ -21,7 +20,6 @@ import { ZoningModalComponent } from '../../../shared/components';
     TubusBenefitsComponent,
     TubusContactComponent,
     FooterComponent,
-    ZoningModalComponent,
   ],
   templateUrl: './tu-bus-servicio.component.html',
   styleUrl: './tu-bus-servicio.component.scss'

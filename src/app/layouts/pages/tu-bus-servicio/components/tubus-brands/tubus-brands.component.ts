@@ -24,7 +24,7 @@ export class TubusBrandsComponent implements OnInit {
     this.brandService.getAll().subscribe({
       next: (response) => {
         // Solo mostrar marcas activas
-        const activeBrands = response.data.filter(b => b.isActive);
+        const activeBrands = response.data.filter(b => b.isActive && b.image);
         this.brands.set(activeBrands);
         this.isLoading.set(false);
       },

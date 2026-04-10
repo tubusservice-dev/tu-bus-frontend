@@ -10,7 +10,7 @@
 }
 
 .zoning-modal {
-  @apply w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl;
+  @apply relative w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl;
   background-color: var(--bg-primary);
   max-height: 90vh;
   overflow-y: auto;
@@ -48,6 +48,33 @@
 
 .modal-subtitle {
   @apply text-sm text-center mb-6;
+  color: var(--text-secondary);
+}
+
+// Search box
+.search-box {
+  @apply flex items-center gap-2 px-3 py-2.5 mb-4 rounded-lg border;
+  background-color: var(--bg-secondary);
+  border-color: var(--border-primary);
+
+  svg {
+    @apply w-4 h-4 flex-shrink-0;
+    color: var(--text-secondary);
+  }
+
+  input {
+    @apply flex-1 bg-transparent outline-none text-sm;
+    color: var(--text-primary);
+
+    &::placeholder {
+      color: var(--text-secondary);
+    }
+  }
+}
+
+// No results
+.no-results {
+  @apply text-center text-sm py-6;
   color: var(--text-secondary);
 }
 
@@ -234,6 +261,53 @@
 
   &:active {
     transform: scale(0.98);
+  }
+}
+
+// OOC actions
+.ooc-actions {
+  @apply flex items-center justify-center gap-3 mt-2;
+}
+
+.btn-ooc-secondary {
+  @apply inline-flex items-center gap-1.5 px-5 py-3 rounded-xl
+         font-semibold text-sm transition-all duration-200 border;
+  border-color: var(--border-primary);
+  color: var(--text-primary);
+  background: none;
+
+  svg {
+    @apply w-4 h-4;
+  }
+
+  &:hover {
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+// Resolving overlay
+.resolving-overlay {
+  @apply absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-2xl;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+  color: white;
+  z-index: 10;
+
+  .spinner {
+    @apply w-8 h-8 rounded-full;
+    border-width: 3px;
+    border-color: rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    animation: spin 0.8s linear infinite;
+  }
+
+  span {
+    @apply text-sm font-medium;
   }
 }
 

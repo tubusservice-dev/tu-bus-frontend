@@ -13,6 +13,27 @@ export interface CarouselsConfig {
   homeCarousel: CarouselConfig;
 }
 
+export interface HeroImage {
+  url: string;
+  publicId: string;
+  order: number;
+}
+
+export type FloatingStatPosition = 'left' | 'right';
+
+export interface FloatingStat {
+  value: string;
+  label: string;
+  isVisible: boolean;
+  position: FloatingStatPosition;
+}
+
+export interface HeroImagesConfig {
+  images: HeroImage[];
+  carousel: CarouselConfig;
+  floatingStats: FloatingStat[];
+}
+
 export interface HomeHeroConfig {
   title: string;
   titleAccent: string;
@@ -44,15 +65,28 @@ export interface DispatchConfig {
   storePickup: StorePickupConfig;
 }
 
+export interface ExchangeRateConfig {
+  showBsPrice: boolean;
+  useCustomRate: boolean;
+}
+
 export const PAGINATION_OPTIONS = [10, 20, 50, 100] as const;
 
 export interface Settings {
   whatsapp: WhatsAppConfig;
   carousels: CarouselsConfig;
   homeHero: HomeHeroConfig;
+  heroImages: HeroImagesConfig;
   pagination: PaginationConfig;
   dispatch: DispatchConfig;
+  exchangeRate: ExchangeRateConfig;
   updatedAt?: string;
+}
+
+export interface UpdateHeroImagesDto {
+  images?: HeroImage[];
+  carousel?: Partial<CarouselConfig>;
+  floatingStats?: FloatingStat[];
 }
 
 export interface UpdateDispatchDto {
@@ -74,6 +108,14 @@ export const DEFAULT_SETTINGS: Settings = {
   },
   carousels: {
     homeCarousel: { isEnabled: true, interval: 5000 },
+  },
+  heroImages: {
+    images: [],
+    carousel: { isEnabled: true, interval: 5000 },
+    floatingStats: [
+      { value: '500+', label: 'Servicios', isVisible: true, position: 'left' },
+      { value: '4.9', label: 'Valoración', isVisible: true, position: 'right' },
+    ],
   },
   homeHero: {
     title: 'Mantenimiento',
@@ -98,6 +140,10 @@ export const DEFAULT_SETTINGS: Settings = {
       phone: '+58 412-1234567',
       additionalInfo: '',
     },
+  },
+  exchangeRate: {
+    showBsPrice: false,
+    useCustomRate: false,
   },
 };
 

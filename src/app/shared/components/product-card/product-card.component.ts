@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { ImageCarouselComponent } from '../image-carousel/image-carousel.component';
 import { CartService } from '../../../core/services/cart.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { ExchangeRateService } from '../../../core/services/exchange-rate.service';
 import { Line, Category, Brand } from '../../../models';
 
 export interface ProductCardData {
@@ -38,6 +39,7 @@ export class ProductCardComponent {
   private readonly router = inject(Router);
   private readonly cartService = inject(CartService);
   private readonly authService = inject(AuthService);
+  protected readonly exchangeRateService = inject(ExchangeRateService);
 
   @Input({ required: true }) product!: ProductCardData;
   @Input() showAddToCart = true;

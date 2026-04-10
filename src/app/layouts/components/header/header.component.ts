@@ -5,6 +5,7 @@ import { ThemeToggleComponent } from '../../../shared/components/theme-toggle/th
 import { UserMenuComponent } from '../../../shared/components/user-menu/user-menu.component';
 import { CartPopoverComponent } from '../../../shared/components/cart-popover/cart-popover.component';
 import { AuthModalComponent } from '../../../shared/components/auth-modal/auth-modal.component';
+import { UserNotificationsBellComponent } from '../../../shared/components/user-notifications-bell/user-notifications-bell.component';
 import { AuthService } from '../../../core/services';
 import { environment } from '../../../../environments/environment';
 
@@ -17,6 +18,7 @@ import { environment } from '../../../../environments/environment';
     UserMenuComponent,
     CartPopoverComponent,
     AuthModalComponent,
+    UserNotificationsBellComponent,
   ],
   templateUrl: './header.component.html',
   styleUrl: './header.component.scss'

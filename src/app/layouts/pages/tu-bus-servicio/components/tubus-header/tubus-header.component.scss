@@ -94,13 +94,17 @@
   color: var(--tubus-text-accent);
 }
 
-.zone-text {
-  @apply block truncate text-xs sm:text-sm;
+.zone-label {
+  @apply block truncate text-xs sm:text-sm font-medium;
   max-width: 100px;
 
   @media (min-width: 640px) {
-    max-width: 10rem;
+    max-width: 12rem;
   }
+}
+
+.zone-change-hint {
+  @apply hidden sm:block text-[10px] font-normal opacity-60;
 }
 
 .chevron-icon {
