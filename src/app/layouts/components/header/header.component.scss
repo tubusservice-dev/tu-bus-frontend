@@ -46,12 +46,10 @@
 }
 
 .logo-icon {
-  @apply w-8 h-8 flex items-center justify-center rounded-lg;
-  background-color: var(--accent-primary);
-  color: white;
+  @apply w-8 h-8 flex items-center justify-center;
 
-  svg {
-    @apply w-5 h-5;
+  img {
+    @apply w-full h-full object-contain;
   }
 }
 
