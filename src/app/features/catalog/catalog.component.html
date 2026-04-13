@@ -76,12 +76,12 @@
             </select>
           </div>
 
-          <!-- Categoría de producto -->
+          <!-- Categoría de producto (filtrada por tipo de vehículo) -->
           <div class="filter-group">
             <label>Categoría de producto</label>
             <select [ngModel]="filters().category" (ngModelChange)="updateFilter('category', $event)">
               <option value="" selected>Todas las categorías</option>
-              @for (cat of categories(); track cat.id) {
+              @for (cat of filteredCategories(); track cat.id) {
                 <option [value]="cat.id">{{ cat.name }}</option>
               }
             </select>

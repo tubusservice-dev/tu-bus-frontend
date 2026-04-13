@@ -300,7 +300,8 @@ import { environment } from '../../../../../environments/environment';
 
     .form-input {
       @apply w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white text-sm;
-      @apply focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent;
+      @apply focus:outline-none focus:ring-2 focus:border-transparent;
+      &:focus { --tw-ring-color: var(--accent-primary); }
     }
     .loading-assignment { @apply flex items-center justify-center gap-2 py-10 text-sm text-gray-500 dark:text-gray-400; }
     .loading-inline { @apply flex items-center gap-2 py-3 text-sm text-gray-500 dark:text-gray-400; }
@@ -316,13 +317,13 @@ import { environment } from '../../../../../environments/environment';
     .mechanics-list { @apply space-y-2; }
     .mechanic-card-opt {
       @apply flex items-center gap-3 p-3 border border-gray-200 dark:border-gray-600 rounded-xl cursor-pointer transition-all;
-      @apply hover:border-red-300 dark:hover:border-red-700 hover:shadow-sm;
-      &.selected { @apply border-red-500 bg-red-50 dark:bg-red-900/20 shadow-sm; }
+      @apply hover:border-green-300 dark:hover:border-green-700 hover:shadow-sm;
+      &.selected { @apply border-green-500 bg-green-50 dark:bg-green-900/20 shadow-sm; }
     }
     .mech-avatar-sm {
       @apply w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center flex-shrink-0;
       svg { @apply w-5 h-5 text-gray-500 dark:text-gray-400; }
-      .selected & { @apply bg-red-100 dark:bg-red-900/30; svg { @apply text-red-600 dark:text-red-400; } }
+      .selected & { @apply bg-green-100 dark:bg-green-900/30; svg { @apply text-green-600 dark:text-green-400; } }
     }
     .mech-card-info {
       @apply flex flex-col flex-1 min-w-0;
@@ -330,7 +331,7 @@ import { environment } from '../../../../../environments/environment';
       .mech-card-meta { @apply text-xs text-gray-500 dark:text-gray-400; }
     }
     .mech-check {
-      @apply w-6 h-6 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0;
+      @apply w-6 h-6 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0;
       svg { @apply w-3.5 h-3.5 text-white; }
     }
 

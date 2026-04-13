@@ -70,10 +70,12 @@
   input:not([type="checkbox"]), textarea {
     @apply w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg;
     @apply text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500;
-    @apply focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-colors;
+    @apply focus:outline-none focus:ring-2 focus:border-transparent transition-colors;
+    &:focus { --tw-ring-color: var(--accent-primary); }
 
     &.error {
-      @apply border-red-500 focus:ring-red-500;
+      @apply border-red-500;
+      &:focus { --tw-ring-color: #ef4444; }
     }
   }
 
@@ -92,6 +94,61 @@
 
 .help-text {
   @apply block mt-1.5 text-xs text-gray-400 dark:text-gray-500;
+}
+
+// Vehicle Type Multi-Select
+.vehicle-type-selector {
+  @apply relative;
+}
+
+.selector-input-wrapper {
+  @apply relative;
+
+  .search-icon {
+    @apply absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none;
+  }
+}
+
+.selector-search {
+  @apply w-full pl-4 pr-10 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg;
+  @apply text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500;
+  @apply focus:outline-none focus:ring-2 focus:border-transparent transition-colors;
+  &:focus { --tw-ring-color: var(--accent-primary); }
+
+  &.error {
+    @apply border-red-500;
+    &:focus { --tw-ring-color: #ef4444; }
+  }
+}
+
+.selector-dropdown {
+  @apply absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto;
+}
+
+.selector-option {
+  @apply w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors;
+  @apply first:rounded-t-lg last:rounded-b-lg;
+}
+
+.selector-no-results {
+  @apply px-4 py-3 text-sm text-gray-400 dark:text-gray-500 text-center;
+}
+
+.selected-items {
+  @apply flex flex-wrap gap-2 mt-2;
+}
+
+.item-badge {
+  @apply inline-flex items-center gap-1.5 px-3 py-1 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-full text-xs font-medium;
+  @apply border border-green-200 dark:border-green-800/40;
+}
+
+.badge-remove {
+  @apply p-0.5 hover:bg-green-100 dark:hover:bg-green-900/40 rounded-full transition-colors;
+
+  svg {
+    @apply w-3 h-3;
+  }
 }
 
 // Toggle

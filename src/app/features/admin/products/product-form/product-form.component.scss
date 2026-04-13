@@ -116,10 +116,12 @@
   input, select, textarea {
     @apply w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg;
     @apply text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500;
-    @apply focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-colors;
+    @apply focus:outline-none focus:ring-2 focus:border-transparent transition-colors;
+    &:focus { --tw-ring-color: var(--accent-primary); }
 
     &.error {
-      @apply border-red-500 focus:ring-red-500;
+      @apply border-red-500;
+      &:focus { --tw-ring-color: #ef4444; }
     }
   }
 
@@ -163,7 +165,9 @@
   @apply flex items-center gap-2 cursor-pointer;
 
   input[type="checkbox"] {
-    @apply w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-red-600 focus:ring-red-500;
+    @apply w-4 h-4 rounded border-gray-300 dark:border-gray-600;
+    color: var(--accent-primary);
+    &:focus { --tw-ring-color: var(--accent-primary); }
   }
 
   span {
@@ -336,7 +340,8 @@
   .category-search {
     @apply w-full px-4 py-2.5 pl-10 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg;
     @apply text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500;
-    @apply focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-colors;
+    @apply focus:outline-none focus:ring-2 focus:border-transparent transition-colors;
+    &:focus { --tw-ring-color: var(--accent-primary); }
   }
 
   .search-icon {
@@ -393,7 +398,8 @@
   .brand-search {
     @apply w-full px-4 py-2.5 pl-10 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg;
     @apply text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500;
-    @apply focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-colors;
+    @apply focus:outline-none focus:ring-2 focus:border-transparent transition-colors;
+    &:focus { --tw-ring-color: var(--accent-primary); }
   }
 
   .search-icon {

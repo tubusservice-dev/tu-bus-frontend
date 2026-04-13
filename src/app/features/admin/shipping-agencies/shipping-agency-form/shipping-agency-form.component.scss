@@ -100,10 +100,12 @@
   input, select, textarea {
     @apply w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg;
     @apply text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500;
-    @apply focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-colors;
+    @apply focus:outline-none focus:ring-2 focus:border-transparent transition-colors;
+    &:focus { --tw-ring-color: var(--accent-primary); }
 
     &.error {
-      @apply border-red-500 focus:ring-red-500;
+      @apply border-red-500;
+      &:focus { --tw-ring-color: #ef4444; }
     }
   }
 
@@ -217,7 +219,8 @@
 .amount-input {
   @apply flex-1 px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg;
   @apply text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500;
-  @apply focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-colors;
+  @apply focus:outline-none focus:ring-2 focus:border-transparent transition-colors;
+  &:focus { --tw-ring-color: var(--accent-primary); }
 }
 
 .btn-inline-save {

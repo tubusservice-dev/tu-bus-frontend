@@ -144,17 +144,6 @@
           <p class="section-description">Información adicional del producto (todo opcional)</p>
 
             <div class="form-grid">
-              <!-- Tipo de vehículo -->
-              <div class="form-group col-span-2">
-                <label for="vehicleType">Tipo de vehículo <span class="optional">(opcional)</span></label>
-                <select id="vehicleType" formControlName="vehicleType">
-                  @for (option of vehicleTypeOptions; track option.value) {
-                    <option [value]="option.value">{{ option.label }}</option>
-                  }
-                </select>
-                <span class="help-text">Si no seleccionas un tipo, el producto aplicará a todos los vehículos</span>
-              </div>
-
               <!-- Fila: Categorías (ocupa toda la fila) -->
               <div class="form-group col-span-2">
                 <label>Categorías <span class="optional">(opcional)</span></label>

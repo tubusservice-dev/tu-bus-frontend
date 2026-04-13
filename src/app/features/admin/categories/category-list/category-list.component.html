@@ -66,6 +66,13 @@
             <div class="card-content">
               <h3 class="category-name">{{ category.name }}</h3>
               <p class="category-slug">/{{ category.slug }}</p>
+              @if (getVehicleTypeLabels(category)) {
+                <div class="category-vehicle-types">
+                  @for (vt of category.vehicleTypes; track vt) {
+                    <span class="vt-badge">{{ $any(vt) | titlecase }}</span>
+                  }
+                </div>
+              }
               @if (category.description) {
                 <p class="category-description">{{ category.description }}</p>
               }
@@ -125,6 +132,12 @@
                 </span>
               </span>
             </div>
+            @if (category.vehicleTypes.length) {
+              <div class="detail-row">
+                <span class="detail-label">Tipos de vehículo</span>
+                <span class="detail-value">{{ getVehicleTypeLabels(category) }}</span>
+              </div>
+            }
             @if (category.description) {
               <div class="detail-row description">
                 <span class="detail-label">Descripción</span>

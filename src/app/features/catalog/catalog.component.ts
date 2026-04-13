@@ -49,12 +49,12 @@ export class CatalogComponent implements OnInit {
 
   private readonly searchSubject$ = new Subject<string>();
 
-  // Vehicle type filter options
-  protected readonly vehicleTypeOptions = Object.entries(VEHICLE_TYPE_LABELS).map(
-    ([value, label]) => ({ value, label })
-  );
+  // Vehicle type filter options (exclude 'all' from dropdown)
+  protected readonly vehicleTypeOptions = Object.entries(VEHICLE_TYPE_LABELS)
+    .filter(([key]) => key !== VehicleType.ALL)
+    .map(([value, label]) => ({ value, label }));
 
-  // Filtro de vehículo (activo cuando se navega desde el garaje)
+  // Vehicle filter from garage
   protected readonly vehicleFilterActive = signal(false);
 
   // Tracks whether initial product load has been triggered
@@ -72,14 +72,27 @@ export class CatalogComponent implements OnInit {
   });
   protected readonly showFilters = signal(false);
 
-  // Datos
+  // Datos cargados del backend
   protected readonly brands = signal<Brand[]>([]);
   protected readonly categories = signal<Category[]>([]);
+
+  // Categorías filtradas por vehicleType seleccionado (cascading filter)
+  protected readonly filteredCategories = computed(() => {
+    const selectedVehicleType = this.filters().vehicleType;
+    const allCats = this.categories();
+
+    if (!selectedVehicleType) {
+      return allCats;
+    }
+
+    return allCats.filter(cat =>
+      cat.vehicleTypes?.includes(selectedVehicleType as VehicleType)
+    );
+  });
 
   // Configuración de paginación
   protected readonly paginationConfig = this.settingsService.paginationConfig;
   protected readonly paginationOptions = PAGINATION_OPTIONS;
-  // Inicializar con el valor de settings (ya cargados en APP_INITIALIZER)
   protected readonly currentLimit = signal(this.settingsService.paginationConfig().catalogLimit || 20);
 
   // Filtros
@@ -125,8 +138,6 @@ export class CatalogComponent implements OnInit {
 
   constructor() {
     // Wait for LocationService to resolve before loading products.
-    // This avoids a race condition where branchIds is empty because
-    // the HTTP call from resolveLocation() hasn't completed yet.
     effect(() => {
       const resolved = this.locationService.isResolved();
       if (resolved && !this.initialLoadDone) {
@@ -156,6 +167,13 @@ export class CatalogComponent implements OnInit {
       if (page > 0) this.currentPage.set(page);
     }
 
+    // Pre-select vehicleType from query params (e.g. from landing page "Ver todos")
+    const vtParam = this.route.snapshot.queryParamMap.get('vehicleType');
+    if (vtParam) {
+      this.filters.update(f => ({ ...f, vehicleType: vtParam }));
+      this.showFilters.set(true);
+    }
+
     // Activate vehicle filter if navigating from garage
     const fromGarage = this.route.snapshot.queryParamMap.get('fromGarage');
     if (fromGarage === 'true' && this.vehicleService.selectedVehicle()) {
@@ -165,7 +183,7 @@ export class CatalogComponent implements OnInit {
     this.loadBrands();
     this.loadCategories();
 
-    // If location is already resolved (e.g. no saved location), load immediately
+    // If location is already resolved, load immediately
     if (this.locationService.isResolved() && !this.initialLoadDone) {
       this.initialLoadDone = true;
       this.loadProducts();
@@ -251,7 +269,22 @@ export class CatalogComponent implements OnInit {
   }
 
   updateFilter<K extends keyof FilterState>(key: K, value: FilterState[K]): void {
-    this.filters.update((f) => ({ ...f, [key]: value }));
+    this.filters.update((f) => {
+      const updated = { ...f, [key]: value };
+
+      // Cascading: when vehicleType changes, reset category if it no longer matches
+      if (key === 'vehicleType') {
+        const selectedCat = this.categories().find(c => c.id === f.category);
+        if (selectedCat && value) {
+          const catMatchesVehicle = selectedCat.vehicleTypes?.includes(value as VehicleType);
+          if (!catMatchesVehicle) {
+            updated.category = '';
+          }
+        }
+      }
+
+      return updated;
+    });
     this.currentPage.set(1);
     this.syncPageToUrl();
     this.loadProducts();
@@ -309,7 +342,6 @@ export class CatalogComponent implements OnInit {
 
   /**
    * Filtra productos compatibles con el vehículo seleccionado.
-   * Compara: compatibleEngines (fuelType + displacement + cylinders) y oilType.
    */
   private filterByVehicle(products: ProductCardData[]): ProductCardData[] {
     const vehicle = this.vehicleService.selectedVehicle();

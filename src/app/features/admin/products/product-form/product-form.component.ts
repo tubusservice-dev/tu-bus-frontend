@@ -17,8 +17,6 @@ import {
   Line,
   Category,
   Brand,
-  VehicleType,
-  VEHICLE_TYPE_LABELS,
 } from '../../../../models';
 import { ImageCarouselComponent } from '../../../../shared/components/image-carousel/image-carousel.component';
 
@@ -146,11 +144,6 @@ export class ProductFormComponent implements OnInit {
       + this.newBranchProducts().length;
   });
 
-  // Vehicle type options for select
-  protected readonly vehicleTypeOptions = Object.entries(VEHICLE_TYPE_LABELS).map(
-    ([value, label]) => ({ value, label })
-  );
-
   // Sección activa (simplificado a 3 secciones)
   protected readonly activeSection = signal<'basic' | 'vehicle' | 'images'>('basic');
 
@@ -168,7 +161,6 @@ export class ProductFormComponent implements OnInit {
     // Detalles adicionales (opcionales)
     brand: [''],
     productModel: [''],
-    vehicleType: [VehicleType.ALL],
 
     // Precio
     price: [0, [Validators.required, Validators.min(0)]],
@@ -290,7 +282,6 @@ export class ProductFormComponent implements OnInit {
           line: lineId,
           brand: product.brand,
           productModel: product.productModel,
-          vehicleType: (product as any).vehicleType || VehicleType.ALL,
           price: product.price,
           comparePrice: product.comparePrice,
           isActive: product.isActive,
@@ -306,13 +297,14 @@ export class ProductFormComponent implements OnInit {
             if (typeof c === 'string') {
               // Si es solo un ID, buscar en las categorías cargadas
               const found = this.categories().find(cat => cat.id === c);
-              return found || { id: c, name: c, slug: '', isActive: true };
+              return found || { id: c, name: c, slug: '', vehicleTypes: [], isActive: true };
             }
             // Normalizar el objeto (puede venir con _id o id)
             return {
               id: c.id || c._id,
               name: c.name || '',
               slug: c.slug || '',
+              vehicleTypes: c.vehicleTypes || [],
               isActive: c.isActive !== false
             };
           });
@@ -430,7 +422,6 @@ export class ProductFormComponent implements OnInit {
       categories: this.selectedCategories().map(c => c.id),
       line: formValue.line || undefined,
       brand: this.selectedBrand()?.id || undefined,
-      vehicleType: formValue.vehicleType || VehicleType.ALL,
       isCombo: formValue.isCombo || false,
       freeOilChangeService: formValue.freeOilChangeService || false,
       // TODO: branches assigned via BranchProduct
