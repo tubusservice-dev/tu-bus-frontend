@@ -2,13 +2,11 @@ import { Component, inject, signal, computed, effect, DestroyRef, HostListener }
 import { CommonModule } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ProductDetailOverlayService } from '../../../core/services/product-detail-overlay.service';
-import { ProductService } from '../../../core/services/product.service';
+import { ProductService, DetailProduct, DetailRelatedProduct } from '../../../core/services/product.service';
 import { CartService } from '../../../core/services/cart.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { LocationService } from '../../../core/services/location.service';
-import { BranchProductService } from '../../../core/services/branch-product.service';
 import { ExchangeRateService } from '../../../core/services/exchange-rate.service';
-import { Product, Category, Brand, Line } from '../../../models/product.model';
 import { ProductCardComponent, ProductCardData } from '../product-card/product-card.component';
 
 const PLACEHOLDER = 'https://placehold.co/400x400/e5e7eb/9ca3af?text=Sin+imagen';
@@ -18,10 +16,7 @@ const PLACEHOLDER = 'https://placehold.co/400x400/e5e7eb/9ca3af?text=Sin+imagen'
   standalone: true,
   imports: [CommonModule, ProductCardComponent],
   templateUrl: './product-detail-overlay.component.html',
-  styleUrls: [
-    '../../../features/product-detail/product-detail.component.scss',
-    './product-detail-overlay.component.scss',
-  ],
+  styleUrl: './product-detail-overlay.component.scss',
 })
 export class ProductDetailOverlayComponent {
   protected readonly overlayService = inject(ProductDetailOverlayService);
@@ -29,14 +24,13 @@ export class ProductDetailOverlayComponent {
   private readonly cartService = inject(CartService);
   private readonly authService = inject(AuthService);
   private readonly locationService = inject(LocationService);
-  private readonly branchProductService = inject(BranchProductService);
   protected readonly exchangeRateService = inject(ExchangeRateService);
   private readonly destroyRef = inject(DestroyRef);
 
   // Core state
   protected readonly isLoading = signal(true);
   protected readonly error = signal<string | null>(null);
-  protected readonly product = signal<Product | null>(null);
+  protected readonly product = signal<DetailProduct | null>(null);
 
   // Image gallery
   protected readonly selectedImageIndex = signal(0);
@@ -50,7 +44,6 @@ export class ProductDetailOverlayComponent {
   // Stock
   protected readonly productStock = signal<number | null>(null);
   protected readonly bestBranchName = signal<string | null>(null);
-  protected readonly isLoadingStock = signal(false);
 
   // Cart feedback
   protected readonly showStockError = signal(false);
@@ -101,9 +94,8 @@ export class ProductDetailOverlayComponent {
   protected readonly canRemove = computed(() => this.quantity() > 1);
   protected readonly canAddToCart = computed(() => {
     this.cartService.items();
-    const prod = this.product();
     const stock = this.productStock();
-    if (!prod || stock === null || stock <= 0) return false;
+    if (stock === null || stock <= 0) return false;
     return this.quantity() <= this.availableStock();
   });
 
@@ -112,17 +104,7 @@ export class ProductDetailOverlayComponent {
     effect(() => {
       const id = this.overlayService.productId();
       if (id) {
-        this.loadProduct(id);
-      }
-    });
-
-    // Reload stock when location resolves
-    effect(() => {
-      const resolved = this.locationService.isResolved();
-      const branchIds = this.locationService.branchIds();
-      const prod = this.product();
-      if (resolved && prod && branchIds.length > 0) {
-        this.loadStock(prod.id);
+        this.loadProductDetail(id);
       }
     });
   }
@@ -136,27 +118,30 @@ export class ProductDetailOverlayComponent {
     this.overlayService.close();
   }
 
-  // ==================== DATA LOADING ====================
+  // ==================== DATA LOADING (SINGLE REQUEST) ====================
 
-  private loadProduct(id: string): void {
+  private loadProductDetail(id: string): void {
     this.isLoading.set(true);
     this.error.set(null);
     this.productStock.set(null);
     this.selectedImageIndex.set(0);
     this.quantity.set(1);
 
-    this.productService.getById(id)
+    const branchIds = this.locationService.branchIds();
+    const branchIdsParam = branchIds.length > 0 ? branchIds.join(',') : undefined;
+
+    this.productService.getDetail(id, branchIdsParam)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (response) => {
-          this.product.set(response.data);
+          const { product, stock, related } = response.data;
+
+          this.product.set(product);
+          this.productStock.set(stock.total);
+          this.bestBranchName.set(stock.branchName);
+          this.relatedProducts.set(related.map(r => this.mapToCardData(r)));
+
           this.isLoading.set(false);
-          if (this.locationService.isResolved()) {
-            this.loadStock(response.data.id);
-          }
-          if (response.data.categories?.length) {
-            this.loadRelatedProducts(response.data);
-          }
         },
         error: () => {
           this.error.set('No se pudo cargar el producto');
@@ -165,51 +150,19 @@ export class ProductDetailOverlayComponent {
       });
   }
 
-  private loadStock(productId: string): void {
-    const branchIds = this.locationService.branchIds();
-    if (!branchIds.length) { this.productStock.set(0); return; }
-
-    this.isLoadingStock.set(true);
-    this.branchProductService.getAggregatedStock(productId, branchIds)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (res) => {
-          const best = res.data.bestBranch;
-          this.productStock.set(best?.stock ?? 0);
-          const zoneBranchCount = this.locationService.branches().length;
-          const branchesWithStock = res.data.byBranch.filter((b: any) => b.stock > 0);
-          this.bestBranchName.set(zoneBranchCount > 1 && branchesWithStock.length === 1 ? best?.branchName ?? null : null);
-          this.isLoadingStock.set(false);
-        },
-        error: () => { this.productStock.set(0); this.isLoadingStock.set(false); },
-      });
-  }
-
-  private loadRelatedProducts(currentProduct: Product): void {
-    const firstCat = currentProduct.categories?.[0];
-    const catId = typeof firstCat === 'string' ? firstCat : (firstCat?.id || (firstCat as any)?._id);
-    if (!catId) return;
-
-    const branchIds = this.locationService.branchIds();
-    this.productService.getAll({
-      category: catId, limit: 4, isActive: true,
-      branchIds: branchIds.length > 0 ? branchIds.join(',') : undefined,
-    }).pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (response) => {
-          this.relatedProducts.set(
-            response.data
-              .filter(p => p.id !== currentProduct.id)
-              .slice(0, 4)
-              .map(p => ({
-                id: p.id, name: p.name, slug: p.slug, description: p.description,
-                price: p.price, comparePrice: p.comparePrice,
-                images: p.images || [], stock: (p as any).totalStock ?? 0,
-                brand: p.brand, productModel: p.productModel,
-              }))
-          );
-        },
-      });
+  private mapToCardData(product: DetailRelatedProduct): ProductCardData {
+    return {
+      id: product.id,
+      name: product.name,
+      description: product.description,
+      price: product.price,
+      comparePrice: product.comparePrice,
+      images: product.images || [],
+      stock: product.stock ?? 0,
+      brand: product.brand as any,
+      productModel: product.productModel,
+      freeOilChangeService: (product as any).freeOilChangeService || false,
+    };
   }
 
   // ==================== IMAGE GALLERY ====================
@@ -254,7 +207,7 @@ export class ProductDetailOverlayComponent {
 
   // ==================== HELPERS ====================
   onImageError(event: Event): void { (event.target as HTMLImageElement).src = PLACEHOLDER; }
-  getCategoryName(cat: string | Category): string { return typeof cat === 'string' ? cat : cat?.name || ''; }
-  getBrandName(brand: string | Brand | undefined): string { if (!brand) return ''; return typeof brand === 'string' ? brand : brand?.name || ''; }
-  getLineName(line: string | Line | undefined): string { if (!line) return ''; return typeof line === 'string' ? line : line?.name || ''; }
+  getCategoryName(cat: any): string { return typeof cat === 'string' ? cat : cat?.name || ''; }
+  getBrandName(brand: any): string { if (!brand) return ''; return typeof brand === 'string' ? brand : brand?.name || ''; }
+  getLineName(line: any): string { if (!line) return ''; return typeof line === 'string' ? line : line?.name || ''; }
 }
