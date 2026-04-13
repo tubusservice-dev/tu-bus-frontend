@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { Category } from '../../models/product.model';
+import { Category, VehicleType } from '../../models/product.model';
 
 export interface CategoryResponse {
   success: boolean;
@@ -18,6 +18,7 @@ export interface CategoryListResponse {
 export interface CreateCategoryRequest {
   name: string;
   description?: string;
+  vehicleTypes: VehicleType[];
   isActive?: boolean;
 }
 

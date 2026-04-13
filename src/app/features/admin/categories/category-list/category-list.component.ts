@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CategoryService } from '../../../../core/services/category.service';
-import { Category } from '../../../../models/product.model';
+import { Category, VEHICLE_TYPE_LABELS, VehicleType } from '../../../../models/product.model';
 
 @Component({
   selector: 'app-category-list',
@@ -73,6 +73,14 @@ export class CategoryListComponent implements OnInit {
   closeDeleteModal(): void {
     this.deleteModalOpen.set(false);
     this.categoryToDelete.set(null);
+  }
+
+  getVehicleTypeLabels(category: Category): string {
+    if (!category.vehicleTypes?.length) return '';
+    return category.vehicleTypes
+      .filter(vt => vt !== VehicleType.ALL)
+      .map(vt => VEHICLE_TYPE_LABELS[vt] || vt)
+      .join(', ');
   }
 
   confirmDelete(): void {

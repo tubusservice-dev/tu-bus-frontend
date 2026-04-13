@@ -12,6 +12,69 @@ import {
   VehicleType,
 } from '../../models/product.model';
 
+export interface ShowcaseCategory {
+  name: string;
+  vehicleTypes: VehicleType[];
+}
+
+export interface ShowcaseProduct {
+  id: string;
+  name: string;
+  description: string;
+  image: string;
+  price: number;
+  comparePrice?: number;
+  isFeatured: boolean;
+  categories: ShowcaseCategory[];
+}
+
+export interface ShowcaseResponse {
+  success: boolean;
+  data: ShowcaseProduct[];
+}
+
+// Product detail composite response
+export interface DetailProduct {
+  id: string;
+  name: string;
+  description: string;
+  images: string[];
+  price: number;
+  comparePrice?: number;
+  sku: string;
+  line: { name: string } | null;
+  categories: { name: string }[];
+  brand: { name: string } | null;
+  productModel: string;
+  freeOilChangeService: boolean;
+}
+
+export interface DetailStock {
+  total: number;
+  branchName: string | null;
+}
+
+export interface DetailRelatedProduct {
+  id: string;
+  name: string;
+  description: string;
+  images: string[];
+  price: number;
+  comparePrice?: number;
+  brand: { name: string } | null;
+  productModel: string;
+  stock: number;
+}
+
+export interface ProductDetailResponse {
+  success: boolean;
+  data: {
+    product: DetailProduct;
+    stock: DetailStock;
+    related: DetailRelatedProduct[];
+  };
+}
+
 export interface ProductQueryParams {
   page?: number;
   limit?: number;
@@ -46,6 +109,17 @@ export class ProductService {
   private readonly adminUrl = `${environment.apiUrl}/admin/products`;
 
   /**
+   * Composite endpoint: product + stock + related in one request
+   */
+  getDetail(id: string, branchIds?: string): Observable<ProductDetailResponse> {
+    let httpParams = new HttpParams();
+    if (branchIds) {
+      httpParams = httpParams.set('branchIds', branchIds);
+    }
+    return this.http.get<ProductDetailResponse>(`${this.publicUrl}/${id}/detail`, { params: httpParams });
+  }
+
+  /**
    * Obtener lista de productos con filtros y paginación (público)
    */
   getAll(params?: ProductQueryParams): Observable<ProductListResponse> {
@@ -60,6 +134,17 @@ export class ProductService {
     }
 
     return this.http.get<ProductListResponse>(this.publicUrl, { params: httpParams });
+  }
+
+  /**
+   * Lightweight endpoint for landing page featured showcase
+   */
+  getFeaturedShowcase(branchIds?: string): Observable<ShowcaseResponse> {
+    let httpParams = new HttpParams();
+    if (branchIds) {
+      httpParams = httpParams.set('branchIds', branchIds);
+    }
+    return this.http.get<ShowcaseResponse>(`${this.publicUrl}/featured-showcase`, { params: httpParams });
   }
 
   /**

@@ -1,8 +1,14 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, computed, ElementRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CategoryService } from '../../../../core/services/category.service';
+import { VehicleType, VEHICLE_TYPE_LABELS } from '../../../../models';
+
+interface VehicleTypeOption {
+  value: VehicleType;
+  label: string;
+}
 
 @Component({
   selector: 'app-category-form',
@@ -16,12 +22,38 @@ export class CategoryFormComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly categoryService = inject(CategoryService);
+  private readonly elementRef = inject(ElementRef);
 
   protected readonly categoryId = signal<string | null>(null);
   protected readonly isEditMode = signal(false);
   protected readonly isLoading = signal(false);
   protected readonly isSubmitting = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
+
+  // Vehicle types multi-select
+  protected readonly selectedVehicleTypes = signal<VehicleTypeOption[]>([]);
+  protected readonly vehicleTypeSearchTerm = signal('');
+  protected readonly showVehicleTypeDropdown = signal(false);
+  protected readonly vehicleTypeTouched = signal(false);
+
+  // All available options (exclude 'all' — categories must target specific types)
+  private readonly allVehicleTypeOptions: VehicleTypeOption[] = Object.entries(VEHICLE_TYPE_LABELS)
+    .filter(([key]) => key !== VehicleType.ALL)
+    .map(([value, label]) => ({ value: value as VehicleType, label }));
+
+  // Filtered options (exclude already selected, apply search)
+  protected readonly filteredVehicleTypes = computed(() => {
+    const search = this.vehicleTypeSearchTerm().toLowerCase().trim();
+    const selectedValues = new Set(this.selectedVehicleTypes().map(s => s.value));
+
+    let filtered = this.allVehicleTypeOptions.filter(o => !selectedValues.has(o.value));
+
+    if (search) {
+      filtered = filtered.filter(o => o.label.toLowerCase().includes(search));
+    }
+
+    return filtered;
+  });
 
   protected readonly form: FormGroup = this.fb.group({
     name: ['', [Validators.required, Validators.minLength(2)]],
@@ -48,6 +80,18 @@ export class CategoryFormComponent implements OnInit {
           description: category.description || '',
           isActive: category.isActive,
         });
+
+        // Load selected vehicle types
+        if (category.vehicleTypes?.length) {
+          const selected = category.vehicleTypes
+            .filter((vt: VehicleType) => vt !== VehicleType.ALL)
+            .map((vt: VehicleType) => ({
+              value: vt,
+              label: VEHICLE_TYPE_LABELS[vt] || vt,
+            }));
+          this.selectedVehicleTypes.set(selected);
+        }
+
         this.isLoading.set(false);
       },
       error: (error) => {
@@ -58,15 +102,20 @@ export class CategoryFormComponent implements OnInit {
   }
 
   onSubmit(): void {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
+    this.form.markAllAsTouched();
+    this.vehicleTypeTouched.set(true);
+
+    if (this.form.invalid || this.selectedVehicleTypes().length === 0) {
       return;
     }
 
     this.isSubmitting.set(true);
     this.errorMessage.set(null);
 
-    const data = this.form.value;
+    const data = {
+      ...this.form.value,
+      vehicleTypes: this.selectedVehicleTypes().map(vt => vt.value),
+    };
 
     const request$ = this.isEditMode()
       ? this.categoryService.update(this.categoryId()!, data)
@@ -82,6 +131,40 @@ export class CategoryFormComponent implements OnInit {
       },
     });
   }
+
+  // ==================== VEHICLE TYPES MULTI-SELECT ====================
+
+  onVehicleTypeSearch(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.vehicleTypeSearchTerm.set(input.value);
+    this.showVehicleTypeDropdown.set(true);
+  }
+
+  openVehicleTypeDropdown(): void {
+    this.showVehicleTypeDropdown.set(true);
+    this.vehicleTypeTouched.set(true);
+  }
+
+  selectVehicleType(option: VehicleTypeOption): void {
+    this.selectedVehicleTypes.update(list => [...list, option]);
+    this.vehicleTypeSearchTerm.set('');
+    this.showVehicleTypeDropdown.set(false);
+  }
+
+  removeVehicleType(option: VehicleTypeOption): void {
+    this.selectedVehicleTypes.update(list => list.filter(vt => vt.value !== option.value));
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: Event): void {
+    const target = event.target as HTMLElement;
+    const selector = this.elementRef.nativeElement.querySelector('.vehicle-type-selector');
+    if (selector && !selector.contains(target)) {
+      this.showVehicleTypeDropdown.set(false);
+    }
+  }
+
+  // ==================== HELPERS ====================
 
   hasError(field: string, error: string): boolean {
     const control = this.form.get(field);

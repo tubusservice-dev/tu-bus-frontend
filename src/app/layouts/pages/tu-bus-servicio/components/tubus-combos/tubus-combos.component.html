@@ -51,8 +51,8 @@
 
             <!-- Image -->
             <div class="combo-image">
-              @if (getProductImage(product)) {
-                <img [src]="getProductImage(product)" [alt]="product.name" loading="lazy" />
+              @if (product.image) {
+                <img [src]="product.image" [alt]="product.name" loading="lazy" />
               } @else {
                 <div class="image-placeholder">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor">
@@ -71,10 +71,12 @@
               <h3 class="combo-name">{{ product.name }}</h3>
               <p class="combo-description">{{ product.description }}</p>
 
-              <!-- Vehicle Type Tag -->
-              @if (product.vehicleType && product.vehicleType !== 'all') {
+              <!-- Vehicle Type Badges -->
+              @if (getVehicleTypes(product).length > 0) {
                 <div class="combo-categories">
-                  <span class="category-tag">{{ product.vehicleType | titlecase }}</span>
+                  @for (vt of getVehicleTypes(product); track vt) {
+                    <span class="category-tag">{{ vt }}</span>
+                  }
                 </div>
               }
 

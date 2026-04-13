@@ -143,11 +143,13 @@
   }
 
   &:focus {
-    @apply ring-2 ring-red-500 border-transparent outline-none;
+    @apply ring-2 border-transparent outline-none;
+    --tw-ring-color: var(--accent-primary);
   }
 
   &.error {
     @apply border-red-500;
+    &:focus { --tw-ring-color: #ef4444; }
   }
 
   &.textarea {

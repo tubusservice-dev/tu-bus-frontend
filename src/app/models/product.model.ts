@@ -76,6 +76,7 @@ export interface Category {
   slug: string;
   description?: string;
   image?: string;
+  vehicleTypes: VehicleType[];
   isActive: boolean;
 }
 
@@ -138,7 +139,6 @@ export interface Product {
   images: string[];
   brand?: string | Brand;
   productModel: string;
-  vehicleType: VehicleType;
   compatibleEngines?: CompatibleEngine[];
   oilViscosity?: OilViscosity;
   oilType?: OilType;
@@ -168,7 +168,6 @@ export interface CreateProductRequest {
   images?: string[];
   brand?: string;
   productModel?: string;
-  vehicleType?: VehicleType;
   compatibleEngines?: CompatibleEngine[];
   oilViscosity?: OilViscosity;
   oilType?: OilType;

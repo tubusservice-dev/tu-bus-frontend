@@ -321,12 +321,23 @@ export class ProductListComponent implements OnInit {
   }
 
   /**
-   * Get vehicle type label for display (returns null for 'all' to skip rendering)
+   * Get vehicle type labels from product's categories
+   * Returns unique vehicle type labels (excludes 'all'), or null if none
    */
   getVehicleTypeLabel(product: Product): string | null {
-    const type = (product as any).vehicleType as VehicleType;
-    if (!type || type === VehicleType.ALL) return null;
-    return VEHICLE_TYPE_LABELS[type] || null;
+    if (!product.categories?.length) return null;
+    const types = new Set<string>();
+    for (const cat of product.categories) {
+      if (typeof cat !== 'string' && (cat as Category).vehicleTypes) {
+        for (const vt of (cat as Category).vehicleTypes) {
+          if (vt !== VehicleType.ALL) {
+            types.add(VEHICLE_TYPE_LABELS[vt] || vt);
+          }
+        }
+      }
+    }
+    if (types.size === 0) return null;
+    return Array.from(types).slice(0, 2).join(', ');
   }
 
   /**

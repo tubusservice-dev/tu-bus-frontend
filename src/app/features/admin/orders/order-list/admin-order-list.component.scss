@@ -70,7 +70,8 @@
 .filter-select {
   @apply px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg;
   @apply text-sm text-gray-900 dark:text-white;
-  @apply focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent;
+  @apply focus:outline-none focus:ring-2 focus:border-transparent;
+  &:focus { --tw-ring-color: var(--accent-primary); }
 }
 
 // Estados
@@ -244,13 +245,15 @@
 .status-select {
   @apply w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg;
   @apply text-gray-900 dark:text-white;
-  @apply focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent;
+  @apply focus:outline-none focus:ring-2 focus:border-transparent;
+  &:focus { --tw-ring-color: var(--accent-primary); }
 }
 
 .status-textarea {
   @apply w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg;
   @apply text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500;
-  @apply focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none;
+  @apply focus:outline-none focus:ring-2 focus:border-transparent resize-none;
+  &:focus { --tw-ring-color: var(--accent-primary); }
 }
 
 .modal-footer {

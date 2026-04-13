@@ -1,16 +1,18 @@
-import { Component, OnInit, OnChanges, SimpleChanges, Input, inject, signal, computed, DestroyRef, effect } from '@angular/core';
+import { Component, OnInit, OnChanges, SimpleChanges, Input, inject, signal, computed, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Location } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ProductService } from '../../core/services/product.service';
+import {
+  ProductService,
+  DetailProduct,
+  DetailRelatedProduct,
+} from '../../core/services/product.service';
 import { ProductDetailOverlayService } from '../../core/services/product-detail-overlay.service';
 import { CartService } from '../../core/services/cart.service';
 import { AuthService } from '../../core/services/auth.service';
 import { LocationService } from '../../core/services/location.service';
-import { BranchProductService } from '../../core/services/branch-product.service';
 import { ExchangeRateService } from '../../core/services/exchange-rate.service';
-import { Product, Category, Brand, Line } from '../../models/product.model';
 import {
   ProductCardComponent,
   ProductCardData,
@@ -34,32 +36,14 @@ export class ProductDetailComponent implements OnInit, OnChanges {
   private readonly cartService = inject(CartService);
   private readonly authService = inject(AuthService);
   private readonly locationService = inject(LocationService);
-  private readonly branchProductService = inject(BranchProductService);
   protected readonly exchangeRateService = inject(ExchangeRateService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly overlayService = inject(ProductDetailOverlayService);
 
-  constructor() {
-    // Re-load stock and related products when location resolves after OAuth redirect
-    effect(() => {
-      const resolved = this.locationService.isResolved();
-      const branchIds = this.locationService.branchIds();
-      const prod = this.product();
-
-      if (resolved && prod && branchIds.length > 0) {
-        this.loadStock(prod.id);
-        // Reload related products with branchIds so they show correct stock
-        if (prod.categories?.length) {
-          this.loadRelatedProducts(prod);
-        }
-      }
-    });
-  }
-
   // Core state
   protected readonly isLoading = signal(true);
   protected readonly error = signal<string | null>(null);
-  protected readonly product = signal<Product | null>(null);
+  protected readonly product = signal<DetailProduct | null>(null);
 
   // Image gallery
   protected readonly selectedImageIndex = signal(0);
@@ -69,15 +53,12 @@ export class ProductDetailComponent implements OnInit, OnChanges {
 
   // Related products
   protected readonly relatedProducts = signal<ProductCardData[]>([]);
-  protected readonly loadingRelated = signal(false);
 
-  // Stock from BranchProduct aggregation (best single branch)
-  protected readonly productStock = signal<number | null>(null); // null = loading
+  // Stock
+  protected readonly productStock = signal<number | null>(null);
   protected readonly bestBranchName = signal<string | null>(null);
-  protected readonly isLoadingStock = signal(false);
 
   // Cart feedback
-  protected readonly showLoginMessage = signal(false);
   protected readonly showStockError = signal(false);
   protected readonly stockErrorMessage = signal('');
   protected readonly isAddingToCart = signal(false);
@@ -109,7 +90,7 @@ export class ProductDetailComponent implements OnInit, OnChanges {
 
   protected readonly isOutOfStock = computed(() => {
     const stock = this.productStock();
-    if (stock === null) return false; // Still loading — don't show "Agotado" yet
+    if (stock === null) return false;
     return stock <= 0;
   });
 
@@ -122,25 +103,18 @@ export class ProductDetailComponent implements OnInit, OnChanges {
 
   protected readonly availableStock = computed(() => {
     this.cartService.items();
-    const prod = this.product();
-    if (!prod) return 0;
     const stock = this.productStock();
     if (stock === null) return 0;
     return Math.max(0, stock - this.quantityInCart());
   });
 
   protected readonly canAddMore = computed(() => {
-    this.cartService.items();
-    const prod = this.product();
-    if (!prod) return false;
     return this.quantity() < this.availableStock();
   });
 
   protected readonly canAddToCart = computed(() => {
-    this.cartService.items();
-    const prod = this.product();
     const stock = this.productStock();
-    if (!prod || stock === null || stock <= 0) return false;
+    if (stock === null || stock <= 0) return false;
     return this.quantity() <= this.availableStock();
   });
 
@@ -149,19 +123,17 @@ export class ProductDetailComponent implements OnInit, OnChanges {
   });
 
   ngOnInit(): void {
-    // Overlay mode: product ID provided via input
     if (this.overlayProductId) {
-      this.loadProduct(this.overlayProductId);
+      this.loadProductDetail(this.overlayProductId);
       return;
     }
 
-    // Route mode: existing behavior
     this.route.params
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((params) => {
         const id = params['id'];
         if (id) {
-          this.loadProduct(id);
+          this.loadProductDetail(id);
         } else {
           this.error.set('Producto no encontrado');
           this.isLoading.set(false);
@@ -171,33 +143,32 @@ export class ProductDetailComponent implements OnInit, OnChanges {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['overlayProductId'] && !changes['overlayProductId'].firstChange && this.overlayProductId) {
-      this.loadProduct(this.overlayProductId);
+      this.loadProductDetail(this.overlayProductId);
     }
   }
 
-  private loadProduct(id: string): void {
+  private loadProductDetail(id: string): void {
     this.isLoading.set(true);
     this.error.set(null);
-    this.productStock.set(null); // Reset to "loading" state
+    this.productStock.set(null);
 
-    this.productService.getById(id)
+    const branchIds = this.locationService.branchIds();
+    const branchIdsParam = branchIds.length > 0 ? branchIds.join(',') : undefined;
+
+    this.productService.getDetail(id, branchIdsParam)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (response) => {
-          this.product.set(response.data);
+          const { product, stock, related } = response.data;
+
+          this.product.set(product);
+          this.productStock.set(stock.total);
+          this.bestBranchName.set(stock.branchName);
+          this.relatedProducts.set(related.map(r => this.mapToCardData(r)));
+
           this.isLoading.set(false);
           this.selectedImageIndex.set(0);
           this.quantity.set(1);
-
-          // Stock is loaded reactively via the effect when branchIds are available
-          // Fallback: load immediately if location already resolved
-          if (this.locationService.isResolved()) {
-            this.loadStock(response.data.id);
-          }
-
-          if (response.data.categories && response.data.categories.length > 0) {
-            this.loadRelatedProducts(response.data);
-          }
         },
         error: () => {
           this.error.set('No se pudo cargar el producto');
@@ -206,89 +177,16 @@ export class ProductDetailComponent implements OnInit, OnChanges {
       });
   }
 
-  private loadStock(productId: string): void {
-    const branchIds = this.locationService.branchIds();
-    if (branchIds.length === 0) {
-      this.productStock.set(0);
-      this.bestBranchName.set(null);
-      return;
-    }
-
-    this.isLoadingStock.set(true);
-    this.branchProductService.getAggregatedStock(productId, branchIds)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (res) => {
-          // Use best branch stock (highest single branch) instead of aggregated total
-          const best = res.data.bestBranch;
-          this.productStock.set(best?.stock ?? 0);
-
-          // Show branch name ONLY when the zone has multiple branches
-          // AND the product is available in exactly one of them
-          const zoneBranchCount = this.locationService.branches().length;
-          const branchesWithStock = res.data.byBranch.filter(b => b.stock > 0);
-          const shouldShowBranch = zoneBranchCount > 1 && branchesWithStock.length === 1;
-          this.bestBranchName.set(shouldShowBranch ? best?.branchName ?? null : null);
-
-          this.isLoadingStock.set(false);
-        },
-        error: () => {
-          this.productStock.set(0);
-          this.bestBranchName.set(null);
-          this.isLoadingStock.set(false);
-        },
-      });
-  }
-
-  private loadRelatedProducts(currentProduct: Product): void {
-    this.loadingRelated.set(true);
-
-    const firstCategory = currentProduct.categories?.[0];
-    const categoryId =
-      typeof firstCategory === 'string'
-        ? firstCategory
-        : firstCategory?.id;
-
-    if (!categoryId) {
-      this.loadingRelated.set(false);
-      return;
-    }
-
-    const branchIds = this.locationService.branchIds();
-    this.productService
-      .getAll({
-        category: categoryId,
-        limit: 4,
-        isActive: true,
-        branchIds: branchIds.length > 0 ? branchIds.join(',') : undefined,
-      })
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (response) => {
-          const related = response.data
-            .filter((p) => p.id !== currentProduct.id)
-            .slice(0, 4)
-            .map((p) => this.mapToCardData(p));
-          this.relatedProducts.set(related);
-          this.loadingRelated.set(false);
-        },
-        error: () => {
-          this.loadingRelated.set(false);
-        },
-      });
-  }
-
-  private mapToCardData(product: Product): ProductCardData {
+  private mapToCardData(product: DetailRelatedProduct): ProductCardData {
     return {
       id: product.id,
       name: product.name,
-      slug: product.slug,
       description: product.description,
       price: product.price,
       comparePrice: product.comparePrice,
       images: product.images || [],
-      stock: (product as any).totalStock ?? 0,
-      brand: product.brand,
+      stock: product.stock ?? 0,
+      brand: product.brand as any,
       productModel: product.productModel,
     };
   }
@@ -391,18 +289,18 @@ export class ProductDetailComponent implements OnInit, OnChanges {
   }
 
   // Template helpers
-  getCategoryName(category: string | Category): string {
+  getCategoryName(category: any): string {
     if (typeof category === 'string') return category;
     return category?.name || '';
   }
 
-  getBrandName(brand: string | Brand | undefined): string {
+  getBrandName(brand: any): string {
     if (!brand) return '';
     if (typeof brand === 'string') return brand;
     return brand?.name || '';
   }
 
-  getLineName(line: string | Line | undefined): string {
+  getLineName(line: any): string {
     if (!line) return '';
     if (typeof line === 'string') return line;
     return line?.name || '';
