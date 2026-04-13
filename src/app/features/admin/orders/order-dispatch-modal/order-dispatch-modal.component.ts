@@ -467,9 +467,9 @@ export class OrderDispatchModalComponent {
     if (!mech || !this.selectedDate || !this.selectedStartTime) return;
     if (this.isDatePast() || this.isTimeInPast()) return;
 
-    // Check if within schedule
-    const dateObj = new Date(this.selectedDate);
-    const dayOfWeek = dateObj.getDay();
+    // Check if within schedule (parse parts to avoid UTC timezone shift)
+    const [y, m, d] = this.selectedDate.split('-').map(Number);
+    const dayOfWeek = new Date(y, m - 1, d).getDay();
     const schedule = mech.schedule?.find(s => s.day === dayOfWeek);
     if (!schedule || schedule.isClosed) {
       this.availabilityStatus.set('outside');
@@ -491,7 +491,7 @@ export class OrderDispatchModalComponent {
     const endTime = this.minutesToTime(endMin);
 
     this.mechanicAssignmentService
-      .getAvailableMechanics(this.selectedDate, this.selectedStartTime, endTime, undefined, undefined)
+      .getAvailableMechanics(this.selectedDate, this.selectedStartTime, endTime, undefined, this.order()?.id)
       .subscribe({
         next: (res) => {
           const found = res.data.some(m => m.id === mech.id);
