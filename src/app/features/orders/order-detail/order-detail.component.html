@@ -1,6 +1,7 @@
 <div class="order-detail-page" (click)="closePopovers()">
-  <!-- Header -->
-  <header class="page-header">
+
+  <!-- ==================== HEADER ==================== -->
+  <header class="page-header no-print">
     <div class="header-left">
       <button type="button" class="btn-back" (click)="goBack()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -17,9 +18,38 @@
         </div>
       }
     </div>
+
+    @if (order()) {
+      <div class="header-actions">
+        <button type="button" class="btn-print" (click)="printOrder()" title="Imprimir / Guardar PDF">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0 1 10.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0 .229 2.523a1.125 1.125 0 0 1-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0 0 21 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 0 0-1.913-.247M6.34 18H5.25A2.25 2.25 0 0 1 3 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 0 1 1.913-.247m10.5 0a48.536 48.536 0 0 0-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659M18 10.5h.008v.008H18V10.5Zm-3 0h.008v.008H15V10.5Z" />
+          </svg>
+          <span class="btn-print-text">Imprimir</span>
+        </button>
+      </div>
+    }
   </header>
 
-  <!-- Loading -->
+  <!-- ==================== HEADER DE IMPRESIÓN (solo PDF) ==================== -->
+  @if (order(); as o) {
+    <div class="print-only print-header">
+      <div class="print-brand">
+        <img src="assets/icons/autobus.png" alt="TuBus Express" />
+        <div>
+          <strong>TuBus Express</strong>
+          <span>Servicio de mantenimiento automotriz</span>
+        </div>
+      </div>
+      <div class="print-order-info">
+        <strong>Orden #{{ o.orderNumber }}</strong>
+        <span>Estado: {{ getStatusLabel(o.status) }}</span>
+        <span>Impreso: {{ formatDate(printedAt) }}</span>
+      </div>
+    </div>
+  }
+
+  <!-- ==================== LOADING ==================== -->
   @if (isLoading()) {
     <div class="loading-state">
       <div class="spinner"></div>
@@ -27,7 +57,7 @@
     </div>
   }
 
-  <!-- Error -->
+  <!-- ==================== ERROR ==================== -->
   @else if (error()) {
     <div class="error-state">
       <p>{{ error() }}</p>
@@ -35,13 +65,14 @@
     </div>
   }
 
-  <!-- Content -->
+  <!-- ==================== CONTENIDO ==================== -->
   @else if (order(); as o) {
     <div class="detail-grid">
-      <!-- ===================== LEFT COLUMN ===================== -->
+
+      <!-- ===== COLUMNA IZQUIERDA ===== -->
       <div class="detail-column">
 
-        <!-- Productos -->
+        <!-- ===== SECCIÓN 1: PRODUCTOS ===== -->
         <section class="detail-card">
           <h3 class="card-title">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -99,7 +130,7 @@
           </div>
         </section>
 
-        <!-- Despacho -->
+        <!-- ===== SECCIÓN 2: DESPACHO ===== -->
         <section class="detail-card">
           <h3 class="card-title">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -167,10 +198,10 @@
 
       </div>
 
-      <!-- ===================== RIGHT COLUMN ===================== -->
+      <!-- ===== COLUMNA DERECHA ===== -->
       <div class="detail-column">
 
-        <!-- Pago -->
+        <!-- ===== SECCIÓN 3: DATOS DEL PAGO ===== -->
         <section class="detail-card">
           <h3 class="card-title">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -178,13 +209,13 @@
             </svg>
             Datos del Pago
             @if (o.paymentSubmission) {
-              <button type="button" class="btn-toggle-detail" (click)="togglePaymentDetail()">
+              <button type="button" class="btn-toggle-detail no-print" (click)="togglePaymentDetail()">
                 @if (isPaymentExpanded()) {
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
                   </svg>
                 } @else {
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                   </svg>
@@ -194,7 +225,6 @@
           </h3>
 
           @if (o.paymentSubmission) {
-            <!-- Summary row (always visible) -->
             <div class="info-rows">
               <div class="info-row">
                 <span class="info-label">Método</span>
@@ -208,7 +238,6 @@
               }
             </div>
 
-            <!-- Expanded details -->
             @if (isPaymentExpanded()) {
               <div class="info-rows payment-expanded">
                 @if (o.paymentSubmission.referenceNumber) {
@@ -238,8 +267,8 @@
               </div>
             }
 
-            <!-- Payment note (always visible) -->
-            <div class="payment-note-section">
+            <!-- Comentario del pago -->
+            <div class="payment-note-section no-print">
               @if (noteSuccess()) {
                 <div class="alert-success-inline">{{ noteSuccess() }}</div>
               }
@@ -270,35 +299,39 @@
           }
         </section>
 
-        <!-- Mecánico asignado -->
-        @if (o.mechanic && typeof o.mechanic === 'object') {
-          <section class="detail-card">
+        <!-- ===== SECCIÓN 4: MECÁNICO ASIGNADO ===== -->
+        @if (hasMechanic(o)) {
+          <section class="detail-card detail-card-overflow">
             <h3 class="card-title">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 0 0 4.486-6.336l-3.276 3.277a3.004 3.004 0 0 1-2.25-2.25l3.276-3.276a4.5 4.5 0 0 0-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437 1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008Z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 0 0 4.486-6.336l-3.276 3.277a3.004 3.004 0 0 1-2.25-2.25l3.276-3.276a4.5 4.5 0 0 0-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437 1.745-1.437m6.615 8.206L15.75 15.75" />
               </svg>
               Mecánico Asignado
             </h3>
             <div class="info-rows">
               <div class="info-row">
                 <span class="info-label">Nombre</span>
-                <span class="info-value">{{ getMechanicField(o, 'name') }}</span>
+                <span class="info-value">{{ mechanicName(o) }}</span>
               </div>
-              @if (getMechanicField(o, 'whatsapp')) {
+              @if (mechanicWhatsapp(o)) {
                 <div class="info-row info-row-phone">
                   <span class="info-label">Teléfono</span>
                   <div class="mechanic-phone-wrapper" (click)="$event.stopPropagation()">
                     <button type="button" class="mechanic-phone-btn" (click)="togglePhonePopover('mechanicPhone')">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z" /></svg>
-                      {{ getMechanicField(o, 'whatsapp') }}
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z" />
+                      </svg>
+                      {{ mechanicWhatsapp(o) }}
                     </button>
                     @if (activePhonePopover() === 'mechanicPhone') {
                       <div class="phone-popover">
-                        <button type="button" class="popover-option" (click)="callPhone(getMechanicField(o, 'whatsapp'))">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z" /></svg>
+                        <button type="button" class="popover-option" (click)="callPhone(mechanicWhatsapp(o))">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z" />
+                          </svg>
                           Llamar
                         </button>
-                        <button type="button" class="popover-option popover-whatsapp" (click)="openWhatsApp(getMechanicField(o, 'whatsapp'))">
+                        <button type="button" class="popover-option popover-whatsapp" (click)="openWhatsApp(mechanicWhatsapp(o))">
                           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
                           WhatsApp
                         </button>
@@ -314,8 +347,8 @@
                 </span>
               </div>
             </div>
-            <a [routerLink]="['/perfil/pedidos', o.id, 'servicio']" class="btn-tracking-link">
-              Ver seguimiento del servicio
+            <a [routerLink]="['/perfil/pedidos', o.id, 'servicio']" class="btn-tracking-link no-print">
+              <span>Ver seguimiento del servicio</span>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
               </svg>
@@ -323,22 +356,7 @@
           </section>
         }
 
-        <!-- Notas -->
-        @if (o.notes) {
-          <section class="detail-card">
-            <h3 class="card-title">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 0 1 1.037-.443 48.282 48.282 0 0 0 5.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />
-              </svg>
-              Notas
-            </h3>
-            <div class="card-body-padded">
-              <p class="order-notes-text">{{ o.notes }}</p>
-            </div>
-          </section>
-        }
-
-        <!-- Current Status -->
+        <!-- ===== SECCIÓN 5: ESTADO DE LA ORDEN ===== -->
         @if (o.statusHistory && o.statusHistory.length > 0) {
           <section class="detail-card">
             <h3 class="card-title">
@@ -359,28 +377,29 @@
             </div>
           </section>
         }
+
       </div>
 
     </div>
 
-      <!-- Cancelar orden (solo pendiente) -->
-      @if (o.status === 'pending') {
-        <div class="cancel-section">
-          <p class="cancel-inline-text">
-            Si deseas cancelar esta orden, los productos reservados volverán al inventario y deberás realizar una nueva compra.
-            <a class="cancel-inline-link" (click)="openReasonModal()">Cancelar orden</a>
-          </p>
-        </div>
-      }
+    <!-- ==================== CANCELAR ORDEN ==================== -->
+    @if (o.status === 'pending') {
+      <div class="cancel-section no-print">
+        <p class="cancel-inline-text">
+          Si deseas cancelar esta orden, los productos reservados volverán al inventario y deberás realizar una nueva compra.
+          <a class="cancel-inline-link" (click)="openReasonModal()">Cancelar orden</a>
+        </p>
+      </div>
+    }
   }
 </div>
 
-<!-- Modal 1: Motivo de cancelación -->
+<!-- ==================== MODAL 1: MOTIVO DE CANCELACIÓN ==================== -->
 @if (showReasonModal() && order(); as o) {
   <div class="cancel-overlay" (click)="closeReasonModal()">
     <div class="cancel-modal" (click)="$event.stopPropagation()">
       <div class="cancel-modal-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 0 1 1.037-.443 48.282 48.282 0 0 0 5.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />
         </svg>
       </div>
@@ -408,7 +427,7 @@
   </div>
 }
 
-<!-- Modal 2: Confirmación final -->
+<!-- ==================== MODAL 2: CONFIRMACIÓN FINAL ==================== -->
 @if (showConfirmModal() && order(); as o) {
   <div class="cancel-overlay">
     <div class="cancel-modal" (click)="$event.stopPropagation()">
@@ -419,7 +438,7 @@
         </div>
       } @else {
         <div class="cancel-modal-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
           </svg>
         </div>
@@ -435,11 +454,13 @@
   </div>
 }
 
-<!-- Image Lightbox -->
+<!-- ==================== LIGHTBOX COMPROBANTE ==================== -->
 @if (proofPreview()) {
-  <div class="lightbox-overlay" (click)="proofPreview.set(null)">
+  <div class="lightbox-overlay no-print" (click)="proofPreview.set(null)">
     <button type="button" class="lightbox-close" (click)="proofPreview.set(null)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+      </svg>
     </button>
     <img [src]="proofPreview()" alt="Comprobante" class="lightbox-image" (click)="$event.stopPropagation()" />
   </div>

@@ -10,7 +10,13 @@ export class AdminNotificationService implements OnDestroy {
 
   readonly pendingPaymentsCount = signal(0);
 
+  private hasAdminToken(): boolean {
+    if (typeof window === 'undefined' || !window.localStorage) return false;
+    return !!localStorage.getItem('admin_auth_token');
+  }
+
   fetchCounts(): void {
+    if (!this.hasAdminToken()) return;
     this.paymentService.getPendingCount().subscribe({
       next: (res) => {
         this.pendingPaymentsCount.set(res.data.count);

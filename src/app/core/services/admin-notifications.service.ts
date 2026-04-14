@@ -38,6 +38,12 @@ export class AdminNotificationsService {
     this.pollSub?.unsubscribe();
   }
 
+  /** Retorna true si hay token de admin en localStorage (usuario admin logueado) */
+  private hasAdminToken(): boolean {
+    if (typeof window === 'undefined' || !window.localStorage) return false;
+    return !!localStorage.getItem('admin_auth_token');
+  }
+
   togglePopover(): void {
     const next = !this._showPopover();
     this._showPopover.set(next);
@@ -49,6 +55,7 @@ export class AdminNotificationsService {
   }
 
   fetchUnreadCount(): void {
+    if (!this.hasAdminToken()) return;
     this.http.get<UnreadCountResponse>(`${this.apiUrl}/unread-count`).subscribe({
       next: (res) => {
         const newCount = res.data.count;
@@ -67,6 +74,7 @@ export class AdminNotificationsService {
   }
 
   fetchRecent(): void {
+    if (!this.hasAdminToken()) return;
     this.http.get<NotificationListResponse>(`${this.apiUrl}?limit=5`).subscribe({
       next: (res) => this._notifications.set(res.data),
       error: () => {},

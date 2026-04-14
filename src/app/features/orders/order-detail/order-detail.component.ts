@@ -21,34 +21,42 @@ export class OrderDetailComponent implements OnInit {
   private readonly orderService = inject(OrderService);
   protected readonly exchangeRateService = inject(ExchangeRateService);
 
-  // Order data
+  // ========== ESTADO PRINCIPAL ==========
   protected readonly order = signal<Order | null>(null);
-  protected readonly proofPreview = signal<string | null>(null);
   protected readonly isLoading = signal(true);
   protected readonly error = signal<string | null>(null);
 
-  // Labels
-  protected readonly statusLabels = ORDER_STATUS_LABELS;
-  protected readonly statusColors = ORDER_STATUS_COLORS;
+  // ========== LIGHTBOX COMPROBANTE ==========
+  protected readonly proofPreview = signal<string | null>(null);
 
-  // Cancel flow (2-step: reason → confirm)
+  // ========== CANCELACIÓN (2 pasos) ==========
   protected readonly showReasonModal = signal(false);
   protected readonly showConfirmModal = signal(false);
   protected readonly cancelReason = signal('');
   protected readonly isCancelling = signal(false);
 
-  // Payment detail expanded
+  // ========== DETALLE DE PAGO ==========
   protected readonly isPaymentExpanded = signal(false);
 
-  // Phone popover
-  protected readonly activePhonePopover = signal<string | null>(null);
-
-  // Payment note
+  // ========== COMENTARIO DE PAGO ==========
   protected readonly paymentNote = signal('');
   protected readonly isSavingNote = signal(false);
   protected readonly noteSuccess = signal<string | null>(null);
   protected readonly noteError = signal<string | null>(null);
 
+  // ========== POPOVERS DE TELÉFONO ==========
+  protected readonly activePhonePopover = signal<string | null>(null);
+
+  // ========== IMPRESIÓN ==========
+  protected printedAt = '';
+
+  // ========== LABELS ==========
+  protected readonly statusLabels = ORDER_STATUS_LABELS;
+  protected readonly statusColors = ORDER_STATUS_COLORS;
+
+  // ============================================
+  // CICLO DE VIDA
+  // ============================================
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
     if (!id) {
@@ -58,8 +66,6 @@ export class OrderDetailComponent implements OnInit {
     }
     this.loadOrder(id);
   }
-
-  // ==================== DATA LOADING ====================
 
   private loadOrder(id: string): void {
     this.isLoading.set(true);
@@ -78,14 +84,16 @@ export class OrderDetailComponent implements OnInit {
     });
   }
 
-  // ==================== NAVIGATION ====================
-
+  // ============================================
+  // NAVEGACIÓN
+  // ============================================
   goBack(): void {
     this.router.navigate(['/perfil'], { fragment: 'pedidos' });
   }
 
-  // ==================== LABELS & HELPERS ====================
-
+  // ============================================
+  // LABELS Y HELPERS
+  // ============================================
   getStatusLabel(status: OrderStatus | string): string {
     return this.statusLabels[status as OrderStatus] || status;
   }
@@ -110,21 +118,8 @@ export class OrderDetailComponent implements OnInit {
     return labels[type] || type;
   }
 
-  getMechanicField(order: Order, field: string): string {
-    if (!order.mechanic || typeof order.mechanic === 'string') return '';
-    return (order.mechanic as any)[field] || '';
-  }
-
-  getBillingSourceLabel(source: string): string {
-    const labels: Record<string, string> = {
-      shipping: 'Dirección de envío',
-      profile: 'Dirección del perfil',
-      custom: 'Dirección personalizada',
-    };
-    return labels[source] || source;
-  }
-
   formatDate(date: string): string {
+    if (!date) return '';
     return new Date(date).toLocaleDateString('es-ES', {
       year: 'numeric',
       month: 'short',
@@ -141,14 +136,56 @@ export class OrderDetailComponent implements OnInit {
     return '$';
   }
 
-  getVehicleLabel(vehicle: any): string {
-    if (!vehicle) return '';
-    if (typeof vehicle === 'string') return vehicle;
-    return `${vehicle.marca} ${vehicle.modelo} ${vehicle.year} - ${vehicle.placa}`;
+  // ============================================
+  // MECÁNICO — Triple fallback
+  // ============================================
+  /**
+   * Retorna true si la orden tiene información del mecánico disponible por cualquier vía.
+   * Fuentes (en orden): order.mechanic populado, order.mechanicAssignment.mechanic populado, o status indica servicio activo.
+   */
+  hasMechanic(order: Order): boolean {
+    // Fuente 1: mechanic populado directamente
+    const m = order.mechanic as any;
+    if (m && typeof m === 'object' && (m.name || m.whatsapp)) return true;
+
+    // Fuente 2: mechanic populado dentro del assignment
+    const a = order.mechanicAssignment as any;
+    if (a && typeof a === 'object' && a.mechanic && typeof a.mechanic === 'object' && (a.mechanic.name || a.mechanic.whatsapp)) return true;
+
+    // Fuente 3: el status implica que hay un mecánico asignado
+    const statusesWithMechanic = ['mechanic_assigned', 'en_route', 'in_service'];
+    if (statusesWithMechanic.includes(order.status)) return true;
+
+    return false;
   }
 
-  // ==================== PHONE POPOVER ====================
+  mechanicName(order: Order): string {
+    const m = order.mechanic as any;
+    if (m && typeof m === 'object' && m.name) return m.name;
 
+    const a = order.mechanicAssignment as any;
+    if (a && typeof a === 'object' && a.mechanic && typeof a.mechanic === 'object' && a.mechanic.name) {
+      return a.mechanic.name;
+    }
+
+    return 'Mecánico asignado';
+  }
+
+  mechanicWhatsapp(order: Order): string {
+    const m = order.mechanic as any;
+    if (m && typeof m === 'object' && m.whatsapp) return m.whatsapp;
+
+    const a = order.mechanicAssignment as any;
+    if (a && typeof a === 'object' && a.mechanic && typeof a.mechanic === 'object' && a.mechanic.whatsapp) {
+      return a.mechanic.whatsapp;
+    }
+
+    return '';
+  }
+
+  // ============================================
+  // POPOVERS DE TELÉFONO
+  // ============================================
   togglePhonePopover(id: string): void {
     this.activePhonePopover.update((current) => (current === id ? null : id));
   }
@@ -158,21 +195,24 @@ export class OrderDetailComponent implements OnInit {
   }
 
   openWhatsApp(phone: string): void {
-    const cleaned = phone.replace(/-/g, '');
-    const international = '58' + cleaned.substring(1);
+    if (!phone) return;
+    const cleaned = phone.replace(/-/g, '').replace(/\s/g, '');
+    const international = '58' + cleaned.replace(/^0/, '');
     window.open(`https://wa.me/${international}`, '_blank');
     this.activePhonePopover.set(null);
   }
 
   callPhone(phone: string): void {
-    const cleaned = phone.replace(/-/g, '');
-    const international = '+58' + cleaned.substring(1);
+    if (!phone) return;
+    const cleaned = phone.replace(/-/g, '').replace(/\s/g, '');
+    const international = '+58' + cleaned.replace(/^0/, '');
     window.open(`tel:${international}`, '_self');
     this.activePhonePopover.set(null);
   }
 
-  // ==================== CANCEL ORDER (2-STEP) ====================
-
+  // ============================================
+  // CANCELACIÓN (2 pasos)
+  // ============================================
   openReasonModal(): void {
     this.cancelReason.set('');
     this.showReasonModal.set(true);
@@ -209,14 +249,16 @@ export class OrderDetailComponent implements OnInit {
     });
   }
 
-  // ==================== PAYMENT DETAIL ====================
-
+  // ============================================
+  // DETALLE DE PAGO (expandir/colapsar)
+  // ============================================
   togglePaymentDetail(): void {
     this.isPaymentExpanded.update((v) => !v);
   }
 
-  // ==================== PAYMENT NOTE ====================
-
+  // ============================================
+  // COMENTARIO DE PAGO
+  // ============================================
   savePaymentNote(): void {
     const o = this.order();
     if (!o || !o.paymentSubmission) return;
@@ -239,5 +281,14 @@ export class OrderDetailComponent implements OnInit {
         this.noteError.set(err.error?.message || 'Error al guardar el comentario');
       },
     });
+  }
+
+  // ============================================
+  // IMPRESIÓN / PDF
+  // ============================================
+  printOrder(): void {
+    this.printedAt = new Date().toISOString();
+    // Damos un tick a Angular para renderizar el header de impresión antes de abrir el diálogo
+    setTimeout(() => window.print(), 50);
   }
 }

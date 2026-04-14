@@ -1,135 +1,491 @@
-.tracking-page { @apply px-4 sm:px-6 lg:px-8 py-6 max-w-7xl mx-auto space-y-4; }
-.tracking-inner { @apply max-w-xl mx-auto space-y-4; }
+// ============================================
+// SERVICE TRACKING - Diseño moderno y funcional
+// ============================================
 
-// Header
-.tracking-header { @apply space-y-1 mb-2; }
-.back-link {
-  @apply inline-flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors;
-  @apply bg-transparent border-none cursor-pointer p-0;
+.tracking-page {
+  @apply max-w-4xl mx-auto px-4 sm:px-6 py-6;
 }
-.tracking-title { @apply text-xl font-bold text-gray-900 dark:text-white; }
-.tracking-subtitle { @apply text-sm text-gray-500 dark:text-gray-400; }
 
-// Loading / Empty
+// ============================================
+// HEADER
+// ============================================
+.page-header {
+  @apply mb-6 flex flex-col gap-3;
+}
+
+.btn-back {
+  @apply inline-flex items-center gap-2 text-sm font-medium w-fit;
+  @apply text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white;
+  @apply transition-colors bg-transparent border-none cursor-pointer p-0;
+
+  svg { @apply w-4 h-4; }
+}
+
+.header-text {
+  @apply flex flex-col gap-1;
+}
+
+.page-title {
+  @apply text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white m-0;
+}
+
+.page-subtitle {
+  @apply text-sm text-gray-500 dark:text-gray-400 m-0;
+}
+
+// ============================================
+// LOADING / EMPTY
+// ============================================
 .loading-state {
-  @apply flex flex-col items-center justify-center py-16 text-gray-500 dark:text-gray-400;
-  span { @apply mt-3 text-sm; }
+  @apply flex flex-col items-center justify-center py-20 gap-4 text-gray-500 dark:text-gray-400;
 }
-.spinner { @apply w-8 h-8 border-4 border-gray-200 dark:border-gray-700 border-t-red-700 rounded-full animate-spin; }
+
+.spinner {
+  @apply w-10 h-10 rounded-full animate-spin;
+  border: 3px solid #e5e7eb;
+  border-top-color: #3b82f6;
+
+  :host-context(.dark) & {
+    border-color: #374151;
+    border-top-color: #60a5fa;
+  }
+}
 
 .empty-state {
-  @apply text-center py-16;
-  .empty-icon { @apply w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-4; }
-  h3 { @apply text-base font-semibold text-gray-700 dark:text-gray-300 mb-1; }
-  p { @apply text-sm text-gray-500 dark:text-gray-400; }
+  @apply flex flex-col items-center justify-center py-20 gap-3 text-center;
+
+  .empty-icon-wrap {
+    @apply w-16 h-16 rounded-full flex items-center justify-center mb-2;
+    @apply bg-gray-100 dark:bg-gray-800;
+    svg { @apply w-8 h-8 text-gray-400 dark:text-gray-500; }
+  }
+
+  h3 { @apply text-lg font-semibold text-gray-900 dark:text-white m-0; }
+  p { @apply text-sm text-gray-500 dark:text-gray-400 max-w-md m-0; }
 }
 
-// Banners
-.banner {
-  @apply flex items-start gap-3 p-4 rounded-2xl;
-  .banner-icon { @apply w-6 h-6 flex-shrink-0 mt-0.5; }
-  .banner-title { @apply block text-sm font-semibold; }
-  .banner-text { @apply block text-xs mt-0.5 opacity-80; }
+.btn-secondary {
+  @apply mt-4 px-5 py-2 text-sm font-medium rounded-lg transition-colors;
+  @apply bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300;
+  @apply hover:bg-gray-200 dark:hover:bg-gray-600;
+}
 
-  &.banner-green {
-    @apply bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800;
-    .banner-icon, .banner-title { @apply text-green-700 dark:text-green-400; }
-    .banner-text { @apply text-green-600 dark:text-green-400; }
+// ============================================
+// CONTENIDO
+// ============================================
+.tracking-content {
+  @apply flex flex-col gap-4;
+}
+
+// ============================================
+// BANNERS DE ESTADO
+// ============================================
+.status-banner {
+  @apply flex items-start gap-3 p-4 rounded-xl border;
+
+  svg { @apply w-6 h-6 flex-shrink-0 mt-0.5; }
+
+  div {
+    @apply flex flex-col gap-1 min-w-0;
+    strong { @apply text-sm font-semibold block; }
+    span { @apply text-xs block leading-relaxed; }
   }
-  &.banner-red {
-    @apply bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800;
-    .banner-icon, .banner-title { @apply text-red-700 dark:text-red-400; }
-    .banner-text { @apply text-red-600 dark:text-red-400; }
+
+  &.banner-success {
+    @apply bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800;
+    svg, strong { @apply text-green-700 dark:text-green-400; }
+    span { @apply text-green-600 dark:text-green-400/80; }
   }
-  &.banner-gray {
-    @apply bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600;
-    .banner-icon, .banner-title { @apply text-gray-700 dark:text-gray-300; }
-    .banner-text { @apply text-gray-500 dark:text-gray-400; }
+
+  &.banner-danger {
+    @apply bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800;
+    svg, strong { @apply text-red-700 dark:text-red-400; }
+    span { @apply text-red-600 dark:text-red-400/80; }
+  }
+
+  &.banner-neutral {
+    @apply bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700;
+    svg, strong { @apply text-gray-700 dark:text-gray-300; }
+    span { @apply text-gray-500 dark:text-gray-400; }
+  }
+
+  &.banner-warning {
+    @apply bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800;
+    svg, strong { @apply text-amber-700 dark:text-amber-400; }
+    span { @apply text-amber-600 dark:text-amber-400/80; }
   }
 }
 
-// Status Card (active pulsing)
-.status-card {
-  @apply flex items-center gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl;
+// ============================================
+// HERO DE PROGRESO
+// ============================================
+.progress-hero {
+  @apply rounded-2xl border p-5 sm:p-7 relative overflow-hidden;
+  background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
+  @apply border-gray-200;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+
+  :host-context(.dark) & {
+    background: linear-gradient(135deg, #1e293b 0%, #1e3a5f 100%);
+    @apply border-gray-700;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  }
+
+  // Decorative gradient orb
+  &::before {
+    content: '';
+    position: absolute;
+    top: -40px;
+    right: -40px;
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, transparent 70%);
+    pointer-events: none;
+    :host-context(.dark) & {
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.12) 0%, transparent 70%);
+    }
+  }
 }
-.status-pulse {
-  @apply w-3 h-3 bg-blue-500 rounded-full flex-shrink-0;
+
+.hero-indicator {
+  @apply flex items-center gap-3 mb-2 relative z-10;
+}
+
+.pulse-dot {
+  @apply w-3.5 h-3.5 rounded-full flex-shrink-0 bg-blue-500;
   animation: pulse-dot 2s ease-in-out infinite;
+  box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.6);
+
+  &.is-done {
+    @apply bg-green-500;
+    animation: none;
+    box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.15);
+  }
+
+  &.is-error {
+    @apply bg-red-500;
+    animation: none;
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.15);
+  }
 }
+
 @keyframes pulse-dot {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(1.3); }
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.6); }
+  50% { transform: scale(1.15); box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
 }
-.status-text { @apply text-sm font-semibold text-blue-700 dark:text-blue-400; }
 
-// Progress Card
-.progress-card {
-  @apply bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5;
+.hero-current {
+  @apply text-lg sm:text-xl font-bold text-gray-900 dark:text-white;
+  letter-spacing: -0.01em;
 }
-.progress-bar-container {
-  @apply w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden mb-5;
+
+.hero-description {
+  @apply text-sm text-gray-600 dark:text-gray-300 mb-6 leading-relaxed m-0 relative z-10;
 }
+
+// Barra de progreso
+.progress-bar-wrapper {
+  @apply flex items-center gap-3 mb-7 relative z-10;
+}
+
+.progress-bar-track {
+  @apply flex-1 h-2.5 rounded-full overflow-hidden bg-gray-200/70 dark:bg-gray-700/60;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
 .progress-bar-fill {
-  @apply h-full bg-gradient-to-r from-green-400 to-green-600 rounded-full transition-all duration-700;
-}
-.progress-steps {
-  @apply grid grid-cols-4 gap-1;
-}
-.progress-step {
-  @apply flex flex-col items-center text-center;
-}
-.step-circle {
-  @apply w-9 h-9 rounded-full border-2 border-gray-300 dark:border-gray-600 flex items-center justify-center mb-1.5;
-  @apply text-xs font-bold text-gray-400 dark:text-gray-500 transition-all;
-  svg { @apply w-4 h-4; }
+  @apply h-full rounded-full transition-all duration-700 relative;
+  background: linear-gradient(90deg, #4ade80 0%, #22c55e 60%, #16a34a 100%);
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.35);
 
-  .completed & {
-    @apply border-green-500 bg-green-500 text-white;
-  }
-  .active & {
-    @apply border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400;
-    animation: pulse-dot 2s ease-in-out infinite;
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    animation: shimmer 2.5s infinite;
   }
 }
-.step-name {
-  @apply text-[10px] font-semibold text-gray-500 dark:text-gray-400 leading-tight;
-  .completed & { @apply text-green-700 dark:text-green-400; }
-  .active & { @apply text-blue-700 dark:text-blue-400; }
-}
-.step-time {
-  @apply text-[9px] text-gray-400 dark:text-gray-500 mt-0.5;
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
-// Info Cards
+.progress-percent {
+  @apply text-sm font-bold text-gray-700 dark:text-gray-200 min-w-[42px] text-right;
+}
+
+// Steps grid
+.steps-grid {
+  @apply grid grid-cols-4 gap-2 relative z-10;
+  position: relative;
+
+  // Línea conectora horizontal detrás de los circles
+  &::before {
+    content: '';
+    position: absolute;
+    top: 20px;
+    left: 12.5%;
+    right: 12.5%;
+    height: 2px;
+    background: repeating-linear-gradient(90deg, #d1d5db 0, #d1d5db 4px, transparent 4px, transparent 8px);
+    z-index: 0;
+    :host-context(.dark) & {
+      background: repeating-linear-gradient(90deg, #4b5563 0, #4b5563 4px, transparent 4px, transparent 8px);
+    }
+  }
+}
+
+.step-item {
+  @apply flex flex-col items-center text-center gap-2 relative z-10;
+
+  .step-circle {
+    @apply w-11 h-11 rounded-full flex items-center justify-center border-2 transition-all;
+    @apply bg-white dark:bg-gray-800;
+    @apply border-gray-300 dark:border-gray-600;
+    @apply text-sm font-bold text-gray-400 dark:text-gray-500;
+
+    svg { @apply w-5 h-5; }
+  }
+
+  .step-label {
+    @apply text-[11px] sm:text-xs font-semibold leading-tight;
+    @apply text-gray-500 dark:text-gray-400;
+  }
+
+  .step-timestamp {
+    @apply text-[10px] text-gray-400 dark:text-gray-500 leading-tight;
+  }
+
+  // Completado
+  &.completed {
+    .step-circle {
+      border-color: #16a34a;
+      background: linear-gradient(135deg, #4ade80 0%, #16a34a 100%);
+      @apply text-white;
+      box-shadow: 0 4px 10px rgba(34, 197, 94, 0.3), 0 0 0 3px rgba(34, 197, 94, 0.1);
+    }
+    .step-label { @apply text-green-700 dark:text-green-400; }
+  }
+
+  // Activo
+  &.active {
+    .step-circle {
+      @apply border-blue-500 bg-white dark:bg-gray-800;
+      @apply text-blue-600 dark:text-blue-400;
+      box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3), 0 0 0 3px rgba(59, 130, 246, 0.15);
+      animation: step-pulse 2.5s ease-in-out infinite;
+      transform: scale(1.05);
+    }
+    .step-label {
+      @apply text-blue-700 dark:text-blue-400 font-bold;
+    }
+  }
+}
+
+@keyframes step-pulse {
+  0%, 100% { box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3), 0 0 0 3px rgba(59, 130, 246, 0.15); }
+  50% { box-shadow: 0 6px 18px rgba(59, 130, 246, 0.4), 0 0 0 10px rgba(59, 130, 246, 0.05); }
+}
+
+// ============================================
+// CARDS GRID
+// ============================================
+.cards-grid {
+  @apply grid grid-cols-1 sm:grid-cols-2 gap-4;
+}
+
 .info-card {
-  @apply bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden;
-}
-.card-header {
-  @apply flex items-center gap-2 px-4 py-3 bg-gray-50 dark:bg-gray-700/50 text-sm font-semibold text-gray-700 dark:text-gray-300;
-  .card-icon { @apply w-4 h-4 text-gray-400; }
-}
-.card-body { @apply p-4; }
+  @apply rounded-2xl border;
+  overflow: visible;
+  @apply bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 
-// Mechanic
-.mechanic-row { @apply flex items-center gap-3; }
+  :host-context(.dark) & {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+}
+
+.card-title {
+  @apply flex items-center gap-2 px-4 sm:px-5 py-3 text-sm font-semibold border-b;
+  @apply text-gray-700 dark:text-gray-200;
+  @apply bg-gray-50 dark:bg-gray-900/30;
+  @apply border-gray-200 dark:border-gray-700;
+  border-top-left-radius: 1rem;
+  border-top-right-radius: 1rem;
+
+  svg {
+    @apply w-5 h-5 flex-shrink-0;
+    color: #3b82f6;
+    :host-context(.dark) & { color: #60a5fa; }
+  }
+}
+
+.card-body {
+  @apply p-4 sm:p-5;
+}
+
+// ============================================
+// MECÁNICO
+// ============================================
+.mechanic-body {
+  @apply flex items-center gap-4;
+}
+
 .mechanic-avatar {
-  @apply w-11 h-11 bg-gradient-to-br from-red-500 to-red-700 rounded-full flex items-center justify-center flex-shrink-0;
-  @apply text-white font-bold text-lg;
-}
-.mechanic-info { @apply flex flex-col; }
-.mechanic-name { @apply text-sm font-semibold text-gray-900 dark:text-white; }
-.mechanic-contact {
-  @apply inline-flex items-center gap-1 text-xs text-green-700 dark:text-green-400 hover:underline mt-0.5;
+  @apply w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0;
+  @apply text-white font-bold text-xl;
+  background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
-// Schedule
-.schedule-body { @apply flex gap-6; }
+.mechanic-info {
+  @apply flex flex-col gap-1.5 flex-1 min-w-0;
+}
+
+.mechanic-name {
+  @apply text-base font-semibold text-gray-900 dark:text-white truncate;
+}
+
+.mechanic-no-phone {
+  @apply text-xs text-gray-400 dark:text-gray-500 italic;
+}
+
+// Popover teléfono mecánico
+.mechanic-phone-wrapper { @apply relative w-fit; }
+
+.mechanic-phone-btn {
+  @apply inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors;
+  @apply bg-blue-50 text-blue-600 border border-blue-200;
+  @apply hover:bg-blue-100 active:bg-blue-200;
+
+  :host-context(.dark) & {
+    @apply text-blue-400 border-blue-800;
+    background-color: rgba(59, 130, 246, 0.1);
+    &:hover { background-color: rgba(59, 130, 246, 0.2); }
+  }
+
+  svg { @apply w-3.5 h-3.5 flex-shrink-0; }
+}
+
+.phone-popover {
+  @apply absolute mt-1 rounded-xl shadow-lg overflow-hidden bg-white border border-gray-200;
+  left: 0;
+  min-width: 160px;
+  z-index: 20;
+  animation: popover-in 0.15s ease-out;
+
+  :host-context(.dark) & {
+    background-color: #1e293b;
+    border-color: #334155;
+  }
+}
+
+@keyframes popover-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.popover-option {
+  @apply w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors;
+  @apply text-gray-700 hover:bg-gray-50;
+
+  :host-context(.dark) & {
+    @apply text-gray-300;
+    &:hover { background-color: #334155; }
+  }
+
+  svg { @apply w-5 h-5 flex-shrink-0; }
+
+  & + & {
+    @apply border-t border-gray-100;
+    :host-context(.dark) & { border-top-color: #334155; }
+  }
+
+  &.popover-whatsapp {
+    color: #15803d;
+    :host-context(.dark) & { color: #4ade80; }
+    &:hover {
+      background-color: #f0fdf4;
+      :host-context(.dark) & { background-color: rgba(34, 197, 94, 0.1); }
+    }
+  }
+}
+
+// ============================================
+// PROGRAMACIÓN
+// ============================================
+.schedule-body {
+  @apply flex flex-col gap-3;
+}
+
 .schedule-item {
-  .schedule-label { @apply block text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider; }
-  .schedule-value { @apply block text-sm font-semibold text-gray-900 dark:text-white mt-0.5; }
+  @apply flex items-center gap-3;
 }
 
-// Vehicle
-.vehicle-row { @apply flex items-center justify-between py-1; }
-.vehicle-name { @apply text-sm text-gray-900 dark:text-white; }
-.vehicle-plate { @apply text-xs font-mono font-bold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded; }
+.schedule-icon {
+  @apply w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0;
+  @apply bg-blue-50 dark:bg-blue-900/30;
+
+  svg { @apply w-5 h-5 text-blue-600 dark:text-blue-400; }
+}
+
+.schedule-content {
+  @apply flex flex-col flex-1;
+}
+
+.schedule-label {
+  @apply text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider;
+}
+
+.schedule-value {
+  @apply text-sm font-semibold text-gray-900 dark:text-white mt-0.5 capitalize;
+}
+
+// ============================================
+// VEHÍCULOS
+// ============================================
+.vehicles-body {
+  @apply flex flex-col gap-3;
+}
+
+.vehicle-row {
+  @apply flex items-center justify-between gap-3 py-2 border-b border-gray-100 dark:border-gray-700 last:border-0 last:pb-0;
+}
+
+.vehicle-main {
+  @apply flex flex-col gap-0.5 flex-1 min-w-0;
+}
+
+.vehicle-name {
+  @apply text-sm font-semibold text-gray-900 dark:text-white truncate;
+}
+
+.vehicle-specs {
+  @apply text-xs text-gray-500 dark:text-gray-400;
+}
+
+.vehicle-plate {
+  @apply text-xs font-mono font-bold px-2.5 py-1 rounded flex-shrink-0;
+  @apply bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300;
+}
+
+// ============================================
+// DIRECCIÓN
+// ============================================
+.address-body {
+  @apply flex flex-col gap-2;
+}
+
+.address-line {
+  @apply text-sm text-gray-700 dark:text-gray-300 m-0 leading-relaxed;
+
+  strong { @apply font-semibold text-gray-900 dark:text-white; }
+}
+
+.address-reference {
+  @apply text-xs text-gray-500 dark:text-gray-400 italic m-0 mt-1;
+}

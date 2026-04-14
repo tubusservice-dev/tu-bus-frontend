@@ -1,8 +1,9 @@
 // ============================================
-// PAGE CONTAINER
+// ORDER DETAIL - Estilos limpios con dark mode y print
 // ============================================
+
 .order-detail-page {
-  @apply p-4 sm:p-6 lg:p-8;
+  @apply max-w-6xl mx-auto px-4 py-6;
 }
 
 // ============================================
@@ -17,11 +18,7 @@
 }
 
 .btn-back {
-  @apply inline-flex items-center gap-1.5 text-sm font-medium transition-colors;
-  @apply text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200;
-  background: none;
-  border: none;
-  cursor: pointer;
+  @apply inline-flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors w-fit;
 
   svg { @apply w-4 h-4; }
 }
@@ -31,42 +28,86 @@
 }
 
 .page-title {
-  @apply text-xl sm:text-2xl font-bold text-gray-900 dark:text-white;
+  @apply text-xl sm:text-2xl font-bold text-gray-900 dark:text-white m-0;
 }
 
 .header-actions {
-  @apply flex items-center gap-2 flex-shrink-0;
+  @apply flex items-center gap-2;
+}
+
+.btn-print {
+  @apply inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors;
+  background-color: var(--accent-primary, #001d56);
+  color: white;
+
+  &:hover { opacity: 0.92; }
+  &:active { opacity: 0.85; }
+
+  svg { @apply w-4 h-4; }
 }
 
 // ============================================
-// STATUS BADGES
+// ESTADO BADGES (clases de ORDER_STATUS_COLORS)
 // ============================================
 .status-badge {
-  @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold;
-}
-
-.dispatch-status-badge {
-  @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold;
+  @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold;
 }
 
 // ============================================
-// GRID LAYOUT
+// LOADING / ERROR
+// ============================================
+.loading-state {
+  @apply flex flex-col items-center justify-center py-20 gap-3 text-gray-500 dark:text-gray-400;
+}
+
+.spinner {
+  @apply w-10 h-10 rounded-full animate-spin;
+  border: 3px solid #e5e7eb;
+  border-top-color: var(--accent-primary, #001d56);
+
+  :host-context(.dark) & {
+    border-color: #374151;
+    border-top-color: var(--accent-primary, #3b82f6);
+  }
+}
+
+.error-state {
+  @apply flex flex-col items-center justify-center py-20 gap-4 text-center;
+
+  p { @apply text-red-600 dark:text-red-400; }
+}
+
+.btn-back-link {
+  @apply px-4 py-2 text-sm font-medium rounded-lg transition-colors;
+  @apply bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300;
+  @apply hover:bg-gray-200 dark:hover:bg-gray-600;
+}
+
+// ============================================
+// GRID DE DETALLE
 // ============================================
 .detail-grid {
-  @apply grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6;
+  @apply grid grid-cols-1 lg:grid-cols-2 gap-4;
 }
 
 .detail-column {
-  @apply flex flex-col gap-4 sm:gap-6;
+  @apply flex flex-col gap-4;
 }
 
 // ============================================
-// CARDS
+// TARJETAS
 // ============================================
 .detail-card {
   @apply rounded-xl border bg-white;
   border-color: #e5e7eb;
+  overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+  // Excepción: si el card contiene un popover (teléfono del mecánico),
+  // necesita overflow visible para que el popover no se corte.
+  &.detail-card-overflow {
+    overflow: visible;
+  }
 
   :host-context(.dark) & {
     background-color: #1e293b;
@@ -78,6 +119,8 @@
 .card-title {
   @apply flex items-center gap-2 px-4 sm:px-5 py-3 text-sm font-semibold border-b;
   @apply text-gray-700 bg-gray-50 border-gray-200;
+  border-top-left-radius: 0.75rem;
+  border-top-right-radius: 0.75rem;
 
   :host-context(.dark) & {
     @apply text-gray-200;
@@ -89,10 +132,20 @@
     @apply w-5 h-5 flex-shrink-0;
     color: #3b82f6;
 
-    :host-context(.dark) & {
-      color: #60a5fa;
-    }
+    :host-context(.dark) & { color: #60a5fa; }
   }
+}
+
+.btn-toggle-detail {
+  @apply ml-auto p-1.5 rounded-md transition-colors;
+  @apply text-gray-500 hover:text-gray-700 hover:bg-gray-200;
+
+  :host-context(.dark) & {
+    @apply text-gray-400 hover:text-gray-200;
+    &:hover { background-color: #374151; }
+  }
+
+  svg { @apply w-4 h-4; }
 }
 
 .card-body-padded {
@@ -114,9 +167,7 @@
     border-bottom-color: rgba(51, 65, 85, 0.5);
   }
 
-  &:last-child {
-    @apply border-b-0;
-  }
+  &:last-child { @apply border-b-0; }
 }
 
 .info-label {
@@ -128,68 +179,61 @@
 
   &.mono { font-family: monospace; }
   &.fw-600 { font-weight: 600; }
-  &.vehicle-value { @apply text-left font-medium; }
 }
 
-.btn-tracking-link {
-  @apply flex items-center justify-between w-full mt-3 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors cursor-pointer;
-  @apply text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20;
-  text-decoration: none;
-
-  svg {
-    @apply w-4 h-4 flex-shrink-0;
-  }
-}
+.fw-600 { font-weight: 600; }
+.mono { font-family: monospace; }
 
 .no-data {
-  @apply px-5 py-4 text-sm text-gray-400 dark:text-gray-500 text-center;
+  @apply px-4 sm:px-5 py-6 text-sm text-center text-gray-400 dark:text-gray-500 italic;
 }
 
 // ============================================
-// PRODUCTS LIST
+// SECCIÓN PRODUCTOS
 // ============================================
 .products-list {
-  @apply flex flex-col;
+  @apply flex flex-col divide-y divide-gray-100 dark:divide-gray-700;
 }
 
 .product-row {
   @apply flex items-center gap-3 px-4 sm:px-5 py-3;
-  @apply border-b border-gray-100;
-
-  :host-context(.dark) & {
-    border-bottom-color: rgba(51, 65, 85, 0.5);
-  }
-
-  &:last-child { @apply border-b-0; }
 }
 
 .product-img {
-  @apply w-10 h-10 rounded-lg object-cover flex-shrink-0 bg-gray-100 dark:bg-gray-700;
+  @apply w-14 h-14 object-contain rounded-lg bg-gray-50 dark:bg-gray-700/50 flex-shrink-0;
 }
 
 .product-info {
-  @apply flex-1 min-w-0 flex flex-col;
+  @apply flex flex-col flex-1 min-w-0;
 }
 
 .product-name {
-  @apply text-sm font-medium text-gray-900 dark:text-gray-100 truncate;
+  @apply text-sm font-medium text-gray-900 dark:text-white truncate;
 }
 
 .product-qty {
-  @apply text-xs text-gray-500 dark:text-gray-400;
-}
-
-.product-total {
-  @apply text-sm font-semibold text-gray-900 dark:text-gray-100 flex-shrink-0;
+  @apply text-xs text-gray-500 dark:text-gray-400 mt-0.5;
 }
 
 .product-total-col {
   @apply flex flex-col items-end flex-shrink-0;
 }
 
+.product-total {
+  @apply text-sm font-semibold text-gray-900 dark:text-white;
+}
+
 .product-total-bs {
-  @apply text-xs font-semibold;
-  color: #9ca3af;
+  @apply text-xs text-blue-600 dark:text-blue-400 mt-0.5;
+}
+
+// Totales
+.totals-section {
+  @apply flex flex-col gap-1 px-4 sm:px-5 py-3 border-t border-gray-100 dark:border-gray-700;
+}
+
+.total-row {
+  @apply flex items-start justify-between text-sm text-gray-600 dark:text-gray-400;
 }
 
 .total-row-values {
@@ -197,398 +241,93 @@
 }
 
 .total-row-bs {
-  @apply text-xs font-semibold;
-  color: #9ca3af;
+  @apply text-xs text-blue-600 dark:text-blue-400 mt-0.5;
+}
 
-  &.total-bs-final {
-    @apply text-sm;
+.total-final {
+  @apply text-base font-bold text-gray-900 dark:text-white mt-1 pt-2 border-t border-gray-100 dark:border-gray-700;
+}
+
+.total-bs-final {
+  @apply text-sm;
+}
+
+// ============================================
+// SECCIÓN PAGO — Comentario
+// ============================================
+.payment-note-section {
+  @apply px-4 sm:px-5 py-3 border-t border-gray-100 dark:border-gray-700 flex flex-col gap-2;
+}
+
+.note-label {
+  @apply text-xs text-gray-500 dark:text-gray-400;
+}
+
+.note-textarea {
+  @apply w-full px-3 py-2 rounded-lg text-sm outline-none resize-none transition-colors;
+  @apply bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600;
+  @apply text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500;
+
+  &:focus {
+    border-color: var(--accent-primary, #001d56);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
   }
 }
 
-// ============================================
-// TOTALS
-// ============================================
-.totals-section {
-  @apply border-t border-gray-200;
-
-  :host-context(.dark) & {
-    border-top-color: #334155;
-  }
+.note-actions {
+  @apply flex justify-end;
 }
 
-.total-row {
-  @apply flex items-center justify-between px-4 sm:px-5 py-2 text-sm;
-  @apply text-gray-600 dark:text-gray-400;
+.btn-save-note {
+  @apply px-4 py-1.5 text-xs font-medium rounded-lg text-white transition-colors;
+  background-color: var(--accent-primary, #001d56);
 
-  span:last-child {
-    @apply font-medium text-gray-900 dark:text-gray-100;
-  }
-
-  &.total-final {
-    @apply bg-gray-50 py-3;
-
-    :host-context(.dark) & {
-      background-color: #0f172a;
-    }
-
-    span:first-child {
-      @apply font-semibold text-gray-900 dark:text-gray-100;
-    }
-
-    span:last-child {
-      @apply text-lg font-bold;
-      color: #3b82f6;
-
-      :host-context(.dark) & {
-        color: #60a5fa;
-      }
-    }
-  }
+  &:hover:not(:disabled) { opacity: 0.92; }
+  &:disabled { @apply opacity-50 cursor-not-allowed; }
 }
 
-// ============================================
-// TIMELINE
-// ============================================
-.timeline {
-  @apply flex flex-col px-4 sm:px-5 py-3;
+.alert-success-inline {
+  @apply text-xs px-3 py-2 rounded-md bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400;
 }
 
-.timeline-item {
-  @apply flex gap-3 pb-4;
-  position: relative;
-
-  &:last-child { @apply pb-0; }
-
-  &:not(:last-child)::before {
-    content: '';
-    position: absolute;
-    left: 5px;
-    top: 14px;
-    bottom: -4px;
-    width: 2px;
-    @apply bg-gray-200;
-
-    :host-context(.dark) & {
-      background-color: #334155;
-    }
-  }
+.alert-error-inline {
+  @apply text-xs px-3 py-2 rounded-md bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400;
 }
 
-.timeline-dot {
-  @apply w-3 h-3 rounded-full mt-1 flex-shrink-0 ring-2 ring-white bg-gray-300;
-
-  :host-context(.dark) & {
-    --tw-ring-color: #1e293b;
-    background-color: #60a5fa;
-  }
-}
-
-.timeline-content { @apply flex flex-col gap-0.5; }
-.timeline-status { @apply text-sm font-medium text-gray-900 dark:text-gray-100; }
-.timeline-note { @apply text-xs text-gray-500 dark:text-gray-400 italic; }
-.timeline-date { @apply text-xs text-gray-400 dark:text-gray-500; }
-
-.current-status-row {
-  @apply flex flex-col gap-1.5 px-4 sm:px-5 py-3;
-}
-
-.current-status-description {
-  @apply text-sm text-gray-600 dark:text-gray-400 leading-relaxed m-0;
-}
-
-.current-status-note {
-  @apply text-sm text-gray-500 dark:text-gray-500 italic;
-}
-
-.current-status-date {
-  @apply text-xs text-gray-400 dark:text-gray-500;
-}
-
-// ============================================
-// NOTES
-// ============================================
-.order-notes-text {
-  @apply text-sm leading-relaxed p-3 rounded-lg;
-  @apply bg-gray-100 dark:bg-gray-900/50;
-  color: var(--text-primary);
-}
-
-// ============================================
-// PAYMENT TOGGLE BUTTON
-// ============================================
-.btn-toggle-detail {
-  @apply ml-auto w-7 h-7 flex items-center justify-center rounded-lg transition-colors;
-  @apply text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20;
-}
-
-// ============================================
-// PAYMENT EXPANDED
-// ============================================
-.payment-expanded {
-  @apply border-t border-gray-100;
-
-  :host-context(.dark) & {
-    border-top-color: rgba(51, 65, 85, 0.5);
-  }
-}
-
-// ============================================
-// PROOF IMAGE (READ-ONLY)
-// ============================================
+// Comprobante
 .proof-section {
   @apply flex flex-col gap-2 px-4 sm:px-5 py-3;
 }
 
 .proof-image {
-  @apply max-w-full max-h-64 rounded-lg border border-gray-200 dark:border-gray-700 object-contain cursor-pointer;
-  @apply hover:opacity-90 transition-opacity;
-}
-
-.lightbox-overlay {
-  @apply fixed inset-0 z-50 flex items-center justify-center;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(4px);
-  animation: fadeIn 0.2s ease;
-}
-.lightbox-close {
-  @apply absolute top-4 right-4 p-2 text-white/70 hover:text-white transition-colors;
-  svg { @apply w-8 h-8; }
-}
-.lightbox-image {
-  @apply max-w-[90vw] max-h-[90vh] object-contain rounded-lg;
-  animation: scaleIn 0.25s ease;
-}
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-
-// ============================================
-// PAYMENT NOTE SECTION
-// ============================================
-.payment-note-section {
-  @apply px-4 sm:px-5 py-4 border-t border-gray-100;
-
-  :host-context(.dark) & {
-    border-top-color: #334155;
-  }
-}
-
-.note-label {
-  @apply block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5;
-}
-
-.note-textarea {
-  @apply w-full px-3 py-2 text-sm rounded-lg border outline-none transition-colors resize-none;
-  @apply bg-white dark:bg-gray-700/50 text-gray-900 dark:text-gray-100;
-  @apply border-gray-300 dark:border-gray-600;
-  @apply focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500;
-}
-
-.note-actions {
-  @apply flex justify-end mt-2;
-}
-
-.btn-save-note {
-  @apply px-4 py-1.5 text-xs font-semibold rounded-lg text-white transition-colors;
-  background-color: #3b82f6;
-
-  &:hover { background-color: #2563eb; }
-  &:disabled { @apply opacity-50 cursor-not-allowed; }
-}
-
-.alert-success-inline {
-  @apply text-xs p-2 rounded-lg mb-2;
-  background-color: rgba(16, 185, 129, 0.1);
-  color: #059669;
-}
-
-.alert-error-inline {
-  @apply text-xs p-2 rounded-lg mb-2;
-  background-color: rgba(239, 68, 68, 0.1);
-  color: #dc2626;
+  @apply w-48 h-auto rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer mx-auto;
+  transition: transform 0.15s;
+  &:hover { transform: scale(1.02); }
 }
 
 // ============================================
-// ALERTS
+// SECCIÓN MECÁNICO — Popover de teléfono
 // ============================================
-.alert-success {
-  @apply text-sm p-3 rounded-lg mx-4 sm:mx-5 mt-3;
-  background-color: rgba(16, 185, 129, 0.1);
-  color: #059669;
-  border: 1px solid rgba(16, 185, 129, 0.2);
-}
+.info-row-phone { @apply relative; }
 
-.alert-error {
-  @apply text-sm p-3 rounded-lg mb-3;
-  background-color: rgba(239, 68, 68, 0.1);
-  color: #dc2626;
-  border: 1px solid rgba(239, 68, 68, 0.2);
-}
-
-// ============================================
-// LOADING & ERROR
-// ============================================
-.loading-state {
-  @apply flex items-center justify-center gap-3 py-20 text-gray-500 dark:text-gray-400;
-}
-
-.spinner {
-  @apply w-6 h-6 border-2 border-gray-300 dark:border-gray-600 rounded-full animate-spin;
-  border-top-color: #3b82f6;
-}
-
-.error-state {
-  @apply flex flex-col items-center gap-4 py-20 text-gray-500 dark:text-gray-400;
-}
-
-.btn-back-link {
-  @apply text-blue-500 dark:text-blue-400 text-sm font-medium hover:underline;
-}
-
-// ============================================
-// CANCEL INLINE LINK
-// ============================================
-.cancel-section {
-  @apply pt-6;
-}
-
-.cancel-inline-text {
-  @apply text-xs text-center leading-relaxed text-gray-400 dark:text-gray-500;
-}
-
-.cancel-inline-link {
-  @apply cursor-pointer font-medium underline;
-  color: #ef4444;
-
-  &:hover { color: #dc2626; }
-}
-
-// ============================================
-// CANCEL REASON TEXTAREA
-// ============================================
-.cancel-reason-textarea {
-  @apply w-full px-3 py-2 text-sm rounded-lg border outline-none transition-colors resize-none;
-  @apply bg-white dark:bg-gray-700/50 text-gray-900 dark:text-gray-100;
-  @apply border-gray-300 dark:border-gray-600;
-  @apply focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500;
-}
-
-// ============================================
-// CANCEL MODAL
-// ============================================
-.cancel-overlay {
-  @apply fixed inset-0 z-50 flex items-center justify-center;
-  background-color: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
-}
-
-.cancel-modal {
-  @apply flex flex-col items-center text-center p-8 rounded-2xl mx-4;
-  max-width: 400px;
-  width: 100%;
-  @apply bg-white dark:bg-slate-800;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
-}
-
-.cancel-modal-icon {
-  @apply w-14 h-14 rounded-full flex items-center justify-center mb-4;
-  background-color: rgba(245, 158, 11, 0.1);
-
-  svg { @apply w-7 h-7; color: #f59e0b; }
-}
-
-.cancel-modal-title {
-  @apply text-lg font-bold mb-1 text-gray-900 dark:text-gray-100;
-}
-
-.cancel-modal-order {
-  @apply text-sm font-mono mb-3 text-gray-500 dark:text-gray-400;
-}
-
-.cancel-modal-text {
-  @apply text-sm leading-relaxed mb-6 text-gray-600 dark:text-gray-400;
-}
-
-.cancel-modal-actions {
-  @apply flex gap-3 w-full;
-}
-
-.cancel-modal-back {
-  @apply flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors;
-  @apply text-gray-600 dark:text-gray-300 bg-transparent;
-  @apply border border-gray-300 dark:border-gray-600;
-
-  &:hover {
-    @apply bg-gray-50 dark:bg-gray-700;
-  }
-}
-
-.cancel-modal-confirm {
-  @apply flex-1 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors;
-  background-color: #ef4444;
-
-  &:hover:not(:disabled) { background-color: #dc2626; }
-  &:disabled { @apply opacity-60 cursor-not-allowed; }
-}
-
-.cancel-modal-hint {
-  @apply block text-[11px] text-gray-400 dark:text-gray-500 italic mb-3 text-left;
-  margin-top: 0;
-}
-
-// ============================================
-// CANCEL LOADING STATE
-// ============================================
-.cancel-loading {
-  @apply flex flex-col items-center justify-center py-8 gap-4;
-
-  p {
-    @apply text-sm text-gray-500 dark:text-gray-400;
-  }
-}
-
-.cancel-spinner {
-  @apply w-10 h-10 rounded-full animate-spin;
-  border-width: 3px;
-  border-color: #e5e7eb;
-  border-top-color: #ef4444;
-
-  :host-context(.dark) & {
-    border-color: #374151;
-    border-top-color: #ef4444;
-  }
-}
-
-// ============================================
-// PHONE POPOVER (Mechanic contact)
-// ============================================
-.info-row-phone {
-  @apply relative;
-  overflow: visible;
-}
-
-.mechanic-phone-wrapper {
-  @apply relative;
-}
+.mechanic-phone-wrapper { @apply relative; }
 
 .mechanic-phone-btn {
-  @apply inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium px-3 py-1.5 rounded-lg transition-colors;
+  @apply inline-flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-colors;
   @apply bg-blue-50 text-blue-600 border border-blue-200;
   @apply hover:bg-blue-100 active:bg-blue-200;
 
   :host-context(.dark) & {
     @apply text-blue-400 border-blue-800;
     background-color: rgba(59, 130, 246, 0.1);
-
-    &:hover {
-      background-color: rgba(59, 130, 246, 0.2);
-    }
+    &:hover { background-color: rgba(59, 130, 246, 0.2); }
   }
 
   svg { @apply w-3.5 h-3.5 flex-shrink-0; }
 }
 
 .phone-popover {
-  @apply absolute mt-1 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden;
+  @apply absolute mt-1 rounded-xl shadow-lg overflow-hidden bg-white border border-gray-200;
   right: 0;
   min-width: 160px;
   z-index: 20;
@@ -618,25 +357,295 @@
 
   & + & {
     @apply border-t border-gray-100;
-
-    :host-context(.dark) & {
-      border-top-color: #334155;
-    }
+    :host-context(.dark) & { border-top-color: #334155; }
   }
 
   &.popover-whatsapp {
     color: #15803d;
-
-    :host-context(.dark) & {
-      color: #4ade80;
-    }
-
+    :host-context(.dark) & { color: #4ade80; }
     &:hover {
       background-color: #f0fdf4;
-
-      :host-context(.dark) & {
-        background-color: rgba(34, 197, 94, 0.1);
-      }
+      :host-context(.dark) & { background-color: rgba(34, 197, 94, 0.1); }
     }
+  }
+}
+
+// Botón de seguimiento del servicio
+.btn-tracking-link {
+  @apply flex items-center justify-between gap-2 px-4 py-3 text-sm font-medium transition-colors;
+  @apply text-blue-600 dark:text-blue-400;
+  @apply border-t border-gray-100 dark:border-gray-700;
+  background: transparent;
+  text-decoration: none;
+
+  &:hover { @apply text-blue-700 dark:text-blue-300; }
+
+  svg { @apply w-4 h-4; }
+}
+
+// ============================================
+// ESTADO DE LA ORDEN
+// ============================================
+.current-status-row {
+  @apply flex flex-col gap-1.5 px-4 sm:px-5 py-3;
+}
+
+.current-status-description {
+  @apply text-sm text-gray-600 dark:text-gray-400 leading-relaxed m-0;
+}
+
+.current-status-note {
+  @apply text-sm text-gray-500 dark:text-gray-500 italic;
+}
+
+.current-status-date {
+  @apply text-xs text-gray-400 dark:text-gray-500;
+}
+
+// ============================================
+// CANCELAR ORDEN
+// ============================================
+.cancel-section {
+  @apply mt-6 px-4 sm:px-5 py-4 rounded-xl bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/40;
+}
+
+.cancel-inline-text {
+  @apply text-sm text-amber-900 dark:text-amber-200 leading-relaxed m-0;
+}
+
+.cancel-inline-link {
+  @apply inline-block ml-1 font-semibold text-red-600 dark:text-red-400 underline cursor-pointer;
+  &:hover { @apply text-red-700 dark:text-red-300; }
+}
+
+// Modal overlay
+.cancel-overlay {
+  @apply fixed inset-0 flex items-center justify-center p-4 z-50;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+}
+
+.cancel-modal {
+  @apply bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md p-6 text-center;
+  animation: modal-in 0.2s ease-out;
+}
+
+@keyframes modal-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.cancel-modal-icon {
+  @apply w-14 h-14 mx-auto mb-4 flex items-center justify-center rounded-full;
+  @apply bg-amber-100 dark:bg-amber-900/30;
+  svg { @apply w-7 h-7 text-amber-600 dark:text-amber-400; }
+}
+
+.cancel-modal-title {
+  @apply text-lg font-semibold text-gray-900 dark:text-white mb-1;
+}
+
+.cancel-modal-order {
+  @apply text-xs font-mono text-gray-500 dark:text-gray-400 mb-3;
+}
+
+.cancel-modal-text {
+  @apply text-sm text-gray-600 dark:text-gray-400 mb-4;
+}
+
+.cancel-reason-textarea {
+  @apply w-full px-3 py-2 text-sm rounded-lg border outline-none transition-colors resize-none;
+  @apply bg-white dark:bg-gray-700/50 text-gray-900 dark:text-gray-100;
+  @apply border-gray-300 dark:border-gray-600;
+
+  &:focus {
+    border-color: var(--accent-primary, #001d56);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+  }
+}
+
+.cancel-modal-hint {
+  @apply block text-[11px] text-gray-400 dark:text-gray-500 italic mb-3 text-left;
+}
+
+.cancel-modal-actions {
+  @apply flex items-center gap-3 mt-4;
+}
+
+.cancel-modal-back {
+  @apply flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors;
+  @apply text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700;
+  @apply hover:bg-gray-200 dark:hover:bg-gray-600;
+  border: 1px solid transparent;
+}
+
+.cancel-modal-confirm {
+  @apply flex-1 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors;
+  background-color: #ef4444;
+
+  &:hover:not(:disabled) { background-color: #dc2626; }
+  &:disabled { @apply opacity-60 cursor-not-allowed; }
+}
+
+// Loading del cancel
+.cancel-loading {
+  @apply flex flex-col items-center justify-center py-8 gap-4;
+
+  p { @apply text-sm text-gray-600 dark:text-gray-400 m-0; }
+}
+
+.cancel-spinner {
+  @apply w-10 h-10 rounded-full animate-spin;
+  border-width: 3px;
+  border-color: #e5e7eb;
+  border-top-color: #ef4444;
+
+  :host-context(.dark) & {
+    border-color: #374151;
+    border-top-color: #ef4444;
+  }
+}
+
+// ============================================
+// LIGHTBOX COMPROBANTE
+// ============================================
+.lightbox-overlay {
+  @apply fixed inset-0 z-50 flex items-center justify-center p-4 cursor-pointer;
+  background-color: rgba(0, 0, 0, 0.9);
+}
+
+.lightbox-close {
+  @apply absolute top-4 right-4 w-10 h-10 flex items-center justify-center rounded-full text-white;
+  background-color: rgba(255, 255, 255, 0.1);
+  &:hover { background-color: rgba(255, 255, 255, 0.2); }
+
+  svg { @apply w-5 h-5; }
+}
+
+.lightbox-image {
+  @apply max-w-full max-h-[90vh] rounded-lg cursor-default;
+}
+
+// ============================================
+// ELEMENTOS SOLO EN IMPRESIÓN
+// ============================================
+.print-only {
+  display: none;
+}
+
+// ============================================
+// @MEDIA PRINT — Estilos PDF
+// ============================================
+@media print {
+  // Ocultar UI interactiva
+  .no-print,
+  .btn-back,
+  .btn-print,
+  .header-actions,
+  .cancel-overlay,
+  .lightbox-overlay,
+  .btn-toggle-detail,
+  .payment-note-section,
+  .cancel-section,
+  .btn-tracking-link,
+  .phone-popover {
+    display: none !important;
+  }
+
+  // Mostrar elementos de impresión
+  .print-only {
+    display: block !important;
+  }
+
+  // Reset del layout
+  .order-detail-page {
+    background: white !important;
+    color: #111827 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+
+  // Header de impresión
+  .print-header {
+    display: flex !important;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 16px 0;
+    margin-bottom: 16px;
+    border-bottom: 2px solid #111827;
+  }
+
+  .print-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    img { width: 42px; height: 42px; }
+    div { display: flex; flex-direction: column; }
+    strong { font-size: 16px; color: #111827; }
+    span { font-size: 11px; color: #4b5563; }
+  }
+
+  .print-order-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    text-align: right;
+
+    strong { font-size: 14px; color: #111827; }
+    span { font-size: 11px; color: #4b5563; }
+  }
+
+  // Cards compactas para print
+  .detail-card {
+    background: white !important;
+    border: 1px solid #d1d5db !important;
+    box-shadow: none !important;
+    page-break-inside: avoid;
+    margin-bottom: 12px !important;
+  }
+
+  .card-title {
+    background: #f9fafb !important;
+    color: #111827 !important;
+    border-bottom-color: #d1d5db !important;
+    svg { color: #001d56 !important; }
+  }
+
+  .info-label,
+  .info-value,
+  .product-name,
+  .product-qty,
+  .current-status-description,
+  .current-status-note,
+  .current-status-date {
+    color: #111827 !important;
+  }
+
+  .info-label,
+  .product-qty,
+  .current-status-date {
+    color: #4b5563 !important;
+  }
+
+  // Badges con color preservado
+  .status-badge {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+    border: 1px solid currentColor;
+  }
+
+  // Grid single column
+  .detail-grid {
+    display: block !important;
+  }
+
+  // Mechanic button como texto plano
+  .mechanic-phone-btn {
+    background: transparent !important;
+    border: none !important;
+    color: #111827 !important;
+    padding: 0 !important;
+    svg { display: none !important; }
   }
 }
