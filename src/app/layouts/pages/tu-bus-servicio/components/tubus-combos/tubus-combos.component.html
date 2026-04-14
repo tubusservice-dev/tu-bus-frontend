@@ -23,11 +23,25 @@
       }
     </div>
 
-    <!-- Loading State -->
+    <!-- Loading State: Skeleton Grid -->
     @if (isLoading()) {
-      <div class="loading-container">
-        <div class="loading-spinner"></div>
-        <p>Cargando productos...</p>
+      <div class="combos-grid">
+        @for (i of skeletonItems; track i) {
+          <div class="combo-card combo-card-skeleton">
+            <div class="skeleton-image skeleton-shimmer"></div>
+            <div class="combo-content">
+              <div class="skeleton-line skeleton-title skeleton-shimmer"></div>
+              <div class="skeleton-line skeleton-desc skeleton-shimmer"></div>
+              <div class="skeleton-line skeleton-desc short skeleton-shimmer"></div>
+              <div class="skeleton-tags">
+                <div class="skeleton-tag skeleton-shimmer"></div>
+                <div class="skeleton-tag skeleton-shimmer"></div>
+              </div>
+              <div class="skeleton-line skeleton-price skeleton-shimmer"></div>
+              <div class="skeleton-btn skeleton-shimmer"></div>
+            </div>
+          </div>
+        }
       </div>
     } @else if (products().length === 0) {
       <!-- Empty State -->

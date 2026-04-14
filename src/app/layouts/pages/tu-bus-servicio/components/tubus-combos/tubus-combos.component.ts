@@ -27,6 +27,7 @@ export class TubusCombosComponent {
   protected readonly products = signal<ShowcaseProduct[]>([]);
   protected readonly selectedFilter = signal<string>('all');
   protected readonly isLoading = signal(true);
+  protected readonly skeletonItems = [1, 2, 3, 4];
 
   protected readonly filters = computed(() => {
     const vehicleTypeFilters = Object.entries(VEHICLE_TYPE_LABELS)

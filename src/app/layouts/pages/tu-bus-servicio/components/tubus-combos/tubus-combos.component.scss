@@ -301,3 +301,102 @@
   @apply text-center text-xs mt-10;
   color: var(--text-tertiary);
 }
+
+// ============================================
+// SKELETON LOADING
+// ============================================
+.combo-card-skeleton {
+  pointer-events: none;
+  background-color: var(--bg-secondary, #ffffff);
+  border: 1px solid var(--border-color, #e5e7eb);
+
+  :host-context(.dark) & {
+    background-color: #1f2937;
+    border-color: #374151;
+  }
+}
+
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+  background-color: #e5e7eb;
+
+  :host-context(.dark) & {
+    background-color: #374151;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.5) 50%,
+      transparent 100%
+    );
+    animation: skeleton-shimmer 1.4s infinite;
+  }
+
+  :host-context(.dark) &::after {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.08) 50%,
+      transparent 100%
+    );
+  }
+}
+
+@keyframes skeleton-shimmer {
+  100% { transform: translateX(100%); }
+}
+
+.skeleton-image {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+}
+
+.skeleton-line {
+  height: 12px;
+  border-radius: 6px;
+  margin-top: 12px;
+}
+
+.skeleton-title {
+  height: 18px;
+  width: 75%;
+  margin-top: 0;
+}
+
+.skeleton-desc {
+  width: 100%;
+
+  &.short { width: 55%; }
+}
+
+.skeleton-tags {
+  display: flex;
+  gap: 6px;
+  margin-top: 14px;
+}
+
+.skeleton-tag {
+  height: 20px;
+  width: 60px;
+  border-radius: 999px;
+}
+
+.skeleton-price {
+  height: 22px;
+  width: 45%;
+  margin-top: 18px;
+  border-radius: 4px;
+}
+
+.skeleton-btn {
+  height: 44px;
+  border-radius: 12px;
+  margin-top: 16px;
+}
