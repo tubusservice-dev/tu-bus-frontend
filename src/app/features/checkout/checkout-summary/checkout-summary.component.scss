@@ -971,6 +971,10 @@
 }
 
 .modal-btn-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   padding: 0.5rem 1.25rem;
   border-radius: 0.5rem;
   font-size: 0.875rem;
@@ -989,6 +993,32 @@
     opacity: 0.5;
     cursor: not-allowed;
   }
+
+  .btn-spinner {
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #ffffff;
+    border-radius: 9999px;
+    animation: btn-spin 0.7s linear infinite;
+  }
+}
+
+@keyframes btn-spin {
+  to { transform: rotate(360deg); }
+}
+
+// Validación visual de fecha inválida
+.form-group input.input-invalid {
+  border-color: #ef4444 !important;
+  &:focus { box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2) !important; }
+}
+
+.form-group .form-error {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.7rem;
+  color: #ef4444;
 }
 
 // ============================================
@@ -1243,7 +1273,10 @@
 
 .file-preview {
   position: relative;
-  display: inline-block;
+  display: block;
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
   border-radius: 0.75rem;
   overflow: hidden;
   border: 1px solid var(--border-color);

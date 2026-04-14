@@ -1,4 +1,4 @@
-import { Injectable, inject, signal, OnDestroy } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap, interval, Subscription } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -8,14 +8,18 @@ import {
   UnreadCountResponse,
   NotificationResponse,
 } from '../../models/notification.model';
+import { SettingsService } from './settings.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AdminNotificationsService {
   private readonly http = inject(HttpClient);
+  private readonly settingsService = inject(SettingsService);
   private readonly apiUrl = `${environment.apiUrl}/admin/notifications`;
   private pollSub?: Subscription;
+  private lastKnownCount = 0;
+  private initialCountFetched = false;
 
   private readonly _unreadCount = signal(0);
   private readonly _notifications = signal<AdminNotification[]>([]);
@@ -46,7 +50,18 @@ export class AdminNotificationsService {
 
   fetchUnreadCount(): void {
     this.http.get<UnreadCountResponse>(`${this.apiUrl}/unread-count`).subscribe({
-      next: (res) => this._unreadCount.set(res.data.count),
+      next: (res) => {
+        const newCount = res.data.count;
+        const previousCount = this._unreadCount();
+        this._unreadCount.set(newCount);
+
+        // Trigger browser push when count increases (skip the first fetch)
+        if (this.initialCountFetched && newCount > previousCount) {
+          this.triggerBrowserPush(newCount - previousCount);
+        }
+        this.initialCountFetched = true;
+        this.lastKnownCount = newCount;
+      },
       error: () => {},
     });
   }
@@ -71,5 +86,58 @@ export class AdminNotificationsService {
         this._unreadCount.update(c => Math.max(0, c - 1));
       })
     );
+  }
+
+  /**
+   * Request browser notification permission on startup.
+   * Called by AdminLayoutComponent.ngOnInit().
+   */
+  async requestNotificationPermission(): Promise<void> {
+    if (!('Notification' in window)) return;
+    if (Notification.permission === 'default') {
+      try {
+        await Notification.requestPermission();
+      } catch {
+        // Silent fail — user may have dismissed or denied
+      }
+    }
+  }
+
+  /**
+   * Fire a browser push notification if enabled in settings and permission granted.
+   */
+  private triggerBrowserPush(newCount: number): void {
+    if (!('Notification' in window)) return;
+    if (Notification.permission !== 'granted') return;
+
+    // Check admin preferences
+    const prefs = this.settingsService.adminNotificationsConfig();
+    if (!prefs?.browserPush) return;
+
+    // Fetch latest to get title/message of the newest notification
+    this.http.get<NotificationListResponse>(`${this.apiUrl}?limit=1`).subscribe({
+      next: (res) => {
+        const latest = res.data?.[0];
+        if (!latest) return;
+
+        try {
+          const notif = new Notification(latest.title || 'Nueva notificación', {
+            body: latest.message,
+            icon: '/autobus.png',
+            badge: '/autobus.png',
+            tag: `admin-notif-${latest.id}`,
+            requireInteraction: false,
+          });
+
+          notif.onclick = () => {
+            window.focus();
+            notif.close();
+          };
+        } catch {
+          // Silent fail — some browsers may block
+        }
+      },
+      error: () => {},
+    });
   }
 }

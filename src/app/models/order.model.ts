@@ -147,6 +147,18 @@ export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   [OrderStatus.CANCELLED]: 'Cancelada',
 };
 
+export const ORDER_STATUS_DESCRIPTIONS: Record<OrderStatus, string> = {
+  [OrderStatus.PENDING]: 'Tu orden ha sido recibida y está siendo revisada por nuestro equipo.',
+  [OrderStatus.APPROVED]: 'Tu orden fue aprobada y está siendo preparada para el despacho.',
+  [OrderStatus.DISPATCHED]: 'Tu orden ha sido despachada y está en camino.',
+  [OrderStatus.MECHANIC_ASSIGNED]: 'Tu mecánico ha sido asignado y pronto se pondrá en camino para realizar el servicio.',
+  [OrderStatus.EN_ROUTE]: 'El mecánico está en camino hacia tu ubicación.',
+  [OrderStatus.IN_SERVICE]: 'El mecánico está realizando el servicio en tu vehículo.',
+  [OrderStatus.COMPLETED]: 'El servicio ha sido completado exitosamente.',
+  [OrderStatus.CANCELLATION_REQUESTED]: 'Tu solicitud de cancelación ha sido enviada y está siendo revisada.',
+  [OrderStatus.CANCELLED]: 'Esta orden ha sido cancelada.',
+};
+
 /** @deprecated Use ORDER_STATUS_LABELS instead — dispatch status is now unified into order status */
 export const DISPATCH_STATUS_LABELS: Record<string, string> = {
   pending: 'Pendiente',

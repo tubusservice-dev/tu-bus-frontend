@@ -83,19 +83,8 @@ export class TubusCombosComponent {
     if (filter === 'all') {
       filtered = [...this.allProducts];
     } else {
-      // Products whose categories include this vehicle type
-      const specific = this.allProducts.filter(p => this.matchesVehicleType(p, filter));
-      // Products without categories are universal (valid for all)
-      const universal = this.allProducts.filter(p => p.categories.length === 0);
-      // Prioritize specific, fill with universal, no duplicates
-      const seen = new Set<string>();
-      filtered = [];
-      for (const p of [...specific, ...universal]) {
-        if (!seen.has(p.id)) {
-          seen.add(p.id);
-          filtered.push(p);
-        }
-      }
+      // Only products whose categories explicitly include this vehicle type
+      filtered = this.allProducts.filter(p => this.matchesVehicleType(p, filter));
     }
 
     // Shuffle before slicing so each filter shows different products

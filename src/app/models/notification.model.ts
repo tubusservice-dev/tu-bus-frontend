@@ -1,4 +1,9 @@
-export type NotificationType = 'mechanic_rejection' | 'customer_cancellation';
+export type NotificationType =
+  | 'mechanic_rejection'
+  | 'customer_cancellation'
+  | 'new_order'
+  | 'payment_note'
+  | 'service_progress';
 
 export interface AdminNotification {
   id: string;

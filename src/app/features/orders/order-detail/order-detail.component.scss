@@ -64,7 +64,7 @@
 // CARDS
 // ============================================
 .detail-card {
-  @apply rounded-xl border overflow-hidden bg-white;
+  @apply rounded-xl border bg-white;
   border-color: #e5e7eb;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 
@@ -292,8 +292,12 @@
   @apply flex flex-col gap-1.5 px-4 sm:px-5 py-3;
 }
 
+.current-status-description {
+  @apply text-sm text-gray-600 dark:text-gray-400 leading-relaxed m-0;
+}
+
 .current-status-note {
-  @apply text-sm text-gray-600 dark:text-gray-400 italic;
+  @apply text-sm text-gray-500 dark:text-gray-500 italic;
 }
 
 .current-status-date {
@@ -462,7 +466,7 @@
 // CANCEL REASON TEXTAREA
 // ============================================
 .cancel-reason-textarea {
-  @apply w-full px-3 py-2 text-sm rounded-lg border outline-none transition-colors resize-none mb-4;
+  @apply w-full px-3 py-2 text-sm rounded-lg border outline-none transition-colors resize-none;
   @apply bg-white dark:bg-gray-700/50 text-gray-900 dark:text-gray-100;
   @apply border-gray-300 dark:border-gray-600;
   @apply focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500;
@@ -526,6 +530,11 @@
   &:disabled { @apply opacity-60 cursor-not-allowed; }
 }
 
+.cancel-modal-hint {
+  @apply block text-[11px] text-gray-400 dark:text-gray-500 italic mb-3 text-left;
+  margin-top: 0;
+}
+
 // ============================================
 // CANCEL LOADING STATE
 // ============================================
@@ -546,5 +555,88 @@
   :host-context(.dark) & {
     border-color: #374151;
     border-top-color: #ef4444;
+  }
+}
+
+// ============================================
+// PHONE POPOVER (Mechanic contact)
+// ============================================
+.info-row-phone {
+  @apply relative;
+  overflow: visible;
+}
+
+.mechanic-phone-wrapper {
+  @apply relative;
+}
+
+.mechanic-phone-btn {
+  @apply inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium px-3 py-1.5 rounded-lg transition-colors;
+  @apply bg-blue-50 text-blue-600 border border-blue-200;
+  @apply hover:bg-blue-100 active:bg-blue-200;
+
+  :host-context(.dark) & {
+    @apply text-blue-400 border-blue-800;
+    background-color: rgba(59, 130, 246, 0.1);
+
+    &:hover {
+      background-color: rgba(59, 130, 246, 0.2);
+    }
+  }
+
+  svg { @apply w-3.5 h-3.5 flex-shrink-0; }
+}
+
+.phone-popover {
+  @apply absolute mt-1 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden;
+  right: 0;
+  min-width: 160px;
+  z-index: 20;
+  animation: popover-in 0.15s ease-out;
+
+  :host-context(.dark) & {
+    background-color: #1e293b;
+    border-color: #334155;
+  }
+}
+
+@keyframes popover-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.popover-option {
+  @apply w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors;
+  @apply text-gray-700 hover:bg-gray-50;
+
+  :host-context(.dark) & {
+    @apply text-gray-300;
+    &:hover { background-color: #334155; }
+  }
+
+  svg { @apply w-5 h-5 flex-shrink-0; }
+
+  & + & {
+    @apply border-t border-gray-100;
+
+    :host-context(.dark) & {
+      border-top-color: #334155;
+    }
+  }
+
+  &.popover-whatsapp {
+    color: #15803d;
+
+    :host-context(.dark) & {
+      color: #4ade80;
+    }
+
+    &:hover {
+      background-color: #f0fdf4;
+
+      :host-context(.dark) & {
+        background-color: rgba(34, 197, 94, 0.1);
+      }
+    }
   }
 }

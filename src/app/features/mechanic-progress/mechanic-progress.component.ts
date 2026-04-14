@@ -1,8 +1,12 @@
 import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 import { MechanicAssignmentService } from '../../core/services/mechanic-assignment.service';
-import { MechanicAssignment, ProgressStep } from '../../models/mechanic-assignment.model';
+import { ThemeService } from '../../core/services/theme.service';
+import { MechanicAssignment, ProgressStep, BranchContactInfo } from '../../models/mechanic-assignment.model';
+import { SupportContactConfig } from '../../models/settings.model';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-mechanic-progress',
@@ -13,7 +17,9 @@ import { MechanicAssignment, ProgressStep } from '../../models/mechanic-assignme
 })
 export class MechanicProgressComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
+  private readonly http = inject(HttpClient);
   private readonly assignmentService = inject(MechanicAssignmentService);
+  protected readonly themeService = inject(ThemeService);
 
   protected readonly assignment = signal<MechanicAssignment | null>(null);
   protected readonly isLoading = signal(true);
@@ -24,10 +30,15 @@ export class MechanicProgressComponent implements OnInit {
   protected readonly rejectReason = signal('');
   protected readonly isRejecting = signal(false);
 
+  // Support modal state
+  protected readonly showSupportModal = signal(false);
+  protected readonly supportContact = signal<SupportContactConfig | null>(null);
+  protected readonly branchContact = signal<BranchContactInfo | null>(null);
+  protected readonly activePhonePopover = signal<string | null>(null);
+
   protected readonly currentStepIndex = computed(() => {
     const a = this.assignment();
     if (!a) return -1;
-    // Find last completed step
     let lastCompleted = -1;
     for (let i = 0; i < a.progressSteps.length; i++) {
       if (a.progressSteps[i].completedAt) lastCompleted = i;
@@ -85,6 +96,14 @@ export class MechanicProgressComponent implements OnInit {
     return `${user.firstName || ''} ${user.lastName || ''}`.trim();
   });
 
+  protected readonly hasSupportInfo = computed(() => {
+    const admin = this.supportContact();
+    const branch = this.branchContact();
+    const hasAdmin = !!admin && (!!admin.phone || !!admin.email);
+    const hasBranch = !!branch && (!!branch.whatsappPhone || !!branch.landlinePhone);
+    return hasAdmin || hasBranch;
+  });
+
   private readonly STEP_LABELS: Record<string, string> = {
     asignado: 'Asignado',
     en_camino: 'En Camino',
@@ -108,8 +127,43 @@ export class MechanicProgressComponent implements OnInit {
       this.error.set('Enlace invalido');
       this.isLoading.set(false);
     }
+    this.loadSupportContact();
   }
 
+  // ========== Support Modal ==========
+  openSupportModal(): void {
+    this.showSupportModal.set(true);
+    this.activePhonePopover.set(null);
+  }
+
+  closeSupportModal(): void {
+    this.showSupportModal.set(false);
+    this.activePhonePopover.set(null);
+  }
+
+  togglePhonePopover(id: string): void {
+    this.activePhonePopover.update((current) => (current === id ? null : id));
+  }
+
+  closePopovers(): void {
+    this.activePhonePopover.set(null);
+  }
+
+  openWhatsApp(phone: string): void {
+    const cleaned = phone.replace(/-/g, '');
+    const international = '58' + cleaned.substring(1);
+    window.open(`https://wa.me/${international}`, '_blank');
+    this.activePhonePopover.set(null);
+  }
+
+  callPhone(phone: string): void {
+    const cleaned = phone.replace(/-/g, '');
+    const international = '+58' + cleaned.substring(1);
+    window.open(`tel:${international}`, '_self');
+    this.activePhonePopover.set(null);
+  }
+
+  // ========== Advance/Reject ==========
   openConfirmModal(): void {
     this.showConfirmModal.set(true);
   }
@@ -165,11 +219,15 @@ export class MechanicProgressComponent implements OnInit {
     });
   }
 
+  // ========== Private ==========
   private loadProgress(token: string): void {
     this.isLoading.set(true);
     this.assignmentService.getProgressByToken(token).subscribe({
       next: (res) => {
         this.assignment.set(res.data);
+        if (res.data.branch) {
+          this.branchContact.set(res.data.branch);
+        }
         this.isLoading.set(false);
       },
       error: (err) => {
@@ -177,5 +235,22 @@ export class MechanicProgressComponent implements OnInit {
         this.isLoading.set(false);
       },
     });
+  }
+
+  private loadSupportContact(): void {
+    this.http
+      .get<{ success: boolean; data: { supportContact: SupportContactConfig } }>(
+        `${environment.apiUrl}/settings`
+      )
+      .subscribe({
+        next: (res) => {
+          if (res.data?.supportContact) {
+            this.supportContact.set(res.data.supportContact);
+          }
+        },
+        error: () => {
+          // Silently fail — support info is optional
+        },
+      });
   }
 }

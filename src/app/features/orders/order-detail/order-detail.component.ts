@@ -5,7 +5,7 @@ import { OrderService } from '../../../core/services/order.service';
 import { ExchangeRateService } from '../../../core/services/exchange-rate.service';
 import {
   Order, OrderStatus,
-  ORDER_STATUS_LABELS, ORDER_STATUS_COLORS,
+  ORDER_STATUS_LABELS, ORDER_STATUS_COLORS, ORDER_STATUS_DESCRIPTIONS,
 } from '../../../models/order.model';
 
 @Component({
@@ -39,6 +39,9 @@ export class OrderDetailComponent implements OnInit {
 
   // Payment detail expanded
   protected readonly isPaymentExpanded = signal(false);
+
+  // Phone popover
+  protected readonly activePhonePopover = signal<string | null>(null);
 
   // Payment note
   protected readonly paymentNote = signal('');
@@ -91,6 +94,10 @@ export class OrderDetailComponent implements OnInit {
     return this.statusColors[status as OrderStatus] || '';
   }
 
+  getStatusDescription(status: OrderStatus | string): string {
+    return ORDER_STATUS_DESCRIPTIONS[status as OrderStatus] || '';
+  }
+
   getDispatchLabel(type: string): string {
     const labels: Record<string, string> = {
       store_pickup: 'Retiro en Tienda',
@@ -138,6 +145,30 @@ export class OrderDetailComponent implements OnInit {
     if (!vehicle) return '';
     if (typeof vehicle === 'string') return vehicle;
     return `${vehicle.marca} ${vehicle.modelo} ${vehicle.year} - ${vehicle.placa}`;
+  }
+
+  // ==================== PHONE POPOVER ====================
+
+  togglePhonePopover(id: string): void {
+    this.activePhonePopover.update((current) => (current === id ? null : id));
+  }
+
+  closePopovers(): void {
+    this.activePhonePopover.set(null);
+  }
+
+  openWhatsApp(phone: string): void {
+    const cleaned = phone.replace(/-/g, '');
+    const international = '58' + cleaned.substring(1);
+    window.open(`https://wa.me/${international}`, '_blank');
+    this.activePhonePopover.set(null);
+  }
+
+  callPhone(phone: string): void {
+    const cleaned = phone.replace(/-/g, '');
+    const international = '+58' + cleaned.substring(1);
+    window.open(`tel:${international}`, '_self');
+    this.activePhonePopover.set(null);
   }
 
   // ==================== CANCEL ORDER (2-STEP) ====================

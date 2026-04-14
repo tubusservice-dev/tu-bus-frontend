@@ -70,6 +70,22 @@ export interface ExchangeRateConfig {
   useCustomRate: boolean;
 }
 
+export interface SupportContactConfig {
+  firstName: string;
+  lastName: string;
+  phone: string;
+  email: string;
+}
+
+export interface AdminNotificationsConfig {
+  newOrder: boolean;
+  paymentNote: boolean;
+  mechanicRejection: boolean;
+  customerCancellation: boolean;
+  serviceProgress: boolean;
+  browserPush: boolean;
+}
+
 export const PAGINATION_OPTIONS = [10, 20, 50, 100] as const;
 
 export interface Settings {
@@ -80,6 +96,8 @@ export interface Settings {
   pagination: PaginationConfig;
   dispatch: DispatchConfig;
   exchangeRate: ExchangeRateConfig;
+  supportContact: SupportContactConfig;
+  adminNotifications: AdminNotificationsConfig;
   updatedAt?: string;
 }
 
@@ -144,6 +162,20 @@ export const DEFAULT_SETTINGS: Settings = {
   exchangeRate: {
     showBsPrice: false,
     useCustomRate: false,
+  },
+  supportContact: {
+    firstName: '',
+    lastName: '',
+    phone: '',
+    email: '',
+  },
+  adminNotifications: {
+    newOrder: true,
+    paymentNote: true,
+    mechanicRejection: true,
+    customerCancellation: true,
+    serviceProgress: true,
+    browserPush: true,
   },
 };
 

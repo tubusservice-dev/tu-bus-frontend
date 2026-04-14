@@ -15,6 +15,8 @@ import {
   PaginationConfig,
   UpdateDispatchDto,
   ExchangeRateConfig,
+  SupportContactConfig,
+  AdminNotificationsConfig,
   DEFAULT_SETTINGS,
   STORE_COLORS,
   ADMIN_COLORS,
@@ -47,6 +49,8 @@ export class SettingsService {
   readonly paginationConfig = computed(() => this._settings().pagination);
   readonly dispatchConfig = computed(() => this._settings().dispatch);
   readonly exchangeRateConfig = computed(() => this._settings().exchangeRate);
+  readonly supportContactConfig = computed(() => this._settings().supportContact);
+  readonly adminNotificationsConfig = computed(() => this._settings().adminNotifications);
 
   /**
    * Cargar configuraciones desde el servidor (público)
@@ -84,6 +88,14 @@ export class SettingsService {
             exchangeRate: {
               ...DEFAULT_SETTINGS.exchangeRate,
               ...response.data.exchangeRate,
+            },
+            supportContact: {
+              ...DEFAULT_SETTINGS.supportContact,
+              ...response.data.supportContact,
+            },
+            adminNotifications: {
+              ...DEFAULT_SETTINGS.adminNotifications,
+              ...response.data.adminNotifications,
             },
           };
           this._settings.set(mergedSettings);
@@ -237,6 +249,44 @@ export class SettingsService {
             exchangeRate: {
               ...DEFAULT_SETTINGS.exchangeRate,
               ...response.data.exchangeRate,
+            },
+          });
+        }
+      })
+    );
+  }
+
+  /**
+   * Actualizar configuración de contacto de soporte
+   */
+  updateSupportContact(data: Partial<SupportContactConfig>): Observable<SettingsResponse> {
+    return this.http.put<SettingsResponse>(`${this.adminUrl}/support-contact`, data).pipe(
+      tap((response) => {
+        if (response.data) {
+          this._settings.set({
+            ...this._settings(),
+            supportContact: {
+              ...DEFAULT_SETTINGS.supportContact,
+              ...response.data.supportContact,
+            },
+          });
+        }
+      })
+    );
+  }
+
+  /**
+   * Actualizar preferencias de notificaciones del admin
+   */
+  updateAdminNotifications(data: Partial<AdminNotificationsConfig>): Observable<SettingsResponse> {
+    return this.http.put<SettingsResponse>(`${this.adminUrl}/admin-notifications`, data).pipe(
+      tap((response) => {
+        if (response.data) {
+          this._settings.set({
+            ...this._settings(),
+            adminNotifications: {
+              ...DEFAULT_SETTINGS.adminNotifications,
+              ...response.data.adminNotifications,
             },
           });
         }
