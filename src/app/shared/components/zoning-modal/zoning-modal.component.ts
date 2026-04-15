@@ -3,13 +3,14 @@ import { CommonModule } from '@angular/common';
 import { CityService } from '../../../core/services/city.service';
 import { LocationService } from '../../../core/services/location.service';
 import { City, Municipality } from '../../../models/city.model';
+import { SearchInputComponent } from '../search-input/search-input.component';
 
 type ModalStep = 'city' | 'municipality' | 'no-coverage';
 
 @Component({
   selector: 'app-zoning-modal',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, SearchInputComponent],
   templateUrl: './zoning-modal.component.html',
   styleUrl: './zoning-modal.component.scss',
 })

@@ -9,11 +9,12 @@ import { Branch, ScheduleDay } from '../../../../models/branch.model';
 import { BranchZone, DeliveryConfigItem } from '../../../../models/branch-zone.model';
 import { Zone } from '../../../../models/zone.model';
 import { City } from '../../../../models/city.model';
+import { SearchInputComponent } from '../../../../shared/components/search-input/search-input.component';
 
 @Component({
   selector: 'app-branch-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule],
+  imports: [CommonModule, RouterLink, FormsModule, SearchInputComponent],
   templateUrl: './branch-list.component.html',
   styleUrl: './branch-list.component.scss',
 })

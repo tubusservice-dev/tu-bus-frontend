@@ -1,0 +1,49 @@
+<div
+  class="search-input-wrapper"
+  [class]="wrapperClass"
+  role="search"
+  [attr.aria-busy]="loading"
+>
+  <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+    <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+  </svg>
+
+  <input
+    type="text"
+    class="search-field"
+    [placeholder]="placeholder"
+    [attr.aria-label]="ariaLabel"
+    [ngModel]="internalValue()"
+    (ngModelChange)="onInput($event)"
+  />
+
+  <!-- Trailing slot: spinner while loading, clear button when there's text -->
+  <div class="search-trailing">
+    @if (loading) {
+      <span class="search-spinner" role="status" aria-label="Buscando...">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            stroke-width="3"
+            stroke-linecap="round"
+            stroke-dasharray="31.4 31.4"
+          />
+        </svg>
+      </span>
+    } @else if (showClearButton && internalValue()) {
+      <button
+        type="button"
+        class="search-clear"
+        aria-label="Limpiar búsqueda"
+        (click)="clear()"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+        </svg>
+      </button>
+    }
+  </div>
+</div>

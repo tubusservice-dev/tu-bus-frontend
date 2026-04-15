@@ -4,11 +4,12 @@ import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MechanicService } from '../../../../core/services/mechanic.service';
 import { Mechanic } from '../../../../models/mechanic.model';
+import { SearchInputComponent } from '../../../../shared/components/search-input/search-input.component';
 
 @Component({
   selector: 'app-mechanic-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule],
+  imports: [CommonModule, RouterLink, FormsModule, SearchInputComponent],
   templateUrl: './mechanic-list.component.html',
   styleUrl: './mechanic-list.component.scss',
 })

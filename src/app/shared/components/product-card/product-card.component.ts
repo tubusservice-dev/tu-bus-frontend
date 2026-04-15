@@ -8,6 +8,25 @@ import { AuthService } from '../../../core/services/auth.service';
 import { ExchangeRateService } from '../../../core/services/exchange-rate.service';
 import { Line, Category, Brand } from '../../../models';
 
+/**
+ * Minimal object shape the card needs from a brand/category/line — only the
+ * name is rendered, the id is kept for future click-through. Accepting this
+ * shape (in addition to the full domain types) lets the lightweight catalog
+ * DTO feed the card directly without lossy casts.
+ */
+export interface CardBrandRef {
+  id?: string;
+  name: string;
+}
+export interface CardCategoryRef {
+  id?: string;
+  name: string;
+}
+export interface CardLineRef {
+  id?: string;
+  name: string;
+}
+
 export interface ProductCardData {
   id: string;
   name: string;
@@ -16,12 +35,13 @@ export interface ProductCardData {
   price: number;
   comparePrice?: number | null;
   images: string[];
-  brand?: string | Brand;
+  brand?: string | Brand | CardBrandRef;
   productModel?: string;
-  line?: string | Line;
-  categories?: (string | Category)[];
+  line?: string | Line | CardLineRef;
+  categories?: (string | Category | CardCategoryRef)[];
   isActive?: boolean;
   isFeatured?: boolean;
+  isCombo?: boolean;
   stock?: number;
   freeOilChangeService?: boolean;
 }

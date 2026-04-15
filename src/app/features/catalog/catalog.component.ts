@@ -1,20 +1,19 @@
-import { Component, DestroyRef, inject, signal, OnInit, computed, HostListener, effect } from '@angular/core';
+import { Component, inject, signal, OnInit, computed, HostListener, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ProductService } from '../../core/services/product.service';
+import { ProductService, ProductCardDTO } from '../../core/services/product.service';
 import { BrandService } from '../../core/services/brand.service';
 import { CategoryService } from '../../core/services/category.service';
 import { SettingsService } from '../../core/services/settings.service';
 import { VehicleService } from '../../core/services/vehicle.service';
 import { LocationService } from '../../core/services/location.service';
 import { ProductCardComponent, ProductCardData } from '../../shared/components/product-card/product-card.component';
+import { SearchInputComponent } from '../../shared/components/search-input/search-input.component';
 import {
-  Product,
   Brand,
   Category,
+  FuelType,
   VehicleType,
   VEHICLE_TYPE_LABELS,
 } from '../../models';
@@ -26,12 +25,14 @@ interface FilterState {
   brand: string;
   category: string;
   sortBy: string;
+  /** When true, combos are pushed to the top of the result set */
+  onlyCombos: boolean;
 }
 
 @Component({
   selector: 'app-catalog',
   standalone: true,
-  imports: [CommonModule, FormsModule, ProductCardComponent],
+  imports: [CommonModule, FormsModule, ProductCardComponent, SearchInputComponent],
   templateUrl: './catalog.component.html',
   styleUrl: './catalog.component.scss',
 })
@@ -45,9 +46,9 @@ export class CatalogComponent implements OnInit {
   protected readonly locationService = inject(LocationService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  private readonly destroyRef = inject(DestroyRef);
 
-  private readonly searchSubject$ = new Subject<string>();
+  /** True while a search is in-flight (typed but results not yet rendered) */
+  protected readonly isSearching = signal(false);
 
   // Vehicle type filter options (exclude 'all' from dropdown)
   protected readonly vehicleTypeOptions = Object.entries(VEHICLE_TYPE_LABELS)
@@ -62,14 +63,10 @@ export class CatalogComponent implements OnInit {
 
   // Estado
   protected readonly isLoading = signal(true);
-  private readonly allProducts = signal<ProductCardData[]>([]);
-  protected readonly products = computed(() => {
-    let filtered = this.allProducts();
-    if (this.vehicleFilterActive()) {
-      filtered = this.filterByVehicle(filtered);
-    }
-    return filtered;
-  });
+  // Products already arrive filtered + sorted from the backend. No client-side
+  // post-processing needed — avoids the pagination/count desync bug that the
+  // previous filterByVehicle() implementation caused.
+  protected readonly products = signal<ProductCardData[]>([]);
   protected readonly showFilters = signal(false);
 
   // Datos cargados del backend
@@ -105,6 +102,7 @@ export class CatalogComponent implements OnInit {
     brand: '',
     category: '',
     sortBy: 'createdAt',
+    onlyCombos: false,
   });
 
   // Paginación
@@ -136,6 +134,7 @@ export class CatalogComponent implements OnInit {
     if (f.vehicleType) count++;
     if (f.brand) count++;
     if (f.category) count++;
+    if (f.onlyCombos) count++;
     return count;
   });
 
@@ -151,18 +150,6 @@ export class CatalogComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.searchSubject$
-      .pipe(
-        debounceTime(400),
-        distinctUntilChanged(),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe((value) => {
-        this.filters.update((f) => ({ ...f, search: value }));
-        this.currentPage.set(1);
-        this.loadProducts();
-      });
-
     // Restore page from URL query params (browser back button support)
     const pageParam = this.route.snapshot.queryParamMap.get('page');
     if (pageParam) {
@@ -237,7 +224,23 @@ export class CatalogComponent implements OnInit {
     const ids = this.locationService.branchIds();
     const branchIds = ids.length > 0 ? ids.join(',') : undefined;
 
-    this.productService.getAll({
+    // Server-side garage filter — replaces the previous client-side post-filter
+    // that caused pagination/count desync. When the user activates the garage
+    // filter, we ask the backend to restrict products to those whose
+    // compatibleEngines matches the vehicle's engine.
+    let engineDisplacement: string | undefined;
+    let engineFuelType: FuelType | undefined;
+    let engineCylinders: number | undefined;
+    if (this.vehicleFilterActive()) {
+      const vehicle = this.vehicleService.selectedVehicle();
+      if (vehicle?.engineType) {
+        engineDisplacement = vehicle.engineType.displacement || undefined;
+        engineFuelType = (vehicle.engineType.fuelType as FuelType) || undefined;
+        engineCylinders = vehicle.engineType.cylinders || undefined;
+      }
+    }
+
+    this.productService.getCatalog({
       page: this.currentPage(),
       limit: this.currentLimit(),
       search: f.search || undefined,
@@ -248,27 +251,53 @@ export class CatalogComponent implements OnInit {
       sortOrder,
       isActive: true,
       branchIds,
+      comboFirst: f.onlyCombos || undefined,
+      engineDisplacement,
+      engineFuelType,
+      engineCylinders,
     }).subscribe({
       next: (response) => {
-        // Map totalStock from backend to stock field for ProductCardData
-        const mapped = response.data.map((p: any) => ({
-          ...p,
-          stock: p.totalStock ?? p.stock ?? 0,
+        // Map ProductCardDTO → ProductCardData (card expects `stock` field)
+        const mapped: ProductCardData[] = response.data.map((p: ProductCardDTO) => ({
+          id: p.id,
+          name: p.name,
+          description: p.description,
+          price: p.price,
+          comparePrice: p.comparePrice ?? null,
+          images: p.images,
+          brand: p.brand ?? undefined,
+          productModel: p.productModel,
+          categories: p.category ? [p.category] : [],
+          isFeatured: p.isFeatured,
+          isCombo: p.isCombo,
+          stock: p.totalStock ?? 0,
+          freeOilChangeService: p.freeOilChangeService,
         }));
-        this.allProducts.set(mapped);
+        this.products.set(mapped);
         this.totalPages.set(response.pagination?.pages || 1);
         this.totalProducts.set(response.pagination?.total || 0);
         this.isLoading.set(false);
+        this.isSearching.set(false);
       },
       error: () => {
         this.isLoading.set(false);
+        this.isSearching.set(false);
       },
     });
   }
 
-  onSearchInput(value: string): void {
+  /** Fired on every keystroke (pre-debounce) — lights the spinner */
+  onSearchTyping(value: string): void {
+    if (value !== this.filters().search) {
+      this.isSearching.set(true);
+    }
+  }
+
+  /** Fired after debounce — triggers the HTTP request */
+  onSearchCommit(value: string): void {
     this.filters.update((f) => ({ ...f, search: value }));
-    this.searchSubject$.next(value);
+    this.currentPage.set(1);
+    this.loadProducts();
   }
 
   updateFilter<K extends keyof FilterState>(key: K, value: FilterState[K]): void {
@@ -304,6 +333,7 @@ export class CatalogComponent implements OnInit {
       brand: '',
       category: '',
       sortBy: 'createdAt',
+      onlyCombos: false,
     });
     this.currentPage.set(1);
     this.syncPageToUrl();
@@ -312,6 +342,18 @@ export class CatalogComponent implements OnInit {
 
   toggleFilters(): void {
     this.showFilters.update((v) => !v);
+  }
+
+  /**
+   * Toggles the "combos first" ordering. Kept separate from updateFilter so
+   * the template can call it without generic typing noise and so we can evolve
+   * combo behavior independently (e.g., future strict-combo mode).
+   */
+  toggleOnlyCombos(): void {
+    this.filters.update((f) => ({ ...f, onlyCombos: !f.onlyCombos }));
+    this.currentPage.set(1);
+    this.syncPageToUrl();
+    this.loadProducts();
   }
 
   goToPage(page: number): void {
@@ -340,44 +382,15 @@ export class CatalogComponent implements OnInit {
   }
 
   /**
-   * Desactiva el filtro de vehículo y limpia la selección.
+   * Desactiva el filtro de vehículo y limpia la selección. Triggers a reload
+   * because engine filter is now server-side.
    */
   clearVehicleFilter(): void {
     this.vehicleFilterActive.set(false);
     this.vehicleService.selectVehicle(null);
-  }
-
-  /**
-   * Filtra productos compatibles con el vehículo seleccionado.
-   */
-  private filterByVehicle(products: ProductCardData[]): ProductCardData[] {
-    const vehicle = this.vehicleService.selectedVehicle();
-    if (!vehicle) return products;
-
-    const { fuelType, displacement, cylinders, oilType } = vehicle.engineType;
-
-    return products.filter(p => {
-      const product = p as unknown as Product;
-
-      // Si el producto no tiene compatibleEngines ni oilType, no se puede filtrar → mostrarlo
-      if (!product.compatibleEngines?.length && !product.oilType) return true;
-
-      // Verificar compatibilidad de motor
-      let engineMatch = true;
-      if (product.compatibleEngines && product.compatibleEngines.length > 0) {
-        engineMatch = product.compatibleEngines.some(
-          e => e.fuelType === fuelType && e.displacement === displacement && e.cylinders === cylinders
-        );
-      }
-
-      // Verificar tipo de aceite
-      let oilMatch = true;
-      if (product.oilType && oilType) {
-        oilMatch = product.oilType === oilType;
-      }
-
-      return engineMatch && oilMatch;
-    });
+    this.currentPage.set(1);
+    this.syncPageToUrl();
+    this.loadProducts();
   }
 
   /** Visible pages with ellipsis: 1, 2, ..., 10 */

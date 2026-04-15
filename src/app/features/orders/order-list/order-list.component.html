@@ -7,10 +7,14 @@
   <!-- Filters & Search -->
   <div class="orders-toolbar">
     <div class="toolbar-search">
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="search-icon">
-        <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-      </svg>
-      <input type="text" placeholder="Buscar por número de orden..." [value]="searchQuery()" (input)="onSearchInput($event)" class="search-input" />
+      <app-search-input
+        placeholder="Buscar por número de orden..."
+        ariaLabel="Buscar órdenes"
+        [value]="searchQuery()"
+        [loading]="isSearching()"
+        (valueInput)="onSearchTyping($event)"
+        (searchChanged)="onSearchCommit($event)"
+      />
     </div>
     <select class="status-filter" [value]="statusFilter()" (change)="onStatusFilterChange($event)">
       @for (fs of filterStatuses; track fs.value) {

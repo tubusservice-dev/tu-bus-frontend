@@ -5,11 +5,12 @@ import { FormsModule } from '@angular/forms';
 import { City } from '../../../../models/city.model';
 import { Zone } from '../../../../models/zone.model';
 import { ZoneService } from '../../../../core/services/zone.service';
+import { SearchInputComponent } from '../../../../shared/components/search-input/search-input.component';
 
 @Component({
   selector: 'app-zone-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule],
+  imports: [CommonModule, RouterLink, FormsModule, SearchInputComponent],
   templateUrl: './zone-list.component.html',
   styleUrl: './zone-list.component.scss',
 })

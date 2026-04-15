@@ -4,11 +4,12 @@ import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { LineService } from '../../../../core/services/line.service';
 import { Line } from '../../../../models/product.model';
+import { SearchInputComponent } from '../../../../shared/components/search-input/search-input.component';
 
 @Component({
   selector: 'app-line-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule],
+  imports: [CommonModule, RouterLink, FormsModule, SearchInputComponent],
   templateUrl: './line-list.component.html',
   styleUrl: './line-list.component.scss',
 })
