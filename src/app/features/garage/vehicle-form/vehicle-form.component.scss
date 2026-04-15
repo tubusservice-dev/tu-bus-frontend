@@ -23,6 +23,7 @@
 .form-label {
   @apply text-sm font-medium text-gray-700 dark:text-gray-300;
   .required { @apply text-red-500; }
+  .optional { @apply text-xs text-gray-400 dark:text-gray-500 font-normal; }
 }
 .form-input {
   @apply w-full px-3 py-2.5 rounded-xl text-sm;

@@ -1,0 +1,17 @@
+<div
+  class="mech-avatar"
+  [attr.data-size]="size"
+  [attr.aria-label]="effectiveAriaLabel"
+  role="img"
+>
+  @if (hasImage()) {
+    <img
+      [src]="avatar"
+      [alt]="effectiveAriaLabel"
+      (error)="onImgError()"
+      loading="lazy"
+    />
+  } @else {
+    <span class="mech-avatar-initial" aria-hidden="true">{{ initial }}</span>
+  }
+</div>

@@ -3,6 +3,8 @@
 }
 
 .page-header { @apply space-y-1; }
+.page-heading { @apply flex items-center gap-3 mt-2; }
+.page-heading-text { @apply flex flex-col min-w-0; }
 .back-link { @apply inline-flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors; }
 .page-title { @apply text-2xl font-bold text-gray-900 dark:text-white; }
 .page-subtitle { @apply text-sm text-gray-500 dark:text-gray-400; }

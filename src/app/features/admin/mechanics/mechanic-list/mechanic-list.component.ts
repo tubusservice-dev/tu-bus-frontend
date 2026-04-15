@@ -5,11 +5,12 @@ import { FormsModule } from '@angular/forms';
 import { MechanicService } from '../../../../core/services/mechanic.service';
 import { Mechanic } from '../../../../models/mechanic.model';
 import { SearchInputComponent } from '../../../../shared/components/search-input/search-input.component';
+import { MechanicAvatarComponent } from '../../../../shared/components/mechanic-avatar/mechanic-avatar.component';
 
 @Component({
   selector: 'app-mechanic-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, SearchInputComponent],
+  imports: [CommonModule, RouterLink, FormsModule, SearchInputComponent, MechanicAvatarComponent],
   templateUrl: './mechanic-list.component.html',
   styleUrl: './mechanic-list.component.scss',
 })

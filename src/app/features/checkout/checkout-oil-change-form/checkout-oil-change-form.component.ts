@@ -9,6 +9,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { LocationService } from '../../../core/services/location.service';
 import { BranchZoneService } from '../../../core/services/branch-zone.service';
 import { VehicleService } from '../../../core/services/vehicle.service';
+import { ProductService } from '../../../core/services/product.service';
 import { Vehicle } from '../../../models/vehicle.model';
 import {
   NAME_PATTERN, PHONE_VE_PATTERN, DOCUMENT_NUMBER_PATTERN, EMAIL_PATTERN,
@@ -31,6 +32,7 @@ export class CheckoutOilChangeFormComponent implements OnInit {
   private readonly locationService = inject(LocationService);
   private readonly branchZoneService = inject(BranchZoneService);
   protected readonly vehicleService = inject(VehicleService);
+  private readonly productService = inject(ProductService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
 
@@ -57,15 +59,55 @@ export class CheckoutOilChangeFormComponent implements OnInit {
   ];
 
   ngOnInit(): void {
+    // Initialize the form FIRST so the template has a valid FormGroup during
+    // the async navigation tick, even when we need to redirect away.
+    this.initForm();
+
     if (this.checkoutService.dispatchType() !== 'oil_change_service') {
       this.router.navigate(['/checkout/despacho']);
       return;
     }
 
-    this.initForm();
     this.loadBranchZones();
     this.loadVehicles();
     this.loadSavedData();
+    this.rehydrateLegacyCartItems();
+  }
+
+  /**
+   * Back-fills `vehicleTypes` on cart items persisted before this metadata
+   * existed. Queries the product-detail endpoint for each cart item id in
+   * parallel and pushes the missing fields into CartService. Idempotent —
+   * no-op when all items already carry `vehicleTypes`.
+   */
+  private rehydrateLegacyCartItems(): void {
+    if (!this.cartService.hasStaleMetadata()) return;
+
+    const items = this.cartService.items();
+    if (items.length === 0) return;
+
+    const requests = items.map((it) => this.productService.getDetail(it.id));
+
+    forkJoin(requests).subscribe({
+      next: (responses) => {
+        const map = new Map<
+          string,
+          { vehicleTypes?: string[]; freeOilChangeService?: boolean }
+        >();
+        for (const res of responses) {
+          const p = res.data.product as any;
+          if (!p?.id) continue;
+          map.set(p.id, {
+            vehicleTypes: p.vehicleTypes,
+            freeOilChangeService: p.freeOilChangeService,
+          });
+        }
+        this.cartService.syncItemMetadata(map);
+      },
+      error: () => {
+        /* silent — warning simply won't trigger for legacy items */
+      },
+    });
   }
 
   private initForm(): void {

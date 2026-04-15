@@ -1,0 +1,96 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+.copyable-row {
+  @apply w-full;
+
+  &.compact-row {
+    @apply flex items-center justify-between gap-3 py-1.5;
+  }
+
+  &.stacked {
+    @apply flex flex-col gap-1 py-1.5;
+  }
+}
+
+.copyable-label {
+  @apply text-sm text-gray-500 dark:text-gray-400 flex-shrink-0;
+}
+
+.copyable-value-wrap {
+  @apply inline-flex items-center gap-2 min-w-0;
+}
+
+.copyable-value {
+  @apply text-sm font-semibold text-gray-900 dark:text-white truncate;
+
+  &.monospace {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    letter-spacing: 0.01em;
+  }
+}
+
+.copy-btn {
+  @apply inline-flex items-center justify-center rounded-md flex-shrink-0 transition-all;
+  width: 28px;
+  height: 28px;
+  border: 1px solid transparent;
+  background-color: rgba(77, 148, 255, 0.08);
+  color: var(--tubus-text-accent, #4d94ff);
+  cursor: pointer;
+
+  svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  &:hover:not(:disabled) {
+    background-color: rgba(77, 148, 255, 0.18);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--tubus-text-accent, #4d94ff);
+    outline-offset: 1px;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  &.copied {
+    background-color: rgba(34, 197, 94, 0.15);
+    color: #16a34a;
+  }
+}
+
+:host-context(.dark) {
+  .copy-btn {
+    background-color: rgba(77, 148, 255, 0.18);
+    color: #93c5fd;
+
+    &:hover:not(:disabled) {
+      background-color: rgba(77, 148, 255, 0.28);
+    }
+
+    &.copied {
+      background-color: rgba(34, 197, 94, 0.22);
+      color: #4ade80;
+    }
+  }
+}
+
+// Screen-reader-only utility
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

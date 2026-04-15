@@ -235,7 +235,7 @@ export class CatalogComponent implements OnInit {
       const vehicle = this.vehicleService.selectedVehicle();
       if (vehicle?.engineType) {
         engineDisplacement = vehicle.engineType.displacement || undefined;
-        engineFuelType = (vehicle.engineType.fuelType as FuelType) || undefined;
+        engineFuelType = (vehicle.engineType.fuelType as FuelType | undefined) || undefined;
         engineCylinders = vehicle.engineType.cylinders || undefined;
       }
     }
@@ -272,6 +272,7 @@ export class CatalogComponent implements OnInit {
           isCombo: p.isCombo,
           stock: p.totalStock ?? 0,
           freeOilChangeService: p.freeOilChangeService,
+          vehicleTypes: p.vehicleTypes,
         }));
         this.products.set(mapped);
         this.totalPages.set(response.pagination?.pages || 1);

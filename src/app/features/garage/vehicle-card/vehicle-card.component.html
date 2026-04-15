@@ -2,30 +2,42 @@
   <div class="card-header">
     <div class="vehicle-identity">
       <h3 class="vehicle-name">{{ vehicle().marca }} {{ vehicle().modelo }}</h3>
-      <span class="vehicle-year">{{ vehicle().year }}</span>
+      @if (vehicle().year) {
+        <span class="vehicle-year">{{ vehicle().year }}</span>
+      }
     </div>
-    <span class="placa-badge">{{ vehicle().placa }}</span>
+    @if (vehicle().placa) {
+      <span class="placa-badge">{{ vehicle().placa }}</span>
+    }
   </div>
 
   <div class="card-body">
     <div class="spec-grid">
-      <div class="spec-item">
-        <span class="spec-label">Motor</span>
-        <span class="spec-value">{{ vehicle().engineType.displacement }} - {{ vehicle().engineType.cylinders }} cil.</span>
-      </div>
-      <div class="spec-item">
-        <span class="spec-label">Combustible</span>
-        <span class="spec-value">{{ fuelLabel }}</span>
-      </div>
+      @if (vehicle().engineType?.displacement || vehicle().engineType?.cylinders) {
+        <div class="spec-item">
+          <span class="spec-label">Motor</span>
+          <span class="spec-value">
+            {{ vehicle().engineType?.displacement }}@if (vehicle().engineType?.cylinders) { - {{ vehicle().engineType?.cylinders }} cil. }
+          </span>
+        </div>
+      }
+      @if (fuelLabel) {
+        <div class="spec-item">
+          <span class="spec-label">Combustible</span>
+          <span class="spec-value">{{ fuelLabel }}</span>
+        </div>
+      }
       <div class="spec-item">
         <span class="spec-label">Kilometraje</span>
         <span class="spec-value">{{ vehicle().kilometraje | number }} km</span>
       </div>
-      <div class="spec-item">
-        <span class="spec-label">Cap. Aceite</span>
-        <span class="spec-value">{{ vehicle().engineType.oilCapacityLiters }} L</span>
-      </div>
-      @if (vehicle().engineType.oilType) {
+      @if (vehicle().engineType?.oilCapacityLiters) {
+        <div class="spec-item">
+          <span class="spec-label">Cap. Aceite</span>
+          <span class="spec-value">{{ vehicle().engineType?.oilCapacityLiters }} L</span>
+        </div>
+      }
+      @if (vehicle().engineType?.oilType) {
         <div class="spec-item">
           <span class="spec-label">Tipo Aceite</span>
           <span class="spec-value">{{ oilTypeLabel }}</span>

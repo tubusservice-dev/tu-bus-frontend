@@ -44,6 +44,8 @@ export interface ProductCardData {
   isCombo?: boolean;
   stock?: number;
   freeOilChangeService?: boolean;
+  /** Union of vehicleTypes from categories — surfaced for vehicle-match warnings */
+  vehicleTypes?: string[];
 }
 
 @Component({
@@ -154,6 +156,7 @@ export class ProductCardComponent {
       image: this.product.images[0] || '',
       stock: this.product.stock || 0,
       freeOilChangeService: this.product.freeOilChangeService || false,
+      vehicleTypes: this.product.vehicleTypes,
     });
 
     if (result.success) {

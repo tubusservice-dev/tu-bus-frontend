@@ -70,6 +70,8 @@ export interface ProductCardDTO {
     cylinders: number;
   }[];
   oilType?: string;
+  /** Union of vehicleTypes from the product's categories (e.g. ['carro','all']) */
+  vehicleTypes?: string[];
 }
 
 export interface ProductCardListResponse {
@@ -118,6 +120,8 @@ export interface DetailProduct {
   brand: { name: string } | null;
   productModel: string;
   freeOilChangeService: boolean;
+  /** Aggregated vehicleTypes from all categories — for vehicle-match warnings */
+  vehicleTypes?: string[];
 }
 
 export interface DetailStock {

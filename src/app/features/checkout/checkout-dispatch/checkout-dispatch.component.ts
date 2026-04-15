@@ -42,9 +42,12 @@ export class CheckoutDispatchComponent implements OnInit {
 
     switch (dispatchType) {
       case 'store_pickup':
-      case 'in_store_oil_change':
         // Direct to summary (no form needed)
         this.router.navigate(['/checkout/resumen']);
+        break;
+      case 'in_store_oil_change':
+        // Needs a dedicated vehicle-only step before the summary
+        this.router.navigate(['/checkout/cambio-aceite-tienda']);
         break;
       case 'seller_agreement':
         this.router.navigate(['/checkout/vendedor']);
@@ -58,6 +61,10 @@ export class CheckoutDispatchComponent implements OnInit {
       case 'oil_change_service':
         this.router.navigate(['/checkout/cambio-aceite']);
         break;
+      default:
+        // Defensive: button is already gated, but guards against future changes
+        console.warn('[CheckoutDispatch] No dispatch type selected');
+        return;
     }
   }
 

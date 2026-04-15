@@ -78,7 +78,8 @@ export class GarageComponent implements OnInit {
   }
 
   onDelete(vehicle: Vehicle): void {
-    if (!confirm(`¿Eliminar el vehículo ${vehicle.marca} ${vehicle.modelo} (${vehicle.placa})?`)) {
+    const label = `${vehicle.marca} ${vehicle.modelo}${vehicle.placa ? ` (${vehicle.placa})` : ''}`;
+    if (!confirm(`¿Eliminar el vehículo ${label}?`)) {
       return;
     }
 

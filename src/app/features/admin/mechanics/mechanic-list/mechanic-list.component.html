@@ -63,10 +63,13 @@
               <tr [class.inactive-row]="!mechanic.isActive">
                 <td>
                   <div class="mechanic-name">
-                    <a [routerLink]="['/admin/mechanics/detail', mechanic.id]" class="name-link">{{ mechanic.name }}</a>
-                    @if (mechanic.email) {
-                      <span class="email-text">{{ mechanic.email }}</span>
-                    }
+                    <app-mechanic-avatar [avatar]="mechanic.avatar" [name]="mechanic.name" size="sm" />
+                    <div class="mechanic-name-text">
+                      <a [routerLink]="['/admin/mechanics/detail', mechanic.id]" class="name-link">{{ mechanic.name }}</a>
+                      @if (mechanic.email) {
+                        <span class="email-text">{{ mechanic.email }}</span>
+                      }
+                    </div>
                   </div>
                 </td>
                 <td>{{ mechanic.whatsapp }}</td>

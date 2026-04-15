@@ -12,11 +12,12 @@ import {
   OrderStatus,
 } from '../../../../models/order.model';
 import { environment } from '../../../../../environments/environment';
+import { MechanicAvatarComponent } from '../../../../shared/components/mechanic-avatar/mechanic-avatar.component';
 
 @Component({
   selector: 'app-order-dispatch-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MechanicAvatarComponent],
   template: `
     @if (isOpen()) {
       <div class="modal-overlay" (click)="onClose()">
@@ -60,13 +61,47 @@ import { environment } from '../../../../../environments/environment';
               </div>
               <div class="mechanic-info">
                 @if (getAssignedMechanicName()) {
-                  <p class="mechanic-name">{{ getAssignedMechanicName() }}</p>
-                  <p class="mechanic-phone">{{ getAssignedMechanicWhatsapp() }}</p>
+                  <div class="mechanic-info-row">
+                    <app-mechanic-avatar
+                      [avatar]="getAssignedMechanicAvatar()"
+                      [name]="getAssignedMechanicName()"
+                      size="md"
+                    />
+                    <div class="mechanic-info-text">
+                      <p class="mechanic-name">{{ getAssignedMechanicName() }}</p>
+                      <p class="mechanic-phone">{{ getAssignedMechanicWhatsapp() }}</p>
+                    </div>
+                  </div>
                 }
-                <p class="schedule-info">
-                  {{ currentAssignment()!.scheduledDate | date:'dd/MM/yyyy' }} &bull;
-                  {{ currentAssignment()!.startTime }} - {{ currentAssignment()!.endTime }}
-                </p>
+
+                <!-- Fecha y hora del servicio — bloque destacado -->
+                <div class="schedule-block" role="group" aria-label="Fecha y hora del servicio">
+                  <div class="schedule-header">Fecha y hora del servicio</div>
+                  <div class="schedule-chips">
+                    <div class="schedule-chip schedule-chip-date">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+                      </svg>
+                      <div class="schedule-chip-text">
+                        <span class="schedule-chip-label">Fecha</span>
+                        <span class="schedule-chip-value">
+                          {{ getFormattedScheduledDate() }}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="schedule-chip schedule-chip-time">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                      </svg>
+                      <div class="schedule-chip-text">
+                        <span class="schedule-chip-label">Horario</span>
+                        <span class="schedule-chip-value">
+                          {{ currentAssignment()!.startTime }} <span class="schedule-chip-sep">→</span> {{ currentAssignment()!.endTime }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <!-- Progress Link -->
@@ -133,9 +168,11 @@ import { environment } from '../../../../../environments/environment';
                   <div class="mechanics-list">
                     @for (mech of branchMechanics(); track mech.id) {
                       <div class="mechanic-card-opt" [class.selected]="selectedMechanicId === mech.id" (click)="selectMechanic(mech)">
-                        <div class="mech-avatar-sm">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0" /></svg>
-                        </div>
+                        <app-mechanic-avatar
+                          [avatar]="getMechanicAvatar(mech)"
+                          [name]="mech.name"
+                          size="sm"
+                        />
                         <div class="mech-card-info">
                           <span class="mech-card-name">{{ mech.name }}</span>
                           <span class="mech-card-meta">{{ mech.whatsapp }} &bull; {{ mech.serviceDurationMinutes }}min</span>
@@ -253,10 +290,96 @@ import { environment } from '../../../../../environments/environment';
     }
     .mechanic-info {
       @apply bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3;
+      .mechanic-info-row { @apply flex items-center gap-3 mb-3; }
+      .mechanic-info-text { @apply flex flex-col min-w-0; }
       .mechanic-name { @apply font-medium text-gray-900 dark:text-white text-sm; }
       .mechanic-phone { @apply text-xs text-gray-500 dark:text-gray-400; }
-      .schedule-info { @apply text-xs text-blue-600 dark:text-blue-400 mt-1; }
     }
+
+    // ========== Schedule block (fecha + hora destacados) ==========
+    .schedule-block {
+      @apply rounded-lg p-3 mt-1;
+      background: linear-gradient(
+        135deg,
+        rgba(34, 197, 94, 0.08) 0%,
+        rgba(59, 130, 246, 0.08) 100%
+      );
+      border-left: 3px solid #22c55e;
+    }
+
+    :host-context(.dark) .schedule-block {
+      background: linear-gradient(
+        135deg,
+        rgba(34, 197, 94, 0.12) 0%,
+        rgba(59, 130, 246, 0.12) 100%
+      );
+      border-left-color: #4ade80;
+    }
+
+    .schedule-header {
+      @apply text-[11px] font-semibold uppercase tracking-wide mb-2;
+      color: #15803d;
+      letter-spacing: 0.05em;
+    }
+
+    :host-context(.dark) .schedule-header { color: #4ade80; }
+
+    .schedule-chips {
+      @apply grid gap-2;
+      grid-template-columns: 1fr;
+
+      @media (min-width: 480px) {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .schedule-chip {
+      @apply flex items-center gap-2.5 rounded-lg px-3 py-2.5;
+      background-color: rgba(255, 255, 255, 0.75);
+      border: 1px solid rgba(148, 163, 184, 0.25);
+
+      svg {
+        @apply flex-shrink-0;
+        width: 18px;
+        height: 18px;
+      }
+
+      .schedule-chip-text {
+        @apply flex flex-col min-w-0;
+      }
+
+      .schedule-chip-label {
+        @apply text-[10px] uppercase font-medium tracking-wide;
+        color: #64748b;
+      }
+
+      .schedule-chip-value {
+        @apply text-sm font-semibold truncate;
+        color: #0f172a;
+        text-transform: capitalize;
+      }
+
+      .schedule-chip-sep {
+        @apply font-normal mx-0.5;
+        color: #94a3b8;
+      }
+    }
+
+    .schedule-chip-date svg { color: #16a34a; }
+    .schedule-chip-time svg { color: #2563eb; }
+    .schedule-chip-time .schedule-chip-value { text-transform: none; font-variant-numeric: tabular-nums; }
+
+    :host-context(.dark) .schedule-chip {
+      background-color: rgba(30, 41, 59, 0.65);
+      border-color: rgba(148, 163, 184, 0.22);
+
+      .schedule-chip-label { color: #94a3b8; }
+      .schedule-chip-value { color: #f1f5f9; }
+      .schedule-chip-sep { color: #64748b; }
+    }
+
+    :host-context(.dark) .schedule-chip-date svg { color: #4ade80; }
+    :host-context(.dark) .schedule-chip-time svg { color: #60a5fa; }
     .magic-link-section { @apply space-y-2; }
     .link-label { @apply block text-sm font-medium text-gray-700 dark:text-gray-300; }
     .link-box { @apply flex gap-2; }
@@ -565,6 +688,39 @@ export class OrderDispatchModalComponent {
     const a = this.currentAssignment();
     if (!a || typeof a.mechanic === 'string') return '';
     return a.mechanic.whatsapp || '';
+  }
+
+  getAssignedMechanicAvatar(): string {
+    const a = this.currentAssignment();
+    if (!a || typeof a.mechanic === 'string') return '';
+    return (a.mechanic as any).avatar || '';
+  }
+
+  getMechanicAvatar(mech: any): string {
+    return mech?.avatar || '';
+  }
+
+  /**
+   * Format the assignment's scheduled date in long Spanish form, e.g.
+   * "Miércoles, 15 de abril de 2026". Uses the browser's Intl API with UTC
+   * to avoid off-by-one shifts when the date string has no time component.
+   */
+  getFormattedScheduledDate(): string {
+    const a = this.currentAssignment();
+    if (!a?.scheduledDate) return '';
+    try {
+      const d = new Date(a.scheduledDate);
+      const formatter = new Intl.DateTimeFormat('es-VE', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        timeZone: 'UTC',
+      });
+      return formatter.format(d);
+    } catch {
+      return String(a.scheduledDate);
+    }
   }
 
   getWhatsAppUrl(): string {

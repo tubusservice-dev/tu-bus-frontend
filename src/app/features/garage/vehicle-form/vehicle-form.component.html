@@ -8,97 +8,163 @@
 
   <form [formGroup]="form" (ngSubmit)="onSubmit()" class="form-body">
     <div class="form-grid">
-      <div class="form-group">
-        <label class="form-label">Placa <span class="required">*</span></label>
-        <input type="text" formControlName="placa" class="form-input" [class.error]="hasError('placa')" placeholder="DFY-H37" style="text-transform: uppercase" maxlength="9" />
-        @if (hasError('placa')) {
-          <span class="form-error">{{ getErrorMessage('placa') }}</span>
-        }
-      </div>
-
+      <!-- 1. Marca (obligatorio) — selector buscable -->
       <div class="form-group">
         <label class="form-label">Marca <span class="required">*</span></label>
-        <select formControlName="marca" class="form-input" [class.error]="hasError('marca')">
-          <option value="">Seleccionar...</option>
-          @for (m of marcas; track m) {
-            <option [value]="m">{{ m }}</option>
-          }
-        </select>
-        @if (hasError('marca')) {
-          <span class="form-error">{{ getErrorMessage('marca') }}</span>
+        <app-searchable-select
+          [options]="marcaOptions"
+          [selected]="selectedMarca()"
+          [invalid]="marcaInvalid()"
+          placeholder="Buscar marca..."
+          ariaLabel="Seleccionar marca del vehículo"
+          chipVariant="blue"
+          (selectedChange)="onMarcaChange($event)"
+        />
+        @if (marcaInvalid()) {
+          <span class="form-error">La marca es requerida</span>
         }
       </div>
 
+      <!-- 2. Modelo (obligatorio) -->
       <div class="form-group">
         <label class="form-label">Modelo <span class="required">*</span></label>
-        <input type="text" formControlName="modelo" class="form-input" [class.error]="hasError('modelo')" placeholder="Corolla, Aveo, etc." maxlength="50" />
+        <input
+          type="text"
+          formControlName="modelo"
+          class="form-input"
+          [class.error]="hasError('modelo')"
+          placeholder="Corolla, Aveo, etc."
+          maxlength="50"
+        />
         @if (hasError('modelo')) {
           <span class="form-error">{{ getErrorMessage('modelo') }}</span>
         }
       </div>
 
+      <!-- 3. Tipo de Vehículo (obligatorio) — selector buscable -->
       <div class="form-group">
-        <label class="form-label">Año <span class="required">*</span></label>
-        <input type="number" formControlName="year" class="form-input no-spinners" [class.error]="hasError('year')" placeholder="2020" />
+        <label class="form-label">Tipo de Vehículo <span class="required">*</span></label>
+        <app-searchable-select
+          [options]="vehicleTypeOptions"
+          [selected]="selectedVehicleType()"
+          [invalid]="vehicleTypeInvalid()"
+          placeholder="Buscar tipo..."
+          ariaLabel="Seleccionar tipo de vehículo"
+          chipVariant="blue"
+          (selectedChange)="onVehicleTypeChange($event)"
+        />
+        @if (vehicleTypeInvalid()) {
+          <span class="form-error">El tipo de vehículo es requerido</span>
+        }
+      </div>
+
+      <!-- Separador conceptual: a partir de aquí los campos son opcionales -->
+
+      <!-- 4. Placa (opcional) -->
+      <div class="form-group">
+        <label class="form-label">Placa <span class="optional">(opcional)</span></label>
+        <input
+          type="text"
+          formControlName="placa"
+          class="form-input"
+          [class.error]="hasError('placa')"
+          placeholder="DFY-H37"
+          style="text-transform: uppercase"
+          maxlength="9"
+        />
+        @if (hasError('placa')) {
+          <span class="form-error">{{ getErrorMessage('placa') }}</span>
+        }
+      </div>
+
+      <!-- 5. Año (opcional) -->
+      <div class="form-group">
+        <label class="form-label">Año <span class="optional">(opcional)</span></label>
+        <input
+          type="number"
+          formControlName="year"
+          class="form-input no-spinners"
+          [class.error]="hasError('year')"
+          placeholder="2020"
+        />
         @if (hasError('year')) {
           <span class="form-error">{{ getErrorMessage('year') }}</span>
         }
       </div>
 
+      <!-- 6. Kilometraje (opcional) -->
       <div class="form-group">
-        <label class="form-label">Kilometraje</label>
-        <input type="number" formControlName="kilometraje" class="form-input no-spinners" placeholder="0" />
+        <label class="form-label">Kilometraje <span class="optional">(opcional)</span></label>
+        <input
+          type="number"
+          formControlName="kilometraje"
+          class="form-input no-spinners"
+          placeholder="0"
+        />
       </div>
 
+      <!-- 7. Combustible (opcional) -->
       <div class="form-group">
-        <label class="form-label">Combustible <span class="required">*</span></label>
+        <label class="form-label">Combustible <span class="optional">(opcional)</span></label>
         <select formControlName="fuelType" class="form-input">
+          <option value="">Seleccionar...</option>
           @for (c of combustibles; track c.value) {
             <option [value]="c.value">{{ c.label }}</option>
           }
         </select>
       </div>
 
+      <!-- 8. Cilindrada (opcional) -->
       <div class="form-group">
-        <label class="form-label">Cilindrada <span class="required">*</span></label>
-        <select formControlName="displacement" class="form-input" [class.error]="hasError('displacement')">
+        <label class="form-label">Cilindrada <span class="optional">(opcional)</span></label>
+        <select formControlName="displacement" class="form-input">
           <option value="">Seleccionar...</option>
           @for (d of cilindradas; track d) {
             <option [value]="d">{{ d }}</option>
           }
         </select>
-        @if (hasError('displacement')) {
-          <span class="form-error">{{ getErrorMessage('displacement') }}</span>
-        }
       </div>
 
+      <!-- 9. Cilindros (opcional) -->
       <div class="form-group">
-        <label class="form-label">Cilindros <span class="required">*</span></label>
-        <input type="number" formControlName="cylinders" class="form-input no-spinners" [class.error]="hasError('cylinders')" placeholder="4" />
+        <label class="form-label">Cilindros <span class="optional">(opcional)</span></label>
+        <input
+          type="number"
+          formControlName="cylinders"
+          class="form-input no-spinners"
+          [class.error]="hasError('cylinders')"
+          placeholder="4"
+        />
         @if (hasError('cylinders')) {
           <span class="form-error">{{ getErrorMessage('cylinders') }}</span>
         }
       </div>
 
+      <!-- 10. Capacidad de Aceite (opcional) -->
       <div class="form-group">
-        <label class="form-label">Capacidad de Aceite (L) <span class="required">*</span></label>
-        <input type="number" step="0.1" formControlName="oilCapacityLiters" class="form-input no-spinners" [class.error]="hasError('oilCapacityLiters')" placeholder="4.0" />
+        <label class="form-label">Capacidad de Aceite (L) <span class="optional">(opcional)</span></label>
+        <input
+          type="number"
+          step="0.1"
+          formControlName="oilCapacityLiters"
+          class="form-input no-spinners"
+          [class.error]="hasError('oilCapacityLiters')"
+          placeholder="4.0"
+        />
         @if (hasError('oilCapacityLiters')) {
           <span class="form-error">{{ getErrorMessage('oilCapacityLiters') }}</span>
         }
       </div>
 
+      <!-- 11. Tipo de Aceite (opcional) -->
       <div class="form-group">
-        <label class="form-label">Tipo de Aceite <span class="required">*</span></label>
-        <select formControlName="oilType" class="form-input" [class.error]="hasError('oilType')">
+        <label class="form-label">Tipo de Aceite <span class="optional">(opcional)</span></label>
+        <select formControlName="oilType" class="form-input">
           <option value="">Seleccionar...</option>
           @for (t of tiposAceite; track t.value) {
             <option [value]="t.value">{{ t.label }}</option>
           }
         </select>
-        @if (hasError('oilType')) {
-          <span class="form-error">{{ getErrorMessage('oilType') }}</span>
-        }
       </div>
     </div>
 

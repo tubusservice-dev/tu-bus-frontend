@@ -126,8 +126,10 @@
         </svg>
         <span>
           Mostrando productos compatibles con
-          <strong>{{ vehicle.marca }} {{ vehicle.modelo }} {{ vehicle.year }}</strong>
-          — {{ vehicle.engineType.displacement }} {{ vehicle.engineType.cylinders }} cil.
+          <strong>{{ vehicle.marca }} {{ vehicle.modelo }}@if (vehicle.year) {&nbsp;{{ vehicle.year }}}</strong>
+          @if (vehicle.engineType?.displacement || vehicle.engineType?.cylinders) {
+            — {{ vehicle.engineType?.displacement }}@if (vehicle.engineType?.cylinders) { {{ vehicle.engineType?.cylinders }} cil. }
+          }
         </span>
       </div>
       <button class="banner-close" (click)="clearVehicleFilter()">

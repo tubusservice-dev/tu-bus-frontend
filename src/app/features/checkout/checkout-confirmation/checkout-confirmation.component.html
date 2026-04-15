@@ -18,8 +18,11 @@
 
       <div class="order-info">
         <div class="order-number-display">
-          <span class="label">Número de Orden</span>
-          <span class="value">{{ order()!.orderNumber }}</span>
+          <app-copyable-value
+            label="Número de Orden"
+            [value]="order()!.orderNumber"
+            [compactRow]="false"
+          />
         </div>
 
         <div class="order-details-grid">

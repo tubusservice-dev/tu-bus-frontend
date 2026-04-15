@@ -246,29 +246,36 @@
 }
 
 .branch-selector-list {
-  @apply flex flex-col gap-2;
+  @apply space-y-2;
 }
 
+// Mirrors .vehicle-select-card from checkout-oil-change-form for visual
+// consistency across all "pick-one" selectors on the summary page.
 .branch-selector-card {
-  @apply flex items-center justify-between w-full px-4 py-3 rounded-lg border-2 text-left transition-all duration-200;
-  background-color: var(--bg-primary);
-  border-color: var(--border-color);
+  @apply w-full flex items-center justify-between p-4 rounded-xl text-left transition-all;
+  background-color: var(--bg-tertiary);
+  border: 2px solid var(--border-color);
+  cursor: pointer;
 
-  &:hover {
-    border-color: var(--accent-primary);
-    background-color: var(--bg-secondary);
-  }
+  &:hover { border-color: #16a34a; }
 
   &.selected {
-    border-color: var(--accent-primary);
-    background-color: rgba(var(--accent-primary-rgb, 220, 38, 38), 0.05);
-    box-shadow: 0 0 0 1px var(--accent-primary);
+    border-color: #16a34a;
+    background-color: rgba(34, 197, 94, 0.06);
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.12);
+  }
+
+  // Higher contrast in dark mode when NOT selected
+  :host-context(.dark) &:not(.selected) {
+    background-color: rgba(255, 255, 255, 0.04);
+    border-color: #374151;
   }
 
   &.disabled {
     @apply opacity-50 cursor-not-allowed;
     border-color: var(--border-color);
     background-color: var(--bg-secondary);
+    box-shadow: none;
 
     &:hover {
       border-color: var(--border-color);
@@ -282,7 +289,7 @@
 }
 
 .branch-selector-name {
-  @apply font-semibold text-sm;
+  @apply text-sm font-semibold;
   color: var(--text-primary);
 }
 
@@ -292,12 +299,19 @@
 }
 
 .branch-selector-phone {
-  @apply text-xs;
-  color: var(--text-tertiary);
+  @apply text-xs font-mono px-2 py-0.5 rounded inline-block w-fit mt-1;
+  background-color: var(--bg-tertiary);
+  color: var(--text-secondary);
 }
 
 .branch-selector-badges {
   @apply flex items-center gap-2 flex-shrink-0;
+}
+
+// Selection check icon — matches vehicle-check-icon
+.branch-check-icon {
+  @apply w-6 h-6 flex-shrink-0;
+  color: #16a34a;
 }
 
 .branch-badge {
@@ -319,11 +333,6 @@
 :host-context(.dark) .branch-badge-no-stock {
   background-color: rgba(239, 68, 68, 0.15);
   color: #f87171;
-}
-
-.branch-check-icon {
-  @apply w-6 h-6;
-  color: var(--accent-primary);
 }
 
 // ============================================
@@ -369,6 +378,50 @@
 :host-context(.dark) .vehicle-missing-warning {
   background-color: rgba(245, 158, 11, 0.1);
   color: #fbbf24;
+}
+
+// ========== Compatibility alert (vehicle ↔ product) ==========
+.compat-alert {
+  @apply flex items-center gap-3 p-4 mt-3 rounded-xl;
+  background-color: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.compat-alert-icon {
+  @apply w-5 h-5 flex-shrink-0;
+  color: #d97706;
+}
+
+.compat-alert-body {
+  @apply flex flex-col gap-0.5 min-w-0;
+}
+
+.compat-alert-title {
+  @apply text-sm font-semibold;
+  color: #b45309;
+}
+
+.compat-alert-text {
+  @apply text-xs leading-relaxed;
+  color: #92400e;
+
+  strong {
+    @apply font-semibold;
+    color: #78350f;
+  }
+}
+
+:host-context(.dark) {
+  .compat-alert {
+    background-color: rgba(245, 158, 11, 0.12);
+    border-color: rgba(245, 158, 11, 0.45);
+  }
+  .compat-alert-icon { color: #fbbf24; }
+  .compat-alert-title { color: #fcd34d; }
+  .compat-alert-text {
+    color: #fde68a;
+    strong { color: #fef3c7; }
+  }
 }
 
 // ============================================
@@ -1019,6 +1072,37 @@
   margin-top: 0.25rem;
   font-size: 0.7rem;
   color: #ef4444;
+}
+
+// Read-only/locked input — used for auto-calculated amounts
+.form-group input.input-locked {
+  background-color: rgba(148, 163, 184, 0.08) !important;
+  border-color: rgba(148, 163, 184, 0.25) !important;
+  cursor: not-allowed;
+  color: #9ca3af;
+  font-weight: 600;
+
+  &:focus {
+    box-shadow: none !important;
+  }
+}
+
+:host-context(.dark) .form-group input.input-locked {
+  background-color: rgba(148, 163, 184, 0.08) !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+  color: #d1d5db;
+}
+
+.form-group .form-hint {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.7rem;
+  color: #6b7280;
+  font-style: italic;
+}
+
+:host-context(.dark) .form-group .form-hint {
+  color: #9ca3af;
 }
 
 // ============================================

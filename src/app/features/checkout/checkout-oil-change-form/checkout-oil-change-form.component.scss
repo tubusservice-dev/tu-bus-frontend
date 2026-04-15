@@ -263,6 +263,47 @@ select.input {
   @apply text-xs mt-2 text-amber-600 dark:text-amber-400;
 }
 
+// ========== Compatibility alert (vehicle ↔ product) ==========
+.compat-alert {
+  @apply flex items-center gap-3 p-4 mt-3 rounded-xl;
+  background-color: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.compat-alert-icon {
+  @apply w-5 h-5 flex-shrink-0;
+  color: #d97706;
+}
+
+.compat-alert-body {
+  @apply flex flex-col gap-0.5 min-w-0;
+}
+
+.compat-alert-title {
+  @apply text-sm font-semibold;
+  color: #b45309;
+}
+
+.compat-alert-text {
+  @apply text-xs leading-relaxed;
+  color: #92400e;
+
+  strong {
+    @apply font-semibold;
+    color: #78350f;
+  }
+}
+
+:host-context(.dark) {
+  .compat-alert {
+    background-color: rgba(245, 158, 11, 0.12);
+    border-color: rgba(245, 158, 11, 0.45);
+  }
+  .compat-alert-icon { color: #fbbf24; }
+  .compat-alert-title { color: #fcd34d; }
+  .compat-alert-text { color: #fde68a; strong { color: #fef3c7; } }
+}
+
 .vehicle-empty-state {
   @apply flex items-center gap-3 p-4 rounded-xl;
   background-color: rgba(245, 158, 11, 0.08);

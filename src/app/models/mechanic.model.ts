@@ -20,6 +20,8 @@ export interface Mechanic {
   name: string;
   whatsapp: string;
   email?: string;
+  /** Cloudinary URL for the mechanic profile photo */
+  avatar?: string;
   branches: Array<string | { id: string; name: string; address?: string }>;
   serviceDurationMinutes: number;
   schedule: ScheduleDay[];
@@ -33,6 +35,7 @@ export interface CreateMechanicRequest {
   name: string;
   whatsapp: string;
   email?: string;
+  avatar?: string;
   branches?: string[];
   serviceDurationMinutes?: number;
   schedule?: ScheduleDay[];
@@ -42,6 +45,7 @@ export interface UpdateMechanicRequest {
   name?: string;
   whatsapp?: string;
   email?: string;
+  avatar?: string;
   branches?: string[];
   serviceDurationMinutes?: number;
   schedule?: ScheduleDay[];

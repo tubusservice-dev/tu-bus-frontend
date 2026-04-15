@@ -5,11 +5,12 @@ import { MechanicService } from '../../../../core/services/mechanic.service';
 import { MechanicAssignmentService } from '../../../../core/services/mechanic-assignment.service';
 import { Mechanic } from '../../../../models/mechanic.model';
 import { MechanicAssignment, AssignmentStatus } from '../../../../models/mechanic-assignment.model';
+import { MechanicAvatarComponent } from '../../../../shared/components/mechanic-avatar/mechanic-avatar.component';
 
 @Component({
   selector: 'app-mechanic-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, MechanicAvatarComponent],
   templateUrl: './mechanic-detail.component.html',
   styleUrl: './mechanic-detail.component.scss',
 })

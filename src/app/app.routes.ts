@@ -370,6 +370,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'checkout/cambio-aceite-tienda',
+        loadComponent: () =>
+          import('./features/checkout/checkout-in-store-oil-change-form/checkout-in-store-oil-change-form.component').then(
+            (m) => m.CheckoutInStoreOilChangeFormComponent
+          ),
+      },
+      {
         path: 'checkout/resumen',
         loadComponent: () =>
           import('./features/checkout/checkout-summary/checkout-summary.component').then(

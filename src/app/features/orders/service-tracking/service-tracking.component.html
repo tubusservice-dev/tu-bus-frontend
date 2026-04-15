@@ -139,7 +139,7 @@
             Mecánico
           </h3>
           <div class="card-body mechanic-body">
-            <div class="mechanic-avatar">{{ mechanicInitial() }}</div>
+            <app-mechanic-avatar [avatar]="mechanicAvatar()" [name]="mechanicName()" size="lg" />
             <div class="mechanic-info">
               <span class="mechanic-name">{{ mechanicName() }}</span>
               @if (mechanicWhatsapp()) {
@@ -221,7 +221,7 @@
                   <div class="vehicle-main">
                     <span class="vehicle-name">{{ v.marca }} {{ v.modelo }} {{ v.year }}</span>
                     @if (v.engineType?.displacement) {
-                      <span class="vehicle-specs">{{ v.engineType.displacement }} · {{ v.engineType.fuelType }}</span>
+                      <span class="vehicle-specs">{{ v.engineType?.displacement }} · {{ v.engineType?.fuelType }}</span>
                     }
                   </div>
                   <span class="vehicle-plate">{{ v.placa }}</span>

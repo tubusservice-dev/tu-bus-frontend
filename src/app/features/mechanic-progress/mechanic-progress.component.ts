@@ -7,11 +7,12 @@ import { ThemeService } from '../../core/services/theme.service';
 import { MechanicAssignment, ProgressStep, BranchContactInfo } from '../../models/mechanic-assignment.model';
 import { SupportContactConfig } from '../../models/settings.model';
 import { environment } from '../../../environments/environment';
+import { MechanicAvatarComponent } from '../../shared/components/mechanic-avatar/mechanic-avatar.component';
 
 @Component({
   selector: 'app-mechanic-progress',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, MechanicAvatarComponent],
   templateUrl: './mechanic-progress.component.html',
   styleUrl: './mechanic-progress.component.scss',
 })
@@ -87,6 +88,12 @@ export class MechanicProgressComponent implements OnInit {
     const a = this.assignment();
     if (!a) return '';
     return typeof a.mechanic === 'object' ? a.mechanic.name : '';
+  });
+
+  protected readonly mechanicAvatar = computed(() => {
+    const a = this.assignment();
+    if (!a) return '';
+    return typeof a.mechanic === 'object' ? (a.mechanic as any).avatar || '' : '';
   });
 
   protected readonly clientName = computed(() => {

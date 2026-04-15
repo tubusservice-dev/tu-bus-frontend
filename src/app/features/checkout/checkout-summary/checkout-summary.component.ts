@@ -11,6 +11,7 @@ import { LocationService, BranchSummary } from '../../../core/services/location.
 import { PaymentMethodService } from '../../../core/services/payment-method.service';
 import { UploadService } from '../../../core/services/upload.service';
 import { BranchProductService } from '../../../core/services/branch-product.service';
+import { ProductService } from '../../../core/services/product.service';
 import { ExchangeRateService } from '../../../core/services/exchange-rate.service';
 import { CreateOrderRequest, PaymentSubmission } from '../../../models/order.model';
 import {
@@ -22,11 +23,12 @@ import {
   PAYMENT_TYPES_WITH_FORM,
   PAYMENT_TYPES_INFO_ONLY,
 } from '../../../models/payment-method.model';
+import { CopyableValueComponent } from '../../../shared/components/copyable-value/copyable-value.component';
 
 @Component({
   selector: 'app-checkout-summary',
   standalone: true,
-  imports: [CurrencyPipe, CommonModule, ReactiveFormsModule],
+  imports: [CurrencyPipe, CommonModule, ReactiveFormsModule, CopyableValueComponent],
   templateUrl: './checkout-summary.component.html',
   styleUrl: './checkout-summary.component.scss',
 })
@@ -40,6 +42,7 @@ export class CheckoutSummaryComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   protected readonly locationService = inject(LocationService);
   private readonly branchProductService = inject(BranchProductService);
+  private readonly productService = inject(ProductService);
   private readonly router = inject(Router);
   protected readonly exchangeRateService = inject(ExchangeRateService);
 
@@ -190,6 +193,29 @@ export class CheckoutSummaryComponent implements OnInit {
     return dt === 'oil_change_service' || dt === 'in_store_oil_change';
   });
 
+  /**
+   * Concept label for the cost row in the order summary. Changes the wording
+   * based on dispatch type so it reads naturally to the user — e.g. an oil
+   * change service is a "servicio", an agency delivery is an "envío", and
+   * a store pickup is a "despacho".
+   */
+  protected readonly deliveryConceptLabel = computed<string>(() => {
+    const dt = this.checkoutService.dispatchType();
+    switch (dt) {
+      case 'oil_change_service':
+      case 'in_store_oil_change':
+        return 'Coste del Servicio';
+      case 'shipping_agency':
+      case 'local_delivery':
+        return 'Coste del Envío';
+      case 'store_pickup':
+      case 'seller_agreement':
+        return 'Coste del Despacho';
+      default:
+        return 'Envío';
+    }
+  });
+
   // Vehicle selection is handled in oil-change-form; summary is read-only
 
   // ========== Billing Address ==========
@@ -334,6 +360,15 @@ export class CheckoutSummaryComponent implements OnInit {
       }
     }
 
+    if (dispatchType === 'in_store_oil_change') {
+      // Vehicle picker lives in /checkout/cambio-aceite-tienda. If the user
+      // lands here without a vehicle, send them back to select one.
+      if (!this.checkoutService.hasVehicle()) {
+        this.router.navigate(['/checkout/cambio-aceite-tienda']);
+        return;
+      }
+    }
+
     if (this.cartService.isEmpty()) {
       this.router.navigate(['/carrito']);
       return;
@@ -341,6 +376,10 @@ export class CheckoutSummaryComponent implements OnInit {
 
     // Load active payment methods from API
     this.loadPaymentMethods();
+
+    // Back-fill vehicleTypes on legacy cart items so the compatibility
+    // warning can evaluate correctly.
+    this.rehydrateLegacyCartItems();
 
     // Initialize billing form for custom address
     this.billingForm = this.fb.group({
@@ -361,6 +400,40 @@ export class CheckoutSummaryComponent implements OnInit {
     if (!this.checkoutService.billingAddress()) {
       this.buildBillingFromProfile();
     }
+  }
+
+  /**
+   * Back-fills `vehicleTypes` on cart items persisted before this metadata
+   * existed. Idempotent — no-op when all items already carry the field.
+   */
+  private rehydrateLegacyCartItems(): void {
+    if (!this.cartService.hasStaleMetadata()) return;
+
+    const items = this.cartService.items();
+    if (items.length === 0) return;
+
+    const requests = items.map((it) => this.productService.getDetail(it.id));
+
+    forkJoin(requests).subscribe({
+      next: (responses) => {
+        const map = new Map<
+          string,
+          { vehicleTypes?: string[]; freeOilChangeService?: boolean }
+        >();
+        for (const res of responses) {
+          const p = res.data.product as any;
+          if (!p?.id) continue;
+          map.set(p.id, {
+            vehicleTypes: p.vehicleTypes,
+            freeOilChangeService: p.freeOilChangeService,
+          });
+        }
+        this.cartService.syncItemMetadata(map);
+      },
+      error: () => {
+        /* silent — warning simply won't trigger for legacy items */
+      },
+    });
   }
 
   private loadPaymentMethods(): void {
@@ -560,9 +633,38 @@ export class CheckoutSummaryComponent implements OnInit {
       this.selectedMethodInModal.set(null);
     }
     this.resetForm();
+    // Prefill amount with the exact figure the user should pay. For
+    // pago_movil/transferencia it's the Bs conversion; for binance it's the
+    // USD total (≈ USDT). Leaves empty when Bs conversion is unavailable so
+    // the user can manually type.
+    const prefilled = this.computePrefilledAmount(group.type);
+    this.formAmount.set(prefilled);
     this.showModal.set(true);
     document.body.style.overflow = 'hidden';
   }
+
+  /** Returns the pre-filled amount for the current modal's payment type */
+  private computePrefilledAmount(type: PaymentMethodType): string {
+    if (type === PaymentMethodType.PAGO_MOVIL || type === PaymentMethodType.TRANSFERENCIA) {
+      const bs = this.exchangeRateService.convertToBs(this.total);
+      return bs !== null ? bs.toFixed(2) : '';
+    }
+    return '';
+  }
+
+  /**
+   * True when the amount field should be locked. For Bs-based methods it
+   * requires a valid exchange rate; when the rate is unavailable we fall back
+   * to editable so the user can still complete the form manually.
+   */
+  protected readonly amountReadonly = computed<boolean>(() => {
+    const g = this.selectedGroup();
+    if (!g) return false;
+    if (g.type === PaymentMethodType.PAGO_MOVIL || g.type === PaymentMethodType.TRANSFERENCIA) {
+      return this.exchangeRateService.convertToBs(this.total) !== null;
+    }
+    return false;
+  });
 
   closeModal(): void {
     this.showModal.set(false);

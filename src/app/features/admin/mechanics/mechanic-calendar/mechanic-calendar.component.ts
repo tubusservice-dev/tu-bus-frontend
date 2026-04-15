@@ -6,6 +6,7 @@ import { MechanicService } from '../../../../core/services/mechanic.service';
 import { Mechanic, DateBlock } from '../../../../models/mechanic.model';
 import { MechanicAssignment } from '../../../../models/mechanic-assignment.model';
 import { DateBlockModalComponent } from '../date-block-modal/date-block-modal.component';
+import { MechanicAvatarComponent } from '../../../../shared/components/mechanic-avatar/mechanic-avatar.component';
 
 interface CalendarDay {
   date: Date;
@@ -41,7 +42,7 @@ interface WeekDay {
 @Component({
   selector: 'app-mechanic-calendar',
   standalone: true,
-  imports: [CommonModule, RouterLink, DateBlockModalComponent],
+  imports: [CommonModule, RouterLink, DateBlockModalComponent, MechanicAvatarComponent],
   templateUrl: './mechanic-calendar.component.html',
   styleUrl: './mechanic-calendar.component.scss',
 })

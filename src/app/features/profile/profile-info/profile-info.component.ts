@@ -10,11 +10,12 @@ import {
   noNumbersValidator,
 } from '../../../shared/validators/form-validators';
 import { ChangePasswordModalComponent } from '../change-password-modal/change-password-modal.component';
+import { CopyableValueComponent } from '../../../shared/components/copyable-value/copyable-value.component';
 
 @Component({
   selector: 'app-profile-info',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ChangePasswordModalComponent],
+  imports: [CommonModule, ReactiveFormsModule, ChangePasswordModalComponent, CopyableValueComponent],
   templateUrl: './profile-info.component.html',
   styleUrl: './profile-info.component.scss',
 })

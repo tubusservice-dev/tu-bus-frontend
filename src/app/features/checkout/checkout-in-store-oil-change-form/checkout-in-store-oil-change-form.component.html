@@ -1,0 +1,137 @@
+<div class="in-store-form-page">
+  <div class="form-header">
+    <button type="button" class="back-btn" (click)="goBack()" aria-label="Volver">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+      </svg>
+    </button>
+    <h1 class="page-title">Cambio de Aceite en Tienda</h1>
+  </div>
+
+  <div class="form-container">
+    <!-- Banner informativo -->
+    <div class="info-banner">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="info-banner-icon">
+        <path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
+      </svg>
+      <div class="info-banner-body">
+        <strong>Servicio en tienda</strong>
+        <p>Lleva tu vehículo a la sucursal seleccionada para realizar el cambio de aceite. Elige a continuación los vehículos a los que se les hará el servicio.</p>
+      </div>
+    </div>
+
+    <!-- Sección: Selección de Vehículos -->
+    <div class="form-section">
+      <h2 class="section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 0 0-3.213-9.193 2.056 2.056 0 0 0-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 0 0-10.026 0 1.106 1.106 0 0 0-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+        </svg>
+        Vehículos <span class="required">*</span>
+        @if (selectedVehiclesLabel()) {
+          <span class="section-title-badge">{{ selectedVehiclesLabel() }}</span>
+        }
+      </h2>
+
+      @if (isLoadingVehicles()) {
+        <p class="hint">Cargando vehículos...</p>
+      } @else {
+        @if (vehicles().length > 0) {
+          <div class="vehicle-select-list">
+            @for (vehicle of vehicles(); track vehicle.id) {
+              <button
+                type="button"
+                class="vehicle-select-card"
+                [class.selected]="isVehicleSelected(vehicle.id)"
+                (click)="toggleVehicle(vehicle)"
+              >
+                <div class="vehicle-select-info">
+                  <span class="vehicle-select-name">{{ vehicle.marca }} {{ vehicle.modelo }} {{ vehicle.year }}</span>
+                  <span class="vehicle-select-plate">{{ vehicle.placa }}</span>
+                  @if (vehicle.engineType?.displacement || vehicle.engineType?.cylinders) {
+                    <span class="vehicle-select-specs">
+                      {{ vehicle.engineType?.displacement }} {{ vehicle.engineType?.fuelType }}@if (vehicle.engineType?.cylinders) { {{ vehicle.engineType?.cylinders }} cil. }
+                      @if (vehicle.engineType?.oilType) { &middot; {{ vehicle.engineType?.oilType }} }
+                    </span>
+                  }
+                </div>
+                @if (isVehicleSelected(vehicle.id)) {
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="vehicle-check-icon">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                  </svg>
+                }
+              </button>
+            }
+          </div>
+        } @else if (!showVehicleForm()) {
+          <div class="vehicle-empty-state">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+            </svg>
+            <span>No tienes vehículos registrados. Agrega uno para continuar.</span>
+          </div>
+        }
+
+        <!-- Inline vehicle form -->
+        @if (showVehicleForm()) {
+          <div class="inline-vehicle-form">
+            <app-vehicle-form (save)="onInlineVehicleSave($event)" (cancel)="cancelInlineVehicle()" />
+          </div>
+        } @else {
+          <button type="button" class="vehicle-add-btn" (click)="openInlineVehicleForm()">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            Agregar nuevo vehículo
+          </button>
+        }
+
+        @if (checkoutService.selectedVehicles().length === 0 && vehicles().length > 0) {
+          <p class="vehicle-hint-required">Selecciona al menos un vehículo para continuar.</p>
+        }
+
+        <!-- Vehicle ↔ Product compatibility warning (non-blocking) -->
+        @if (checkoutService.vehicleCompatibilityReport(); as rep) {
+          @if (rep.hasAnyMismatch) {
+            <div class="compat-alert" role="alert">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" class="compat-alert-icon" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+              </svg>
+              <div class="compat-alert-body">
+                <strong class="compat-alert-title">Posible incompatibilidad</strong>
+                <p class="compat-alert-text">
+                  @if (rep.incompatibleVehicleNames.length === 1) {
+                    El vehículo <strong>{{ rep.incompatibleVehicleNames[0] }}</strong> no es compatible con
+                    {{ rep.incompatibleProductCount }} producto{{ rep.incompatibleProductCount === 1 ? '' : 's' }}
+                    de tu carrito.
+                  } @else if (rep.allVehiclesMismatch) {
+                    Los vehículos <strong>{{ rep.incompatibleVehicleNames.join(', ') }}</strong>
+                    no son compatibles con productos de tu carrito.
+                  } @else {
+                    Los vehículos <strong>{{ rep.incompatibleVehicleNames.join(', ') }}</strong>
+                    no son compatibles con algunos productos de tu carrito.
+                  }
+                  Puedes continuar con la compra, pero te recomendamos revisar.
+                </p>
+              </div>
+            </div>
+          }
+        }
+      }
+    </div>
+
+    <!-- Acción -->
+    <div class="form-actions">
+      <button
+        type="button"
+        class="btn-continue"
+        [disabled]="checkoutService.selectedVehicles().length === 0"
+        (click)="onContinue()"
+      >
+        Continuar al Resumen
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>

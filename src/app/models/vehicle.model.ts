@@ -4,40 +4,55 @@
 
 export type VehicleOilType = 'mineral' | 'semi-sintetico' | 'sintetico';
 
+/**
+ * Broad classification of the vehicle. Kept decoupled from product-side
+ * VehicleType even though current values coincide — different domains.
+ */
+export type VehicleCategory =
+  | 'carro'
+  | 'camioneta'
+  | 'moto'
+  | 'camion'
+  | 'autobus'
+  | 'maquinaria-pesada';
+
 export interface EngineType {
-  fuelType: 'gasolina' | 'diesel' | 'gas' | 'hibrido';
-  displacement: string;
-  cylinders: number;
-  oilCapacityLiters: number;
+  fuelType?: 'gasolina' | 'diesel' | 'gas' | 'hibrido';
+  displacement?: string;
+  cylinders?: number;
+  oilCapacityLiters?: number;
   oilType?: VehicleOilType;
 }
 
 export interface Vehicle {
   id: string;
   user: string;
-  placa: string;
+  placa?: string;
   marca: string;
   modelo: string;
-  year: number;
+  vehicleType: VehicleCategory;
+  year?: number;
   kilometraje: number;
-  engineType: EngineType;
+  engineType?: EngineType;
   isActive: boolean;
   createdAt: Date;
 }
 
 export interface CreateVehicleRequest {
-  placa: string;
   marca: string;
   modelo: string;
-  year: number;
+  vehicleType: VehicleCategory;
+  placa?: string;
+  year?: number;
   kilometraje?: number;
-  engineType: EngineType;
+  engineType?: EngineType;
 }
 
 export interface UpdateVehicleRequest {
   placa?: string;
   marca?: string;
   modelo?: string;
+  vehicleType?: VehicleCategory;
   year?: number;
   kilometraje?: number;
   engineType?: EngineType;
@@ -87,3 +102,13 @@ export const TIPOS_ACEITE = [
   { value: 'semi-sintetico', label: 'Semi Sintético' },
   { value: 'sintetico', label: 'Sintético' },
 ] as const;
+
+/** Options for the vehicle-type selector (excludes 'all' which is product-only) */
+export const VEHICLE_CATEGORY_OPTIONS: { value: VehicleCategory; label: string }[] = [
+  { value: 'carro', label: 'Carro' },
+  { value: 'camioneta', label: 'Camioneta' },
+  { value: 'moto', label: 'Moto' },
+  { value: 'camion', label: 'Camión' },
+  { value: 'autobus', label: 'Autobús' },
+  { value: 'maquinaria-pesada', label: 'Maquinaria Pesada' },
+];

@@ -260,13 +260,14 @@
                 </div>
                 <div class="info-details">
                   <span class="info-label">Documento de identidad</span>
-                  <span class="info-value">
-                    @if (user()?.documentType && user()?.documentNumber) {
-                      {{ user()?.documentType }}-{{ user()?.documentNumber }}
-                    } @else {
-                      No especificado
-                    }
-                  </span>
+                  @if (user()?.documentType && user()?.documentNumber) {
+                    <app-copyable-value
+                      [value]="user()?.documentType + '-' + user()?.documentNumber"
+                      [compactRow]="false"
+                    />
+                  } @else {
+                    <span class="info-value">No especificado</span>
+                  }
                 </div>
               </div>
 
@@ -347,7 +348,11 @@
                   </div>
                   <div class="info-details">
                     <span class="info-label">Razón social</span>
-                    <span class="info-value">{{ user()?.companyName || 'No especificado' }}</span>
+                    @if (user()?.companyName) {
+                      <app-copyable-value [value]="user()?.companyName" [compactRow]="false" [monospace]="false" />
+                    } @else {
+                      <span class="info-value">No especificado</span>
+                    }
                   </div>
                 </div>
 
@@ -357,7 +362,11 @@
                   </div>
                   <div class="info-details">
                     <span class="info-label">RIF</span>
-                    <span class="info-value">{{ user()?.companyRif || 'No especificado' }}</span>
+                    @if (user()?.companyRif) {
+                      <app-copyable-value [value]="user()?.companyRif" [compactRow]="false" />
+                    } @else {
+                      <span class="info-value">No especificado</span>
+                    }
                   </div>
                 </div>
               </div>
