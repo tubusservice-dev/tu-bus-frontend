@@ -2,17 +2,28 @@ import { Component, DestroyRef, inject, signal, computed, effect, untracked } fr
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ProductService, ShowcaseProduct } from '../../../../../core/services/product.service';
+import { Subject } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
+import {
+  ProductService,
+  ShowcaseProduct,
+  ShowcaseAvailability,
+} from '../../../../../core/services/product.service';
 import { LocationService } from '../../../../../core/services/location.service';
 import { ProductDetailOverlayService } from '../../../../../core/services/product-detail-overlay.service';
 import { VehicleType, VEHICLE_TYPE_LABELS } from '../../../../../models/product.model';
+
+interface FilterTab {
+  id: string;
+  label: string;
+}
 
 @Component({
   selector: 'app-tubus-combos',
   standalone: true,
   imports: [CommonModule, RouterLink],
   templateUrl: './tubus-combos.component.html',
-  styleUrl: './tubus-combos.component.scss'
+  styleUrl: './tubus-combos.component.scss',
 })
 export class TubusCombosComponent {
   private readonly productService = inject(ProductService);
@@ -20,95 +31,113 @@ export class TubusCombosComponent {
   private readonly overlayService = inject(ProductDetailOverlayService);
   private readonly destroyRef = inject(DestroyRef);
 
-  // All products fetched once (lightweight format)
-  private allProducts: ShowcaseProduct[] = [];
+  // Request queue for tab content — switchMap cancels in-flight requests
+  // when the user clicks tabs quickly, so late responses can't clobber the UI.
+  private readonly tabRequest$ = new Subject<string | null>();
 
-  // Signals
+  // Signals driving the view.
   protected readonly products = signal<ShowcaseProduct[]>([]);
   protected readonly selectedFilter = signal<string>('all');
   protected readonly isLoading = signal(true);
+  protected readonly availability = signal<ShowcaseAvailability | null>(null);
   protected readonly skeletonItems = [1, 2, 3, 4];
 
-  protected readonly filters = computed(() => {
-    const vehicleTypeFilters = Object.entries(VEHICLE_TYPE_LABELS)
+  // All potential tabs, derived from the VehicleType enum (excluding ALL).
+  private readonly allTabs: FilterTab[] = [
+    { id: 'all', label: 'Todos' },
+    ...Object.entries(VEHICLE_TYPE_LABELS)
       .filter(([key]) => key !== VehicleType.ALL)
-      .map(([id, label]) => ({ id, label }));
-    return [{ id: 'all', label: 'Todos' }, ...vehicleTypeFilters];
+      .map(([id, label]) => ({ id, label })),
+  ];
+
+  // Tabs actually shown — filtered by availability. While availability is
+  // loading we expose only "Todos" to avoid flicker of empty tabs.
+  protected readonly filters = computed<FilterTab[]>(() => {
+    const map = this.availability();
+    if (!map) return [this.allTabs[0]];
+    return this.allTabs.filter(t => map[t.id]);
   });
 
-  protected readonly showViewAllButton = computed(() => this.allProducts.length > 4);
+  // "Ver todos" button is always visible per product requirement.
+  protected readonly showViewAllButton = computed(() => true);
 
   constructor() {
-    // Load once when location resolves
+    // Wire tab requests through switchMap so only the latest response wins.
+    this.tabRequest$
+      .pipe(
+        switchMap(vt => {
+          const branchIds = this.locationService.branchIds();
+          const branchParam = branchIds.length > 0 ? branchIds.join(',') : undefined;
+          return this.productService.getFeaturedShowcase(
+            branchParam,
+            vt || undefined
+          );
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe({
+        next: (response) => {
+          this.products.set(response.success ? response.data : []);
+          this.isLoading.set(false);
+        },
+        error: () => {
+          this.products.set([]);
+          this.isLoading.set(false);
+        },
+      });
+
+    // Re-evaluate availability + reload current tab whenever branches resolve
+    // or change (e.g. user picks a different city).
     effect(() => {
       const resolved = this.locationService.isResolved();
       if (!resolved) return;
-
-      untracked(() => this.fetchProducts());
-    });
-
-    // Re-filter locally when filter changes (no new API call)
-    effect(() => {
-      const filter = this.selectedFilter();
-      if (this.allProducts.length > 0) {
-        untracked(() => this.applyFilter(filter));
-      }
+      // Depend on branchIds so location changes re-fire.
+      this.locationService.branchIds();
+      untracked(() => this.refresh());
     });
   }
 
-  private fetchProducts(): void {
-    this.isLoading.set(true);
+  private refresh(): void {
     const branchIds = this.locationService.branchIds();
+    const branchParam = branchIds.length > 0 ? branchIds.join(',') : undefined;
 
-    this.productService.getFeaturedShowcase(
-      branchIds.length > 0 ? branchIds.join(',') : undefined
-    ).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+    this.isLoading.set(true);
+
+    this.productService.getShowcaseAvailability(branchParam).subscribe({
       next: (response) => {
-        if (response.success) {
-          this.allProducts = response.data;
+        const map = response.success ? response.data : { all: false };
+        this.availability.set(map);
+
+        // Keep the current selection if it's still available; otherwise
+        // fall back to "Todos". If "Todos" itself is unavailable, leave
+        // the component empty — the template will show its empty state.
+        const current = this.selectedFilter();
+        const nextFilter = map[current] ? current : 'all';
+        if (nextFilter !== current) this.selectedFilter.set(nextFilter);
+
+        if (map[nextFilter]) {
+          this.fetchTab(nextFilter);
+        } else {
+          this.products.set([]);
+          this.isLoading.set(false);
         }
-        this.applyFilter(this.selectedFilter());
-        this.isLoading.set(false);
       },
       error: () => {
-        this.allProducts = [];
-        this.products.set([]);
-        this.isLoading.set(false);
+        this.availability.set({ all: true });
+        this.fetchTab(this.selectedFilter());
       },
     });
   }
 
-  private applyFilter(filter: string): void {
-    let filtered: ShowcaseProduct[];
-
-    if (filter === 'all') {
-      filtered = [...this.allProducts];
-    } else {
-      // Only products whose categories explicitly include this vehicle type
-      filtered = this.allProducts.filter(p => this.matchesVehicleType(p, filter));
-    }
-
-    // Shuffle before slicing so each filter shows different products
-    this.shuffle(filtered);
-    this.products.set(filtered.slice(0, 4));
-  }
-
-  private shuffle<T>(array: T[]): T[] {
-    for (let i = array.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [array[i], array[j]] = [array[j], array[i]];
-    }
-    return array;
-  }
-
-  private matchesVehicleType(product: ShowcaseProduct, vehicleType: string): boolean {
-    return product.categories.some(cat =>
-      cat.vehicleTypes?.includes(vehicleType as VehicleType)
-    );
+  private fetchTab(filterId: string): void {
+    this.isLoading.set(true);
+    this.tabRequest$.next(filterId === 'all' ? null : filterId);
   }
 
   setFilter(filterId: string): void {
+    if (filterId === this.selectedFilter()) return;
     this.selectedFilter.set(filterId);
+    this.fetchTab(filterId);
   }
 
   openProductDetail(productId: string): void {
@@ -123,9 +152,10 @@ export class TubusCombosComponent {
     const types = new Set<string>();
     for (const cat of product.categories) {
       for (const vt of cat.vehicleTypes) {
-        if (vt !== VehicleType.ALL) {
-          types.add(VEHICLE_TYPE_LABELS[vt] || vt);
+        if (vt === VehicleType.ALL) {
+          return [VEHICLE_TYPE_LABELS[VehicleType.ALL]];
         }
+        types.add(VEHICLE_TYPE_LABELS[vt] || vt);
       }
     }
     return Array.from(types).slice(0, 3);

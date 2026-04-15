@@ -33,6 +33,18 @@ export interface ShowcaseResponse {
   data: ShowcaseProduct[];
 }
 
+/**
+ * Availability map keyed by filter id (VehicleType or 'all'). True means
+ * the tab should be rendered; false means it must be hidden because the
+ * backend fallback chain would yield zero products for that filter.
+ */
+export type ShowcaseAvailability = Record<string, boolean>;
+
+export interface ShowcaseAvailabilityResponse {
+  success: boolean;
+  data: ShowcaseAvailability;
+}
+
 // Product detail composite response
 export interface DetailProduct {
   id: string;
@@ -137,14 +149,32 @@ export class ProductService {
   }
 
   /**
-   * Lightweight endpoint for landing page featured showcase
+   * Lightweight endpoint for landing page featured showcase. Each call
+   * returns up to 4 random products for the given vehicleType (or for the
+   * "all" tab when vehicleType is omitted). Backend applies a fallback chain
+   * internally so the caller never needs to retry.
    */
-  getFeaturedShowcase(branchIds?: string): Observable<ShowcaseResponse> {
+  getFeaturedShowcase(branchIds?: string, vehicleType?: string): Observable<ShowcaseResponse> {
     let httpParams = new HttpParams();
-    if (branchIds) {
-      httpParams = httpParams.set('branchIds', branchIds);
-    }
-    return this.http.get<ShowcaseResponse>(`${this.publicUrl}/featured-showcase`, { params: httpParams });
+    if (branchIds) httpParams = httpParams.set('branchIds', branchIds);
+    if (vehicleType) httpParams = httpParams.set('vehicleType', vehicleType);
+    return this.http.get<ShowcaseResponse>(
+      `${this.publicUrl}/featured-showcase`,
+      { params: httpParams }
+    );
+  }
+
+  /**
+   * Returns the availability map for each showcase tab — used on mount to
+   * hide tabs that would yield zero products (e.g. no moto inventory).
+   */
+  getShowcaseAvailability(branchIds?: string): Observable<ShowcaseAvailabilityResponse> {
+    let httpParams = new HttpParams();
+    if (branchIds) httpParams = httpParams.set('branchIds', branchIds);
+    return this.http.get<ShowcaseAvailabilityResponse>(
+      `${this.publicUrl}/featured-showcase/availability`,
+      { params: httpParams }
+    );
   }
 
   /**
