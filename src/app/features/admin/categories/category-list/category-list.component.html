@@ -66,7 +66,11 @@
             <div class="card-content">
               <h3 class="category-name">{{ category.name }}</h3>
               <p class="category-slug">/{{ category.slug }}</p>
-              @if (getVehicleTypeLabels(category)) {
+              @if (isUniversalCategory(category)) {
+                <div class="category-vehicle-types">
+                  <span class="vt-badge vt-badge-all">Todos</span>
+                </div>
+              } @else if (getVehicleTypeLabels(category)) {
                 <div class="category-vehicle-types">
                   @for (vt of category.vehicleTypes; track vt) {
                     <span class="vt-badge">{{ $any(vt) | titlecase }}</span>

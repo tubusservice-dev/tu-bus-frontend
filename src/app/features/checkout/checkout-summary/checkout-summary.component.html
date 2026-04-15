@@ -870,7 +870,10 @@
               </div>
               <div class="form-group">
                 <label for="paymentDate">Fecha del pago *</label>
-                <input type="date" id="paymentDate" [value]="formPaymentDate()" (input)="onFormInput('paymentDate', $event)" [attr.max]="todayStr" />
+                <input type="date" id="paymentDate" [value]="formPaymentDate()" (input)="onFormInput('paymentDate', $event)" [attr.max]="todayStr" [class.input-invalid]="isPaymentDateInvalid()" />
+                @if (isPaymentDateInvalid()) {
+                  <span class="form-error">La fecha no puede ser futura</span>
+                }
               </div>
             </div>
 
@@ -902,9 +905,19 @@
 
       <!-- Modal Footer -->
       <div class="modal-footer">
-        <button type="button" class="modal-btn-cancel" (click)="closeModal()">Cancelar</button>
-        <button type="button" class="modal-btn-submit" [disabled]="!isFormValid() || (isFormType(selectedGroup()!.type) && !selectedMethodInModal())" (click)="submitPayment()">
-          Confirmar Pago
+        <button type="button" class="modal-btn-cancel" (click)="closeModal()" [disabled]="isSubmittingPayment()">Cancelar</button>
+        <button
+          type="button"
+          class="modal-btn-submit"
+          [disabled]="!isFormValid() || (isFormType(selectedGroup()!.type) && !selectedMethodInModal()) || isPaymentDateInvalid() || isSubmittingPayment()"
+          (click)="submitPayment()"
+        >
+          @if (isSubmittingPayment()) {
+            <span class="btn-spinner"></span>
+            Procesando...
+          } @else {
+            Confirmar Pago
+          }
         </button>
       </div>
     </div>

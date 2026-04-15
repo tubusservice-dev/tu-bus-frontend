@@ -194,15 +194,22 @@ select.input {
 
 .vehicle-select-card {
   @apply w-full flex items-center justify-between p-4 rounded-xl text-left transition-all;
-  background-color: var(--bg-secondary);
+  background-color: var(--bg-tertiary);
   border: 2px solid var(--border-color);
   cursor: pointer;
 
-  &:hover { border-color: var(--accent-primary); }
+  &:hover { border-color: #16a34a; }
 
   &.selected {
-    border-color: var(--accent-primary);
-    background-color: rgba(var(--accent-primary-rgb, 59, 130, 246), 0.06);
+    border-color: #16a34a;
+    background-color: rgba(34, 197, 94, 0.06);
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.12);
+  }
+
+  // Mayor contraste en dark mode cuando NO está seleccionado
+  :host-context(.dark) &:not(.selected) {
+    background-color: rgba(255, 255, 255, 0.04);
+    border-color: #374151;
   }
 }
 
@@ -228,7 +235,13 @@ select.input {
 
 .vehicle-check-icon {
   @apply w-6 h-6 flex-shrink-0;
-  color: var(--accent-primary);
+  color: #16a34a;
+}
+
+.section-title-badge {
+  @apply ml-auto text-xs font-medium whitespace-nowrap overflow-hidden text-ellipsis;
+  max-width: 55%;
+  color: #16a34a;
 }
 
 .vehicle-add-btn {

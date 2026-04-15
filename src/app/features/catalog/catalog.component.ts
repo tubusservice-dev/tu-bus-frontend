@@ -76,7 +76,9 @@ export class CatalogComponent implements OnInit {
   protected readonly brands = signal<Brand[]>([]);
   protected readonly categories = signal<Category[]>([]);
 
-  // Categorías filtradas por vehicleType seleccionado (cascading filter)
+  // Categorías filtradas por vehicleType seleccionado (cascading filter).
+  // Las categorías universales (vehicleTypes incluye VehicleType.ALL) se
+  // muestran siempre porque aplican a cualquier tipo de vehículo.
   protected readonly filteredCategories = computed(() => {
     const selectedVehicleType = this.filters().vehicleType;
     const allCats = this.categories();
@@ -86,7 +88,8 @@ export class CatalogComponent implements OnInit {
     }
 
     return allCats.filter(cat =>
-      cat.vehicleTypes?.includes(selectedVehicleType as VehicleType)
+      cat.vehicleTypes?.includes(selectedVehicleType as VehicleType) ||
+      cat.vehicleTypes?.includes(VehicleType.ALL)
     );
   });
 
@@ -272,12 +275,16 @@ export class CatalogComponent implements OnInit {
     this.filters.update((f) => {
       const updated = { ...f, [key]: value };
 
-      // Cascading: when vehicleType changes, reset category if it no longer matches
+      // Cascading: when vehicleType changes, reset category if it no longer
+      // matches. Universal categories (contain VehicleType.ALL) apply to any
+      // vehicleType so they are never reset.
       if (key === 'vehicleType') {
         const selectedCat = this.categories().find(c => c.id === f.category);
         if (selectedCat && value) {
-          const catMatchesVehicle = selectedCat.vehicleTypes?.includes(value as VehicleType);
-          if (!catMatchesVehicle) {
+          const catMatches =
+            selectedCat.vehicleTypes?.includes(value as VehicleType) ||
+            selectedCat.vehicleTypes?.includes(VehicleType.ALL);
+          if (!catMatches) {
             updated.category = '';
           }
         }

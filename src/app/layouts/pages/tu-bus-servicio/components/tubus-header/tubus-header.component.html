@@ -50,8 +50,8 @@
         </div>
       }
 
-      <!-- Tema (solo desktop) -->
-      <span class="hidden sm:inline-flex">
+      <!-- Tema: siempre en desktop; en mobile solo cuando NO está logueado (si logueado está dentro del user-menu) -->
+      <span [class.hidden]="isLoggedIn()" class="sm:!inline-flex">
         <app-theme-toggle />
       </span>
 

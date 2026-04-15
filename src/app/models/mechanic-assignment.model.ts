@@ -11,6 +11,13 @@ export interface ProgressStep {
   completedBy?: 'mechanic' | 'admin';
 }
 
+export interface BranchContactInfo {
+  id: string;
+  name: string;
+  whatsappPhone: string;
+  landlinePhone: string;
+}
+
 export interface MechanicAssignment {
   id: string;
   mechanic: string | { id: string; name: string; whatsapp: string; email?: string };
@@ -33,6 +40,7 @@ export interface MechanicAssignment {
   tokenExpiresAt: string;
   createdBy: string | { id: string; firstName: string; lastName: string };
   cancelledReason?: string;
+  branch?: BranchContactInfo;
   createdAt: string;
   updatedAt: string;
 }

@@ -5,7 +5,7 @@ export type UserNotificationType =
   | 'service_completed' | 'service_paused' | 'assignment_expired'
   | 'cancellation_requested';
 
-export type NotificationIcon = 'order' | 'mechanic' | 'payment' | 'cancel' | 'success' | 'warning';
+export type NotificationIcon = 'order' | 'mechanic' | 'payment' | 'cancel' | 'success' | 'warning' | 'truck' | 'user-plus' | 'box';
 
 export interface UserNotification {
   id: string;

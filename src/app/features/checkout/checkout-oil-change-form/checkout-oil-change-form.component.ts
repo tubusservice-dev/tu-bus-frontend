@@ -139,6 +139,14 @@ export class CheckoutOilChangeFormComponent implements OnInit {
     return this.checkoutService.selectedVehicles().some((v) => v.id === vehicleId);
   }
 
+  /** Etiqueta descriptiva con el conteo y nombres de los vehículos seleccionados */
+  protected readonly selectedVehiclesLabel = computed(() => {
+    const selected = this.checkoutService.selectedVehicles();
+    if (selected.length === 0) return '';
+    const names = selected.map((v) => `${v.marca} ${v.modelo}`).join(', ');
+    return `${selected.length} seleccionado${selected.length > 1 ? 's' : ''}: ${names}`;
+  });
+
   protected toggleVehicle(vehicle: Vehicle): void {
     this.checkoutService.toggleVehicle(vehicle);
   }

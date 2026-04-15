@@ -133,6 +133,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.notificationService.startPolling();
     this.adminNotifications.startPolling();
+    this.adminNotifications.requestNotificationPermission();
     this.originalBodyBg = document.body.style.backgroundColor;
     this.updateBodyBg();
     this.mutationObserver = new MutationObserver(() => this.updateBodyBg());
@@ -163,6 +164,17 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
 
   closeNotification(): void {
     this.selectedNotification.set(null);
+  }
+
+  getNotificationTypeLabel(type: string): string {
+    const labels: Record<string, string> = {
+      mechanic_rejection: 'Rechazo de mecánico',
+      customer_cancellation: 'Cancelación de cliente',
+      new_order: 'Nueva orden',
+      payment_note: 'Comentario de pago',
+      service_progress: 'Progreso del servicio',
+    };
+    return labels[type] || type;
   }
 
   getOrderId(n: AdminNotification): string {

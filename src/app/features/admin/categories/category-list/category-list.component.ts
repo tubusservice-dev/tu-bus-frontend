@@ -77,10 +77,16 @@ export class CategoryListComponent implements OnInit {
 
   getVehicleTypeLabels(category: Category): string {
     if (!category.vehicleTypes?.length) return '';
+    if (this.isUniversalCategory(category)) return 'Todos los vehículos';
     return category.vehicleTypes
       .filter(vt => vt !== VehicleType.ALL)
       .map(vt => VEHICLE_TYPE_LABELS[vt] || vt)
       .join(', ');
+  }
+
+  /** A category is universal when its vehicleTypes list contains VehicleType.ALL. */
+  isUniversalCategory(category: Category): boolean {
+    return !!category.vehicleTypes?.includes(VehicleType.ALL);
   }
 
   confirmDelete(): void {

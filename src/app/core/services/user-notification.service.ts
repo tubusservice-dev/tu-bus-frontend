@@ -17,6 +17,8 @@ export class UserNotificationService {
   private readonly authService = inject(AuthService);
   private readonly apiUrl = `${environment.apiUrl}/user-notifications`;
   private pollSub?: Subscription;
+  private lastKnownCount = 0;
+  private initialCountFetched = false;
 
   private readonly _unreadCount = signal(0);
   private readonly _notifications = signal<UserNotification[]>([]);
@@ -37,6 +39,9 @@ export class UserNotificationService {
 
   stopPolling(): void {
     this.pollSub?.unsubscribe();
+    // Reset tracking so future sessions don't mistakenly trigger push from stale state
+    this.initialCountFetched = false;
+    this.lastKnownCount = 0;
   }
 
   togglePopover(): void {
@@ -52,7 +57,18 @@ export class UserNotificationService {
   fetchUnreadCount(): void {
     if (!this.authService.isAuthenticated()) return;
     this.http.get<UserUnreadCountResponse>(`${this.apiUrl}/unread-count`).subscribe({
-      next: (res) => this._unreadCount.set(res.data.count),
+      next: (res) => {
+        const newCount = res.data.count;
+        const previousCount = this._unreadCount();
+        this._unreadCount.set(newCount);
+
+        // Trigger browser push when count increases (skip the first fetch)
+        if (this.initialCountFetched && newCount > previousCount) {
+          this.triggerBrowserPush();
+        }
+        this.initialCountFetched = true;
+        this.lastKnownCount = newCount;
+      },
       error: () => {},
     });
   }
@@ -86,5 +102,54 @@ export class UserNotificationService {
         this._unreadCount.set(0);
       })
     );
+  }
+
+  /**
+   * Request browser notification permission on startup.
+   * Silent fail if user dismisses or denies.
+   */
+  async requestNotificationPermission(): Promise<void> {
+    if (!('Notification' in window)) return;
+    if (Notification.permission === 'default') {
+      try {
+        await Notification.requestPermission();
+      } catch {
+        // Silent fail
+      }
+    }
+  }
+
+  /**
+   * Fire a browser push notification when unreadCount increases.
+   * Unlike admin, the client always receives push if permission is granted (no preference toggle).
+   */
+  private triggerBrowserPush(): void {
+    if (!('Notification' in window)) return;
+    if (Notification.permission !== 'granted') return;
+
+    // Fetch latest notification to get title/message
+    this.http.get<UserNotificationListResponse>(`${this.apiUrl}?limit=1`).subscribe({
+      next: (res) => {
+        const latest = res.data?.[0];
+        if (!latest) return;
+
+        try {
+          const notif = new Notification(latest.title || 'Nueva notificación', {
+            body: latest.message,
+            icon: '/autobus.png',
+            badge: '/autobus.png',
+            tag: `user-notif-${latest.id}`,
+          });
+
+          notif.onclick = () => {
+            window.focus();
+            notif.close();
+          };
+        } catch {
+          // Silent fail — some browsers may block
+        }
+      },
+      error: () => {},
+    });
   }
 }

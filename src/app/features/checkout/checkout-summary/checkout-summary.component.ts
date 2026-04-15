@@ -51,6 +51,7 @@ export class CheckoutSummaryComponent implements OnInit {
   protected readonly disclaimerAccepted = signal(false);
   protected readonly showConfirmModal = signal(false);
   protected readonly isProcessingConfirm = signal(false);
+  protected readonly isSubmittingPayment = signal(false);
 
   // Payment methods from API
   protected readonly paymentMethods = signal<PaymentMethodConfig[]>([]);
@@ -114,6 +115,12 @@ export class CheckoutSummaryComponent implements OnInit {
   protected readonly formPaymentDate = signal('');
   protected readonly formProofFile = signal<File | null>(null);
   protected readonly formProofPreview = signal<string | null>(null);
+
+  /** True cuando la fecha del pago es posterior a hoy (inválida) */
+  protected readonly isPaymentDateInvalid = computed(() => {
+    const d = this.formPaymentDate();
+    return !!d && d > this.todayStr;
+  });
 
   // Post-submission state
   protected readonly paymentSubmitted = signal(false);
@@ -561,6 +568,7 @@ export class CheckoutSummaryComponent implements OnInit {
     this.showModal.set(false);
     this.selectedGroup.set(null);
     this.selectedMethodInModal.set(null);
+    this.isSubmittingPayment.set(false);
     this.resetForm();
     document.body.style.overflow = '';
   }
@@ -624,6 +632,8 @@ export class CheckoutSummaryComponent implements OnInit {
   }
 
   submitPayment(): void {
+    if (this.isSubmittingPayment()) return;
+
     const group = this.selectedGroup();
     const selectedMethod = this.selectedMethodInModal();
     if (!group) return;
@@ -647,6 +657,9 @@ export class CheckoutSummaryComponent implements OnInit {
       submission.paymentDate = paymentDate;
     }
 
+    this.isSubmittingPayment.set(true);
+    this.errorMessage.set(null);
+
     // Upload proof file if selected, then finalize
     if (this.formProofFile()) {
       this.uploadService.uploadImage(this.formProofFile()!, 'payment-proofs').subscribe({
@@ -669,6 +682,7 @@ export class CheckoutSummaryComponent implements OnInit {
     this.submittedPayment.set(submission);
     this.submittedMethodType.set(methodType);
     this.paymentSubmitted.set(true);
+    this.isSubmittingPayment.set(false);
     this.closeModal();
   }
 

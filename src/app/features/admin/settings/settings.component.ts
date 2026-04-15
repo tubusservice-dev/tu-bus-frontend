@@ -13,7 +13,7 @@ import {
   PAYMENT_METHOD_TYPE_LABELS,
 } from '../../../models/payment-method.model';
 
-type SectionKey = 'heroImages' | 'homeHero' | 'whatsapp' | 'carousels' | 'pagination' | 'dispatchModules' | 'dispatch' | 'paymentMethods' | 'exchangeRate';
+type SectionKey = 'heroImages' | 'homeHero' | 'whatsapp' | 'carousels' | 'pagination' | 'dispatchModules' | 'dispatch' | 'paymentMethods' | 'exchangeRate' | 'supportContact' | 'adminNotifications';
 type PaginationSubKey = 'catalogLimit' | 'adminLimit';
 
 @Component({
@@ -74,6 +74,8 @@ export class SettingsComponent implements OnInit {
     dispatch: false,
     paymentMethods: false,
     exchangeRate: false,
+    supportContact: false,
+    adminNotifications: false,
   });
 
   protected readonly saveSuccess = signal<Record<SectionKey, boolean>>({
@@ -86,6 +88,8 @@ export class SettingsComponent implements OnInit {
     dispatch: false,
     paymentMethods: false,
     exchangeRate: false,
+    supportContact: false,
+    adminNotifications: false,
   });
 
   protected readonly errorMessage = signal<Record<SectionKey, string | null>>({
@@ -98,6 +102,8 @@ export class SettingsComponent implements OnInit {
     dispatch: null,
     paymentMethods: null,
     exchangeRate: null,
+    supportContact: null,
+    adminNotifications: null,
   });
 
   // Opciones de paginación
@@ -128,6 +134,8 @@ export class SettingsComponent implements OnInit {
   protected paginationForm!: FormGroup;
   protected dispatchModulesForm!: FormGroup;
   protected dispatchForm!: FormGroup;
+  protected supportContactForm!: FormGroup;
+  protected adminNotificationsForm!: FormGroup;
 
   ngOnInit(): void {
     this.initForms();
@@ -192,6 +200,22 @@ export class SettingsComponent implements OnInit {
         additionalInfo: ['', Validators.maxLength(500)],
       }),
     });
+
+    this.supportContactForm = this.fb.group({
+      firstName: ['', [Validators.required, Validators.maxLength(20)]],
+      lastName: ['', [Validators.required, Validators.maxLength(20)]],
+      phone: ['', [Validators.required, Validators.pattern(/^04\d{2}-?\d{7}$/)]],
+      email: ['', [Validators.required, Validators.email, Validators.maxLength(50)]],
+    });
+
+    this.adminNotificationsForm = this.fb.group({
+      newOrder: [true],
+      paymentNote: [true],
+      mechanicRejection: [true],
+      customerCancellation: [true],
+      serviceProgress: [true],
+      browserPush: [true],
+    });
   }
 
   private loadSettings(): void {
@@ -231,6 +255,16 @@ export class SettingsComponent implements OnInit {
           if (data.dispatch.storePickup) {
             this.dispatchForm.patchValue({ storePickup: data.dispatch.storePickup });
           }
+        }
+
+        // Support contact
+        if (data.supportContact) {
+          this.supportContactForm.patchValue(data.supportContact);
+        }
+
+        // Admin notifications preferences
+        if (data.adminNotifications) {
+          this.adminNotificationsForm.patchValue(data.adminNotifications);
         }
 
         // Exchange rate config
@@ -593,6 +627,110 @@ export class SettingsComponent implements OnInit {
         this.isDeletingMethod.set(null);
       },
     });
+  }
+
+  // ========== Contacto de Soporte ==========
+  saveSupportContact(): void {
+    if (this.supportContactForm.invalid) {
+      this.supportContactForm.markAllAsTouched();
+      return;
+    }
+
+    this.setSaving('supportContact', true);
+    this.clearMessages('supportContact');
+
+    this.settingsService.updateSupportContact(this.supportContactForm.value).subscribe({
+      next: () => {
+        this.setSaving('supportContact', false);
+        this.setSuccess('supportContact', true);
+        setTimeout(() => this.setSuccess('supportContact', false), 3000);
+      },
+      error: (error) => {
+        this.setSaving('supportContact', false);
+        this.setError('supportContact', error.error?.message || 'Error al guardar');
+      },
+    });
+  }
+
+  // ========== Notificaciones del Admin ==========
+  saveAdminNotificationToggle(
+    field: 'newOrder' | 'paymentNote' | 'mechanicRejection' | 'customerCancellation' | 'serviceProgress' | 'browserPush'
+  ): void {
+    const value = this.adminNotificationsForm.get(field)?.value;
+    this.settingsService.updateAdminNotifications({ [field]: value }).subscribe({
+      next: () => {
+        this.setSuccess('adminNotifications', true);
+        setTimeout(() => this.setSuccess('adminNotifications', false), 2000);
+      },
+      error: (error) => {
+        this.setError('adminNotifications', error.error?.message || 'Error al guardar');
+      },
+    });
+  }
+
+  async requestBrowserPushPermission(): Promise<void> {
+    if (!('Notification' in window)) {
+      this.setError('adminNotifications', 'Tu navegador no soporta notificaciones push');
+      return;
+    }
+    if (Notification.permission === 'granted') return;
+    if (Notification.permission === 'denied') {
+      this.setError('adminNotifications', 'Las notificaciones están bloqueadas. Revisa las instrucciones abajo para habilitarlas.');
+      return;
+    }
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        this.setError('adminNotifications', 'Permiso de notificaciones denegado');
+      }
+    } catch {
+      this.setError('adminNotifications', 'No se pudo solicitar permiso');
+    }
+  }
+
+  /** Estado actual del permiso de notificaciones */
+  protected getBrowserPushStatus(): 'granted' | 'denied' | 'default' | 'unsupported' {
+    if (typeof window === 'undefined' || !('Notification' in window)) return 'unsupported';
+    return Notification.permission;
+  }
+
+  /** Dispara una notificación de prueba para verificar permisos y sonido */
+  async testBrowserPushNotification(): Promise<void> {
+    if (!('Notification' in window)) {
+      this.setError('adminNotifications', 'Tu navegador no soporta notificaciones push');
+      return;
+    }
+
+    // Si no hay permiso, solicitarlo
+    if (Notification.permission === 'default') {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        this.setError('adminNotifications', 'Permiso denegado. Habilítalo desde los ajustes del navegador.');
+        return;
+      }
+    }
+
+    if (Notification.permission === 'denied') {
+      this.setError('adminNotifications', 'Las notificaciones están bloqueadas. Revisa las instrucciones abajo para habilitarlas.');
+      return;
+    }
+
+    try {
+      const notif = new Notification('TuBus Express — Prueba', {
+        body: 'Si ves este mensaje, las notificaciones push están funcionando correctamente.',
+        icon: '/autobus.png',
+        badge: '/autobus.png',
+        tag: `test-notification-${Date.now()}`,
+      });
+      notif.onclick = () => {
+        window.focus();
+        notif.close();
+      };
+      this.setSuccess('adminNotifications', true);
+      setTimeout(() => this.setSuccess('adminNotifications', false), 3000);
+    } catch {
+      this.setError('adminNotifications', 'No se pudo mostrar la notificación de prueba');
+    }
   }
 
   // ========== Tasa de Cambio ==========

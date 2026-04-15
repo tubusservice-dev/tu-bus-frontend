@@ -36,6 +36,10 @@ export class CategoryFormComponent implements OnInit {
   protected readonly showVehicleTypeDropdown = signal(false);
   protected readonly vehicleTypeTouched = signal(false);
 
+  // Universal flag — when true, category applies to every vehicle type
+  // and selectedVehicleTypes is bypassed (persisted as [VehicleType.ALL]).
+  protected readonly isUniversal = signal(false);
+
   // All available options (exclude 'all' — categories must target specific types)
   private readonly allVehicleTypeOptions: VehicleTypeOption[] = Object.entries(VEHICLE_TYPE_LABELS)
     .filter(([key]) => key !== VehicleType.ALL)
@@ -81,8 +85,11 @@ export class CategoryFormComponent implements OnInit {
           isActive: category.isActive,
         });
 
-        // Load selected vehicle types
-        if (category.vehicleTypes?.length) {
+        // Load selected vehicle types — detect universal mode first
+        if (category.vehicleTypes?.includes(VehicleType.ALL)) {
+          this.isUniversal.set(true);
+          this.selectedVehicleTypes.set([]);
+        } else if (category.vehicleTypes?.length) {
           const selected = category.vehicleTypes
             .filter((vt: VehicleType) => vt !== VehicleType.ALL)
             .map((vt: VehicleType) => ({
@@ -105,7 +112,8 @@ export class CategoryFormComponent implements OnInit {
     this.form.markAllAsTouched();
     this.vehicleTypeTouched.set(true);
 
-    if (this.form.invalid || this.selectedVehicleTypes().length === 0) {
+    const needsSelection = !this.isUniversal() && this.selectedVehicleTypes().length === 0;
+    if (this.form.invalid || needsSelection) {
       return;
     }
 
@@ -114,7 +122,9 @@ export class CategoryFormComponent implements OnInit {
 
     const data = {
       ...this.form.value,
-      vehicleTypes: this.selectedVehicleTypes().map(vt => vt.value),
+      vehicleTypes: this.isUniversal()
+        ? [VehicleType.ALL]
+        : this.selectedVehicleTypes().map(vt => vt.value),
     };
 
     const request$ = this.isEditMode()
@@ -133,6 +143,23 @@ export class CategoryFormComponent implements OnInit {
   }
 
   // ==================== VEHICLE TYPES MULTI-SELECT ====================
+
+  /**
+   * Toggle universal mode. When ON, the category targets every vehicle type
+   * and the multi-select is cleared + hidden. When OFF, the user must pick
+   * at least one specific type (existing validation applies).
+   */
+  onUniversalToggle(event: Event): void {
+    const checked = (event.target as HTMLInputElement).checked;
+    this.isUniversal.set(checked);
+
+    if (checked) {
+      this.selectedVehicleTypes.set([]);
+      this.vehicleTypeSearchTerm.set('');
+      this.showVehicleTypeDropdown.set(false);
+      this.vehicleTypeTouched.set(false);
+    }
+  }
 
   onVehicleTypeSearch(event: Event): void {
     const input = event.target as HTMLInputElement;

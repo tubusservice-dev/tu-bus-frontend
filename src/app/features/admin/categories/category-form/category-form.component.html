@@ -54,7 +54,24 @@
           }
         </div>
 
-        <!-- Tipos de vehículo (multi-select obligatorio) -->
+        <!-- Toggle: aplica a todos los tipos de vehículo -->
+        <div class="form-group">
+          <label class="toggle-label">
+            <input
+              type="checkbox"
+              [checked]="isUniversal()"
+              (change)="onUniversalToggle($event)"
+            />
+            <span class="toggle-switch"></span>
+            <span>Aplica a todos los tipos de vehículo</span>
+          </label>
+          <p class="help-text">
+            Si se activa, esta categoría se mostrará en los filtros de todos los tipos de vehículo.
+          </p>
+        </div>
+
+        <!-- Tipos de vehículo (multi-select obligatorio cuando no es universal) -->
+        @if (!isUniversal()) {
         <div class="form-group">
           <label>
             Tipos de vehículo <span class="required">*</span>
@@ -117,6 +134,7 @@
             <p class="help-text">Selecciona los tipos de vehículo a los que aplica esta categoría</p>
           }
         </div>
+        }
 
         <!-- Descripción -->
         <div class="form-group">

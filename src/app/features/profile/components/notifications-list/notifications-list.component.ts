@@ -59,6 +59,7 @@ export class NotificationsListComponent implements OnInit {
     const map: Record<string, string> = {
       success: 'icon-success', mechanic: 'icon-mechanic', order: 'icon-order',
       cancel: 'icon-cancel', warning: 'icon-warning', payment: 'icon-payment',
+      truck: 'icon-truck', 'user-plus': 'icon-user-plus', box: 'icon-box',
     };
     return map[icon] || 'icon-order';
   }

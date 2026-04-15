@@ -690,6 +690,286 @@
         </div>
       </div>
 
+      <!-- ========== SECCIÓN NOTIFICACIONES DEL ADMIN ========== -->
+      <div class="accordion-item" [class.expanded]="activeSection() === 'adminNotifications'">
+        <button class="accordion-header" (click)="toggleSection('adminNotifications')" type="button">
+          <div class="header-content">
+            <span class="icon">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+              </svg>
+            </span>
+            <span class="title">Notificaciones</span>
+          </div>
+          <span class="chevron" [class.rotated]="activeSection() === 'adminNotifications'">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+            </svg>
+          </span>
+        </button>
+
+        <div class="accordion-content" [class.open]="activeSection() === 'adminNotifications'">
+          <div class="section-form">
+            <p class="section-description">
+              Selecciona qué notificaciones deseas recibir. Las notificaciones desactivadas no serán generadas.
+            </p>
+
+            <form [formGroup]="adminNotificationsForm">
+              <!-- Nueva orden -->
+              <div class="dispatch-module-item">
+                <label class="toggle-container">
+                  <input
+                    type="checkbox"
+                    formControlName="newOrder"
+                    class="toggle-input"
+                    (change)="saveAdminNotificationToggle('newOrder')"
+                  />
+                  <span class="toggle-switch"></span>
+                  <div class="toggle-info">
+                    <span class="toggle-label">Nueva orden recibida</span>
+                    <span class="toggle-hint">Te notifica cuando un cliente genera una nueva orden</span>
+                  </div>
+                </label>
+              </div>
+
+              <!-- Comentario de pago -->
+              <div class="dispatch-module-item">
+                <label class="toggle-container">
+                  <input
+                    type="checkbox"
+                    formControlName="paymentNote"
+                    class="toggle-input"
+                    (change)="saveAdminNotificationToggle('paymentNote')"
+                  />
+                  <span class="toggle-switch"></span>
+                  <div class="toggle-info">
+                    <span class="toggle-label">Comentario de pago</span>
+                    <span class="toggle-hint">Te notifica cuando un cliente agrega un comentario sobre su pago</span>
+                  </div>
+                </label>
+              </div>
+
+              <!-- Rechazo de mecánico -->
+              <div class="dispatch-module-item">
+                <label class="toggle-container">
+                  <input
+                    type="checkbox"
+                    formControlName="mechanicRejection"
+                    class="toggle-input"
+                    (change)="saveAdminNotificationToggle('mechanicRejection')"
+                  />
+                  <span class="toggle-switch"></span>
+                  <div class="toggle-info">
+                    <span class="toggle-label">Rechazo de mecánico</span>
+                    <span class="toggle-hint">Te notifica cuando un mecánico rechaza un servicio asignado</span>
+                  </div>
+                </label>
+              </div>
+
+              <!-- Cancelación del cliente -->
+              <div class="dispatch-module-item">
+                <label class="toggle-container">
+                  <input
+                    type="checkbox"
+                    formControlName="customerCancellation"
+                    class="toggle-input"
+                    (change)="saveAdminNotificationToggle('customerCancellation')"
+                  />
+                  <span class="toggle-switch"></span>
+                  <div class="toggle-info">
+                    <span class="toggle-label">Solicitud de cancelación</span>
+                    <span class="toggle-hint">Te notifica cuando un cliente solicita cancelar su orden</span>
+                  </div>
+                </label>
+              </div>
+
+              <!-- Progreso del servicio de cambio de aceite -->
+              <div class="dispatch-module-item">
+                <label class="toggle-container">
+                  <input
+                    type="checkbox"
+                    formControlName="serviceProgress"
+                    class="toggle-input"
+                    (change)="saveAdminNotificationToggle('serviceProgress')"
+                  />
+                  <span class="toggle-switch"></span>
+                  <div class="toggle-info">
+                    <span class="toggle-label">Progreso del servicio</span>
+                    <span class="toggle-hint">Te notifica cuando el mecánico avanza el estado del cambio de aceite (en camino, en proceso, completado)</span>
+                  </div>
+                </label>
+              </div>
+
+              <!-- Separador -->
+              <div class="notification-separator"></div>
+
+              <!-- Notificaciones push del navegador -->
+              <div class="dispatch-module-item">
+                <label class="toggle-container">
+                  <input
+                    type="checkbox"
+                    formControlName="browserPush"
+                    class="toggle-input"
+                    (change)="saveAdminNotificationToggle('browserPush'); requestBrowserPushPermission()"
+                  />
+                  <span class="toggle-switch"></span>
+                  <div class="toggle-info">
+                    <span class="toggle-label">Notificaciones push del navegador</span>
+                    <span class="toggle-hint">Muestra alertas nativas del sistema operativo cuando lleguen nuevas notificaciones</span>
+                  </div>
+                </label>
+              </div>
+
+              <!-- Estado del permiso del navegador + botón de prueba -->
+              <div class="push-status-row">
+                <div class="push-status-left">
+                  <span class="push-status-label">Estado del permiso:</span>
+                  @switch (getBrowserPushStatus()) {
+                    @case ('granted') {
+                      <span class="push-status-badge push-status-granted">✓ Permitido</span>
+                    }
+                    @case ('denied') {
+                      <span class="push-status-badge push-status-denied">✕ Bloqueado</span>
+                    }
+                    @case ('default') {
+                      <span class="push-status-badge push-status-default">Pendiente</span>
+                    }
+                    @default {
+                      <span class="push-status-badge push-status-unsupported">No soportado</span>
+                    }
+                  }
+                </div>
+                <button
+                  type="button"
+                  class="push-test-btn"
+                  (click)="testBrowserPushNotification()"
+                  title="Probar notificación"
+                  aria-label="Probar notificación"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" /></svg>
+                  <span class="push-test-tooltip">Probar notificación</span>
+                </button>
+              </div>
+
+              <!-- Info sobre cómo funciona el push -->
+              <div class="push-info-box">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="push-info-icon"><path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" /></svg>
+                <div class="push-info-text">
+                  <strong>¿Cómo funcionan las notificaciones push?</strong>
+                  <ul>
+                    <li>Haz clic en <b>"Probar notificación"</b> para verificar que funciona y que se escuche el sonido.</li>
+                    <li>Las notificaciones aparecen en tu sistema operativo (esquina de la pantalla), con el navegador minimizado.</li>
+                    <li>Solo funcionan con la pestaña del panel admin abierta en el navegador.</li>
+                    <li>El sonido depende de la configuración de tu sistema operativo.</li>
+                  </ul>
+                </div>
+              </div>
+
+              @if (getBrowserPushStatus() === 'denied') {
+                <!-- Instrucciones para desbloquear en Chrome -->
+                <div class="push-unblock-box">
+                  <strong>Las notificaciones están bloqueadas. Para habilitarlas:</strong>
+                  <ol>
+                    <li>En Chrome, haz clic en el icono <b>ⓘ</b> (círculo con "i") o <b>"Ver información del sitio"</b> a la izquierda de la URL (<code>localhost:4200</code>).</li>
+                    <li>Busca <b>"Notificaciones"</b> en el menú desplegable y cambia de <i>"Bloquear"</i> a <i>"Permitir"</i>.</li>
+                    <li>O abre una nueva pestaña y pega esta URL: <code>chrome://settings/content/notifications</code></li>
+                    <li>En la sección <b>"No se permite enviar notificaciones"</b> busca <code>http://localhost:4200</code>, haz clic en los tres puntos (⋮) y selecciona <b>"Permitir"</b> o <b>"Eliminar"</b>.</li>
+                    <li>Recarga esta página con <b>Ctrl + Shift + R</b> y vuelve a hacer clic en <b>"Probar notificación"</b>.</li>
+                  </ol>
+                </div>
+              }
+
+              @if (saveSuccess()['adminNotifications']) {
+                <p class="save-success-text">Preferencias actualizadas</p>
+              }
+              @if (errorMessage()['adminNotifications']) {
+                <p class="save-error-text">{{ errorMessage()['adminNotifications'] }}</p>
+              }
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========== SECCIÓN CONTACTO DE SOPORTE ========== -->
+      <div class="accordion-item" [class.expanded]="activeSection() === 'supportContact'">
+        <button class="accordion-header" (click)="toggleSection('supportContact')" type="button">
+          <div class="header-content">
+            <span class="icon">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 0 1-.825-.242m9.345-8.334a2.126 2.126 0 0 0-.476-.095 48.64 48.64 0 0 0-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0 0 11.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155" />
+              </svg>
+            </span>
+            <span class="title">Contacto de Soporte</span>
+          </div>
+          <span class="chevron" [class.rotated]="activeSection() === 'supportContact'">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+            </svg>
+          </span>
+        </button>
+
+        <div class="accordion-content" [class.open]="activeSection() === 'supportContact'">
+          <div class="section-form">
+            <p class="section-description">
+              Información de contacto del administrador visible para los mecánicos en su pantalla de servicio.
+            </p>
+
+            <form [formGroup]="supportContactForm" (ngSubmit)="saveSupportContact()">
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label class="form-label">Nombre</label>
+                  <input type="text" formControlName="firstName" class="form-input" placeholder="Nombre" maxlength="20" />
+                  @if (supportContactForm.get('firstName')?.touched && supportContactForm.get('firstName')?.invalid) {
+                    <small class="form-error">Requerido (máx. 20 caracteres)</small>
+                  }
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Apellido</label>
+                  <input type="text" formControlName="lastName" class="form-input" placeholder="Apellido" maxlength="20" />
+                  @if (supportContactForm.get('lastName')?.touched && supportContactForm.get('lastName')?.invalid) {
+                    <small class="form-error">Requerido (máx. 20 caracteres)</small>
+                  }
+                </div>
+              </div>
+
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label class="form-label">Teléfono</label>
+                  <input type="tel" formControlName="phone" class="form-input" placeholder="0412-1234567" maxlength="12" />
+                  @if (supportContactForm.get('phone')?.touched && supportContactForm.get('phone')?.invalid) {
+                    <small class="form-error">Formato: 04XX-XXXXXXX o 04XXXXXXXXXX</small>
+                  }
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Correo electrónico</label>
+                  <input type="email" formControlName="email" class="form-input" placeholder="correo@ejemplo.com" maxlength="50" />
+                  @if (supportContactForm.get('email')?.touched && supportContactForm.get('email')?.invalid) {
+                    <small class="form-error">Correo inválido (máx. 50 caracteres)</small>
+                  }
+                </div>
+              </div>
+
+              <div class="form-actions">
+                <button type="submit" class="btn-save" [disabled]="isSaving()['supportContact'] || supportContactForm.invalid">
+                  @if (isSaving()['supportContact']) {
+                    <span class="btn-spinner-small"></span>
+                    Guardando...
+                  } @else {
+                    Guardar
+                  }
+                </button>
+                @if (saveSuccess()['supportContact']) {
+                  <span class="save-success-text">Guardado correctamente</span>
+                }
+                @if (errorMessage()['supportContact']) {
+                  <span class="save-error-text">{{ errorMessage()['supportContact'] }}</span>
+                }
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
     </div>
   }
 
