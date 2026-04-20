@@ -1,9 +1,10 @@
 export type UserNotificationType =
-  | 'order_confirmed' | 'order_processing' | 'order_ready' | 'order_shipped'
+  | 'order_approved' | 'order_confirmed' | 'order_processing' | 'order_ready' | 'order_shipped'
   | 'order_delivered' | 'order_completed' | 'order_cancelled'
   | 'mechanic_assigned' | 'mechanic_en_route' | 'service_started'
   | 'service_completed' | 'service_paused' | 'assignment_expired'
-  | 'cancellation_requested';
+  | 'cancellation_requested'
+  | 'dispatch_dispatched' | 'dispatch_in_transit' | 'dispatch_delivered';
 
 export type NotificationIcon = 'order' | 'mechanic' | 'payment' | 'cancel' | 'success' | 'warning' | 'truck' | 'user-plus' | 'box';
 

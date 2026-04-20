@@ -766,13 +766,20 @@ export class CheckoutSummaryComponent implements OnInit {
     if (this.formProofFile()) {
       this.uploadService.uploadImage(this.formProofFile()!, 'payment-proofs').subscribe({
         next: (uploadRes) => {
+          if (!uploadRes?.data?.url) {
+            this.isSubmittingPayment.set(false);
+            this.errorMessage.set('Error al subir el comprobante: respuesta invalida del servidor. Intenta nuevamente.');
+            return;
+          }
           submission.proofUrl = uploadRes.data.url;
           submission.proofPublicId = uploadRes.data.publicId;
           this.finalizePaymentSubmission(submission, group.type);
         },
-        error: () => {
-          // Proceed without proof on upload failure
-          this.finalizePaymentSubmission(submission, group.type);
+        error: (err) => {
+          // Stop the submission and surface the error so the user can retry
+          this.isSubmittingPayment.set(false);
+          const msg = err?.error?.message || 'No se pudo subir el comprobante. Verifica tu conexion e intenta nuevamente.';
+          this.errorMessage.set(msg);
         },
       });
     } else {

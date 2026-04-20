@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -6,18 +6,36 @@ import { OrderService } from '../../../../core/services/order.service';
 import {
   Order,
   OrderStatus,
+  DispatchStatus,
+  DispatchType,
   ORDER_STATUS_LABELS,
   ORDER_STATUS_COLORS,
-  isOilChangeService,
-  getAvailableStatuses,
+  DISPATCH_STATUS_LABELS,
+  DISPATCH_STATUS_COLORS,
+  DISPATCH_TYPE_LABELS,
+  isOilChangeOrder,
+  isShippingOrder,
+  isInStoreOilChange,
+  getAvailableDispatchStatuses,
+  getOptionsMenuStatuses,
 } from '../../../../models/order.model';
 import { PAYMENT_METHOD_TYPE_LABELS, PaymentMethodType } from '../../../../models/payment-method.model';
+import { MechanicAssignment, ProgressStep } from '../../../../models/mechanic-assignment.model';
 import { OrderDispatchModalComponent } from '../order-dispatch-modal/order-dispatch-modal.component';
+import { MechanicAvatarComponent } from '../../../../shared/components/mechanic-avatar/mechanic-avatar.component';
+import { ClickOutsideDirective } from '../../../../shared/directives/click-outside.directive';
+import { MechanicAssignmentService } from '../../../../core/services/mechanic-assignment.service';
 
 @Component({
   selector: 'app-admin-order-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, OrderDispatchModalComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    OrderDispatchModalComponent,
+    MechanicAvatarComponent,
+    ClickOutsideDirective,
+  ],
   templateUrl: './admin-order-detail.component.html',
   styleUrl: './admin-order-detail.component.scss',
 })
@@ -25,32 +43,106 @@ export class AdminOrderDetailComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly orderService = inject(OrderService);
+  private readonly assignmentService = inject(MechanicAssignmentService);
 
   protected readonly isLoading = signal(true);
   protected readonly order = signal<Order | null>(null);
   protected readonly error = signal<string | null>(null);
 
-  // Status change
-  protected readonly showStatusModal = signal(false);
-  protected readonly newStatus = signal<string>('');
-  protected readonly statusNote = signal('');
-  protected readonly isChangingStatus = signal(false);
+  // ========== APPROVE / CANCEL (pending state) ==========
+  protected readonly showApproveModal = signal(false);
+  protected readonly showCancelOrderModal = signal(false);
+  protected readonly approveNote = signal('');
+  protected readonly cancelReason = signal('');
+  protected readonly isApproving = signal(false);
+  protected readonly isCancelling = signal(false);
 
-  // Cancel modal (oil change)
-  protected readonly showCancelModal = signal(false);
-  protected readonly cancelNote = signal('');
+  // ========== OPTIONS MENU (3-dot) ==========
+  protected readonly showOptionsMenu = signal(false);
+  protected readonly showOptionsStatusModal = signal(false);
+  protected readonly selectedMenuStatus = signal<OrderStatus | null>(null);
+  protected readonly optionsStatusNote = signal('');
+  protected readonly isChangingFromOptions = signal(false);
 
-  // Dispatch modal
+  // ========== CANCELLATION REQUEST ACTIONS ==========
+  protected readonly showApproveCancellationModal = signal(false);
+  protected readonly showRejectCancellationModal = signal(false);
+  protected readonly cancellationActionNote = signal('');
+  protected readonly isHandlingCancellation = signal(false);
+
+  // ========== DISPATCH STATUS ==========
+  protected readonly showDispatchModal = signal(false);
+  protected readonly pendingDispatchStatus = signal<DispatchStatus | null>(null);
+  protected readonly dispatchNote = signal('');
+  protected readonly isUpdatingDispatch = signal(false);
+
+  // ========== MECHANIC DISPATCH MODAL ==========
   protected readonly dispatchModalOpen = signal(false);
-  protected readonly proofPreview = signal<string | null>(null);
 
-  // Notes editing
+  // ========== SERVICE TRACKING ==========
+  protected readonly serviceAssignment = signal<MechanicAssignment | null>(null);
+  protected readonly isLoadingService = signal(false);
+
+  // ========== NOTES EDITING ==========
   protected readonly isEditingNotes = signal(false);
   protected readonly editNotesValue = signal('');
   protected readonly isSavingNotes = signal(false);
 
-  protected readonly orderStatuses = Object.values(OrderStatus);
+  // ========== IMAGE LIGHTBOX ==========
+  protected readonly proofPreview = signal<string | null>(null);
+
+  // ========== PHONE POPOVERS ==========
+  protected readonly activePhonePopover = signal<string | null>(null);
+
+  // ========== CONSTANTS ==========
   protected readonly ORDER_STATUS_LABELS = ORDER_STATUS_LABELS;
+  protected readonly DISPATCH_STATUS_LABELS = DISPATCH_STATUS_LABELS;
+  protected readonly DispatchStatus = DispatchStatus;
+  protected readonly OrderStatus = OrderStatus;
+
+  // ========== COMPUTED FLAGS ==========
+  protected readonly isPending = computed(() => this.order()?.status === OrderStatus.PENDING);
+  protected readonly isApproved = computed(() => this.order()?.status === OrderStatus.APPROVED);
+  protected readonly isCompleted = computed(() => this.order()?.status === OrderStatus.COMPLETED);
+  protected readonly isCancelled = computed(() => this.order()?.status === OrderStatus.CANCELLED);
+  protected readonly hasCancellationRequest = computed(() => this.order()?.status === OrderStatus.CANCELLATION_REQUESTED);
+
+  protected readonly isOilChange = computed(() => {
+    const o = this.order();
+    return o ? isOilChangeOrder(o) : false;
+  });
+
+  protected readonly isShipping = computed(() => {
+    const o = this.order();
+    return o ? isShippingOrder(o) : false;
+  });
+
+  protected readonly showDispatchSelector = computed(() => {
+    return this.isShipping() && (this.isApproved() || this.isCompleted()) && !this.isCancelled();
+  });
+
+  protected readonly showMechanicButton = computed(() => {
+    return this.isOilChange() && (this.isApproved() || this.isCompleted());
+  });
+
+  protected readonly hasMechanicAssigned = computed(() => {
+    const o = this.order();
+    if (!o) return false;
+    return !!(o.mechanicAssignment && typeof o.mechanicAssignment === 'object');
+  });
+
+  protected readonly availableDispatchStatuses = computed(() => {
+    const o = this.order();
+    return getAvailableDispatchStatuses(o?.dispatchStatus);
+  });
+
+  protected readonly optionsMenuStatuses = computed(() => {
+    const o = this.order();
+    if (!o) return [];
+    return getOptionsMenuStatuses(o.status);
+  });
+
+  // ========== LIFECYCLE ==========
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
@@ -67,6 +159,9 @@ export class AdminOrderDetailComponent implements OnInit {
       next: (res) => {
         this.order.set(res.data);
         this.isLoading.set(false);
+        if (this.isOilChange()) {
+          this.loadServiceTracking(id);
+        }
       },
       error: () => {
         this.error.set('No se pudo cargar la orden');
@@ -75,7 +170,19 @@ export class AdminOrderDetailComponent implements OnInit {
     });
   }
 
-  // ========== Helpers ==========
+  private loadServiceTracking(orderId: string): void {
+    this.isLoadingService.set(true);
+    this.assignmentService.getByOrder(orderId).subscribe({
+      next: (res) => {
+        const active = res.data?.find((a) => !['cancelled', 'expired'].includes(a.status));
+        this.serviceAssignment.set(active || null);
+        this.isLoadingService.set(false);
+      },
+      error: () => this.isLoadingService.set(false),
+    });
+  }
+
+  // ========== DATA HELPERS ==========
 
   getClientName(order: Order): string {
     if (typeof order.user === 'object' && order.user) {
@@ -87,9 +194,34 @@ export class AdminOrderDetailComponent implements OnInit {
 
   getClientEmail(order: Order): string {
     if (typeof order.user === 'object' && order.user) {
-      return order.user.email;
+      return order.user.email || '';
     }
     return '';
+  }
+
+  getClientField(order: Order, field: string): string {
+    if (typeof order.user === 'object' && order.user) {
+      return (order.user as any)[field] || '';
+    }
+    return '';
+  }
+
+  getClientDocument(order: Order): string {
+    if (typeof order.user !== 'object' || !order.user) return '';
+    const type = order.user.documentType;
+    const number = order.user.documentNumber;
+    if (!type || !number) return '';
+    return `${type}-${number}`;
+  }
+
+  getClientLocation(order: Order): string {
+    if (typeof order.user !== 'object' || !order.user) return '';
+    const parts = [
+      order.user.municipalityName,
+      order.user.cityName,
+      order.user.stateName,
+    ].filter(Boolean);
+    return parts.join(', ');
   }
 
   getStatusLabel(status: OrderStatus): string {
@@ -100,39 +232,18 @@ export class AdminOrderDetailComponent implements OnInit {
     return ORDER_STATUS_COLORS[status] || '';
   }
 
-  getDispatchLabel(type: string): string {
-    const labels: Record<string, string> = {
-      store_pickup: 'Retiro en Tienda',
-      shipping_agency: 'Agencia de Envío',
-      local_delivery: 'Delivery Local',
-      seller_agreement: 'Acordar con Vendedor',
-      oil_change_service: 'Cambio de Aceite a Domicilio',
-      in_store_oil_change: 'Cambio de Aceite en Tienda',
-    };
-    return labels[type] || type;
+  getDispatchStatusLabel(status?: DispatchStatus): string {
+    if (!status) return '-';
+    return DISPATCH_STATUS_LABELS[status] || status;
   }
 
-  isOilChange(): boolean {
-    const o = this.order();
-    return o ? isOilChangeService(o) : false;
+  getDispatchStatusColor(status?: DispatchStatus): string {
+    if (!status) return '';
+    return DISPATCH_STATUS_COLORS[status] || '';
   }
 
-  isMechanicAssigned(): boolean {
-    const o = this.order();
-    if (!o) return false;
-    const mechanicStatuses: string[] = [
-      OrderStatus.MECHANIC_ASSIGNED,
-      OrderStatus.EN_ROUTE,
-      OrderStatus.IN_SERVICE,
-      OrderStatus.COMPLETED,
-    ];
-    return mechanicStatuses.includes(o.status);
-  }
-
-  availableStatuses(): OrderStatus[] {
-    const o = this.order();
-    if (!o) return [];
-    return getAvailableStatuses(o.dispatchType, o.status);
+  getDispatchTypeLabel(type: string): string {
+    return DISPATCH_TYPE_LABELS[type as DispatchType] || type;
   }
 
   getPaymentMethodLabel(type?: string): string {
@@ -154,7 +265,8 @@ export class AdminOrderDetailComponent implements OnInit {
     return `${symbol} ${formatted}`;
   }
 
-  formatDate(date: string): string {
+  formatDate(date: string | Date): string {
+    if (!date) return '';
     return new Date(date).toLocaleDateString('es-VE', {
       day: '2-digit',
       month: '2-digit',
@@ -162,6 +274,22 @@ export class AdminOrderDetailComponent implements OnInit {
       hour: '2-digit',
       minute: '2-digit',
     });
+  }
+
+  formatScheduledDate(date?: string | Date): string {
+    if (!date) return '';
+    try {
+      const d = new Date(date);
+      return new Intl.DateTimeFormat('es-VE', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        timeZone: 'UTC',
+      }).format(d);
+    } catch {
+      return String(date);
+    }
   }
 
   getVehicleInfo(order: Order): string {
@@ -173,23 +301,251 @@ export class AdminOrderDetailComponent implements OnInit {
     }).join(' | ');
   }
 
-  // ========== Actions ==========
+  getVehicles(order: Order): any[] {
+    const vehicles = order.vehicles?.length ? order.vehicles : (order.vehicle ? [order.vehicle] : []);
+    return vehicles.filter((v) => typeof v === 'object') as any[];
+  }
 
-  openDispatchModal(): void {
-    this.dispatchModalOpen.set(true);
+  getBillingSourceLabel(source?: string): string {
+    const labels: Record<string, string> = {
+      shipping: 'Direccion de envio',
+      profile: 'Direccion del perfil',
+      custom: 'Direccion personalizada',
+    };
+    return labels[source || ''] || source || '-';
+  }
+
+  // ========== SERVICE TRACKING HELPERS ==========
+
+  getMechanicName(): string {
+    const a = this.serviceAssignment();
+    if (!a || typeof a.mechanic === 'string') return '';
+    return a.mechanic.name || '';
+  }
+
+  getMechanicWhatsapp(): string {
+    const a = this.serviceAssignment();
+    if (!a || typeof a.mechanic === 'string') return '';
+    return a.mechanic.whatsapp || '';
+  }
+
+  getMechanicAvatar(): string {
+    const a = this.serviceAssignment();
+    if (!a || typeof a.mechanic === 'string') return '';
+    return (a.mechanic as any).avatar || '';
+  }
+
+  getServiceSteps(): ProgressStep[] {
+    return this.serviceAssignment()?.progressSteps || [];
+  }
+
+  getCurrentStepIndex(): number {
+    const steps = this.getServiceSteps();
+    let last = -1;
+    for (let i = 0; i < steps.length; i++) {
+      if (steps[i].completedAt) last = i;
+    }
+    return last;
+  }
+
+  getStepLabel(step: ProgressStep): string {
+    const labels: Record<string, string> = {
+      asignado: 'Asignado',
+      en_camino: 'En Camino',
+      en_proceso: 'En Servicio',
+      completado: 'Completado',
+    };
+    return labels[step.step] || step.label;
+  }
+
+  // ========== ACTIONS: APPROVE ==========
+
+  openApproveModal(): void {
+    this.approveNote.set('');
+    this.showApproveModal.set(true);
+  }
+
+  closeApproveModal(): void {
+    this.showApproveModal.set(false);
+  }
+
+  confirmApprove(): void {
+    const order = this.order();
+    if (!order) return;
+
+    this.isApproving.set(true);
+    this.orderService.updateOrderStatus(order.id, OrderStatus.APPROVED, this.approveNote() || undefined).subscribe({
+      next: (res) => {
+        this.order.set(res.data);
+        this.isApproving.set(false);
+        this.closeApproveModal();
+      },
+      error: () => this.isApproving.set(false),
+    });
+  }
+
+  // ========== ACTIONS: CANCEL ORDER (from pending) ==========
+
+  openCancelOrderModal(): void {
+    this.cancelReason.set('');
+    this.showCancelOrderModal.set(true);
+  }
+
+  closeCancelOrderModal(): void {
+    this.showCancelOrderModal.set(false);
+  }
+
+  confirmCancelOrder(): void {
+    const order = this.order();
+    if (!order) return;
+
+    this.isCancelling.set(true);
+    const note = this.cancelReason().trim() || 'Orden cancelada por administrador';
+    this.orderService.updateOrderStatus(order.id, OrderStatus.CANCELLED, note).subscribe({
+      next: (res) => {
+        this.order.set(res.data);
+        this.isCancelling.set(false);
+        this.closeCancelOrderModal();
+      },
+      error: () => this.isCancelling.set(false),
+    });
+  }
+
+  // ========== ACTIONS: OPTIONS MENU ==========
+
+  toggleOptionsMenu(): void {
+    this.showOptionsMenu.update((v) => !v);
+  }
+
+  closeOptionsMenu(): void {
+    this.showOptionsMenu.set(false);
+  }
+
+  selectOptionsStatus(status: OrderStatus): void {
+    this.selectedMenuStatus.set(status);
+    this.optionsStatusNote.set('');
+    this.showOptionsMenu.set(false);
+    this.showOptionsStatusModal.set(true);
+  }
+
+  closeOptionsStatusModal(): void {
+    this.showOptionsStatusModal.set(false);
+    this.selectedMenuStatus.set(null);
+  }
+
+  confirmOptionsStatusChange(): void {
+    const order = this.order();
+    const status = this.selectedMenuStatus();
+    if (!order || !status) return;
+
+    this.isChangingFromOptions.set(true);
+    this.orderService.forceOrderStatus(order.id, status, this.optionsStatusNote() || undefined).subscribe({
+      next: (res) => {
+        this.order.set(res.data);
+        this.isChangingFromOptions.set(false);
+        this.closeOptionsStatusModal();
+      },
+      error: () => this.isChangingFromOptions.set(false),
+    });
+  }
+
+  // ========== ACTIONS: CANCELLATION REQUEST ==========
+
+  openApproveCancellationModal(): void {
+    this.cancellationActionNote.set('');
+    this.showApproveCancellationModal.set(true);
+  }
+
+  openRejectCancellationModal(): void {
+    this.cancellationActionNote.set('');
+    this.showRejectCancellationModal.set(true);
+  }
+
+  closeApproveCancellationModal(): void {
+    this.showApproveCancellationModal.set(false);
+  }
+
+  closeRejectCancellationModal(): void {
+    this.showRejectCancellationModal.set(false);
+  }
+
+  confirmApproveCancellation(): void {
+    const order = this.order();
+    if (!order) return;
+
+    this.isHandlingCancellation.set(true);
+    const note = this.cancellationActionNote().trim() || 'Cancelacion aprobada por administrador';
+    this.orderService.updateOrderStatus(order.id, OrderStatus.CANCELLED, note).subscribe({
+      next: (res) => {
+        this.order.set(res.data);
+        this.isHandlingCancellation.set(false);
+        this.closeApproveCancellationModal();
+      },
+      error: () => this.isHandlingCancellation.set(false),
+    });
+  }
+
+  confirmRejectCancellation(): void {
+    const order = this.order();
+    if (!order) return;
+
+    this.isHandlingCancellation.set(true);
+    const note = this.cancellationActionNote().trim() || 'Solicitud de cancelacion rechazada';
+    this.orderService.updateOrderStatus(order.id, OrderStatus.PENDING, note).subscribe({
+      next: (res) => {
+        this.order.set(res.data);
+        this.isHandlingCancellation.set(false);
+        this.closeRejectCancellationModal();
+      },
+      error: () => this.isHandlingCancellation.set(false),
+    });
+  }
+
+  // ========== ACTIONS: DISPATCH STATUS ==========
+
+  onDispatchStatusSelect(status: DispatchStatus): void {
+    this.pendingDispatchStatus.set(status);
+    this.dispatchNote.set('');
+    this.showDispatchModal.set(true);
   }
 
   closeDispatchModal(): void {
+    this.showDispatchModal.set(false);
+    this.pendingDispatchStatus.set(null);
+  }
+
+  confirmDispatchChange(): void {
+    const order = this.order();
+    const status = this.pendingDispatchStatus();
+    if (!order || !status) return;
+
+    this.isUpdatingDispatch.set(true);
+    this.orderService.updateDispatchStatus(order.id, status, this.dispatchNote() || undefined).subscribe({
+      next: (res) => {
+        this.order.set(res.data);
+        this.isUpdatingDispatch.set(false);
+        this.closeDispatchModal();
+      },
+      error: () => this.isUpdatingDispatch.set(false),
+    });
+  }
+
+  // ========== MECHANIC DISPATCH MODAL ==========
+
+  openMechanicDispatchModal(): void {
+    this.dispatchModalOpen.set(true);
+  }
+
+  closeMechanicDispatchModal(): void {
     this.dispatchModalOpen.set(false);
   }
 
   onMechanicAssigned(updatedOrder: Order): void {
     this.order.set(updatedOrder);
+    this.loadServiceTracking(updatedOrder.id);
   }
 
-  // ========== Dispatch Status ==========
-
-  // ========== Notes Editing ==========
+  // ========== NOTES ==========
 
   startEditingNotes(): void {
     const order = this.order();
@@ -216,73 +572,35 @@ export class AdminOrderDetailComponent implements OnInit {
     });
   }
 
-  getBillingSourceLabel(source?: string): string {
-    const labels: Record<string, string> = {
-      shipping: 'Dirección de envío',
-      profile: 'Dirección del perfil',
-      custom: 'Dirección personalizada',
-    };
-    return labels[source || ''] || source || '-';
+  // ========== PHONE POPOVERS ==========
+
+  togglePhonePopover(id: string): void {
+    this.activePhonePopover.update((current) => (current === id ? null : id));
   }
 
-  openCancelModal(): void {
-    this.cancelNote.set('');
-    this.showCancelModal.set(true);
+  closePhonePopovers(): void {
+    this.activePhonePopover.set(null);
   }
 
-  closeCancelModal(): void {
-    this.showCancelModal.set(false);
+  callPhone(phone: string): void {
+    if (!phone) return;
+    const cleaned = phone.replace(/-/g, '').replace(/\s/g, '');
+    const international = '+58' + cleaned.replace(/^0/, '');
+    window.open(`tel:${international}`, '_self');
+    this.activePhonePopover.set(null);
   }
 
-  confirmCancelOrder(): void {
-    const order = this.order();
-    if (!order) return;
-
-    this.isChangingStatus.set(true);
-    const note = this.cancelNote().trim() || 'Orden cancelada por administrador';
-    this.orderService.updateOrderStatus(order.id, OrderStatus.CANCELLED, note).subscribe({
-      next: (res) => {
-        this.order.set(res.data);
-        this.isChangingStatus.set(false);
-        this.closeCancelModal();
-      },
-      error: () => {
-        this.isChangingStatus.set(false);
-      },
-    });
+  openWhatsApp(phone: string): void {
+    if (!phone) return;
+    const cleaned = phone.replace(/-/g, '').replace(/\s/g, '');
+    const international = '58' + cleaned.replace(/^0/, '');
+    window.open(`https://wa.me/${international}`, '_blank');
+    this.activePhonePopover.set(null);
   }
+
+  // ========== NAVIGATION ==========
 
   goBack(): void {
     this.router.navigate(['/admin/orders']);
-  }
-
-  openStatusModal(): void {
-    const order = this.order();
-    if (!order) return;
-    const available = this.availableStatuses();
-    this.newStatus.set(available.length > 0 ? available[0] : order.status);
-    this.statusNote.set('');
-    this.showStatusModal.set(true);
-  }
-
-  closeStatusModal(): void {
-    this.showStatusModal.set(false);
-  }
-
-  confirmStatusChange(): void {
-    const order = this.order();
-    if (!order || !this.newStatus()) return;
-
-    this.isChangingStatus.set(true);
-    this.orderService.updateOrderStatus(order.id, this.newStatus() as OrderStatus, this.statusNote() || undefined).subscribe({
-      next: (res) => {
-        this.order.set(res.data);
-        this.isChangingStatus.set(false);
-        this.closeStatusModal();
-      },
-      error: () => {
-        this.isChangingStatus.set(false);
-      },
-    });
   }
 }

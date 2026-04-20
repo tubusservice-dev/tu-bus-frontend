@@ -3,9 +3,12 @@ import { CommonModule, CurrencyPipe } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { OrderService } from '../../../core/services/order.service';
 import { ExchangeRateService } from '../../../core/services/exchange-rate.service';
+import { UploadService } from '../../../core/services/upload.service';
 import {
-  Order, OrderStatus,
+  Order, OrderStatus, DispatchStatus,
   ORDER_STATUS_LABELS, ORDER_STATUS_COLORS, ORDER_STATUS_DESCRIPTIONS,
+  DISPATCH_STATUS_LABELS, DISPATCH_STATUS_COLORS, DISPATCH_STATUS_DESCRIPTIONS,
+  isShippingOrder, isOilChangeOrder,
 } from '../../../models/order.model';
 import { MechanicAvatarComponent } from '../../../shared/components/mechanic-avatar/mechanic-avatar.component';
 
@@ -20,6 +23,7 @@ export class OrderDetailComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly orderService = inject(OrderService);
+  private readonly uploadService = inject(UploadService);
   protected readonly exchangeRateService = inject(ExchangeRateService);
 
   // ========== ESTADO PRINCIPAL ==========
@@ -45,6 +49,13 @@ export class OrderDetailComponent implements OnInit {
   protected readonly noteSuccess = signal<string | null>(null);
   protected readonly noteError = signal<string | null>(null);
 
+  // ========== RE-SUBIDA DE COMPROBANTE ==========
+  protected readonly uploadProofFile = signal<File | null>(null);
+  protected readonly uploadProofPreview = signal<string | null>(null);
+  protected readonly isUploadingProof = signal(false);
+  protected readonly uploadProofError = signal<string | null>(null);
+  protected readonly uploadProofSuccess = signal<string | null>(null);
+
   // ========== POPOVERS DE TELÉFONO ==========
   protected readonly activePhonePopover = signal<string | null>(null);
 
@@ -54,6 +65,8 @@ export class OrderDetailComponent implements OnInit {
   // ========== LABELS ==========
   protected readonly statusLabels = ORDER_STATUS_LABELS;
   protected readonly statusColors = ORDER_STATUS_COLORS;
+  protected readonly dispatchStatusLabels = DISPATCH_STATUS_LABELS;
+  protected readonly dispatchStatusColors = DISPATCH_STATUS_COLORS;
 
   // ============================================
   // CICLO DE VIDA
@@ -107,6 +120,32 @@ export class OrderDetailComponent implements OnInit {
     return ORDER_STATUS_DESCRIPTIONS[status as OrderStatus] || '';
   }
 
+  // ========== DISPATCH STATUS HELPERS ==========
+
+  getDispatchStatusLabel(status?: DispatchStatus | string): string {
+    if (!status) return '';
+    return DISPATCH_STATUS_LABELS[status as DispatchStatus] || status;
+  }
+
+  getDispatchStatusClass(status?: DispatchStatus | string): string {
+    if (!status) return '';
+    return DISPATCH_STATUS_COLORS[status as DispatchStatus] || '';
+  }
+
+  getDispatchStatusDescription(status?: DispatchStatus | string): string {
+    if (!status) return '';
+    return DISPATCH_STATUS_DESCRIPTIONS[status as DispatchStatus] || '';
+  }
+
+  /** Whether to show the dispatch tracking section (shipping/delivery orders after approval) */
+  showDispatchTracking(order: Order): boolean {
+    return isShippingOrder(order);
+  }
+
+  isOilChange(order: Order): boolean {
+    return isOilChangeOrder(order);
+  }
+
   getDispatchLabel(type: string): string {
     const labels: Record<string, string> = {
       store_pickup: 'Retiro en Tienda',
@@ -153,9 +192,8 @@ export class OrderDetailComponent implements OnInit {
     const a = order.mechanicAssignment as any;
     if (a && typeof a === 'object' && a.mechanic && typeof a.mechanic === 'object' && (a.mechanic.name || a.mechanic.whatsapp)) return true;
 
-    // Fuente 3: el status implica que hay un mecánico asignado
-    const statusesWithMechanic = ['mechanic_assigned', 'en_route', 'in_service'];
-    if (statusesWithMechanic.includes(order.status)) return true;
+    // Fuente 3: mechanicAssignment populated means mechanic was assigned
+    if (order.mechanicAssignment && typeof order.mechanicAssignment === 'object') return true;
 
     return false;
   }
@@ -292,6 +330,100 @@ export class OrderDetailComponent implements OnInit {
       error: (err) => {
         this.isSavingNote.set(false);
         this.noteError.set(err.error?.message || 'Error al guardar el comentario');
+      },
+    });
+  }
+
+  // ============================================
+  // RE-SUBIDA DE COMPROBANTE DE PAGO
+  // ============================================
+
+  /** Determines whether the re-upload section should be visible */
+  canUploadProof(order: Order): boolean {
+    if (!order.paymentSubmission) return false;
+    if (order.paymentSubmission.proofUrl) return false;
+    const editable: string[] = [OrderStatus.PENDING, OrderStatus.APPROVED];
+    return editable.includes(order.status);
+  }
+
+  onProofFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    // Reset previous messages
+    this.uploadProofError.set(null);
+    this.uploadProofSuccess.set(null);
+
+    // Validate type and size client-side
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!validTypes.includes(file.type)) {
+      this.uploadProofError.set('Tipo de archivo no permitido. Usa JPG, PNG, WebP o GIF.');
+      input.value = '';
+      return;
+    }
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      this.uploadProofError.set('El archivo excede el tamano maximo de 5MB.');
+      input.value = '';
+      return;
+    }
+
+    this.uploadProofFile.set(file);
+    const reader = new FileReader();
+    reader.onload = () => this.uploadProofPreview.set(reader.result as string);
+    reader.readAsDataURL(file);
+    input.value = '';
+  }
+
+  removeProofSelection(): void {
+    this.uploadProofFile.set(null);
+    this.uploadProofPreview.set(null);
+    this.uploadProofError.set(null);
+  }
+
+  saveProof(): void {
+    const o = this.order();
+    const file = this.uploadProofFile();
+    if (!o || !o.paymentSubmission || !file) return;
+
+    this.isUploadingProof.set(true);
+    this.uploadProofError.set(null);
+    this.uploadProofSuccess.set(null);
+
+    this.uploadService.uploadImage(file, 'payment-proofs').subscribe({
+      next: (uploadRes) => {
+        if (!uploadRes?.data?.url) {
+          this.isUploadingProof.set(false);
+          this.uploadProofError.set('Error al subir el comprobante: respuesta invalida del servidor.');
+          return;
+        }
+
+        // Preserve all existing paymentSubmission fields, add proofUrl and proofPublicId
+        const updated = {
+          ...o.paymentSubmission!,
+          proofUrl: uploadRes.data.url,
+          proofPublicId: uploadRes.data.publicId,
+        };
+
+        this.orderService.updatePayment(o.id, updated).subscribe({
+          next: (res) => {
+            this.order.set(res.data);
+            this.uploadProofFile.set(null);
+            this.uploadProofPreview.set(null);
+            this.isUploadingProof.set(false);
+            this.uploadProofSuccess.set('Comprobante guardado exitosamente');
+            setTimeout(() => this.uploadProofSuccess.set(null), 3000);
+          },
+          error: (err) => {
+            this.isUploadingProof.set(false);
+            this.uploadProofError.set(err?.error?.message || 'Error al guardar el comprobante.');
+          },
+        });
+      },
+      error: (err) => {
+        this.isUploadingProof.set(false);
+        this.uploadProofError.set(err?.error?.message || 'No se pudo subir el comprobante. Intenta nuevamente.');
       },
     });
   }

@@ -31,6 +31,34 @@ export class MechanicProgressComponent implements OnInit {
   protected readonly rejectReason = signal('');
   protected readonly isRejecting = signal(false);
 
+  // Contextual modal content — set based on the next step before opening
+  protected readonly confirmModalTitle = signal('Confirmar avance');
+  protected readonly confirmModalDescription = signal('');
+  protected readonly confirmModalButtonLabel = signal('Confirmar');
+  protected readonly confirmModalIsFinal = signal(false);
+
+  // Map each step to its contextual modal content
+  private readonly STEP_MODAL_CONTENT: Record<string, { title: string; description: string; button: string; final: boolean }> = {
+    en_camino: {
+      title: 'Confirmar que estas en camino',
+      description: 'Al confirmar, el cliente sera notificado de que te encuentras en camino a su ubicacion.',
+      button: 'Si, voy en camino',
+      final: false,
+    },
+    en_proceso: {
+      title: 'Iniciar el servicio',
+      description: 'Al confirmar, el cliente sera notificado de que el servicio de cambio de aceite ha comenzado.',
+      button: 'Iniciar servicio',
+      final: false,
+    },
+    completado: {
+      title: 'Completar el servicio',
+      description: 'Al confirmar, el servicio se marcara como completado. Esta accion no se puede deshacer.',
+      button: 'Completar servicio',
+      final: true,
+    },
+  };
+
   // Support modal state
   protected readonly showSupportModal = signal(false);
   protected readonly supportContact = signal<SupportContactConfig | null>(null);
@@ -172,6 +200,22 @@ export class MechanicProgressComponent implements OnInit {
 
   // ========== Advance/Reject ==========
   openConfirmModal(): void {
+    const next = this.nextStep();
+    if (!next) return;
+
+    const content = this.STEP_MODAL_CONTENT[next.step];
+    if (content) {
+      this.confirmModalTitle.set(content.title);
+      this.confirmModalDescription.set(content.description);
+      this.confirmModalButtonLabel.set(content.button);
+      this.confirmModalIsFinal.set(content.final);
+    } else {
+      // Fallback for any unexpected step name
+      this.confirmModalTitle.set('Confirmar avance');
+      this.confirmModalDescription.set(`Deseas avanzar al siguiente paso: ${this.getStepLabel(next)}?`);
+      this.confirmModalButtonLabel.set('Confirmar');
+      this.confirmModalIsFinal.set(false);
+    }
     this.showConfirmModal.set(true);
   }
 

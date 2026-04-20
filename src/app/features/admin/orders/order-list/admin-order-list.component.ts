@@ -6,8 +6,13 @@ import { OrderService } from '../../../../core/services/order.service';
 import {
   Order,
   OrderStatus,
+  DispatchType,
   ORDER_STATUS_LABELS,
   ORDER_STATUS_COLORS,
+  DISPATCH_TYPE_LABELS,
+  DISPATCH_TYPE_COLORS,
+  DISPATCH_STATUS_LABELS,
+  DISPATCH_STATUS_COLORS,
 } from '../../../../models/order.model';
 import { SearchInputComponent } from '../../../../shared/components/search-input/search-input.component';
 
@@ -32,14 +37,13 @@ export class AdminOrderListComponent implements OnInit {
   protected readonly searchQuery = signal('');
 
   protected readonly ORDER_STATUS_LABELS = ORDER_STATUS_LABELS;
+  protected readonly DISPATCH_TYPE_LABELS = DISPATCH_TYPE_LABELS;
+  protected readonly DISPATCH_STATUS_LABELS = DISPATCH_STATUS_LABELS;
 
-  /** Statuses relevant for admin filtering (excludes mechanic intermediate steps) */
+  /** Only the 5 order-status values are filterable */
   protected readonly adminFilterStatuses: OrderStatus[] = [
     OrderStatus.PENDING,
     OrderStatus.APPROVED,
-    OrderStatus.DISPATCHED,
-    OrderStatus.MECHANIC_ASSIGNED,
-    OrderStatus.IN_SERVICE,
     OrderStatus.COMPLETED,
     OrderStatus.CANCELLATION_REQUESTED,
     OrderStatus.CANCELLED,
@@ -73,14 +77,12 @@ export class AdminOrderListComponent implements OnInit {
     this.loadOrders(1);
   }
 
-  /** Fired on every keystroke (pre-debounce) — lights the spinner */
   onSearchTyping(value: string): void {
     if (value !== this.searchQuery()) {
       this.isSearching.set(true);
     }
   }
 
-  /** Fired after debounce — triggers the HTTP request */
   onSearchCommit(value: string): void {
     this.searchQuery.set(value);
     this.loadOrders(1);
@@ -90,6 +92,8 @@ export class AdminOrderListComponent implements OnInit {
     return this.adminFilterStatuses;
   }
 
+  // ==================== DATA HELPERS ====================
+
   getClientName(order: Order): string {
     if (typeof order.user === 'object' && order.user) {
       const name = `${order.user.firstName || ''} ${order.user.lastName || ''}`.trim();
@@ -98,12 +102,52 @@ export class AdminOrderListComponent implements OnInit {
     return String(order.user || '-');
   }
 
+  getClientEmail(order: Order): string {
+    if (typeof order.user === 'object' && order.user) {
+      return order.user.email || '';
+    }
+    return '';
+  }
+
+  getItemCount(order: Order): number {
+    return order.items.reduce((sum, item) => sum + item.quantity, 0);
+  }
+
   getStatusLabel(status: OrderStatus): string {
     return ORDER_STATUS_LABELS[status] || status;
   }
 
   getStatusColor(status: OrderStatus): string {
     return ORDER_STATUS_COLORS[status] || '';
+  }
+
+  getDispatchTypeLabel(type: string): string {
+    return DISPATCH_TYPE_LABELS[type as DispatchType] || type;
+  }
+
+  getDispatchTypeColor(type: string): string {
+    return DISPATCH_TYPE_COLORS[type as DispatchType] || '';
+  }
+
+  /** Secondary indicator text — dispatch status for shipping orders, service progress for oil change */
+  getSecondaryIndicator(order: Order): { label: string; color: string } | null {
+    if (order.dispatchStatus) {
+      return {
+        label: DISPATCH_STATUS_LABELS[order.dispatchStatus],
+        color: DISPATCH_STATUS_COLORS[order.dispatchStatus],
+      };
+    }
+    if (order.mechanicAssignment && typeof order.mechanicAssignment === 'object') {
+      const assignment = order.mechanicAssignment as any;
+      const statusMap: Record<string, { label: string; color: string }> = {
+        scheduled: { label: 'Mecanico Asignado', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
+        en_camino: { label: 'En Camino', color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300' },
+        in_progress: { label: 'En Servicio', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' },
+        completed: { label: 'Servicio Completo', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' },
+      };
+      return statusMap[assignment.status] || null;
+    }
+    return null;
   }
 
   formatDate(date: string): string {

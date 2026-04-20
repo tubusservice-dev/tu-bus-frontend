@@ -38,8 +38,6 @@ export class OrderListComponent implements OnInit {
     { value: '', label: 'Todas' },
     { value: OrderStatus.PENDING, label: 'Pendientes' },
     { value: OrderStatus.APPROVED, label: 'Aprobadas' },
-    { value: OrderStatus.DISPATCHED, label: 'Despachadas' },
-    { value: OrderStatus.MECHANIC_ASSIGNED, label: 'Mecánico Asignado' },
     { value: OrderStatus.COMPLETED, label: 'Completadas' },
     { value: OrderStatus.CANCELLED, label: 'Canceladas' },
   ];

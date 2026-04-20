@@ -201,6 +201,46 @@
       <!-- ===== COLUMNA DERECHA ===== -->
       <div class="detail-column">
 
+        <!-- ===== SECCIÓN: SEGUIMIENTO DEL DESPACHO (shipping/delivery) ===== -->
+        @if (showDispatchTracking(o)) {
+          <section class="detail-card">
+            <h3 class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 0 0-3.213-9.193 2.056 2.056 0 0 0-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 0 0-10.026 0 1.106 1.106 0 0 0-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+              </svg>
+              Seguimiento del Despacho
+            </h3>
+            @if (o.dispatchStatus) {
+              <div class="dispatch-current-row">
+                <span class="status-badge" [ngClass]="getDispatchStatusClass(o.dispatchStatus)">
+                  {{ getDispatchStatusLabel(o.dispatchStatus) }}
+                </span>
+                <p class="dispatch-current-description">{{ getDispatchStatusDescription(o.dispatchStatus) }}</p>
+              </div>
+            }
+            @if (o.dispatchStatusHistory && o.dispatchStatusHistory.length > 0) {
+              <div class="dispatch-timeline">
+                @for (entry of o.dispatchStatusHistory; track $index) {
+                  <div class="dispatch-timeline-entry">
+                    <div class="dispatch-timeline-dot"></div>
+                    <div class="dispatch-timeline-content">
+                      <span class="dispatch-timeline-badge" [ngClass]="getDispatchStatusClass(entry.status)">
+                        {{ getDispatchStatusLabel(entry.status) }}
+                      </span>
+                      <span class="dispatch-timeline-date">{{ formatDate(entry.timestamp) }}</span>
+                      @if (entry.note) {
+                        <span class="dispatch-timeline-note">{{ entry.note }}</span>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            } @else {
+              <p class="dispatch-empty-hint">Tu orden aun no ha sido despachada. Te notificaremos cuando este en camino.</p>
+            }
+          </section>
+        }
+
         <!-- ===== SECCIÓN 3: DATOS DEL PAGO ===== -->
         <section class="detail-card">
           <h3 class="card-title">
@@ -258,10 +298,69 @@
                     <span class="info-value">{{ o.paymentSubmission.paymentDate }}</span>
                   </div>
                 }
-                @if (o.paymentSubmission.proofUrl) {
-                  <div class="proof-section">
-                    <span class="info-label">Comprobante</span>
-                    <img [src]="o.paymentSubmission.proofUrl" alt="Comprobante de pago" class="proof-image" (click)="proofPreview.set(o.paymentSubmission.proofUrl)" />
+              </div>
+            }
+
+            <!-- Payment proof — always visible (not gated by expansion) -->
+            @if (o.paymentSubmission.proofUrl) {
+              <div class="proof-section">
+                <span class="info-label">Comprobante</span>
+                <img [src]="o.paymentSubmission.proofUrl" alt="Comprobante de pago" class="proof-image" (click)="proofPreview.set(o.paymentSubmission.proofUrl)" />
+              </div>
+            }
+
+            <!-- Re-upload proof — only when payment exists but proof is missing -->
+            @if (canUploadProof(o)) {
+              <div class="proof-upload-section no-print">
+                <div class="proof-upload-header">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="proof-upload-icon">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                  </svg>
+                  <div class="proof-upload-header-text">
+                    <span class="proof-upload-title">Falta el comprobante de pago</span>
+                    <span class="proof-upload-hint">Sube una captura del pago para que el administrador pueda verificarlo.</span>
+                  </div>
+                </div>
+
+                @if (uploadProofSuccess()) {
+                  <div class="alert-success-inline">{{ uploadProofSuccess() }}</div>
+                }
+                @if (uploadProofError()) {
+                  <div class="alert-error-inline">{{ uploadProofError() }}</div>
+                }
+
+                @if (!uploadProofPreview()) {
+                  <label class="proof-upload-area">
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      (change)="onProofFileSelected($event)"
+                      class="proof-upload-input"
+                    />
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+                    </svg>
+                    <span>Seleccionar imagen</span>
+                    <span class="proof-upload-meta">JPG, PNG, WebP o GIF &middot; Maximo 5MB</span>
+                  </label>
+                } @else {
+                  <div class="proof-upload-preview">
+                    <img [src]="uploadProofPreview()" alt="Vista previa del comprobante" />
+                    <button type="button" class="proof-upload-remove" (click)="removeProofSelection()" [disabled]="isUploadingProof()">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="proof-upload-actions">
+                    <button
+                      type="button"
+                      class="btn-save-proof"
+                      [disabled]="isUploadingProof()"
+                      (click)="saveProof()"
+                    >
+                      @if (isUploadingProof()) { Guardando... } @else { Guardar comprobante }
+                    </button>
                   </div>
                 }
               </div>

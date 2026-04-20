@@ -10,6 +10,7 @@ import {
   CreateOrderRequest,
   PaymentSubmission,
   OrderStatus,
+  DispatchStatus,
 } from '../../models/order.model';
 
 @Injectable({
@@ -25,6 +26,8 @@ export class OrderService {
 
   readonly orders = this._orders.asReadonly();
   readonly isLoading = this._isLoading.asReadonly();
+
+  // ==================== CLIENT METHODS ====================
 
   createOrder(data: CreateOrderRequest): Observable<OrderResponse> {
     return this.http.post<OrderResponse>(this.apiUrl, data);
@@ -59,6 +62,10 @@ export class OrderService {
     return this.http.patch<OrderResponse>(`${this.apiUrl}/${id}/payment`, payment);
   }
 
+  getServiceTracking(orderId: string): Observable<MechanicAssignmentResponse> {
+    return this.http.get<MechanicAssignmentResponse>(`${this.apiUrl}/${orderId}/service-tracking`);
+  }
+
   // ==================== ADMIN METHODS ====================
 
   getAdminOrders(page = 1, limit = 10, status?: OrderStatus, search?: string): Observable<OrderListResponse> {
@@ -72,16 +79,22 @@ export class OrderService {
     return this.http.get<OrderResponse>(`${this.adminApiUrl}/${id}`);
   }
 
+  /** Normal status transition (approve/cancel from pending, etc.) */
   updateOrderStatus(orderId: string, status: OrderStatus, note?: string): Observable<OrderResponse> {
     return this.http.put<OrderResponse>(`${this.adminApiUrl}/${orderId}/status`, { status, note });
+  }
+
+  /** Force-set any status from admin options menu */
+  forceOrderStatus(orderId: string, status: OrderStatus, note?: string): Observable<OrderResponse> {
+    return this.http.put<OrderResponse>(`${this.adminApiUrl}/${orderId}/force-status`, { status, note });
+  }
+
+  /** Update dispatch status for shipping/delivery orders */
+  updateDispatchStatus(orderId: string, dispatchStatus: DispatchStatus, note?: string): Observable<OrderResponse> {
+    return this.http.put<OrderResponse>(`${this.adminApiUrl}/${orderId}/dispatch-status`, { dispatchStatus, note });
   }
 
   updateNotes(orderId: string, notes: string): Observable<OrderResponse> {
     return this.http.patch<OrderResponse>(`${this.adminApiUrl}/${orderId}/notes`, { notes });
   }
-
-  getServiceTracking(orderId: string): Observable<MechanicAssignmentResponse> {
-    return this.http.get<MechanicAssignmentResponse>(`${this.apiUrl}/${orderId}/service-tracking`);
-  }
-
 }

@@ -206,29 +206,39 @@
       </div>
     }
 
-    <!-- Confirmation Modal -->
+    <!-- Confirmation Modal (contextual per step) -->
     @if (showConfirmModal() && nextStep()) {
       <div class="confirm-overlay" (click)="closeConfirmModal()">
-        <div class="confirm-modal" (click)="$event.stopPropagation()">
-          <div class="confirm-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-            </svg>
+        <div class="confirm-modal" [class.confirm-modal-final]="confirmModalIsFinal()" (click)="$event.stopPropagation()">
+          <div class="confirm-icon" [class.confirm-icon-final]="confirmModalIsFinal()">
+            @if (confirmModalIsFinal()) {
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+              </svg>
+            } @else {
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+              </svg>
+            }
           </div>
-          <h3 class="confirm-title">Confirmar avance</h3>
-          <p class="confirm-text">
-            ¿Deseas avanzar al siguiente paso?
-          </p>
+          <h3 class="confirm-title">{{ confirmModalTitle() }}</h3>
+          <p class="confirm-text">{{ confirmModalDescription() }}</p>
           <div class="confirm-step">
-            {{ getStepLabel(nextStep()!) }}
+            Proximo paso: <strong>{{ getStepLabel(nextStep()!) }}</strong>
           </div>
           <div class="confirm-actions">
             <button type="button" class="confirm-cancel" (click)="closeConfirmModal()" [disabled]="isAdvancing()">Cancelar</button>
-            <button type="button" class="confirm-accept" (click)="confirmAdvance()" [disabled]="isAdvancing()">
+            <button
+              type="button"
+              class="confirm-accept"
+              [class.confirm-accept-final]="confirmModalIsFinal()"
+              (click)="confirmAdvance()"
+              [disabled]="isAdvancing()"
+            >
               @if (isAdvancing()) {
                 <span class="spinner-white-sm"></span> Confirmando...
               } @else {
-                Confirmar
+                {{ confirmModalButtonLabel() }}
               }
             </button>
           </div>
