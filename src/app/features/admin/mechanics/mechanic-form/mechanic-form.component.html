@@ -26,6 +26,37 @@
           <section class="form-section">
             <h2 class="section-title">Informacion del Mecanico</h2>
 
+            <!-- Avatar / Foto del mecánico -->
+            <div class="avatar-upload">
+              <div class="avatar-preview-wrap">
+                @if (previewAvatarUrl) {
+                  <img class="avatar-preview-img" [src]="previewAvatarUrl" alt="Foto del mecánico" />
+                } @else {
+                  <app-mechanic-avatar
+                    [avatar]="null"
+                    [name]="form.get('name')?.value || ''"
+                    size="lg"
+                  />
+                }
+              </div>
+              <div class="avatar-upload-actions">
+                <label class="btn-upload" [class.disabled]="isUploadingAvatar()">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+                  </svg>
+                  <span>{{ previewAvatarUrl ? 'Cambiar foto' : 'Subir foto' }}</span>
+                  <input type="file" accept="image/*" (change)="onAvatarFileSelected($event)" hidden />
+                </label>
+                @if (previewAvatarUrl) {
+                  <button type="button" class="btn-upload-clear" (click)="removeAvatar()">Quitar</button>
+                }
+                <span class="avatar-hint">Opcional · JPG / PNG · máx. 5MB</span>
+                @if (avatarError()) {
+                  <span class="error-text">{{ avatarError() }}</span>
+                }
+              </div>
+            </div>
+
             <div class="form-group">
               <label for="name">Nombre <span class="required">*</span></label>
               <input type="text" id="name" formControlName="name" placeholder="Nombre completo" [class.error]="isInvalid('name')" maxlength="50" />

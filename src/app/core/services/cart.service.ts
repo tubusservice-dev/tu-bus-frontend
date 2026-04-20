@@ -10,6 +10,12 @@ export interface CartItem {
   image: string;
   stock: number;
   freeOilChangeService?: boolean;
+  /**
+   * Aggregated vehicleTypes from the product's categories (e.g. ['carro','all']).
+   * Used during checkout to warn when the user's selected vehicle(s) do not
+   * match the product. Absent for legacy items — treated as compatible.
+   */
+  vehicleTypes?: string[];
 }
 
 export interface AddToCartResult {
@@ -73,6 +79,51 @@ export class CartService {
 
       // Actualizar el estado para la próxima comparación
       this.wasAuthenticated = isAuthenticated;
+    });
+  }
+
+  /**
+   * Returns true when at least one cart item is missing the `vehicleTypes`
+   * field — indicating it was persisted before that metadata existed. Used by
+   * checkout pages to decide whether to re-hydrate from the backend.
+   */
+  readonly hasStaleMetadata = computed(() =>
+    this._items().some((i) => i.vehicleTypes === undefined)
+  );
+
+  /**
+   * Updates `vehicleTypes` (and optional `freeOilChangeService`) on existing
+   * cart items from a product-id → metadata map. Used to back-fill data on
+   * items persisted before these fields existed. Does not create new items.
+   */
+  syncItemMetadata(
+    metadataById: Map<string, { vehicleTypes?: string[]; freeOilChangeService?: boolean }>
+  ): void {
+    if (metadataById.size === 0) return;
+
+    this._items.update((items) => {
+      let changed = false;
+      const next = items.map((item) => {
+        const meta = metadataById.get(item.id);
+        if (!meta) return item;
+
+        const updated: CartItem = { ...item };
+        if (meta.vehicleTypes !== undefined && item.vehicleTypes === undefined) {
+          updated.vehicleTypes = meta.vehicleTypes;
+          changed = true;
+        }
+        if (
+          meta.freeOilChangeService !== undefined &&
+          item.freeOilChangeService === undefined
+        ) {
+          updated.freeOilChangeService = meta.freeOilChangeService;
+          changed = true;
+        }
+        return updated;
+      });
+
+      if (changed) this.saveToStorage(next);
+      return next;
     });
   }
 
@@ -202,7 +253,16 @@ export class CartService {
       if (existingItem) {
         newItems = items.map((i) =>
           i.id === item.id
-            ? { ...i, quantity: i.quantity + quantity, stock: validStock }
+            ? {
+                ...i,
+                quantity: i.quantity + quantity,
+                stock: validStock,
+                // Re-hydrate metadata that newer backend responses may include
+                // even when the item was already in the cart. Critical for
+                // legacy items persisted before these fields existed.
+                vehicleTypes: item.vehicleTypes ?? i.vehicleTypes,
+                freeOilChangeService: item.freeOilChangeService ?? i.freeOilChangeService,
+              }
             : i
         );
       } else {

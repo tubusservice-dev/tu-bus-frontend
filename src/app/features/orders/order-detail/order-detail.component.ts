@@ -7,11 +7,12 @@ import {
   Order, OrderStatus,
   ORDER_STATUS_LABELS, ORDER_STATUS_COLORS, ORDER_STATUS_DESCRIPTIONS,
 } from '../../../models/order.model';
+import { MechanicAvatarComponent } from '../../../shared/components/mechanic-avatar/mechanic-avatar.component';
 
 @Component({
   selector: 'app-order-detail',
   standalone: true,
-  imports: [CommonModule, CurrencyPipe, RouterLink],
+  imports: [CommonModule, CurrencyPipe, RouterLink, MechanicAvatarComponent],
   templateUrl: './order-detail.component.html',
   styleUrl: './order-detail.component.scss',
 })
@@ -178,6 +179,18 @@ export class OrderDetailComponent implements OnInit {
     const a = order.mechanicAssignment as any;
     if (a && typeof a === 'object' && a.mechanic && typeof a.mechanic === 'object' && a.mechanic.whatsapp) {
       return a.mechanic.whatsapp;
+    }
+
+    return '';
+  }
+
+  mechanicAvatar(order: Order): string {
+    const m = order.mechanic as any;
+    if (m && typeof m === 'object' && m.avatar) return m.avatar;
+
+    const a = order.mechanicAssignment as any;
+    if (a && typeof a === 'object' && a.mechanic && typeof a.mechanic === 'object' && a.mechanic.avatar) {
+      return a.mechanic.avatar;
     }
 
     return '';

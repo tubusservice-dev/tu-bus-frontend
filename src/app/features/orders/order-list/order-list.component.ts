@@ -1,19 +1,18 @@
-import { Component, DestroyRef, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { Router } from '@angular/router';
-import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { OrderService } from '../../../core/services/order.service';
 import { ExchangeRateService } from '../../../core/services/exchange-rate.service';
 import {
   Order, OrderStatus,
   ORDER_STATUS_LABELS, ORDER_STATUS_COLORS,
 } from '../../../models/order.model';
+import { SearchInputComponent } from '../../../shared/components/search-input/search-input.component';
 
 @Component({
   selector: 'app-order-list',
   standalone: true,
-  imports: [CommonModule, CurrencyPipe],
+  imports: [CommonModule, CurrencyPipe, SearchInputComponent],
   templateUrl: './order-list.component.html',
   styleUrl: './order-list.component.scss',
 })
@@ -21,10 +20,8 @@ export class OrderListComponent implements OnInit {
   protected readonly orderService = inject(OrderService);
   protected readonly exchangeRateService = inject(ExchangeRateService);
   private readonly router = inject(Router);
-  private readonly destroyRef = inject(DestroyRef);
 
-  private readonly searchSubject$ = new Subject<string>();
-
+  protected readonly isSearching = signal(false);
   protected readonly statusLabels = ORDER_STATUS_LABELS;
   protected readonly statusColors = ORDER_STATUS_COLORS;
 
@@ -48,14 +45,6 @@ export class OrderListComponent implements OnInit {
   ];
 
   ngOnInit(): void {
-    this.searchSubject$
-      .pipe(
-        debounceTime(400),
-        distinctUntilChanged(),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe(() => this.loadOrders(1));
-
     this.loadOrders();
   }
 
@@ -70,6 +59,10 @@ export class OrderListComponent implements OnInit {
         this.currentPage.set(res.pagination.page);
         this.totalPages.set(res.pagination.pages);
         this.totalItems.set(res.pagination.total);
+        this.isSearching.set(false);
+      },
+      error: () => {
+        this.isSearching.set(false);
       },
     });
   }
@@ -80,10 +73,17 @@ export class OrderListComponent implements OnInit {
     this.loadOrders(1);
   }
 
-  onSearchInput(event: Event): void {
-    const value = (event.target as HTMLInputElement).value;
+  /** Fired on every keystroke (pre-debounce) — lights the spinner */
+  onSearchTyping(value: string): void {
+    if (value !== this.searchQuery()) {
+      this.isSearching.set(true);
+    }
+  }
+
+  /** Fired after debounce — triggers the HTTP request */
+  onSearchCommit(value: string): void {
     this.searchQuery.set(value);
-    this.searchSubject$.next(value);
+    this.loadOrders(1);
   }
 
   goToPage(page: number): void {

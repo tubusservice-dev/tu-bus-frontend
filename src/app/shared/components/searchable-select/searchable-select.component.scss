@@ -1,0 +1,117 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+.searchable-select {
+  @apply relative w-full;
+
+  &.invalid .search-input {
+    border-color: #ef4444;
+  }
+}
+
+// ===== Input + search icon =====
+.input-wrap {
+  @apply relative w-full;
+}
+
+.search-input {
+  @apply w-full px-4 py-2.5 pl-10 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg;
+  @apply text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500;
+  @apply focus:outline-none focus:ring-2 focus:border-transparent transition-colors;
+
+  &:focus {
+    --tw-ring-color: var(--tubus-text-accent, #4d94ff);
+  }
+}
+
+.search-icon {
+  @apply absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none;
+}
+
+// ===== Dropdown =====
+.dropdown {
+  @apply absolute z-20 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg;
+  @apply max-h-48 overflow-y-auto;
+}
+
+.option {
+  @apply w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300;
+  @apply hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+
+  &:first-child { @apply rounded-t-lg; }
+  &:last-child { @apply rounded-b-lg; }
+}
+
+.no-results {
+  @apply px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center;
+}
+
+// ===== Selected chip =====
+.selected-wrap {
+  @apply flex flex-wrap gap-2 w-full;
+}
+
+.chip {
+  @apply inline-flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium rounded-lg w-full justify-between;
+
+  .chip-label {
+    @apply truncate;
+  }
+
+  .chip-remove {
+    @apply p-0.5 rounded-full transition-colors;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+
+    svg {
+      @apply w-3.5 h-3.5;
+    }
+  }
+
+  // ----- Variant: blue (project accent) -----
+  &[data-variant="blue"] {
+    background-color: rgba(77, 148, 255, 0.12);
+    color: var(--tubus-text-accent, #4d94ff);
+
+    .chip-remove:hover {
+      background-color: rgba(77, 148, 255, 0.22);
+    }
+  }
+
+  // ----- Variant: green (legacy — matches product-form) -----
+  &[data-variant="green"] {
+    @apply bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400;
+
+    .chip-remove:hover {
+      @apply bg-green-200 dark:bg-green-800;
+    }
+  }
+
+  // ----- Variant: purple (matches combo badge) -----
+  &[data-variant="purple"] {
+    background-color: rgba(139, 92, 246, 0.15);
+    color: #7c3aed;
+
+    .chip-remove:hover {
+      background-color: rgba(139, 92, 246, 0.28);
+    }
+  }
+}
+
+:host-context(.dark) {
+  .chip[data-variant="blue"] {
+    background-color: rgba(77, 148, 255, 0.18);
+    color: #93c5fd;
+  }
+
+  .chip[data-variant="purple"] {
+    background-color: rgba(139, 92, 246, 0.22);
+    color: #c4b5fd;
+  }
+}

@@ -31,6 +31,16 @@
       opacity: 0.5;
     }
   }
+
+  // Combo variant — subtle purple accent on the border, reinforced by the
+  // "Combo" badge in the top-left badge stack.
+  &.is-combo {
+    border-color: rgba(139, 92, 246, 0.35); // purple-500 @ 35%
+
+    &:hover {
+      box-shadow: 0 20px 40px rgba(139, 92, 246, 0.18);
+    }
+  }
 }
 
 // ===== IMAGEN =====
@@ -81,6 +91,19 @@
 
   &.exclusive {
     @apply bg-purple-600 text-white text-[10px];
+  }
+
+  // Combo badge — purple pill with icon. Color intentionally distinct from
+  // featured (amber star) and discount (red) so users can tell them apart
+  // even when several badges stack.
+  &.combo {
+    @apply inline-flex items-center gap-1 px-2 py-1 text-white;
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    box-shadow: 0 2px 4px rgba(139, 92, 246, 0.35);
+
+    svg {
+      @apply w-3.5 h-3.5;
+    }
   }
 }
 

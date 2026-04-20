@@ -308,6 +308,17 @@
               </svg>
               Mecánico Asignado
             </h3>
+            <div class="mechanic-identity-row">
+              <app-mechanic-avatar
+                [avatar]="mechanicAvatar(o)"
+                [name]="mechanicName(o)"
+                size="md"
+              />
+              <div class="mechanic-identity-text">
+                <span class="mechanic-identity-label">Mecánico</span>
+                <span class="mechanic-identity-name">{{ mechanicName(o) }}</span>
+              </div>
+            </div>
             <div class="info-rows">
               <div class="info-row">
                 <span class="info-label">Nombre</span>

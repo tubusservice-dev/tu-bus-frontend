@@ -1,9 +1,7 @@
-import { Component, DestroyRef, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ProductService, ProductQueryParams } from '../../../../core/services/product.service';
 import { BrandService } from '../../../../core/services/brand.service';
 import { CategoryService } from '../../../../core/services/category.service';
@@ -19,11 +17,12 @@ import {
   VEHICLE_TYPE_LABELS,
 } from '../../../../models';
 import { ImageCarouselComponent } from '../../../../shared/components/image-carousel/image-carousel.component';
+import { SearchInputComponent } from '../../../../shared/components/search-input/search-input.component';
 
 @Component({
   selector: 'app-product-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, ImageCarouselComponent],
+  imports: [CommonModule, RouterLink, FormsModule, ImageCarouselComponent, SearchInputComponent],
   templateUrl: './product-list.component.html',
   styleUrl: './product-list.component.scss',
 })
@@ -33,11 +32,11 @@ export class ProductListComponent implements OnInit {
   private readonly categoryService = inject(CategoryService);
   private readonly settingsService = inject(SettingsService);
   private readonly branchProductService = inject(BranchProductService);
-  private readonly destroyRef = inject(DestroyRef);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
-  private readonly searchSubject$ = new Subject<string>();
+  /** True while a search is being processed */
+  protected readonly isSearching = signal(false);
 
   // Datos
   protected readonly products = signal<Product[]>([]);
@@ -89,17 +88,6 @@ export class ProductListComponent implements OnInit {
   protected readonly viewMode = signal<'cards' | 'table'>('cards');
 
   ngOnInit(): void {
-    this.searchSubject$
-      .pipe(
-        debounceTime(400),
-        distinctUntilChanged(),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe((value) => {
-        this.filters.update((f) => ({ ...f, search: value || undefined, page: 1 }));
-        this.loadProducts();
-      });
-
     // Restore page from URL
     const pageParam = this.route.snapshot.queryParamMap.get('page');
     if (pageParam) {
@@ -115,9 +103,18 @@ export class ProductListComponent implements OnInit {
     this.loadProducts();
   }
 
-  onSearchInput(value: string): void {
-    this.filters.update((f) => ({ ...f, search: value || undefined }));
-    this.searchSubject$.next(value);
+  /** Fired on every keystroke (pre-debounce) — lights the spinner */
+  onSearchTyping(value: string): void {
+    if (value !== this.filters().search) {
+      this.isSearching.set(true);
+    }
+  }
+
+  /** Fired after debounce — triggers the HTTP request */
+  onSearchCommit(value: string): void {
+    this.filters.update((f) => ({ ...f, search: value || undefined, page: 1 }));
+    this.currentPage.set(1);
+    this.loadProducts();
   }
 
   /**
@@ -158,11 +155,13 @@ export class ProductListComponent implements OnInit {
         this.totalPages.set(response.pagination.pages);
         this.currentPage.set(response.pagination.page);
         this.isLoading.set(false);
+        this.isSearching.set(false);
         this.loadProductStocks(response.data);
       },
       error: (error) => {
         this.errorMessage.set(error.error?.message || 'Error al cargar productos');
         this.isLoading.set(false);
+        this.isSearching.set(false);
       },
     });
   }

@@ -6,10 +6,21 @@
       </svg>
       Volver a mecanicos
     </a>
-    <h1 class="page-title">Calendario: {{ mechanic()?.name || 'Cargando...' }}</h1>
-    @if (mechanic()) {
-      <p class="page-subtitle">{{ mechanic()!.serviceDurationMinutes }}min por servicio &bull; {{ mechanic()!.whatsapp }}</p>
-    }
+    <div class="page-heading">
+      @if (mechanic()) {
+        <app-mechanic-avatar
+          [avatar]="mechanic()!.avatar"
+          [name]="mechanic()!.name"
+          size="md"
+        />
+      }
+      <div class="page-heading-text">
+        <h1 class="page-title">Calendario: {{ mechanic()?.name || 'Cargando...' }}</h1>
+        @if (mechanic()) {
+          <p class="page-subtitle">{{ mechanic()!.serviceDurationMinutes }}min por servicio &bull; {{ mechanic()!.whatsapp }}</p>
+        }
+      </div>
+    </div>
   </header>
 
   @if (isLoading()) {

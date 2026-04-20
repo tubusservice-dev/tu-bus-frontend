@@ -4,11 +4,12 @@ import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { BrandService } from '../../../../core/services/brand.service';
 import { Brand } from '../../../../models/product.model';
+import { SearchInputComponent } from '../../../../shared/components/search-input/search-input.component';
 
 @Component({
   selector: 'app-brand-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule],
+  imports: [CommonModule, RouterLink, FormsModule, SearchInputComponent],
   templateUrl: './brand-list.component.html',
   styleUrl: './brand-list.component.scss',
 })

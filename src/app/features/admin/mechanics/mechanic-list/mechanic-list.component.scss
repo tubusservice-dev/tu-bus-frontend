@@ -101,7 +101,11 @@
 }
 
 .mechanic-name {
-  @apply flex flex-col;
+  @apply flex items-center gap-3;
+
+  .mechanic-name-text {
+    @apply flex flex-col min-w-0;
+  }
 
   .name-text {
     @apply font-medium text-gray-900 dark:text-white;

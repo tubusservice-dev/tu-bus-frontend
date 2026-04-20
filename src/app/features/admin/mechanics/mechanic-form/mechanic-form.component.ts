@@ -4,10 +4,12 @@ import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { FormBuilder, FormGroup, FormArray, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MechanicService } from '../../../../core/services/mechanic.service';
 import { BranchService } from '../../../../core/services/branch.service';
+import { UploadService } from '../../../../core/services/upload.service';
 import { ScheduleDay } from '../../../../models/mechanic.model';
 import {
   NAME_PATTERN, PHONE_VE_PATTERN, EMAIL_PATTERN, MAX_NAME_LENGTH, noNumbersValidator,
 } from '../../../../shared/validators/form-validators';
+import { MechanicAvatarComponent } from '../../../../shared/components/mechanic-avatar/mechanic-avatar.component';
 
 interface BranchItem {
   id: string;
@@ -20,7 +22,7 @@ const DAY_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes
 @Component({
   selector: 'app-mechanic-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, MechanicAvatarComponent],
   templateUrl: './mechanic-form.component.html',
   styleUrl: './mechanic-form.component.scss',
 })
@@ -30,6 +32,14 @@ export class MechanicFormComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly mechanicService = inject(MechanicService);
   private readonly branchService = inject(BranchService);
+  private readonly uploadService = inject(UploadService);
+
+  // ===== Avatar upload =====
+  protected readonly avatarUrl = signal<string>('');
+  protected readonly avatarPreview = signal<string | null>(null);
+  protected readonly avatarFile = signal<File | null>(null);
+  protected readonly isUploadingAvatar = signal(false);
+  protected readonly avatarError = signal<string | null>(null);
 
   protected readonly mechanicId = signal<string | null>(null);
   protected readonly isEditMode = signal(false);
@@ -112,6 +122,7 @@ export class MechanicFormComponent implements OnInit {
           return { id: String(b), name: String(b), address: '' };
         });
         this.selectedBranches.set(branches);
+        this.avatarUrl.set(m.avatar || '');
 
         this.form.patchValue({
           name: m.name, whatsapp: m.whatsapp || '', email: m.email || '',
@@ -163,6 +174,47 @@ export class MechanicFormComponent implements OnInit {
     this.selectedBranches.update(list => list.filter(b => b.id !== branchId));
   }
 
+  // ===== Avatar handlers =====
+
+  onAvatarFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    // Basic validation: image type + size cap 5MB
+    if (!file.type.startsWith('image/')) {
+      this.avatarError.set('El archivo debe ser una imagen');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      this.avatarError.set('La imagen no puede superar 5MB');
+      return;
+    }
+
+    this.avatarError.set(null);
+    this.avatarFile.set(file);
+
+    // Local preview via FileReader — no upload yet, that happens on submit
+    const reader = new FileReader();
+    reader.onload = () => this.avatarPreview.set(reader.result as string);
+    reader.readAsDataURL(file);
+
+    // Allow re-selecting the same file
+    input.value = '';
+  }
+
+  removeAvatar(): void {
+    this.avatarUrl.set('');
+    this.avatarFile.set(null);
+    this.avatarPreview.set(null);
+    this.avatarError.set(null);
+  }
+
+  /** URL used by the preview — local preview trumps the remote one */
+  get previewAvatarUrl(): string {
+    return this.avatarPreview() || this.avatarUrl();
+  }
+
   onSubmit(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -172,11 +224,35 @@ export class MechanicFormComponent implements OnInit {
     this.isSubmitting.set(true);
     this.errorMessage.set(null);
 
+    // Upload the avatar first (if any new file was selected), then persist
+    const file = this.avatarFile();
+    if (file) {
+      this.isUploadingAvatar.set(true);
+      this.uploadService.uploadImage(file, 'mechanics').subscribe({
+        next: (res) => {
+          this.avatarUrl.set(res.data.url);
+          this.isUploadingAvatar.set(false);
+          this.avatarFile.set(null);
+          this.persistMechanic();
+        },
+        error: (err) => {
+          this.isUploadingAvatar.set(false);
+          this.isSubmitting.set(false);
+          this.errorMessage.set(err.error?.message || 'Error al subir la foto');
+        },
+      });
+    } else {
+      this.persistMechanic();
+    }
+  }
+
+  private persistMechanic(): void {
     const val = this.form.value;
     const data = {
       name: val.name,
       whatsapp: val.whatsapp,
       email: val.email || undefined,
+      avatar: this.avatarUrl() || undefined,
       branches: this.selectedBranches().map(b => b.id),
       serviceDurationMinutes: val.serviceDurationMinutes,
       schedule: val.schedule,

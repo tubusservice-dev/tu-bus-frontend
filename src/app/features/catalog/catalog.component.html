@@ -14,17 +14,15 @@
 
       <!-- Búsqueda y ordenar -->
       <div class="header-actions">
-        <div class="search-box">
-          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-          </svg>
-          <input
-            type="text"
-            placeholder="Buscar productos..."
-            [ngModel]="filters().search"
-            (ngModelChange)="onSearchInput($event)"
-          />
-        </div>
+        <app-search-input
+          class="search-box"
+          placeholder="Buscar productos..."
+          ariaLabel="Buscar productos"
+          [value]="filters().search"
+          [loading]="isSearching()"
+          (valueInput)="onSearchTyping($event)"
+          (searchChanged)="onSearchCommit($event)"
+        />
 
         <button class="btn-filter" (click)="toggleFilters()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -88,6 +86,25 @@
           </div>
         </div>
 
+        <!-- Toggle: priorizar combos -->
+        <div class="filter-toggle-row">
+          <div class="toggle-info">
+            <span class="toggle-label">Mostrar combos primero</span>
+            <span class="toggle-helper">Los productos en combo aparecerán al inicio del listado</span>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            class="toggle-switch"
+            [class.active]="filters().onlyCombos"
+            [attr.aria-checked]="filters().onlyCombos"
+            aria-label="Mostrar combos primero"
+            (click)="toggleOnlyCombos()"
+          >
+            <span class="toggle-thumb"></span>
+          </button>
+        </div>
+
         @if (activeFiltersCount() > 0) {
           <button class="btn-clear-filters" (click)="clearFilters()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -109,8 +126,10 @@
         </svg>
         <span>
           Mostrando productos compatibles con
-          <strong>{{ vehicle.marca }} {{ vehicle.modelo }} {{ vehicle.year }}</strong>
-          — {{ vehicle.engineType.displacement }} {{ vehicle.engineType.cylinders }} cil.
+          <strong>{{ vehicle.marca }} {{ vehicle.modelo }}@if (vehicle.year) {&nbsp;{{ vehicle.year }}}</strong>
+          @if (vehicle.engineType?.displacement || vehicle.engineType?.cylinders) {
+            — {{ vehicle.engineType?.displacement }}@if (vehicle.engineType?.cylinders) { {{ vehicle.engineType?.cylinders }} cil. }
+          }
         </span>
       </div>
       <button class="banner-close" (click)="clearVehicleFilter()">

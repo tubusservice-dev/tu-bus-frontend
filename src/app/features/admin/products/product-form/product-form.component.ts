@@ -19,11 +19,15 @@ import {
   Brand,
 } from '../../../../models';
 import { ImageCarouselComponent } from '../../../../shared/components/image-carousel/image-carousel.component';
+import {
+  SearchableSelectComponent,
+  SearchableOption,
+} from '../../../../shared/components/searchable-select/searchable-select.component';
 
 @Component({
   selector: 'app-product-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ImageCarouselComponent],
+  imports: [CommonModule, ReactiveFormsModule, ImageCarouselComponent, SearchableSelectComponent],
   templateUrl: './product-form.component.html',
   styleUrl: './product-form.component.scss',
 })
@@ -75,30 +79,32 @@ export class ProductFormComponent implements OnInit {
     return filtered;
   });
 
-  // Marcas
+  // Marcas — filtering/search now lives inside <app-searchable-select>
   protected readonly brands = signal<Brand[]>([]);
   protected readonly selectedBrand = signal<Brand | null>(null);
-  protected readonly brandSearchTerm = signal('');
-  protected readonly showBrandDropdown = signal(false);
 
-  // Marcas filtradas (computed)
-  protected readonly filteredBrands = computed(() => {
-    const search = this.brandSearchTerm().toLowerCase().trim();
-    const selected = this.selectedBrand();
+  // ===== SearchableSelect adapters (migrated from inline UI) =====
+  /** All active brands mapped as SearchableOption for the shared component */
+  protected readonly brandOptionList = computed<SearchableOption[]>(() =>
+    this.brands()
+      .filter(b => b.isActive)
+      .map(b => ({ id: b.id, label: b.name }))
+  );
 
-    let filtered = this.brands().filter(b => b.isActive);
-
-    // Si ya hay una marca seleccionada, excluirla de la lista
-    if (selected) {
-      filtered = filtered.filter(b => b.id !== selected.id);
-    }
-
-    if (search) {
-      filtered = filtered.filter(b => b.name.toLowerCase().includes(search));
-    }
-
-    return filtered;
+  /** Currently selected brand shaped as SearchableOption */
+  protected readonly selectedBrandOption = computed<SearchableOption | null>(() => {
+    const b = this.selectedBrand();
+    return b ? { id: b.id, label: b.name } : null;
   });
+
+  onBrandSelectedChange(option: SearchableOption | null): void {
+    if (!option) {
+      this.selectedBrand.set(null);
+      return;
+    }
+    const brand = this.brands().find(b => b.id === option.id);
+    if (brand) this.selectedBrand.set(brand);
+  }
 
   // Branch-Product assignment
   protected readonly availableBranches = signal<Branch[]>([]);
@@ -513,48 +519,12 @@ export class ProductFormComponent implements OnInit {
     if (categorySelector && !categorySelector.contains(target)) {
       this.showCategoryDropdown.set(false);
     }
-    const brandSelector = this.elementRef.nativeElement.querySelector('.brand-selector');
-    if (brandSelector && !brandSelector.contains(target)) {
-      this.showBrandDropdown.set(false);
-    }
     const branchSelector = this.elementRef.nativeElement.querySelector('.branch-selector');
     if (branchSelector && !branchSelector.contains(target)) {
       this.showBranchDropdown.set(false);
     }
-  }
-
-  // ==================== MARCAS ====================
-
-  /**
-   * Actualizar término de búsqueda de marcas
-   */
-  onBrandSearch(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    this.brandSearchTerm.set(input.value);
-    this.showBrandDropdown.set(true);
-  }
-
-  /**
-   * Mostrar dropdown de marcas
-   */
-  openBrandDropdown(): void {
-    this.showBrandDropdown.set(true);
-  }
-
-  /**
-   * Seleccionar una marca (selección única)
-   */
-  selectBrand(brand: Brand): void {
-    this.selectedBrand.set(brand);
-    this.brandSearchTerm.set('');
-    this.showBrandDropdown.set(false);
-  }
-
-  /**
-   * Eliminar la marca seleccionada
-   */
-  removeBrand(): void {
-    this.selectedBrand.set(null);
+    // Brand dropdown is now encapsulated inside <app-searchable-select>, which
+    // handles click-outside internally.
   }
 
   // ==================== SUCURSALES / BRANCH-PRODUCT ====================

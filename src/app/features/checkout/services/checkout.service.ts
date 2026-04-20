@@ -283,6 +283,65 @@ export class CheckoutService {
   readonly hasBranch = computed(() => this._state().selectedBranch !== null);
   readonly hasPaymentMethod = computed(() => this._state().paymentMethod !== null);
 
+  // ==================== VEHICLE ↔ PRODUCT COMPATIBILITY ====================
+
+  /**
+   * Reactive compatibility report. For each selected vehicle, counts how many
+   * cart items are incompatible with its type. A product is compatible when:
+   *   - It has no vehicleTypes metadata (unknown → assumed compatible), OR
+   *   - Its vehicleTypes includes 'all' (universal category), OR
+   *   - Its vehicleTypes includes the vehicle's type.
+   *
+   * Otherwise the product is counted as incompatible. The report is permissive
+   * by design — we warn the user but never block the purchase.
+   */
+  readonly vehicleCompatibilityReport = computed(() => {
+    const vehicles = this._state().selectedVehicles;
+    const items = this.cartService.items();
+
+    if (vehicles.length === 0 || items.length === 0) {
+      return {
+        hasAnyMismatch: false,
+        allVehiclesMismatch: false,
+        incompatibleVehicleNames: [] as string[],
+        incompatibleProductCount: 0,
+      };
+    }
+
+    const isCompatible = (
+      itemVTs: string[] | undefined,
+      vType: string | undefined
+    ): boolean => {
+      // Missing product metadata → permissive (no warning to avoid false positives)
+      if (!itemVTs || itemVTs.length === 0) return true;
+      // Universal category applies to every vehicle
+      if (itemVTs.includes('all')) return true;
+      // Missing vehicle type → treat as incompatible so the user notices
+      if (!vType) return false;
+      return itemVTs.includes(vType);
+    };
+
+    const incompatibleVehicleNames: string[] = [];
+    const globalIncompatibleProductIds = new Set<string>();
+
+    for (const v of vehicles) {
+      const badItems = items.filter((it) => !isCompatible(it.vehicleTypes, v.vehicleType));
+      if (badItems.length > 0) {
+        incompatibleVehicleNames.push(`${v.marca} ${v.modelo}`.trim());
+        for (const it of badItems) globalIncompatibleProductIds.add(it.id);
+      }
+    }
+
+    return {
+      hasAnyMismatch: incompatibleVehicleNames.length > 0,
+      allVehiclesMismatch:
+        incompatibleVehicleNames.length > 0 &&
+        incompatibleVehicleNames.length === vehicles.length,
+      incompatibleVehicleNames,
+      incompatibleProductCount: globalIncompatibleProductIds.size,
+    };
+  });
+
   // ==================== DISPATCH ACTIONS ====================
 
   selectDispatchType(type: DispatchType): void {

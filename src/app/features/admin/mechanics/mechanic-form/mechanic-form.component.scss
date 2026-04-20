@@ -272,3 +272,51 @@
   @apply inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-red-700 hover:bg-red-800 rounded-lg transition-colors;
   @apply disabled:opacity-50 disabled:cursor-not-allowed;
 }
+
+// ========== Avatar upload ==========
+.avatar-upload {
+  @apply flex items-center gap-4 mb-5 pb-5 border-b border-gray-200 dark:border-gray-700;
+}
+
+.avatar-preview-wrap {
+  @apply flex-shrink-0;
+}
+
+.avatar-preview-img {
+  width: 80px;
+  height: 80px;
+  border-radius: 9999px;
+  object-fit: cover;
+  box-shadow: 0 0 0 1px rgba(77, 148, 255, 0.25);
+}
+
+.avatar-upload-actions {
+  @apply flex flex-col gap-1.5 min-w-0;
+}
+
+.btn-upload {
+  @apply inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg cursor-pointer w-fit;
+  color: var(--tubus-text-accent, #4d94ff);
+  background-color: rgba(77, 148, 255, 0.1);
+  transition: background-color 150ms ease;
+
+  svg { width: 16px; height: 16px; }
+
+  &:hover { background-color: rgba(77, 148, 255, 0.18); }
+
+  &.disabled { opacity: 0.5; pointer-events: none; }
+}
+
+.btn-upload-clear {
+  @apply text-xs font-medium px-2 py-1 rounded w-fit;
+  color: #dc2626;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+
+  &:hover { background-color: rgba(220, 38, 38, 0.08); }
+}
+
+.avatar-hint {
+  @apply text-xs text-gray-500 dark:text-gray-400;
+}

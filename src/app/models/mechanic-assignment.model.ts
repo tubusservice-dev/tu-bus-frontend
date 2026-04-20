@@ -20,7 +20,7 @@ export interface BranchContactInfo {
 
 export interface MechanicAssignment {
   id: string;
-  mechanic: string | { id: string; name: string; whatsapp: string; email?: string };
+  mechanic: string | { id: string; name: string; whatsapp: string; email?: string; avatar?: string };
   order: string | {
     id: string;
     orderNumber: string;

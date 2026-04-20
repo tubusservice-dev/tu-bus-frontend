@@ -204,53 +204,15 @@
               <!-- Fila 2: Marca y Modelo -->
               <div class="form-group">
                 <label>Marca <span class="optional">(opcional)</span></label>
-                <div class="brand-selector">
-                  <!-- Marca seleccionada o input de búsqueda -->
-                  @if (selectedBrand()) {
-                    <div class="selected-brand">
-                      <span class="brand-badge">
-                        {{ selectedBrand()!.name }}
-                        <button type="button" class="badge-remove" (click)="removeBrand()">
-                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </span>
-                    </div>
-                  } @else {
-                    <div class="brand-input-wrapper">
-                      <input
-                        type="text"
-                        class="brand-search"
-                        placeholder="Buscar marca..."
-                        [value]="brandSearchTerm()"
-                        (input)="onBrandSearch($event)"
-                        (focus)="openBrandDropdown()"
-                      />
-                      <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-                      </svg>
-                    </div>
-
-                    <!-- Dropdown de marcas -->
-                    @if (showBrandDropdown() && filteredBrands().length > 0) {
-                      <div class="brand-dropdown">
-                        @for (brand of filteredBrands(); track brand.id) {
-                          <button type="button" class="brand-option" (click)="selectBrand(brand)">
-                            {{ brand.name }}
-                          </button>
-                        }
-                      </div>
-                    }
-
-                    <!-- Mensaje si no hay resultados -->
-                    @if (showBrandDropdown() && brandSearchTerm() && filteredBrands().length === 0) {
-                      <div class="brand-dropdown">
-                        <div class="brand-no-results">No se encontraron marcas</div>
-                      </div>
-                    }
-                  }
-                </div>
+                <app-searchable-select
+                  [options]="brandOptionList()"
+                  [selected]="selectedBrandOption()"
+                  placeholder="Buscar marca..."
+                  emptyMessage="No se encontraron marcas"
+                  ariaLabel="Seleccionar marca del producto"
+                  chipVariant="green"
+                  (selectedChange)="onBrandSelectedChange($event)"
+                />
                 <span class="help-text">Fabricante o marca del producto</span>
               </div>
 

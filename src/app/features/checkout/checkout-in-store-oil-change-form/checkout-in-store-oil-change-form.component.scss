@@ -1,0 +1,239 @@
+// ========== Page layout ==========
+.in-store-form-page {
+  @apply min-h-screen;
+  background-color: var(--bg-secondary);
+}
+
+.form-header {
+  @apply sticky top-0 z-10 flex items-center gap-3 px-4 py-3;
+  background-color: var(--bg-primary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.back-btn {
+  @apply inline-flex items-center justify-center rounded-lg;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+
+  svg { width: 20px; height: 20px; }
+
+  &:hover { background-color: var(--bg-secondary); }
+}
+
+.page-title {
+  @apply text-lg font-semibold;
+  color: var(--text-primary);
+}
+
+.form-container {
+  @apply max-w-3xl mx-auto p-4 space-y-4;
+}
+
+// ========== Info banner ==========
+.info-banner {
+  @apply flex items-start gap-3 p-4 rounded-xl;
+  background-color: rgba(34, 197, 94, 0.08);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+}
+
+.info-banner-icon {
+  @apply w-5 h-5 flex-shrink-0 mt-0.5;
+  color: #16a34a;
+}
+
+.info-banner-body {
+  @apply flex flex-col gap-1 min-w-0;
+
+  strong {
+    @apply text-sm font-semibold;
+    color: #15803d;
+  }
+
+  p {
+    @apply text-xs leading-relaxed;
+    color: var(--text-secondary);
+  }
+}
+
+:host-context(.dark) .info-banner-body strong { color: #4ade80; }
+
+// ========== Section ==========
+.form-section {
+  @apply p-4 rounded-xl;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+}
+
+.section-title {
+  @apply flex items-center gap-2 text-base font-semibold mb-3;
+  color: var(--text-primary);
+
+  svg { @apply w-5 h-5; color: var(--tubus-text-accent, #4d94ff); }
+
+  .required { color: #ef4444; }
+}
+
+.section-title-badge {
+  @apply ml-auto text-xs font-medium whitespace-nowrap overflow-hidden text-ellipsis;
+  max-width: 55%;
+  color: #16a34a;
+}
+
+.hint {
+  @apply text-sm;
+  color: var(--text-secondary);
+}
+
+// ========== Vehicle Multi-Select (mirrors checkout-oil-change-form) ==========
+.vehicle-select-list {
+  @apply space-y-2;
+}
+
+.vehicle-select-card {
+  @apply w-full flex items-center justify-between p-4 rounded-xl text-left transition-all;
+  background-color: var(--bg-tertiary);
+  border: 2px solid var(--border-color);
+  cursor: pointer;
+
+  &:hover { border-color: #16a34a; }
+
+  &.selected {
+    border-color: #16a34a;
+    background-color: rgba(34, 197, 94, 0.06);
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.12);
+  }
+
+  :host-context(.dark) &:not(.selected) {
+    background-color: rgba(255, 255, 255, 0.04);
+    border-color: #374151;
+  }
+}
+
+.vehicle-select-info {
+  @apply flex flex-col gap-0.5;
+}
+
+.vehicle-select-name {
+  @apply text-sm font-semibold;
+  color: var(--text-primary);
+}
+
+.vehicle-select-plate {
+  @apply text-xs font-mono px-2 py-0.5 rounded inline-block w-fit;
+  background-color: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.vehicle-select-specs {
+  @apply text-xs mt-1;
+  color: var(--text-secondary);
+}
+
+.vehicle-check-icon {
+  @apply w-6 h-6 flex-shrink-0;
+  color: #16a34a;
+}
+
+.vehicle-add-btn {
+  @apply flex items-center justify-center gap-2 w-full py-3 mt-3 rounded-xl text-sm font-medium transition-all;
+  color: #3b82f6;
+  border: 2px dashed #4b5563;
+  background: transparent;
+  cursor: pointer;
+
+  &:hover {
+    color: #60a5fa;
+    border-color: #60a5fa;
+    background-color: rgba(96, 165, 250, 0.06);
+  }
+
+  svg { @apply w-5 h-5; }
+}
+
+.vehicle-hint-required {
+  @apply text-xs mt-2 text-amber-600 dark:text-amber-400;
+}
+
+.vehicle-empty-state {
+  @apply flex items-center gap-3 p-4 rounded-xl;
+  background-color: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+
+  svg { @apply w-5 h-5 flex-shrink-0; color: #f59e0b; }
+  span { @apply text-sm; color: var(--text-primary); }
+}
+
+.inline-vehicle-form {
+  @apply mt-4 p-4 rounded-xl;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-secondary);
+}
+
+// ========== Compatibility alert (mirrors oil-change-form) ==========
+.compat-alert {
+  @apply flex items-center gap-3 p-4 mt-3 rounded-xl;
+  background-color: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.compat-alert-icon {
+  @apply w-5 h-5 flex-shrink-0;
+  color: #d97706;
+}
+
+.compat-alert-body {
+  @apply flex flex-col gap-0.5 min-w-0;
+}
+
+.compat-alert-title {
+  @apply text-sm font-semibold;
+  color: #b45309;
+}
+
+.compat-alert-text {
+  @apply text-xs leading-relaxed;
+  color: #92400e;
+
+  strong {
+    @apply font-semibold;
+    color: #78350f;
+  }
+}
+
+:host-context(.dark) {
+  .compat-alert {
+    background-color: rgba(245, 158, 11, 0.12);
+    border-color: rgba(245, 158, 11, 0.45);
+  }
+  .compat-alert-icon { color: #fbbf24; }
+  .compat-alert-title { color: #fcd34d; }
+  .compat-alert-text {
+    color: #fde68a;
+    strong { color: #fef3c7; }
+  }
+}
+
+// ========== Actions ==========
+.form-actions {
+  @apply flex justify-center pt-4;
+}
+
+.btn-continue {
+  @apply inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-all;
+  background-color: var(--tubus-text-accent, #4d94ff);
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+
+  svg { width: 16px; height: 16px; }
+
+  &:hover:not(:disabled) { filter: brightness(1.1); }
+
+  &:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+}

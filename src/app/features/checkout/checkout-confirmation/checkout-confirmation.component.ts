@@ -3,11 +3,12 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { OrderService } from '../../../core/services/order.service';
 import { Order, ORDER_STATUS_LABELS } from '../../../models/order.model';
+import { CopyableValueComponent } from '../../../shared/components/copyable-value/copyable-value.component';
 
 @Component({
   selector: 'app-checkout-confirmation',
   standalone: true,
-  imports: [CommonModule, CurrencyPipe],
+  imports: [CommonModule, CurrencyPipe, CopyableValueComponent],
   templateUrl: './checkout-confirmation.component.html',
   styleUrl: './checkout-confirmation.component.scss',
 })

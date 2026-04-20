@@ -185,6 +185,7 @@ export class ProductDetailOverlayComponent {
       id: prod.id, name: prod.name, price: prod.price,
       image: prod.images?.[0] || '', stock: this.productStock() ?? 0,
       freeOilChangeService: prod.freeOilChangeService || false,
+      vehicleTypes: prod.vehicleTypes,
     }, this.quantity());
 
     if (result.success) {

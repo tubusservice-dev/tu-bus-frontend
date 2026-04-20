@@ -32,19 +32,9 @@
   @apply flex flex-wrap items-center gap-3;
 }
 
+// Layout wrapper for app-search-input inside the header actions
 .search-box {
-  @apply relative flex-1 min-w-[200px] max-w-md;
-
-  .search-icon {
-    @apply absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400;
-  }
-
-  input {
-    @apply w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg;
-    @apply text-gray-900 dark:text-white placeholder-gray-400;
-    @apply focus:outline-none focus:ring-2 focus:border-transparent;
-    &:focus { --tw-ring-color: var(--accent-primary); }
-  }
+  @apply flex-1 min-w-[200px] max-w-md;
 }
 
 .btn-filter {
@@ -96,6 +86,70 @@
 
   svg {
     @apply w-4 h-4;
+  }
+}
+
+// Toggle row inside filters panel
+.filter-toggle-row {
+  @apply flex items-center justify-between gap-4 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700;
+}
+
+.toggle-info {
+  @apply flex flex-col gap-0.5 min-w-0;
+
+  .toggle-label {
+    @apply text-sm font-medium text-gray-800 dark:text-gray-200;
+  }
+
+  .toggle-helper {
+    @apply text-xs text-gray-500 dark:text-gray-400;
+  }
+}
+
+.toggle-switch {
+  @apply relative inline-flex items-center flex-shrink-0;
+  width: 44px;
+  height: 24px;
+  border-radius: 9999px;
+  background-color: #d1d5db; // gray-300
+  cursor: pointer;
+  transition: background-color 180ms ease;
+  border: none;
+  padding: 0;
+
+  .toggle-thumb {
+    position: absolute;
+    left: 2px;
+    top: 2px;
+    width: 20px;
+    height: 20px;
+    border-radius: 9999px;
+    background-color: #ffffff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    transition: transform 180ms ease;
+  }
+
+  &.active {
+    background-color: var(--tubus-text-accent, #4d94ff);
+
+    .toggle-thumb {
+      transform: translateX(20px);
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--tubus-text-accent, #4d94ff);
+    outline-offset: 2px;
+  }
+}
+
+:host-context(.dark) {
+  .toggle-switch {
+    background-color: #4b5563; // gray-600
+
+    &.active {
+      background-color: var(--tubus-text-accent, #4d94ff);
+    }
   }
 }
 

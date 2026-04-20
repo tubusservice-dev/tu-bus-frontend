@@ -45,6 +45,67 @@ export interface ShowcaseAvailabilityResponse {
   data: ShowcaseAvailability;
 }
 
+// ============================================================================
+// Catalog lightweight DTOs — mirror backend IProductCardResponse
+// ============================================================================
+
+export interface ProductCardDTO {
+  id: string;
+  name: string;
+  description: string;
+  images: string[];
+  price: number;
+  comparePrice?: number;
+  brand: { id: string; name: string } | null;
+  productModel?: string;
+  category: { id: string; name: string } | null;
+  isFeatured: boolean;
+  isCombo: boolean;
+  freeOilChangeService: boolean;
+  /** Best branch stock (only present when branchIds filter is used) */
+  totalStock?: number;
+  compatibleEngines?: {
+    fuelType: string;
+    displacement: string;
+    cylinders: number;
+  }[];
+  oilType?: string;
+  /** Union of vehicleTypes from the product's categories (e.g. ['carro','all']) */
+  vehicleTypes?: string[];
+}
+
+export interface ProductCardListResponse {
+  success: boolean;
+  data: ProductCardDTO[];
+  pagination: {
+    total: number;
+    pages: number;
+    page: number;
+    limit: number;
+  };
+}
+
+export interface CatalogQueryParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  vehicleType?: VehicleType;
+  brand?: string;
+  category?: string;
+  sortBy?: 'price' | 'createdAt' | 'name';
+  sortOrder?: 'asc' | 'desc';
+  isActive?: boolean;
+  /** Orders combos first without filtering out regular products */
+  comboFirst?: boolean;
+  /** Strict filter: only combos */
+  isCombo?: boolean;
+  branchIds?: string;
+  // Server-side engine compatibility filter (garage)
+  engineDisplacement?: string;
+  engineFuelType?: FuelType;
+  engineCylinders?: number;
+}
+
 // Product detail composite response
 export interface DetailProduct {
   id: string;
@@ -59,6 +120,8 @@ export interface DetailProduct {
   brand: { name: string } | null;
   productModel: string;
   freeOilChangeService: boolean;
+  /** Aggregated vehicleTypes from all categories — for vehicle-match warnings */
+  vehicleTypes?: string[];
 }
 
 export interface DetailStock {
@@ -99,6 +162,8 @@ export interface ProductQueryParams {
   isActive?: boolean;
   isFeatured?: boolean;
   isCombo?: boolean;
+  /** Rank combos first without filtering (distinct from isCombo strict filter) */
+  comboFirst?: boolean;
   search?: string;
   sortBy?: 'price' | 'createdAt' | 'name';
   sortOrder?: 'asc' | 'desc';
@@ -108,6 +173,8 @@ export interface ProductQueryParams {
   engineDisplacement?: string;
   engineFuelType?: FuelType;
   engineCylinders?: number;
+  /** Response DTO selector. 'card' returns lightweight ProductCardDTO */
+  view?: 'card' | 'full';
 }
 
 @Injectable({
@@ -146,6 +213,26 @@ export class ProductService {
     }
 
     return this.http.get<ProductListResponse>(this.publicUrl, { params: httpParams });
+  }
+
+  /**
+   * Public catalog endpoint — returns the lightweight ProductCardDTO shape
+   * (view=card). Payload is ~55% smaller than getAll() because admin/detail-only
+   * fields are stripped. Use this for the catalog grid and any public list that
+   * only renders cards. For admin tables or full product data, use getAll().
+   */
+  getCatalog(params: CatalogQueryParams): Observable<ProductCardListResponse> {
+    let httpParams = new HttpParams().set('view', 'card');
+
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        httpParams = httpParams.set(key, value.toString());
+      }
+    });
+
+    return this.http.get<ProductCardListResponse>(this.publicUrl, {
+      params: httpParams,
+    });
   }
 
   /**

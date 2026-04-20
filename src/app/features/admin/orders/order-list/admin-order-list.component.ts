@@ -1,9 +1,7 @@
-import { Component, DestroyRef, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { OrderService } from '../../../../core/services/order.service';
 import {
   Order,
@@ -11,22 +9,21 @@ import {
   ORDER_STATUS_LABELS,
   ORDER_STATUS_COLORS,
 } from '../../../../models/order.model';
+import { SearchInputComponent } from '../../../../shared/components/search-input/search-input.component';
 
 @Component({
   selector: 'app-admin-order-list',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, SearchInputComponent],
   templateUrl: './admin-order-list.component.html',
   styleUrl: './admin-order-list.component.scss',
 })
 export class AdminOrderListComponent implements OnInit {
   private readonly orderService = inject(OrderService);
   private readonly router = inject(Router);
-  private readonly destroyRef = inject(DestroyRef);
-
-  private readonly searchSubject$ = new Subject<string>();
 
   protected readonly isLoading = signal(true);
+  protected readonly isSearching = signal(false);
   protected readonly orders = signal<Order[]>([]);
   protected readonly currentPage = signal(1);
   protected readonly totalPages = signal(1);
@@ -49,14 +46,6 @@ export class AdminOrderListComponent implements OnInit {
   ];
 
   ngOnInit(): void {
-    this.searchSubject$
-      .pipe(
-        debounceTime(400),
-        distinctUntilChanged(),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe(() => this.loadOrders(1));
-
     this.loadOrders();
   }
 
@@ -71,9 +60,11 @@ export class AdminOrderListComponent implements OnInit {
         this.totalPages.set(response.pagination.pages);
         this.totalItems.set(response.pagination.total);
         this.isLoading.set(false);
+        this.isSearching.set(false);
       },
       error: () => {
         this.isLoading.set(false);
+        this.isSearching.set(false);
       },
     });
   }
@@ -82,10 +73,17 @@ export class AdminOrderListComponent implements OnInit {
     this.loadOrders(1);
   }
 
-  onSearchInput(event: Event): void {
-    const value = (event.target as HTMLInputElement).value;
+  /** Fired on every keystroke (pre-debounce) — lights the spinner */
+  onSearchTyping(value: string): void {
+    if (value !== this.searchQuery()) {
+      this.isSearching.set(true);
+    }
+  }
+
+  /** Fired after debounce — triggers the HTTP request */
+  onSearchCommit(value: string): void {
     this.searchQuery.set(value);
-    this.searchSubject$.next(value);
+    this.loadOrders(1);
   }
 
   get filterableStatuses(): OrderStatus[] {

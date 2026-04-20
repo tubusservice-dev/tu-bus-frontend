@@ -156,6 +156,8 @@ export interface Product {
   createdAt: Date;
   /** Aggregated stock across zone branches (present when branchIds filter used) */
   totalStock?: number;
+  /** Aggregated vehicleTypes from all categories — for vehicle-match warnings */
+  vehicleTypes?: string[];
 }
 
 /**

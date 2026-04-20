@@ -200,10 +200,12 @@
                     <div class="vehicle-select-info">
                       <span class="vehicle-select-name">{{ vehicle.marca }} {{ vehicle.modelo }} {{ vehicle.year }}</span>
                       <span class="vehicle-select-plate">{{ vehicle.placa }}</span>
-                      <span class="vehicle-select-specs">
-                        {{ vehicle.engineType.displacement }} {{ vehicle.engineType.fuelType }} {{ vehicle.engineType.cylinders }} cil.
-                        @if (vehicle.engineType.oilType) { &middot; {{ vehicle.engineType.oilType }} }
-                      </span>
+                      @if (vehicle.engineType?.displacement || vehicle.engineType?.cylinders) {
+                        <span class="vehicle-select-specs">
+                          {{ vehicle.engineType?.displacement }} {{ vehicle.engineType?.fuelType }}@if (vehicle.engineType?.cylinders) { {{ vehicle.engineType?.cylinders }} cil. }
+                          @if (vehicle.engineType?.oilType) { &middot; {{ vehicle.engineType?.oilType }} }
+                        </span>
+                      }
                     </div>
                     @if (isVehicleSelected(vehicle.id)) {
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="vehicle-check-icon">
@@ -238,6 +240,34 @@
 
             @if (checkoutService.selectedVehicles().length === 0 && vehicles().length > 0) {
               <p class="vehicle-hint-required">Selecciona al menos un vehículo para continuar.</p>
+            }
+
+            <!-- Vehicle ↔ Product compatibility warning (non-blocking) -->
+            @if (checkoutService.vehicleCompatibilityReport(); as rep) {
+              @if (rep.hasAnyMismatch) {
+                <div class="compat-alert" role="alert">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" class="compat-alert-icon" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                  </svg>
+                  <div class="compat-alert-body">
+                    <strong class="compat-alert-title">Posible incompatibilidad</strong>
+                    <p class="compat-alert-text">
+                      @if (rep.incompatibleVehicleNames.length === 1) {
+                        El vehículo <strong>{{ rep.incompatibleVehicleNames[0] }}</strong> no es compatible con
+                        {{ rep.incompatibleProductCount }} producto{{ rep.incompatibleProductCount === 1 ? '' : 's' }}
+                        de tu carrito.
+                      } @else if (rep.allVehiclesMismatch) {
+                        Los vehículos <strong>{{ rep.incompatibleVehicleNames.join(', ') }}</strong>
+                        no son compatibles con productos de tu carrito.
+                      } @else {
+                        Los vehículos <strong>{{ rep.incompatibleVehicleNames.join(', ') }}</strong>
+                        no son compatibles con algunos productos de tu carrito.
+                      }
+                      Puedes continuar con la compra, pero te recomendamos revisar.
+                    </p>
+                  </div>
+                </div>
+              }
             }
           }
         </div>

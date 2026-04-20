@@ -1,0 +1,68 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+.search-input-wrapper {
+  @apply relative flex items-center w-full;
+}
+
+.search-icon {
+  @apply absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none;
+  z-index: 1;
+}
+
+.search-field {
+  @apply w-full pl-10 pr-10 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg;
+  @apply text-sm text-gray-900 dark:text-white placeholder-gray-400;
+  @apply focus:outline-none focus:ring-2 focus:border-transparent transition-colors;
+
+  &:focus {
+    --tw-ring-color: var(--tubus-text-accent, #4d94ff);
+  }
+}
+
+.search-trailing {
+  @apply absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center;
+  width: 28px;
+  height: 28px;
+}
+
+// ===== Spinner =====
+.search-spinner {
+  @apply inline-flex items-center justify-center;
+  width: 20px;
+  height: 20px;
+  color: var(--tubus-text-accent, #4d94ff);
+
+  svg {
+    width: 100%;
+    height: 100%;
+    animation: search-spin 0.8s linear infinite;
+  }
+}
+
+@keyframes search-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+// ===== Clear button =====
+.search-clear {
+  @apply inline-flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--tubus-text-accent, #4d94ff);
+    outline-offset: 1px;
+  }
+}

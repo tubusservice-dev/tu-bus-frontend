@@ -3,13 +3,14 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { OrderService } from '../../../core/services/order.service';
 import { MechanicAssignment, ProgressStep } from '../../../models/mechanic-assignment.model';
+import { MechanicAvatarComponent } from '../../../shared/components/mechanic-avatar/mechanic-avatar.component';
 
 type StepKey = 'asignado' | 'en_camino' | 'en_proceso' | 'completado';
 
 @Component({
   selector: 'app-service-tracking',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, MechanicAvatarComponent],
   templateUrl: './service-tracking.component.html',
   styleUrl: './service-tracking.component.scss',
 })
@@ -63,6 +64,13 @@ export class ServiceTrackingComponent implements OnInit {
   protected readonly mechanicInitial = computed(() => {
     const name = this.mechanicName();
     return (name && name !== 'Mecánico asignado') ? name.charAt(0).toUpperCase() : 'M';
+  });
+
+  protected readonly mechanicAvatar = computed(() => {
+    const a = this.assignment();
+    if (!a) return '';
+    const m = a.mechanic as any;
+    return (m && typeof m === 'object' && m.avatar) ? m.avatar : '';
   });
 
   protected readonly vehicles = computed(() => {
