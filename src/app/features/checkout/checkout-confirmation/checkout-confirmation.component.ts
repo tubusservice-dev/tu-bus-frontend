@@ -1,14 +1,20 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, computed, inject, signal, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { CommonModule, CurrencyPipe } from '@angular/common';
+import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { OrderService } from '../../../core/services/order.service';
-import { Order, ORDER_STATUS_LABELS } from '../../../models/order.model';
+import {
+  Order,
+  ORDER_STATUS_LABELS,
+  DISPATCH_TYPE_LABELS,
+  DispatchType,
+  isOilChangeOrder,
+} from '../../../models/order.model';
 import { CopyableValueComponent } from '../../../shared/components/copyable-value/copyable-value.component';
 
 @Component({
   selector: 'app-checkout-confirmation',
   standalone: true,
-  imports: [CommonModule, CurrencyPipe, CopyableValueComponent],
+  imports: [CommonModule, CurrencyPipe, DatePipe, CopyableValueComponent],
   templateUrl: './checkout-confirmation.component.html',
   styleUrl: './checkout-confirmation.component.scss',
 })
@@ -19,6 +25,42 @@ export class CheckoutConfirmationComponent implements OnInit {
 
   protected readonly order = signal<Order | null>(null);
   protected readonly isLoading = signal(true);
+
+  /** True when this order is a service (oil change at home or in-store). */
+  protected readonly isOilChange = computed(() => {
+    const o = this.order();
+    return o ? isOilChangeOrder(o) : false;
+  });
+
+  /** True when the order carries at least one vehicle (populated or id-only). */
+  protected readonly hasVehicles = computed(
+    () => (this.order()?.vehicles?.length ?? 0) > 0,
+  );
+
+  /**
+   * Returns only populated vehicles (objects with `placa/marca/modelo`).
+   * Filters out id-only entries so the template can iterate safely without
+   * needing `typeof` guards (unsupported in Angular templates).
+   */
+  protected readonly populatedVehicles = computed(() => {
+    const vs = this.order()?.vehicles ?? [];
+    return vs.filter(
+      (v): v is { id: string; placa: string; marca: string; modelo: string; year: number } =>
+        !!v && typeof v === 'object',
+    );
+  });
+
+  /** True when the payment submission exists and has at least one populated field. */
+  protected readonly hasPaymentSubmission = computed(() => {
+    const ps = this.order()?.paymentSubmission;
+    return !!(ps && (ps.referenceNumber || ps.amount || ps.sourceBank));
+  });
+
+  /** True when a non-empty billing address was captured. */
+  protected readonly hasBillingAddress = computed(() => {
+    const ba = this.order()?.billingAddress;
+    return !!(ba && (ba.fullName || ba.address));
+  });
 
   ngOnInit(): void {
     const orderId = this.route.snapshot.paramMap.get('orderId');
@@ -42,6 +84,35 @@ export class CheckoutConfirmationComponent implements OnInit {
   getStatusLabel(status: string): string {
     return ORDER_STATUS_LABELS[status as keyof typeof ORDER_STATUS_LABELS] || status;
   }
+
+  /** Human label for a dispatch type, e.g. "Cambio de Aceite". */
+  getDispatchLabel(type: string): string {
+    return DISPATCH_TYPE_LABELS[type as DispatchType] || type;
+  }
+
+  /**
+   * Human label for a billing address source. Explains to the user where
+   * the billing data came from when the address line itself is missing.
+   */
+  getBillingSourceLabel(source?: string): string {
+    switch (source) {
+      case 'shipping': return 'Misma dirección de envío';
+      case 'profile':  return 'Dirección del perfil';
+      case 'custom':   return 'Dirección personalizada';
+      default:         return 'Facturación';
+    }
+  }
+
+  /**
+   * Compose a recipient line "Address[, City[, Municipality[, State]]]".
+   * Filters out empty/undefined parts to avoid dangling commas.
+   */
+  buildLocationLine(parts: (string | undefined)[]): string {
+    return parts.filter((p) => !!p && String(p).trim() !== '').join(', ');
+  }
+
+  /** Track-by helper for items list. */
+  trackByIndex = (index: number): number => index;
 
   goToOrders(): void {
     this.router.navigate(['/perfil'], { fragment: 'orders' });

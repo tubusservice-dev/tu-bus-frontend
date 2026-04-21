@@ -202,7 +202,7 @@
               @if (step2Form.get('documentType')?.value && step2Form.get('documentType')?.value !== 'J') {
                 <div class="form-group">
                   <label class="form-label">Fecha de Nacimiento</label>
-                  <input type="date" formControlName="birthDate" class="form-input" [class.error]="hasError(step2Form, 'birthDate')" />
+                  <app-date-input formControlName="birthDate" [max]="todayStr" />
                   @if (hasError(step2Form, 'birthDate')) {
                     <span class="field-error">{{ getErrorMessage(step2Form, 'birthDate') }}</span>
                   }

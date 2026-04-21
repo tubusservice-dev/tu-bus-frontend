@@ -4,13 +4,14 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angula
 import { Subscription } from 'rxjs';
 import { AuthService } from '../../../core/services';
 import { RegisterRequest } from '../../../models/auth.model';
+import { DateInputComponent } from '../date-input/date-input.component';
 
 type AuthMode = 'login' | 'register';
 
 @Component({
   selector: 'app-auth-modal',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, DateInputComponent],
   templateUrl: './auth-modal.component.html',
   styleUrl: './auth-modal.component.scss',
 })
@@ -20,6 +21,9 @@ export class AuthModalComponent implements OnInit, OnDestroy {
   private docTypeSub: Subscription | null = null;
 
   readonly closeModal = output<void>();
+
+  /** Today as ISO `YYYY-MM-DD` — prevents selecting a future birth date. */
+  protected readonly todayStr = new Date().toISOString().split('T')[0];
 
   protected readonly mode = signal<AuthMode>('login');
   protected readonly isLoading = signal(false);

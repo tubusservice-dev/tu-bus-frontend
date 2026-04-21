@@ -1,0 +1,87 @@
+// ============================================
+// LAYOUT — page shell, header, sections
+// ============================================
+.summary-page {
+  @apply min-h-screen;
+  background-color: var(--bg-secondary);
+}
+
+// ============================================
+// HEADER
+// ============================================
+.page-header {
+  @apply sticky top-0 z-10;
+  background-color: var(--bg-primary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.header-content {
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4;
+  @apply flex items-center gap-3;
+  justify-content: flex-start !important;
+}
+
+.back-btn {
+  @apply flex items-center gap-1.5 text-sm font-medium transition-colors p-1 -ml-1 rounded-lg;
+  color: var(--text-secondary);
+
+  &:hover {
+    color: var(--accent-primary);
+    background-color: var(--bg-tertiary);
+  }
+
+  svg {
+    @apply w-5 h-5;
+  }
+
+  .back-text {
+    @apply hidden sm:inline;
+  }
+}
+
+.page-title {
+  h1 {
+    @apply text-lg sm:text-xl font-bold text-left;
+    color: var(--text-primary);
+  }
+}
+
+// ============================================
+// CONTENT
+// ============================================
+.page-content {
+  @apply max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8;
+}
+
+.summary-container {
+  @apply flex flex-col gap-4 sm:gap-6;
+}
+
+// ============================================
+// SECTIONS
+// ============================================
+.summary-section {
+  @apply rounded-xl overflow-hidden;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+}
+
+.section-header {
+  @apply flex items-center gap-3 px-4 sm:px-5 py-3 sm:py-4;
+  background-color: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+
+  h2 {
+    @apply text-sm sm:text-base font-semibold;
+    color: var(--text-primary);
+  }
+}
+
+.section-icon {
+  @apply w-5 h-5;
+  color: var(--accent-primary);
+}
+
+.section-content {
+  @apply p-4 sm:p-5;
+}

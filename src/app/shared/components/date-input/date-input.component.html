@@ -1,0 +1,75 @@
+<div class="date-input-wrapper" [class.has-error]="hasParseError()">
+  @if (label()) {
+    <label class="date-input-label" [attr.for]="id() || null">
+      {{ label() }}
+      @if (required()) {
+        <span class="date-input-required" aria-hidden="true">*</span>
+      }
+    </label>
+  }
+
+  <div class="date-input-field" [class.disabled]="resolvedDisabled()">
+    <input
+      type="text"
+      class="date-input-text"
+      inputmode="numeric"
+      autocomplete="off"
+      spellcheck="false"
+      [attr.id]="id() || null"
+      [placeholder]="placeholder()"
+      [value]="displayText()"
+      [disabled]="resolvedDisabled()"
+      [attr.aria-invalid]="hasParseError() || null"
+      [attr.aria-required]="required() || null"
+      (input)="onInputChange($event)"
+      (blur)="onInputBlur()"
+      (keydown)="onInputKeydown($event)"
+    />
+
+    @if (displayText() && !resolvedDisabled()) {
+      <button
+        type="button"
+        class="date-input-clear"
+        aria-label="Limpiar fecha"
+        (click)="onClear($event)"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+        </svg>
+      </button>
+    }
+
+    <button
+      type="button"
+      class="date-input-trigger"
+      aria-label="Abrir calendario"
+      [attr.aria-expanded]="isOpen()"
+      [disabled]="resolvedDisabled()"
+      (click)="togglePanel()"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5"
+        />
+      </svg>
+    </button>
+  </div>
+
+  @if (hasParseError()) {
+    <span class="date-input-error" role="alert">
+      Fecha no valida. Usa el formato DD/MM/YYYY
+    </span>
+  }
+
+  @if (isOpen()) {
+    <app-date-picker-panel
+      [value]="isoValue()"
+      [min]="min()"
+      [max]="max()"
+      (valueChange)="onPanelValueChange($event)"
+      (dismissed)="onPanelDismissed()"
+    />
+  }
+</div>

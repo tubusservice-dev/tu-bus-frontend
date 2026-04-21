@@ -88,11 +88,10 @@
                       </div>
                       <div class="form-group">
                         <label for="editDate">Fecha de Pago</label>
-                        <input
+                        <app-date-input
                           id="editDate"
-                          type="date"
                           [(ngModel)]="editPaymentDate"
-                          class="form-input"
+                          [max]="todayStr"
                         />
                       </div>
                       <div class="form-group">

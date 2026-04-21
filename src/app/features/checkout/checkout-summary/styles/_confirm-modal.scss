@@ -1,0 +1,321 @@
+// ============================================
+// MODAL: Confirmación de Orden
+// ============================================
+.confirm-overlay {
+  @apply fixed inset-0 z-50 flex items-center justify-center px-4;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.2s ease-out;
+}
+
+.confirm-modal {
+  @apply w-full max-w-md rounded-2xl p-6 sm:p-8 text-center;
+  max-height: 90vh;
+  overflow-y: auto;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  animation: slideUp 0.3s ease-out;
+}
+
+.confirm-icon {
+  @apply mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4;
+  background-color: rgba(34, 197, 94, 0.1);
+
+  svg {
+    @apply w-10 h-10;
+    color: #22c55e;
+  }
+}
+
+.confirm-title {
+  @apply text-xl font-bold mb-2;
+  color: var(--text-primary);
+}
+
+.confirm-text {
+  @apply text-sm leading-relaxed mb-5;
+  color: var(--text-secondary);
+
+  strong {
+    color: var(--text-primary);
+    @apply font-bold;
+  }
+}
+
+// ========== NEW: Products list inside confirm modal ==========
+.confirm-products {
+  @apply rounded-xl p-3 mb-4;
+  text-align: left;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  max-height: 35vh;
+  overflow-y: auto;
+}
+
+.confirm-products-header {
+  @apply flex items-center justify-between mb-2 text-xs font-semibold uppercase tracking-wide;
+  color: var(--text-tertiary);
+}
+
+.confirm-products-list {
+  @apply flex flex-col gap-2;
+}
+
+.confirm-product-row {
+  @apply flex items-center gap-3 py-2;
+  border-bottom: 1px solid var(--border-color);
+
+  &:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+}
+
+.confirm-product-image {
+  @apply w-10 h-10 rounded-lg object-cover flex-shrink-0;
+  background-color: var(--bg-tertiary);
+}
+
+.confirm-product-placeholder {
+  @apply w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0;
+  background-color: var(--bg-tertiary);
+
+  svg {
+    @apply w-5 h-5;
+    color: var(--text-tertiary);
+  }
+}
+
+.confirm-product-info {
+  @apply flex-1 min-w-0;
+}
+
+.confirm-product-name {
+  @apply text-sm font-medium truncate;
+  color: var(--text-primary);
+}
+
+.confirm-product-qty {
+  @apply text-xs;
+  color: var(--text-secondary);
+}
+
+.confirm-product-total {
+  @apply text-sm font-semibold flex-shrink-0;
+  color: var(--text-primary);
+}
+
+// ========== NEW: Metadata chips (despacho / pago / dirección / vehículo) ==========
+.confirm-meta {
+  @apply rounded-xl p-3 mb-4 flex flex-col gap-2;
+  text-align: left;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.confirm-meta-row {
+  @apply flex items-start gap-2 text-sm;
+
+  .confirm-meta-label {
+    @apply text-xs uppercase font-semibold tracking-wide flex-shrink-0;
+    color: var(--text-tertiary);
+    min-width: 88px;
+  }
+
+  .confirm-meta-value {
+    @apply flex-1 min-w-0 break-words;
+    color: var(--text-primary);
+  }
+}
+
+// ========== Original totals block ==========
+.confirm-details {
+  @apply rounded-xl p-4 mb-6 space-y-2;
+  text-align: left;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.confirm-detail-row {
+  @apply flex justify-between items-center text-sm;
+
+  .confirm-label {
+    color: var(--text-secondary);
+  }
+
+  .confirm-value {
+    @apply font-medium;
+    color: var(--text-primary);
+  }
+
+  &.total-row {
+    @apply pt-2 mt-2 text-base font-bold;
+    border-top: 1px solid var(--border-color);
+
+    .confirm-label,
+    .confirm-value {
+      color: var(--text-primary);
+      @apply font-bold;
+    }
+  }
+}
+
+.confirm-actions {
+  @apply flex flex-col-reverse gap-2;
+}
+
+.confirm-btn-cancel {
+  @apply flex-1 px-4 py-3 rounded-xl text-sm font-semibold transition-colors;
+  background-color: var(--bg-secondary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+
+  &:hover {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+  }
+}
+
+.confirm-btn-submit {
+  @apply flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold text-white transition-all;
+  background-color: #22c55e;
+
+  &:hover:not(:disabled) {
+    background-color: #16a34a;
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  &:disabled {
+    @apply cursor-not-allowed opacity-90;
+  }
+
+  &.processing {
+    background-color: #16a34a;
+  }
+
+  svg {
+    @apply w-5 h-5;
+  }
+}
+
+.confirm-spinner {
+  @apply w-5 h-5 border-2 rounded-full animate-spin;
+  border-color: rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+}
+
+.confirm-btn-cancel:disabled {
+  @apply opacity-50 cursor-not-allowed;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// ========== Dark mode overrides for confirm modal ==========
+:host-context(.dark) {
+  .confirm-modal {
+    background-color: #1f2937;
+    border-color: #374151;
+  }
+
+  .confirm-icon {
+    background-color: rgba(34, 197, 94, 0.15);
+  }
+
+  .confirm-title {
+    color: #ffffff;
+  }
+
+  .confirm-text {
+    color: #9ca3af;
+
+    strong {
+      color: #ffffff;
+    }
+  }
+
+  .confirm-products,
+  .confirm-meta,
+  .confirm-details {
+    background-color: #111827;
+    border-color: #374151;
+  }
+
+  .confirm-products-header {
+    color: #6b7280;
+  }
+
+  .confirm-product-row {
+    border-bottom-color: #374151;
+  }
+
+  .confirm-product-image,
+  .confirm-product-placeholder {
+    background-color: #374151;
+  }
+
+  .confirm-product-placeholder svg {
+    color: #6b7280;
+  }
+
+  .confirm-product-name,
+  .confirm-product-total {
+    color: #f3f4f6;
+  }
+
+  .confirm-product-qty {
+    color: #9ca3af;
+  }
+
+  .confirm-meta-row {
+    .confirm-meta-label {
+      color: #6b7280;
+    }
+
+    .confirm-meta-value {
+      color: #f3f4f6;
+    }
+  }
+
+  .confirm-detail-row {
+    .confirm-label {
+      color: #9ca3af;
+    }
+
+    .confirm-value {
+      color: #f3f4f6;
+    }
+
+    &.total-row {
+      border-color: #374151;
+
+      .confirm-label,
+      .confirm-value {
+        color: #ffffff;
+      }
+    }
+  }
+
+  .confirm-btn-cancel {
+    background-color: #374151;
+    border-color: #4b5563;
+    color: #d1d5db;
+
+    &:hover {
+      background-color: #4b5563;
+      color: #ffffff;
+    }
+  }
+}

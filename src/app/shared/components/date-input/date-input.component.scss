@@ -1,0 +1,205 @@
+/* ==========================================================================
+   app-date-input
+   Shared mobile-first date input with popover (desktop) / bottom sheet (mobile).
+   ========================================================================== */
+
+:host {
+  display: block;
+  font-family: var(--font-sans, 'Inter', system-ui, sans-serif);
+  color: var(--text-primary, #171717);
+}
+
+.date-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+/* ---------- Label ---------- */
+.date-input-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary, #525252);
+  margin-bottom: 6px;
+}
+
+:host-context(.dark) .date-input-label {
+  color: #a3a3a3;
+}
+
+.date-input-required {
+  color: #ef4444;
+  margin-left: 2px;
+}
+
+/* ---------- Field (input + icons) ---------- */
+.date-input-field {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  padding: 0 4px 0 12px;
+  background: var(--bg-secondary, #f5f5f5);
+  border: 1px solid var(--border-color, #e5e5e5);
+  border-radius: 10px;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+
+  &:focus-within {
+    border-color: var(--accent-primary, #001d56);
+    box-shadow: 0 0 0 3px var(--accent-light, rgba(0, 29, 86, 0.1));
+  }
+
+  &.disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+}
+
+:host-context(.dark) .date-input-field {
+  background: var(--bg-tertiary, #262626);
+  border-color: #404040;
+}
+
+.has-error .date-input-field {
+  border-color: #ef4444;
+
+  &:focus-within {
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+  }
+}
+
+/* ---------- Text input ---------- */
+.date-input-text {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  padding: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary, #171717);
+  background: transparent;
+  border: 0;
+  outline: none;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+
+  &::placeholder {
+    color: var(--text-tertiary, #a3a3a3);
+    font-weight: 400;
+  }
+
+  &:disabled {
+    color: var(--text-tertiary, #737373);
+    cursor: not-allowed;
+  }
+}
+
+:host-context(.dark) .date-input-text {
+  color: #fafafa;
+
+  &::placeholder { color: #737373; }
+}
+
+/* ---------- Clear button (visible only when value present) ---------- */
+.date-input-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: var(--text-tertiary, #a3a3a3);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 150ms ease, color 150ms ease;
+
+  svg { width: 14px; height: 14px; }
+
+  &:hover {
+    background: var(--bg-tertiary, #e5e5e5);
+    color: var(--text-primary, #171717);
+  }
+}
+
+:host-context(.dark) .date-input-clear:hover {
+  background: #404040;
+  color: #fafafa;
+}
+
+/* ---------- Calendar trigger button ---------- */
+.date-input-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  color: var(--accent-primary, #001d56);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 150ms ease;
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  &:hover:not(:disabled) {
+    background: var(--accent-light, rgba(0, 29, 86, 0.1));
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+:host-context(.dark) .date-input-trigger {
+  color: #93c5fd;
+
+  &:hover:not(:disabled) {
+    background: rgba(147, 197, 253, 0.12);
+  }
+}
+
+/* ---------- Error message ---------- */
+.date-input-error {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #ef4444;
+}
+
+:host-context(.dark) .date-input-error {
+  color: #fca5a5;
+}
+
+/* ==========================================================================
+   Mobile tweaks (<768px) — larger tap targets and iOS-zoom-safe font-size
+   ========================================================================== */
+@media (max-width: 767px) {
+  .date-input-field {
+    padding: 0 6px 0 14px;
+    border-radius: 12px;
+  }
+
+  .date-input-text {
+    height: 44px;    /* taller for thumb tapping */
+    font-size: 16px; /* prevents iOS zoom on focus */
+  }
+
+  .date-input-trigger {
+    width: 40px;
+    height: 40px;
+
+    svg { width: 20px; height: 20px; }
+  }
+}

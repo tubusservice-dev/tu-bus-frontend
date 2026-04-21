@@ -10,3 +10,4 @@ export * from './auth-modal/auth-modal.component';
 export * from './image-carousel/image-carousel.component';
 export * from './product-card/product-card.component';
 export * from './zoning-modal/zoning-modal.component';
+export * from './date-input/date-input.component';

@@ -24,11 +24,12 @@ import {
   PAYMENT_TYPES_INFO_ONLY,
 } from '../../../models/payment-method.model';
 import { CopyableValueComponent } from '../../../shared/components/copyable-value/copyable-value.component';
+import { DateInputComponent } from '../../../shared/components/date-input/date-input.component';
 
 @Component({
   selector: 'app-checkout-summary',
   standalone: true,
-  imports: [CurrencyPipe, CommonModule, ReactiveFormsModule, CopyableValueComponent],
+  imports: [CurrencyPipe, CommonModule, ReactiveFormsModule, CopyableValueComponent, DateInputComponent],
   templateUrl: './checkout-summary.component.html',
   styleUrl: './checkout-summary.component.scss',
 })
