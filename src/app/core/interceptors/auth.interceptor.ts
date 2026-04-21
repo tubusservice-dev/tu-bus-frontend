@@ -28,8 +28,10 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
       if (error.status === 401 && authService.isAuthenticated()) {
         authService.handleSessionExpired();
 
-        // Redirigir al home si está en una ruta protegida
-        if (router.url.startsWith('/admin') || router.url.startsWith('/perfil')) {
+        // Admin → login del admin; cliente → landing (el modal de auth se abre allí).
+        if (router.url.startsWith('/admin')) {
+          router.navigate(['/admin/login']);
+        } else if (router.url.startsWith('/perfil')) {
           router.navigate(['/']);
         }
       }
