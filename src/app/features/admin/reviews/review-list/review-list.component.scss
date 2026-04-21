@@ -1,0 +1,599 @@
+.admin-review-list {
+  @apply w-full;
+}
+
+// ============================================
+// Page header
+// ============================================
+.page-header {
+  @apply flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6;
+}
+
+.page-title {
+  @apply text-2xl font-bold text-gray-900 dark:text-white;
+}
+
+.page-subtitle {
+  @apply text-sm text-gray-500 dark:text-gray-400 mt-1;
+}
+
+// ============================================
+// Summary cards
+// ============================================
+.summary-grid {
+  @apply grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6;
+}
+
+.summary-card {
+  @apply p-4 rounded-xl;
+  @apply bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700;
+
+  &--alert {
+    border-color: rgba(245, 158, 11, 0.4);
+    background-color: rgba(245, 158, 11, 0.05);
+  }
+}
+
+.summary-label {
+  @apply block text-xs font-medium uppercase tracking-wide mb-1;
+  color: var(--text-tertiary, #6b7280);
+}
+
+.summary-value {
+  @apply text-2xl font-bold;
+  color: var(--text-primary);
+}
+
+.star-glyph {
+  color: #f59e0b;
+}
+
+// ============================================
+// Filters
+// ============================================
+.filters-bar {
+  @apply flex flex-col lg:flex-row lg:items-center gap-4 mb-5;
+  @apply p-3 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700;
+}
+
+.filter-group {
+  @apply flex items-center flex-wrap gap-2;
+}
+
+.filter-label {
+  @apply text-xs font-semibold uppercase tracking-wide;
+  color: var(--text-secondary);
+}
+
+.chip {
+  @apply inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium;
+  @apply border cursor-pointer transition-colors;
+  border-color: var(--border-primary, #e5e7eb);
+  background-color: transparent;
+  color: var(--text-secondary);
+
+  &:hover {
+    background-color: var(--bg-secondary, #f3f4f6);
+  }
+
+  &--active {
+    background-color: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: #ffffff;
+
+    &:hover {
+      background-color: var(--accent-hover, var(--accent-primary));
+    }
+  }
+}
+
+// ============================================
+// Loading / empty
+// ============================================
+.loading-state,
+.empty-state {
+  @apply flex flex-col items-center justify-center py-16 text-gray-400 dark:text-gray-500;
+}
+
+.loading-state .spinner {
+  @apply w-10 h-10 rounded-full;
+  border: 3px solid var(--border-primary, #e5e7eb);
+  border-top-color: var(--accent-primary);
+  animation: spin 0.8s linear infinite;
+}
+
+.empty-icon {
+  @apply w-14 h-14 text-gray-300 dark:text-gray-600;
+}
+
+.empty-title {
+  @apply mt-3 text-base font-semibold;
+  color: var(--text-primary);
+}
+
+.empty-subtitle {
+  @apply text-sm mt-1;
+  color: var(--text-secondary);
+}
+
+// ============================================
+// Data table
+// ============================================
+.table-wrapper {
+  @apply w-full overflow-x-auto rounded-xl;
+  @apply bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700;
+}
+
+.data-table {
+  @apply w-full text-sm;
+
+  th {
+    @apply px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-primary, #e5e7eb);
+  }
+
+  td {
+    @apply px-4 py-3;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-primary, #e5e7eb);
+    vertical-align: middle;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+}
+
+.clickable-row {
+  @apply cursor-pointer transition-colors;
+
+  &:hover {
+    background-color: var(--bg-secondary, rgba(0, 0, 0, 0.02));
+  }
+}
+
+.nowrap {
+  @apply whitespace-nowrap;
+}
+
+.order-number {
+  @apply font-mono text-sm;
+  color: var(--accent-primary);
+}
+
+.client-info {
+  @apply flex flex-col;
+}
+
+.client-name {
+  @apply font-medium;
+  color: var(--text-primary);
+}
+
+.client-email {
+  @apply text-xs;
+  color: var(--text-secondary);
+}
+
+.rating-badge {
+  @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold;
+  background-color: rgba(245, 158, 11, 0.12);
+  color: #b45309;
+}
+
+.comment-cell {
+  @apply max-w-xs truncate;
+  color: var(--text-secondary);
+}
+
+.status-badge {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+
+  &--done {
+    background-color: rgba(34, 197, 94, 0.12);
+    color: #16a34a;
+  }
+
+  &--pending {
+    background-color: rgba(234, 179, 8, 0.15);
+    color: #ca8a04;
+  }
+}
+
+// ============================================
+// Pagination
+// ============================================
+.pagination {
+  @apply flex items-center justify-center gap-4 mt-6;
+}
+
+.page-btn {
+  @apply px-4 py-2 rounded-lg text-sm font-medium;
+  @apply border transition-colors;
+  border-color: var(--border-primary, #e5e7eb);
+  background-color: transparent;
+  color: var(--text-primary);
+
+  &:hover:not(:disabled) {
+    background-color: var(--bg-secondary);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.page-info {
+  @apply text-sm font-medium;
+  color: var(--text-secondary);
+}
+
+// ============================================
+// Modal
+// ============================================
+.modal-overlay {
+  @apply fixed inset-0 z-50 flex items-center justify-center p-4;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-content {
+  @apply w-full max-w-2xl rounded-2xl overflow-hidden shadow-2xl;
+  background-color: var(--bg-primary, #ffffff);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.25s ease-out;
+}
+
+.modal-header {
+  @apply flex items-center justify-between px-6 py-4;
+  border-bottom: 1px solid var(--border-primary, #e5e7eb);
+}
+
+.modal-title {
+  @apply text-lg font-bold;
+  color: var(--text-primary);
+}
+
+.modal-close {
+  @apply p-1.5 rounded-lg transition-colors;
+  color: var(--text-secondary);
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+
+  svg {
+    @apply w-5 h-5;
+  }
+
+  &:hover {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+  }
+}
+
+.modal-body {
+  @apply flex-1 overflow-y-auto px-6 py-5;
+}
+
+.detail-section {
+  @apply mb-6;
+
+  &:last-child {
+    @apply mb-0;
+  }
+}
+
+.section-title {
+  @apply text-xs font-bold uppercase tracking-wide mb-3;
+  color: var(--text-tertiary, #6b7280);
+}
+
+.section-hint {
+  @apply text-xs font-normal normal-case;
+  color: var(--text-secondary);
+}
+
+// Client card
+.client-card {
+  @apply flex items-center gap-3;
+}
+
+.client-avatar {
+  @apply w-12 h-12 rounded-full object-cover flex-shrink-0;
+}
+
+.client-avatar-placeholder {
+  @apply w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0;
+  @apply text-lg font-bold text-white;
+  background-color: var(--accent-primary);
+}
+
+.client-meta {
+  @apply flex flex-col;
+}
+
+.client-name-lg {
+  @apply text-sm font-semibold;
+  color: var(--text-primary);
+}
+
+.client-line {
+  @apply text-xs;
+  color: var(--text-secondary);
+}
+
+// Info grid
+.info-grid {
+  @apply grid grid-cols-1 sm:grid-cols-2 gap-3;
+}
+
+.info-item {
+  @apply flex flex-col gap-0.5 min-w-0;
+
+  &.info-item-wide {
+    @apply sm:col-span-2;
+  }
+
+  dt {
+    @apply text-xs font-medium uppercase tracking-wide;
+    color: var(--text-tertiary, #6b7280);
+  }
+
+  dd {
+    @apply text-sm break-words;
+    color: var(--text-primary);
+  }
+}
+
+.info-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  letter-spacing: 0.02em;
+}
+
+// Rating display
+.rating-display {
+  @apply flex items-center gap-2 mb-3;
+}
+
+.star-display {
+  @apply text-2xl;
+  color: #d1d5db;
+
+  &--on {
+    color: #f59e0b;
+  }
+}
+
+.rating-score {
+  @apply ml-2 text-sm font-semibold;
+  color: var(--text-primary);
+}
+
+.comment-block {
+  @apply p-3 rounded-lg text-sm italic;
+  background-color: var(--bg-secondary, #f9fafb);
+  border-left: 3px solid var(--accent-primary);
+  color: var(--text-primary);
+}
+
+.comment-empty {
+  @apply text-sm italic;
+  color: var(--text-secondary);
+}
+
+// Response textarea
+.response-textarea {
+  @apply w-full px-3 py-2.5 rounded-lg text-sm;
+  @apply border resize-none outline-none transition-colors;
+  background-color: var(--bg-secondary);
+  border-color: var(--border-primary, #e5e7eb);
+  color: var(--text-primary);
+  font-family: inherit;
+
+  &::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.7;
+  }
+
+  &:focus {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(0, 29, 86, 0.12);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.response-counter {
+  @apply text-xs text-right mt-1;
+  color: var(--text-secondary);
+}
+
+.modal-error {
+  @apply mt-3 p-2 rounded-lg text-sm;
+  background-color: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #b91c1c;
+}
+
+// Modal footer
+.modal-footer {
+  @apply flex items-center justify-end gap-3 px-6 py-4;
+  border-top: 1px solid var(--border-primary, #e5e7eb);
+}
+
+.btn {
+  @apply inline-flex items-center justify-center gap-2;
+  @apply px-4 py-2 rounded-lg text-sm font-semibold;
+  @apply transition-colors border-0 cursor-pointer;
+  min-height: 40px;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.btn-ghost {
+  background-color: transparent;
+  border: 1px solid var(--border-primary, #e5e7eb) !important;
+  color: var(--text-primary);
+
+  &:hover:not(:disabled) {
+    background-color: var(--bg-secondary);
+  }
+}
+
+.btn-primary {
+  background-color: #22c55e;
+  color: #ffffff;
+
+  &:hover:not(:disabled) {
+    background-color: #16a34a;
+  }
+}
+
+.btn-danger {
+  background-color: transparent;
+  border: 1px solid #ef4444 !important;
+  color: #ef4444;
+
+  &:hover:not(:disabled) {
+    background-color: #ef4444;
+    color: #ffffff;
+  }
+}
+
+.btn-spinner {
+  @apply inline-block w-4 h-4 rounded-full;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #ffffff;
+  animation: spin 0.7s linear infinite;
+}
+
+// ============================================
+// Animations
+// ============================================
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+// ============================================
+// Dark mode
+// ============================================
+:host-context(.dark) {
+  .summary-card {
+    background-color: #1f2937;
+    border-color: #374151;
+
+    &--alert {
+      background-color: rgba(245, 158, 11, 0.08);
+      border-color: rgba(245, 158, 11, 0.3);
+    }
+  }
+
+  .filters-bar {
+    background-color: #1f2937;
+    border-color: #374151;
+  }
+
+  .chip {
+    border-color: #374151;
+    color: #d1d5db;
+
+    &:hover {
+      background-color: #111827;
+    }
+
+    &--active {
+      background-color: var(--tubus-text-accent, #4d94ff);
+      border-color: var(--tubus-text-accent, #4d94ff);
+      color: #ffffff;
+    }
+  }
+
+  .table-wrapper {
+    background-color: #1f2937;
+    border-color: #374151;
+  }
+
+  .data-table {
+    th, td {
+      border-bottom-color: #374151;
+    }
+  }
+
+  .clickable-row:hover {
+    background-color: #111827;
+  }
+
+  .rating-badge {
+    background-color: rgba(245, 158, 11, 0.18);
+    color: #fbbf24;
+  }
+
+  .status-badge--done {
+    background-color: rgba(34, 197, 94, 0.18);
+    color: #4ade80;
+  }
+
+  .status-badge--pending {
+    background-color: rgba(234, 179, 8, 0.18);
+    color: #fde047;
+  }
+
+  .modal-content {
+    background-color: #1f2937;
+  }
+
+  .modal-header,
+  .modal-footer {
+    border-color: #374151;
+  }
+
+  .response-textarea {
+    background-color: #111827;
+    border-color: #374151;
+    color: #f3f4f6;
+
+    &:focus {
+      border-color: var(--tubus-text-accent, #4d94ff);
+      box-shadow: 0 0 0 3px rgba(77, 148, 255, 0.18);
+    }
+  }
+
+  .comment-block {
+    background-color: #111827;
+  }
+
+  .btn-ghost {
+    border-color: #374151 !important;
+
+    &:hover:not(:disabled) {
+      background-color: #111827;
+    }
+  }
+}

@@ -21,11 +21,15 @@ export interface HeroImage {
 
 export type FloatingStatPosition = 'left' | 'right';
 
+export type FloatingStatSource = 'manual' | 'reviews_average';
+
 export interface FloatingStat {
   value: string;
   label: string;
   isVisible: boolean;
   position: FloatingStatPosition;
+  /** Where the displayed value comes from. Defaults to 'manual'. */
+  source?: FloatingStatSource;
 }
 
 export interface HeroImagesConfig {
@@ -131,8 +135,8 @@ export const DEFAULT_SETTINGS: Settings = {
     images: [],
     carousel: { isEnabled: true, interval: 5000 },
     floatingStats: [
-      { value: '500+', label: 'Servicios', isVisible: true, position: 'left' },
-      { value: '4.9', label: 'Valoración', isVisible: true, position: 'right' },
+      { value: '500', label: 'Servicios', isVisible: true, position: 'left', source: 'manual' },
+      { value: '5', label: 'Valoración', isVisible: true, position: 'right', source: 'reviews_average' },
     ],
   },
   homeHero: {

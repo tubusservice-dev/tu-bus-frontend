@@ -288,6 +288,14 @@ export const routes: Routes = [
                 (m) => m.PaymentMethodFormComponent
               ),
           },
+          // Valoraciones (admin)
+          {
+            path: 'reviews',
+            loadComponent: () =>
+              import('./features/admin/reviews/review-list/review-list.component').then(
+                (m) => m.AdminReviewListComponent
+              ),
+          },
           // Configuraciones
           {
             path: 'settings',

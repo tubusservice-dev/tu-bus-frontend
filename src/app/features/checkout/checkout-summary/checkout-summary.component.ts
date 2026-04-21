@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { CurrencyPipe, CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { forkJoin } from 'rxjs';
-import { CheckoutService } from '../services/checkout.service';
+import { CheckoutService, RequestedServiceDate } from '../services/checkout.service';
 import { CartService } from '../../../core/services/cart.service';
 import { OrderService } from '../../../core/services/order.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -25,11 +25,12 @@ import {
 } from '../../../models/payment-method.model';
 import { CopyableValueComponent } from '../../../shared/components/copyable-value/copyable-value.component';
 import { DateInputComponent } from '../../../shared/components/date-input/date-input.component';
+import { ServiceDatePickerComponent } from '../../../shared/components/service-date-picker/service-date-picker.component';
 
 @Component({
   selector: 'app-checkout-summary',
   standalone: true,
-  imports: [CurrencyPipe, CommonModule, ReactiveFormsModule, CopyableValueComponent, DateInputComponent],
+  imports: [CurrencyPipe, CommonModule, ReactiveFormsModule, CopyableValueComponent, DateInputComponent, ServiceDatePickerComponent],
   templateUrl: './checkout-summary.component.html',
   styleUrl: './checkout-summary.component.scss',
 })
@@ -318,8 +319,16 @@ export class CheckoutSummaryComponent implements OnInit {
     if (!this.disclaimerAccepted() || !this.paymentSubmitted()) return false;
     if (this.isBranchMandatory() && !this.checkoutService.hasBranch()) return false;
     if (this.needsVehicle() && !this.checkoutService.hasVehicle()) return false;
+    if (
+      this.checkoutService.dispatchType() === 'oil_change_service'
+      && !this.checkoutService.hasRequestedServiceDate()
+    ) return false;
     return true;
   });
+
+  protected onServiceDateChange(value: RequestedServiceDate | null): void {
+    this.checkoutService.setRequestedServiceDate(value);
+  }
 
   ngOnInit(): void {
     if (!this.checkoutService.hasDispatchType()) {
@@ -908,6 +917,8 @@ export class CheckoutSummaryComponent implements OnInit {
       dispatchDetails.referencePoint = this.oilChangeServiceInfo.referencePoint;
     }
 
+    const requestedDate = this.checkoutService.requestedServiceDate();
+
     const orderData: CreateOrderRequest = {
       items,
       subtotal: this.cartService.subtotal(),
@@ -921,6 +932,10 @@ export class CheckoutSummaryComponent implements OnInit {
       billingAddress: this.checkoutService.billingAddress() || undefined,
       paymentSubmission: this.submittedPayment() || undefined,
       dispatchDetails,
+      requestedServiceDate:
+        this.dispatchType === 'oil_change_service' && requestedDate ? requestedDate.date : undefined,
+      requestedServiceTier:
+        this.dispatchType === 'oil_change_service' && requestedDate ? requestedDate.tier : undefined,
     };
 
     this.orderService.createOrder(orderData).subscribe({

@@ -8,6 +8,7 @@ import {
   MechanicAssignmentListResponse,
   AvailableMechanicsResponse,
   MechanicCalendarResponse,
+  AvailableSlotsResponse,
 } from '../../models/mechanic-assignment.model';
 
 @Injectable({
@@ -78,6 +79,23 @@ export class MechanicAssignmentService {
     if (orderId) params = params.set('orderId', orderId);
     return this.http.get<AvailableMechanicsResponse>(
       `${this.adminUrl}/available-mechanics`,
+      { params }
+    );
+  }
+
+  getAvailableSlots(
+    mechanicId: string,
+    date: string,
+    orderId?: string,
+    step?: number
+  ): Observable<AvailableSlotsResponse> {
+    let params = new HttpParams()
+      .set('mechanicId', mechanicId)
+      .set('date', date);
+    if (orderId) params = params.set('orderId', orderId);
+    if (step !== undefined) params = params.set('step', step);
+    return this.http.get<AvailableSlotsResponse>(
+      `${this.adminUrl}/available-slots`,
       { params }
     );
   }

@@ -121,6 +121,8 @@ export interface Order {
   paymentMethod?: string;
   dispatchType: DispatchType;
   dispatchDetails: DispatchDetails;
+  requestedServiceDate?: string;
+  requestedServiceTier?: ServiceDateTier;
   billingAddress?: BillingAddress;
   disclaimerAccepted: boolean;
   disclaimerAcceptedAt?: string;
@@ -145,11 +147,15 @@ export interface CreateOrderRequest {
   dispatchType: DispatchType;
   paymentMethod?: string;
   dispatchDetails?: DispatchDetails;
+  requestedServiceDate?: string;
+  requestedServiceTier?: ServiceDateTier;
   billingAddress?: BillingAddress;
   disclaimerAccepted: boolean;
   notes?: string;
   paymentSubmission?: PaymentSubmission;
 }
+
+export type ServiceDateTier = 'express' | 'tomorrow' | 'scheduled';
 
 export interface OrderListResponse {
   success: boolean;

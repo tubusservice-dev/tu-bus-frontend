@@ -91,6 +91,13 @@ export interface OilChangeServiceInfo {
   notes?: string;
 }
 
+export type ServiceDateTier = 'express' | 'tomorrow' | 'scheduled';
+
+export interface RequestedServiceDate {
+  tier: ServiceDateTier;
+  date: string; // YYYY-MM-DD (local calendar day)
+}
+
 export interface BillingAddress {
   source: 'shipping' | 'profile' | 'custom';
   fullName?: string;
@@ -117,10 +124,17 @@ export interface CheckoutState {
   oilChangeServiceInfo: OilChangeServiceInfo | null;
   selectedVehicles: Vehicle[];
   selectedBranch: BranchSummary | null;
+  requestedServiceDate: RequestedServiceDate | null;
   billingAddress: BillingAddress | null;
   paymentMethod: string | null;
   disclaimerAccepted: boolean;
 }
+
+const BRANCH_AWARE_DISPATCH_TYPES: DispatchType[] = [
+  'store_pickup',
+  'in_store_oil_change',
+  'oil_change_service',
+];
 
 const INITIAL_STATE: CheckoutState = {
   dispatchType: null,
@@ -132,6 +146,7 @@ const INITIAL_STATE: CheckoutState = {
   oilChangeServiceInfo: null,
   selectedVehicles: [],
   selectedBranch: null,
+  requestedServiceDate: null,
   billingAddress: null,
   paymentMethod: null,
   disclaimerAccepted: false,
@@ -269,6 +284,8 @@ export class CheckoutService {
   readonly selectedVehicles = computed(() => this._state().selectedVehicles);
   readonly selectedVehicle = computed(() => this._state().selectedVehicles[0] ?? null); // @deprecated compat
   readonly selectedBranch = computed(() => this._state().selectedBranch);
+  readonly requestedServiceDate = computed(() => this._state().requestedServiceDate);
+  readonly hasRequestedServiceDate = computed(() => this._state().requestedServiceDate !== null);
   readonly billingAddress = computed(() => this._state().billingAddress);
   readonly paymentMethod = computed(() => this._state().paymentMethod);
   readonly disclaimerAccepted = computed(() => this._state().disclaimerAccepted);
@@ -354,11 +371,17 @@ export class CheckoutService {
       localDeliveryRecipientInfo: type === 'local_delivery' ? state.localDeliveryRecipientInfo : null,
       sellerAgreementInfo: type === 'seller_agreement' ? state.sellerAgreementInfo : null,
       oilChangeServiceInfo: type === 'oil_change_service' ? state.oilChangeServiceInfo : null,
-      // Preserve vehicles for oil change types
+      // Preserve vehicles only for oil change types
       selectedVehicles: (type === 'oil_change_service' || type === 'in_store_oil_change')
         ? state.selectedVehicles : [],
-      // Preserve branch for ALL dispatch types
-      selectedBranch: state.selectedBranch,
+      // Preserve branch only for dispatch types that consume it
+      selectedBranch: BRANCH_AWARE_DISPATCH_TYPES.includes(type!)
+        ? state.selectedBranch
+        : null,
+      // Requested service date applies exclusively to home oil change
+      requestedServiceDate: type === 'oil_change_service'
+        ? state.requestedServiceDate
+        : null,
     }));
   }
 
@@ -428,6 +451,10 @@ export class CheckoutService {
     this._state.update((s) => ({ ...s, selectedBranch: null }));
   }
 
+  setRequestedServiceDate(value: RequestedServiceDate | null): void {
+    this._state.update((s) => ({ ...s, requestedServiceDate: value }));
+  }
+
   setBillingAddress(address: BillingAddress): void {
     this._state.update((s) => ({ ...s, billingAddress: address }));
   }
@@ -462,6 +489,7 @@ export class CheckoutService {
       oilChangeServiceInfo: null,
       selectedVehicles: [],
       selectedBranch: null,
+      requestedServiceDate: null,
     }));
   }
 

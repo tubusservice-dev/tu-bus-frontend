@@ -14,11 +14,13 @@ import {
 import { environment } from '../../../../../environments/environment';
 import { MechanicAvatarComponent } from '../../../../shared/components/mechanic-avatar/mechanic-avatar.component';
 import { DateInputComponent } from '../../../../shared/components/date-input/date-input.component';
+import { SlotsSuggestionsComponent } from '../slots-suggestions/slots-suggestions.component';
+import { AvailableSlot } from '../../../../models/mechanic-assignment.model';
 
 @Component({
   selector: 'app-order-dispatch-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, MechanicAvatarComponent, DateInputComponent],
+  imports: [CommonModule, FormsModule, MechanicAvatarComponent, DateInputComponent, SlotsSuggestionsComponent],
   template: `
     @if (isOpen()) {
       <div class="modal-overlay" (click)="onClose()">
@@ -193,17 +195,28 @@ import { DateInputComponent } from '../../../../shared/components/date-input/dat
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="step-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" /></svg>
                     Fecha del servicio
                   </h4>
-                  <app-date-input
-                    id="schedule-date"
-                    [(ngModel)]="selectedDate"
-                    (ngModelChange)="onDateChange()"
-                    [min]="todayStr"
-                  />
-                  @if (isDatePast()) {
-                    <div class="date-error">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" /></svg>
-                      Fecha no valida — seleccione una fecha a partir de hoy
+
+                  @if (hasRequestedDate()) {
+                    <div class="requested-date-banner">
+                      <div class="requested-date-headline">
+                        <span class="requested-date-tier">{{ requestedTierLabel() }}</span>
+                        <span class="requested-date-value">{{ requestedDateLabel() }}</span>
+                      </div>
+                      <p class="requested-date-hint">Fecha solicitada por el cliente. No puede modificarse desde aquí.</p>
                     </div>
+                  } @else {
+                    <app-date-input
+                      id="schedule-date"
+                      [(ngModel)]="selectedDate"
+                      (ngModelChange)="onDateChange()"
+                      [min]="todayStr"
+                    />
+                    @if (isDatePast()) {
+                      <div class="date-error">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" /></svg>
+                        Fecha no valida — seleccione una fecha a partir de hoy
+                      </div>
+                    }
                   }
                 </div>
               }
@@ -215,6 +228,16 @@ import { DateInputComponent } from '../../../../shared/components/date-input/dat
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="step-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
                     Hora de inicio
                   </h4>
+
+                  <app-slots-suggestions
+                    [mechanicId]="selectedMechanicId"
+                    [date]="selectedDate"
+                    [orderId]="order()?.id || null"
+                    [selectedStartTime]="selectedStartTime"
+                    (slotPicked)="onSlotPicked($event)"
+                    (cleared)="onSlotCleared()"
+                  />
+
                   <input type="time" [(ngModel)]="selectedStartTime" (ngModelChange)="onTimeChange()" class="form-input" [class.input-error]="isTimeInPast()" />
 
                   @if (isTimeInPast()) {
@@ -494,6 +517,22 @@ import { DateInputComponent } from '../../../../shared/components/date-input/dat
       @apply flex items-center gap-2 mt-2 px-3 py-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-xs font-medium text-red-600 dark:text-red-400;
     }
 
+    // Client-locked date banner
+    .requested-date-banner {
+      @apply flex flex-col gap-1 px-3 py-2.5 rounded-lg border;
+      @apply bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800;
+    }
+    .requested-date-headline { @apply flex flex-col gap-0.5; }
+    .requested-date-tier {
+      @apply text-[11px] font-semibold uppercase tracking-wider text-blue-700 dark:text-blue-300;
+    }
+    .requested-date-value {
+      @apply text-sm font-semibold text-gray-900 dark:text-white capitalize;
+    }
+    .requested-date-hint {
+      @apply text-[11px] text-gray-500 dark:text-gray-400 m-0;
+    }
+
     // Cancel current assignment
     .btn-cancel-current {
       @apply w-full py-2.5 text-sm font-medium text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-xl;
@@ -529,6 +568,20 @@ export class OrderDispatchModalComponent {
   protected readonly progressLink = signal<string>('');
   protected readonly availabilityStatus = signal<'unchecked' | 'checking' | 'available' | 'conflict' | 'outside'>('unchecked');
   protected readonly isCancellingAssignment = signal(false);
+
+  // When the customer locked a date on checkout, the admin picks only the
+  // hour — the date is frozen and prefilled here.
+  protected readonly requestedDateIso = computed(() => {
+    const raw = this.order()?.requestedServiceDate;
+    if (!raw) return '';
+    return this.toIsoDate(raw);
+  });
+
+  protected readonly requestedDateTier = computed(() =>
+    this.order()?.requestedServiceTier ?? null
+  );
+
+  protected readonly hasRequestedDate = computed(() => !!this.requestedDateIso());
 
   protected selectedMechanicId = '';
   protected readonly selectedDateSignal = signal('');
@@ -569,8 +622,60 @@ export class OrderDispatchModalComponent {
       if (currentOrder && this.isOpen()) {
         this.loadAssignment(currentOrder);
         this.loadBranchMechanics(currentOrder);
+        this.applyRequestedServiceDate();
       }
     });
+  }
+
+  private applyRequestedServiceDate(): void {
+    const iso = this.requestedDateIso();
+    if (!iso) return;
+    if (!this.selectedDateSignal()) {
+      this.selectedDateSignal.set(iso);
+    }
+  }
+
+  /** YYYY-MM-DD normalizer — accepts ISO strings or Date instances from the API. */
+  private toIsoDate(raw: string | Date): string {
+    const d = raw instanceof Date ? raw : new Date(raw);
+    if (isNaN(d.getTime())) return '';
+    const y = d.getUTCFullYear();
+    const m = `${d.getUTCMonth() + 1}`.padStart(2, '0');
+    const day = `${d.getUTCDate()}`.padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  protected requestedDateLabel(): string {
+    const iso = this.requestedDateIso();
+    if (!iso) return '';
+    const [y, m, d] = iso.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    return date.toLocaleDateString('es-VE', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+  }
+
+  protected requestedTierLabel(): string {
+    const tier = this.requestedDateTier();
+    switch (tier) {
+      case 'express':   return 'Express (hoy)';
+      case 'tomorrow':  return 'Mañana';
+      case 'scheduled': return 'Agendado por el cliente';
+      default:          return '';
+    }
+  }
+
+  protected onSlotPicked(slot: AvailableSlot): void {
+    this.selectedTimeSignal.set(slot.startTime);
+    this.onTimeChange();
+  }
+
+  protected onSlotCleared(): void {
+    this.selectedTimeSignal.set('');
+    this.availabilityStatus.set('unchecked');
   }
 
   selectMechanic(mech: Mechanic): void {
@@ -773,6 +878,7 @@ export class OrderDispatchModalComponent {
     this.branchMechanics.set([]);
     this.availabilityStatus.set('unchecked');
     this.selectedMechanicId = '';
+    // Keep date if the client locked it — the effect() repopulates on reopen
     this.selectedDate = '';
     this.selectedStartTime = '';
     this.close.emit();

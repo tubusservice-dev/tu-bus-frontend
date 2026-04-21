@@ -344,6 +344,15 @@
         </section>
       }
 
+      @if (dispatchType === 'oil_change_service') {
+        <section class="summary-section">
+          <app-service-date-picker
+            [initial]="checkoutService.requestedServiceDate()"
+            (changed)="onServiceDateChange($event)"
+          />
+        </section>
+      }
+
       <!-- Sección: Seleccionar Sucursal (store_pickup / in_store_oil_change) -->
       @if (needsBranchSelection()) {
         <section class="summary-section">

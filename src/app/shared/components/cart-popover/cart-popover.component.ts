@@ -33,6 +33,11 @@ export class CartPopoverComponent {
     this.closePopover();
   }
 
+  goToCatalog(): void {
+    this.router.navigate(['/catalogo']);
+    this.closePopover();
+  }
+
   onContinue(): void {
     this.router.navigate(['/carrito']);
     this.closePopover();

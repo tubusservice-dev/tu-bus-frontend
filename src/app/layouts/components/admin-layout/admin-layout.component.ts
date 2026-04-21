@@ -121,6 +121,12 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
       exact: false,
     },
     {
+      label: 'Valoraciones',
+      icon: 'star',
+      route: '/admin/reviews',
+      exact: false,
+    },
+    {
       label: 'Configuraciones',
       icon: 'settings',
       route: '/admin/settings',

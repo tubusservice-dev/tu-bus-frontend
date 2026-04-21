@@ -160,6 +160,43 @@ export class AdminOrderListComponent implements OnInit {
     });
   }
 
+  /** Short date variant for list rows: "21/04/26" */
+  formatShortDate(date: string): string {
+    return new Date(date).toLocaleDateString('es-VE', {
+      day: '2-digit',
+      month: '2-digit',
+      year: '2-digit',
+    });
+  }
+
+  /** Clock portion only: "11:49" */
+  formatShortTime(date: string): string {
+    return new Date(date).toLocaleTimeString('es-VE', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
+  }
+
+  /** Requested service date (only home oil change) formatted short. */
+  getRequestedServiceInfo(order: Order): { tierLabel: string; tierClass: string; dateLabel: string } | null {
+    if (!order.requestedServiceDate || !order.requestedServiceTier) return null;
+    const tierMap: Record<string, { label: string; cls: string }> = {
+      express:   { label: 'Express',  cls: 'tier-express' },
+      tomorrow:  { label: 'Mañana',   cls: 'tier-tomorrow' },
+      scheduled: { label: 'Agendado', cls: 'tier-scheduled' },
+    };
+    const entry = tierMap[order.requestedServiceTier];
+    if (!entry) return null;
+    const d = new Date(order.requestedServiceDate);
+    const dateLabel = d.toLocaleDateString('es-VE', {
+      weekday: 'short',
+      day: '2-digit',
+      month: 'short',
+    });
+    return { tierLabel: entry.label, tierClass: entry.cls, dateLabel };
+  }
+
   viewOrderDetail(order: Order): void {
     this.router.navigate(['/admin/orders', order.id]);
   }
@@ -169,15 +206,20 @@ export class AdminOrderListComponent implements OnInit {
     this.loadOrders(page);
   }
 
-  get pages(): number[] {
+  /** Visible pages with ellipsis — mirrors the catalog paginator. */
+  getVisiblePages(): (number | '...')[] {
     const total = this.totalPages();
     const current = this.currentPage();
-    const pages: number[] = [];
-    const start = Math.max(1, current - 2);
-    const end = Math.min(total, current + 2);
-    for (let i = start; i <= end; i++) {
-      pages.push(i);
+    if (total <= 7) {
+      return Array.from({ length: total }, (_, i) => i + 1);
     }
+    const pages: (number | '...')[] = [1];
+    if (current > 3) pages.push('...');
+    const start = Math.max(2, current - 1);
+    const end = Math.min(total - 1, current + 1);
+    for (let i = start; i <= end; i++) pages.push(i);
+    if (current < total - 2) pages.push('...');
+    pages.push(total);
     return pages;
   }
 }

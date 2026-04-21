@@ -60,29 +60,34 @@
             <tr>
               <th class="col-order">Orden</th>
               <th class="col-client">Cliente</th>
-              <th class="col-items">Productos</th>
+              <th class="col-items">Prod.</th>
               <th class="col-total">Total</th>
               <th class="col-status">Estado</th>
-              <th class="col-date">Fecha</th>
+              <th class="col-schedule">Programado</th>
+              <th class="col-date">Creada</th>
             </tr>
           </thead>
           <tbody>
             @for (order of orders(); track order.id) {
               <tr class="clickable-row" (click)="viewOrderDetail(order)">
-                <!-- Order number + dispatch type chip -->
+                <!-- Order number + dispatch type chip (inline) -->
                 <td class="cell-order">
-                  <span class="order-number">{{ order.orderNumber }}</span>
-                  <span class="dispatch-chip" [ngClass]="getDispatchTypeColor(order.dispatchType)">
-                    {{ getDispatchTypeLabel(order.dispatchType) }}
-                  </span>
+                  <div class="cell-stack">
+                    <span class="order-number">{{ order.orderNumber }}</span>
+                    <span class="dispatch-chip" [ngClass]="getDispatchTypeColor(order.dispatchType)">
+                      {{ getDispatchTypeLabel(order.dispatchType) }}
+                    </span>
+                  </div>
                 </td>
 
                 <!-- Client name + email -->
                 <td class="cell-client">
-                  <span class="client-name">{{ getClientName(order) }}</span>
-                  @if (getClientEmail(order)) {
-                    <span class="client-email">{{ getClientEmail(order) }}</span>
-                  }
+                  <div class="cell-stack">
+                    <span class="client-name">{{ getClientName(order) }}</span>
+                    @if (getClientEmail(order)) {
+                      <span class="client-email">{{ getClientEmail(order) }}</span>
+                    }
+                  </div>
                 </td>
 
                 <!-- Item count -->
@@ -105,19 +110,36 @@
 
                 <!-- Status: primary (order) + secondary (dispatch or service) -->
                 <td class="cell-status">
-                  <span class="status-badge" [ngClass]="getStatusColor(order.status)">
-                    {{ getStatusLabel(order.status) }}
-                  </span>
-                  @if (getSecondaryIndicator(order); as sec) {
-                    <span class="secondary-badge" [ngClass]="sec.color">
-                      {{ sec.label }}
+                  <div class="cell-stack">
+                    <span class="status-badge" [ngClass]="getStatusColor(order.status)">
+                      {{ getStatusLabel(order.status) }}
                     </span>
+                    @if (getSecondaryIndicator(order); as sec) {
+                      <span class="secondary-badge" [ngClass]="sec.color">
+                        {{ sec.label }}
+                      </span>
+                    }
+                  </div>
+                </td>
+
+                <!-- Programado: only home oil change carries a client-requested date -->
+                <td class="cell-schedule">
+                  @if (getRequestedServiceInfo(order); as svc) {
+                    <div class="cell-stack">
+                      <span class="tier-chip" [ngClass]="svc.tierClass">{{ svc.tierLabel }}</span>
+                      <span class="schedule-date">{{ svc.dateLabel }}</span>
+                    </div>
+                  } @else {
+                    <span class="schedule-empty">—</span>
                   }
                 </td>
 
-                <!-- Date -->
+                <!-- Date: created at, short date + time -->
                 <td class="cell-date">
-                  <span class="order-date">{{ formatDate(order.createdAt) }}</span>
+                  <div class="cell-stack">
+                    <span class="date-day">{{ formatShortDate(order.createdAt) }}</span>
+                    <span class="date-time">{{ formatShortTime(order.createdAt) }}</span>
+                  </div>
                 </td>
               </tr>
             }
@@ -125,15 +147,12 @@
         </table>
       </div>
 
-      <!-- Pagination -->
+      <!-- Pagination (catalog-style) -->
       @if (totalPages() > 1) {
-        <div class="pagination">
-          <span class="pagination-info">
-            Pagina {{ currentPage() }} de {{ totalPages() }} ({{ totalItems() }} registros)
-          </span>
-          <div class="pagination-buttons">
+        <div class="pagination-wrapper">
+          <nav class="pagination">
             <button
-              class="btn-page"
+              class="page-btn"
               [disabled]="currentPage() === 1"
               (click)="goToPage(currentPage() - 1)"
             >
@@ -141,17 +160,23 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
               </svg>
             </button>
-            @for (page of pages; track page) {
-              <button
-                class="btn-page"
-                [class.active]="page === currentPage()"
-                (click)="goToPage(page)"
-              >
-                {{ page }}
-              </button>
+
+            @for (p of getVisiblePages(); track $index) {
+              @if (p === '...') {
+                <span class="page-ellipsis">...</span>
+              } @else {
+                <button
+                  class="page-btn"
+                  [class.active]="p === currentPage()"
+                  (click)="goToPage(+p)"
+                >
+                  {{ p }}
+                </button>
+              }
             }
+
             <button
-              class="btn-page"
+              class="page-btn"
               [disabled]="currentPage() === totalPages()"
               (click)="goToPage(currentPage() + 1)"
             >
@@ -159,7 +184,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
               </svg>
             </button>
-          </div>
+          </nav>
         </div>
       }
     }
