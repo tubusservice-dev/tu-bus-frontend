@@ -5,6 +5,7 @@ import { CheckoutService } from '../services/checkout.service';
 import { VehicleService } from '../../../core/services/vehicle.service';
 import { Vehicle } from '../../../models/vehicle.model';
 import { VehicleFormComponent } from '../../garage/vehicle-form/vehicle-form.component';
+import { scrollToFirstFormError } from '../../../shared/validators/form-validators';
 
 /**
  * Vehicle-only picker for the `in_store_oil_change` dispatch type. Mirrors the
@@ -29,6 +30,10 @@ export class CheckoutInStoreOilChangeFormComponent implements OnInit {
   protected readonly vehicles = signal<Vehicle[]>([]);
   protected readonly showVehicleForm = signal(false);
   protected readonly isLoadingVehicles = signal(false);
+
+  /** Flips to `true` once the user tries to continue at least once, so the
+   *  "at least one vehicle required" error can be rendered in red. */
+  protected readonly submitAttempted = signal(false);
 
   protected readonly selectedVehiclesLabel = computed(() => {
     const selected = this.checkoutService.selectedVehicles();
@@ -96,7 +101,11 @@ export class CheckoutInStoreOilChangeFormComponent implements OnInit {
   }
 
   protected onContinue(): void {
-    if (this.checkoutService.selectedVehicles().length === 0) return;
+    this.submitAttempted.set(true);
+    if (this.checkoutService.selectedVehicles().length === 0) {
+      scrollToFirstFormError();
+      return;
+    }
     this.router.navigate(['/checkout/resumen']);
   }
 

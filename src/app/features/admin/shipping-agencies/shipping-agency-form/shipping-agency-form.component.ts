@@ -4,6 +4,7 @@ import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ShippingAgencyService } from '../../../../core/services/shipping-agency.service';
 import { UploadService } from '../../../../core/services/upload.service';
+import { ToastService } from '../../../../shared/services/toast.service';
 
 type ConfigOption = 'collectOnDelivery' | 'freeShipping' | 'additionalCharge';
 
@@ -20,6 +21,7 @@ export class ShippingAgencyFormComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly shippingAgencyService = inject(ShippingAgencyService);
   private readonly uploadService = inject(UploadService);
+  private readonly toastService = inject(ToastService);
 
   protected readonly agencyId = signal<string | null>(null);
   protected readonly isEditMode = signal(false);
@@ -206,10 +208,17 @@ export class ShippingAgencyFormComponent implements OnInit {
 
     request$.subscribe({
       next: () => {
+        this.toastService.success(
+          this.isEditMode()
+            ? 'Agencia actualizada exitosamente'
+            : 'Agencia creada exitosamente',
+        );
         this.router.navigate(['/admin/shipping-agencies']);
       },
       error: (error) => {
-        this.errorMessage.set(error.error?.message || 'Error al guardar agencia');
+        const msg = error.error?.message || 'Error al guardar agencia';
+        this.errorMessage.set(msg);
+        this.toastService.error(msg);
         this.isSubmitting.set(false);
       },
     });

@@ -87,3 +87,25 @@ export interface MechanicCalendarResponse {
   success: boolean;
   data: MechanicCalendarData;
 }
+
+export type SlotStatus = 'available' | 'booked' | 'blocked' | 'past';
+
+export interface AvailableSlot {
+  startTime: string;
+  endTime: string;
+  status: SlotStatus;
+}
+
+export interface AvailableSlotsData {
+  slots: AvailableSlot[];
+  openTime: string | null;
+  closeTime: string | null;
+  serviceDurationMinutes: number;
+  dayClosed: boolean;
+  hasFullDayBlock: boolean;
+}
+
+export interface AvailableSlotsResponse {
+  success: boolean;
+  data: AvailableSlotsData;
+}

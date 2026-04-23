@@ -46,6 +46,10 @@
   &:hover[data-color="orange"] {
     @apply ring-2 ring-orange-500/20;
   }
+
+  &.disabled {
+    @apply opacity-40 cursor-not-allowed pointer-events-none;
+  }
 }
 
 .card-icon {

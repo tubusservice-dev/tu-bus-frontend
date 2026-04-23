@@ -9,7 +9,7 @@ import { getStates, getCitiesByState, getMunicipalitiesByState } from '../../../
 import {
   NAME_PATTERN, PHONE_VE_PATTERN, DOCUMENT_NUMBER_PATTERN, EMAIL_PATTERN,
   MAX_FULLNAME_LENGTH, MAX_ADDRESS_LENGTH, MAX_REFERENCE_LENGTH, MAX_NOTES_LENGTH,
-  MAX_PHONE_LENGTH, MAX_DOCUMENT_LENGTH, noNumbersValidator,
+  MAX_PHONE_LENGTH, MAX_DOCUMENT_LENGTH, noNumbersValidator, scrollToFirstFormError,
 } from '../../../shared/validators/form-validators';
 
 @Component({
@@ -251,6 +251,7 @@ export class CheckoutShippingFormComponent implements OnInit {
   onSubmit(): void {
     if (this.shippingForm.invalid) {
       this.shippingForm.markAllAsTouched();
+      scrollToFirstFormError();
       return;
     }
 

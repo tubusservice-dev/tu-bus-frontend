@@ -100,6 +100,67 @@
   }
 }
 
+.order-type-inline {
+  @apply ml-auto text-xs font-semibold tracking-wide;
+  color: var(--accent-primary, #2563eb);
+}
+
+:host-context(.dark) .order-type-inline {
+  color: #60a5fa;
+}
+
+.order-type-body {
+  @apply px-5 sm:px-6 py-4;
+}
+
+.order-type-description {
+  @apply text-sm leading-relaxed m-0;
+  color: var(--text-secondary);
+}
+
+:host-context(.dark) .order-type-description {
+  color: #d1d5db;
+}
+
+.requested-service-body {
+  @apply px-5 sm:px-6 py-4 flex flex-col gap-2;
+}
+
+.requested-service-date {
+  @apply text-base font-semibold m-0 capitalize;
+  color: var(--text-primary);
+}
+
+:host-context(.dark) .requested-service-date {
+  color: #f3f4f6;
+}
+
+.requested-service-hint {
+  @apply text-xs leading-relaxed m-0;
+  color: var(--text-tertiary, #6b7280);
+}
+
+:host-context(.dark) .requested-service-hint {
+  color: #9ca3af;
+}
+
+// Inline copy-to-clipboard button (used on the reference number row)
+.info-value-copy {
+  @apply inline-flex items-center gap-2;
+}
+
+.btn-copy-inline {
+  @apply inline-flex items-center justify-center w-6 h-6 rounded-md transition-colors flex-shrink-0;
+  @apply text-gray-400 hover:text-blue-600 hover:bg-blue-50;
+  @apply dark:text-gray-500 dark:hover:text-blue-400 dark:hover:bg-blue-900/30;
+
+  svg { @apply w-3.5 h-3.5; }
+
+  &.copied {
+    @apply text-green-600 dark:text-green-400;
+  }
+}
+
 // ============================================
 // GRID LAYOUT
 // ============================================
@@ -115,12 +176,12 @@
 // CARDS
 // ============================================
 .detail-card {
-  @apply rounded-xl border bg-white dark:bg-gray-800 dark:border-gray-700 overflow-hidden;
+  @apply rounded-xl border bg-white dark:bg-gray-800 dark:border-gray-700;
   border-color: #e5e7eb;
 }
 
 .card-title {
-  @apply flex items-center gap-2 px-4 sm:px-5 py-3 text-sm font-semibold border-b;
+  @apply flex items-center gap-2 px-5 sm:px-6 py-3 text-sm font-semibold border-b rounded-t-xl;
   @apply text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700;
 
   svg {
@@ -136,7 +197,7 @@
 }
 
 .info-row {
-  @apply flex items-start justify-between gap-4 px-4 sm:px-5 py-2.5;
+  @apply flex items-start justify-between gap-4 px-5 sm:px-6 py-2.5;
   @apply border-b border-gray-100 dark:border-gray-700/50;
 
   &:last-child {
@@ -148,11 +209,27 @@
   @apply text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex-shrink-0;
 }
 
+.info-label-hint {
+  @apply text-[10px] font-normal text-gray-400 dark:text-gray-500 ml-1;
+  text-transform: none;
+}
+
 .info-value {
-  @apply text-xs sm:text-sm text-gray-900 dark:text-gray-100 text-right;
+  @apply text-xs sm:text-sm text-gray-900 dark:text-gray-100 text-right break-words min-w-0;
 
   &.mono {
     font-family: monospace;
+  }
+}
+
+// Adaptive stacked layout for rows whose value is too long to fit inline
+// alongside the label. Applied via [class.info-row-stacked]="hasLongNotes()".
+.info-row-stacked {
+  @apply flex-col items-stretch gap-1.5;
+
+  .info-value,
+  .notes-value {
+    @apply text-left;
   }
 }
 
@@ -186,7 +263,7 @@
 }
 
 .cancellation-body {
-  @apply px-4 sm:px-5 py-4 flex flex-col gap-3;
+  @apply px-5 sm:px-6 py-4 flex flex-col gap-3;
 }
 
 .cancellation-reason {
@@ -220,7 +297,7 @@
 }
 
 .product-row {
-  @apply flex items-center gap-3 px-4 sm:px-5 py-3 border-b border-gray-100 dark:border-gray-700/50;
+  @apply flex items-center gap-3 px-5 sm:px-6 py-3 border-b border-gray-100 dark:border-gray-700/50;
 
   &:last-child {
     @apply border-b-0;
@@ -255,7 +332,7 @@
 }
 
 .total-row {
-  @apply flex items-center justify-between px-4 sm:px-5 py-2 text-sm;
+  @apply flex items-center justify-between px-5 sm:px-6 py-2 text-sm;
   @apply text-gray-600 dark:text-gray-400;
 
   span:last-child {
@@ -263,23 +340,31 @@
   }
 
   &.total-final {
-    @apply bg-gray-50 dark:bg-gray-900/50 py-3;
+    @apply bg-gray-50 dark:bg-gray-900/50 py-3 items-start rounded-b-xl;
 
     span:first-child {
       @apply font-semibold text-gray-900 dark:text-gray-100;
     }
-
-    span:last-child {
-      @apply text-lg font-bold text-blue-600 dark:text-blue-400;
-    }
   }
+}
+
+.total-values {
+  @apply flex flex-col items-end gap-0.5;
+}
+
+.total-usd {
+  @apply text-lg font-bold text-blue-600 dark:text-blue-400 leading-tight;
+}
+
+.total-bs {
+  @apply text-xs font-medium text-gray-500 dark:text-gray-400 leading-tight;
 }
 
 // ============================================
 // PROOF IMAGE
 // ============================================
 .proof-section {
-  @apply flex flex-col gap-2 px-4 sm:px-5 py-3;
+  @apply flex flex-col gap-2 px-5 sm:px-6 py-3;
 }
 
 .proof-image {
@@ -309,7 +394,7 @@
 // TIMELINE
 // ============================================
 .timeline {
-  @apply flex flex-col px-4 sm:px-5 py-3;
+  @apply flex flex-col px-5 sm:px-6 py-3;
 }
 
 .timeline-item {
@@ -469,4 +554,341 @@
 .btn-notes-save {
   @apply px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700;
   @apply disabled:opacity-60 disabled:cursor-not-allowed transition-colors;
+}
+
+// ============================================
+// NEW HEADER BUTTONS (Fase 4)
+// ============================================
+
+.btn-approve {
+  @apply inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-colors;
+  @apply bg-green-600 text-white hover:bg-green-700;
+  @apply disabled:opacity-60 disabled:cursor-not-allowed;
+
+  svg { @apply w-4 h-4; }
+}
+
+.btn-cancel-header {
+  @apply inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-colors;
+  @apply bg-red-600 text-white hover:bg-red-700;
+  @apply disabled:opacity-60 disabled:cursor-not-allowed;
+
+  svg { @apply w-4 h-4; }
+}
+
+.btn-mechanic {
+  @apply inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-colors;
+  @apply bg-indigo-600 text-white hover:bg-indigo-700;
+
+  svg { @apply w-4 h-4; }
+}
+
+.btn-mechanic-assigned {
+  @apply inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-colors;
+  @apply bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100;
+  @apply dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-800/40 dark:hover:bg-emerald-900/30;
+
+  svg { @apply w-4 h-4; }
+
+  &:disabled {
+    @apply opacity-60 cursor-not-allowed pointer-events-none;
+  }
+}
+
+// Dispatch selector (header)
+.dispatch-selector {
+  @apply inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border;
+  @apply bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700;
+}
+
+.dispatch-selector-label {
+  @apply text-xs font-medium text-gray-500 dark:text-gray-400;
+}
+
+.dispatch-selector-select {
+  @apply bg-transparent text-sm font-semibold text-gray-900 dark:text-white;
+  @apply focus:outline-none cursor-pointer;
+}
+
+.dispatch-status-pill {
+  @apply inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full;
+}
+
+// ============================================
+// OPTIONS MENU (3-dot)
+// ============================================
+
+.options-wrapper {
+  @apply relative;
+}
+
+.btn-options {
+  @apply w-9 h-9 flex items-center justify-center rounded-lg transition-colors;
+  @apply text-gray-500 hover:text-gray-700 hover:bg-gray-100;
+  @apply dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700;
+
+  &.active {
+    @apply bg-gray-100 dark:bg-gray-700;
+  }
+
+  svg { @apply w-5 h-5; }
+}
+
+.options-dropdown {
+  @apply absolute right-0 top-full mt-2 w-56 z-30 rounded-xl shadow-lg py-1;
+  @apply bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700;
+}
+
+.options-dropdown-header {
+  @apply px-3 py-2 text-[10px] uppercase tracking-wider font-semibold text-gray-400 dark:text-gray-500;
+}
+
+.options-item {
+  @apply w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors;
+  @apply text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50;
+}
+
+.options-item-dot {
+  @apply inline-block w-2.5 h-2.5 rounded-full;
+}
+
+.options-item-label {
+  @apply flex-1 text-left;
+}
+
+// ============================================
+// VEHICLE SECTION (new)
+// ============================================
+
+.vehicle-block {
+  @apply pt-3 pb-3 last:pb-0 border-b last:border-b-0 border-gray-100 dark:border-gray-700/50;
+}
+
+.vehicle-header {
+  @apply flex items-center justify-between mb-2.5 px-5 sm:px-6;
+}
+
+.vehicle-name {
+  @apply font-semibold text-gray-900 dark:text-white;
+}
+
+.vehicle-plate {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-mono font-bold;
+  @apply bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300;
+}
+
+// ============================================
+// DISPATCH TIMELINE
+// ============================================
+
+.current-dispatch-row {
+  @apply flex items-center mb-3 px-5 sm:px-6 pt-4;
+}
+
+.timeline {
+  @apply relative space-y-4 mt-3 px-5 sm:px-6 pb-4;
+
+  &::before {
+    content: '';
+    @apply absolute w-0.5 bg-gray-200 dark:bg-gray-700;
+    left: calc(1.25rem + 7px);
+    top: 0.5rem;
+    bottom: 0.5rem;
+  }
+}
+
+@media (min-width: 640px) {
+  .timeline::before {
+    left: calc(1.5rem + 7px);
+  }
+}
+
+.timeline-entry {
+  @apply relative flex items-start gap-3 pl-5;
+}
+
+.timeline-dot {
+  @apply absolute left-0 top-1.5 w-[15px] h-[15px] rounded-full border-[3px] z-10;
+  @apply border-blue-500 bg-white dark:bg-gray-800;
+}
+
+.timeline-content {
+  @apply flex flex-col gap-0.5 flex-1 min-w-0;
+}
+
+.timeline-badge {
+  @apply inline-flex w-fit items-center px-2 py-0.5 text-[10px] font-medium rounded-full;
+}
+
+.timeline-date {
+  @apply text-xs text-gray-500 dark:text-gray-400;
+}
+
+.timeline-note {
+  @apply text-xs text-gray-700 dark:text-gray-300 italic;
+}
+
+.empty-hint {
+  @apply text-sm text-gray-400 dark:text-gray-500 italic px-5 sm:px-6 py-4;
+}
+
+// ============================================
+// SERVICE TRACKING (oil change)
+// ============================================
+
+.service-mechanic {
+  @apply flex items-center gap-3 mb-4 pb-4 px-5 sm:px-6 pt-4 border-b border-gray-100 dark:border-gray-700/50;
+}
+
+.service-mechanic-text {
+  @apply flex flex-col min-w-0;
+}
+
+.service-mechanic-name {
+  @apply font-semibold text-gray-900 dark:text-white truncate;
+}
+
+.service-mechanic-phone {
+  @apply text-xs text-gray-500 dark:text-gray-400;
+}
+
+.service-stepper {
+  @apply mt-4 flex items-start justify-between px-5 sm:px-6 pb-5 pt-2;
+  gap: 0;
+}
+
+.stepper-item {
+  @apply flex flex-col items-center gap-2 flex-shrink-0;
+  width: 72px;
+
+  &.stepper-done .stepper-indicator {
+    @apply bg-emerald-500 text-white border-emerald-500;
+  }
+
+  &.stepper-current .stepper-indicator {
+    @apply border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20;
+  }
+
+  &.stepper-done .stepper-label {
+    @apply text-emerald-700 dark:text-emerald-300;
+  }
+
+  &.stepper-current .stepper-label {
+    @apply text-blue-700 dark:text-blue-300 font-semibold;
+  }
+}
+
+.stepper-indicator {
+  @apply w-8 h-8 rounded-full border-2 flex items-center justify-center;
+  @apply border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 text-xs font-bold;
+  @apply transition-colors;
+
+  svg { @apply w-4 h-4; }
+}
+
+.stepper-content {
+  @apply flex flex-col items-center text-center;
+}
+
+.stepper-label {
+  @apply text-xs font-medium text-gray-700 dark:text-gray-300 leading-tight;
+}
+
+.stepper-time {
+  @apply text-[10px] text-gray-500 dark:text-gray-400 leading-tight mt-0.5;
+}
+
+.stepper-connector {
+  @apply flex-1 h-0.5 bg-gray-200 dark:bg-gray-700 mt-4 transition-colors;
+  min-width: 12px;
+
+  &.stepper-connector-done {
+    @apply bg-emerald-500;
+  }
+}
+
+// ============================================
+// MODALS (variants)
+// ============================================
+
+.modal-title-modal {
+  @apply text-lg font-semibold text-gray-900 dark:text-white;
+}
+
+.btn-modal-close {
+  @apply w-8 h-8 flex items-center justify-center rounded-lg transition-colors;
+  @apply text-gray-400 hover:text-gray-600 hover:bg-gray-100;
+  @apply dark:hover:text-gray-200 dark:hover:bg-gray-700;
+
+  svg { @apply w-5 h-5; }
+}
+
+.status-preview {
+  @apply flex items-center justify-center py-2;
+}
+
+.btn-confirm-approve {
+  @apply px-4 py-2 rounded-lg text-sm font-semibold text-white bg-green-600 hover:bg-green-700;
+  @apply disabled:opacity-60 disabled:cursor-not-allowed transition-colors;
+}
+
+.btn-confirm-cancel {
+  @apply px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700;
+  @apply disabled:opacity-60 disabled:cursor-not-allowed transition-colors;
+}
+
+// ============================================
+// PHONE WITH CALL/WHATSAPP POPOVER
+// ============================================
+
+.info-row-phone {
+  @apply items-center;
+}
+
+.phone-wrapper {
+  @apply relative inline-block;
+}
+
+.phone-btn {
+  @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-colors;
+  @apply text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100;
+  @apply hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-700 dark:hover:text-blue-300;
+
+  svg {
+    @apply w-3.5 h-3.5 text-gray-400;
+  }
+
+  &:hover svg {
+    @apply text-blue-500;
+  }
+}
+
+.phone-popover {
+  @apply absolute right-0 top-full mt-1 z-40 min-w-[140px];
+  @apply bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg;
+  @apply py-1 flex flex-col;
+  animation: phonePopoverFadeIn 0.15s ease-out;
+}
+
+@keyframes phonePopoverFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.popover-option {
+  @apply flex items-center gap-2 px-3 py-2 text-sm transition-colors;
+  @apply text-gray-700 dark:text-gray-200;
+  @apply hover:bg-gray-50 dark:hover:bg-gray-700/50;
+
+  svg {
+    @apply w-4 h-4;
+  }
+
+  &.popover-whatsapp {
+    @apply text-green-600 dark:text-green-400;
+
+    &:hover {
+      @apply bg-green-50 dark:bg-green-900/20;
+    }
+  }
 }

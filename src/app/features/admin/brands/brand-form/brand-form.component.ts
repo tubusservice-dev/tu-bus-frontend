@@ -4,6 +4,7 @@ import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { BrandService } from '../../../../core/services/brand.service';
 import { UploadService } from '../../../../core/services/upload.service';
+import { ToastService } from '../../../../shared/services/toast.service';
 
 @Component({
   selector: 'app-brand-form',
@@ -18,6 +19,7 @@ export class BrandFormComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly brandService = inject(BrandService);
   private readonly uploadService = inject(UploadService);
+  private readonly toastService = inject(ToastService);
 
   protected readonly brandId = signal<string | null>(null);
   protected readonly isEditMode = signal(false);
@@ -110,10 +112,15 @@ export class BrandFormComponent implements OnInit {
 
     request$.subscribe({
       next: () => {
+        this.toastService.success(
+          this.isEditMode() ? 'Marca actualizada exitosamente' : 'Marca creada exitosamente',
+        );
         this.router.navigate(['/admin/brands']);
       },
       error: (error) => {
-        this.errorMessage.set(error.error?.message || 'Error al guardar marca');
+        const msg = error.error?.message || 'Error al guardar marca';
+        this.errorMessage.set(msg);
+        this.toastService.error(msg);
         this.isSubmitting.set(false);
       },
     });

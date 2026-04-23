@@ -1,0 +1,44 @@
+// ============================================
+// PRODUCTS — cart items row in summary
+// ============================================
+.products-list {
+  @apply flex flex-col;
+}
+
+.product-row {
+  @apply flex items-center gap-3 sm:gap-4 py-3;
+  border-bottom: 1px solid var(--border-color);
+
+  &:last-child {
+    border-bottom: none;
+    @apply pb-0;
+  }
+
+  &:first-child {
+    @apply pt-0;
+  }
+}
+
+.product-image {
+  @apply w-14 h-14 sm:w-16 sm:h-16 rounded-lg object-cover flex-shrink-0;
+  background-color: var(--bg-tertiary);
+}
+
+.product-info {
+  @apply flex-1 min-w-0;
+}
+
+.product-name {
+  @apply text-sm sm:text-base font-medium mb-0.5 line-clamp-2;
+  color: var(--text-primary);
+}
+
+.product-qty {
+  @apply text-xs sm:text-sm;
+  color: var(--text-secondary);
+}
+
+.product-total {
+  @apply text-sm sm:text-base font-semibold flex-shrink-0;
+  color: var(--text-primary);
+}

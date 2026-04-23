@@ -1,5 +1,6 @@
 import { Component, inject, signal, computed, effect, DestroyRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ProductDetailOverlayService } from '../../../core/services/product-detail-overlay.service';
 import { ProductService, DetailProduct, DetailRelatedProduct } from '../../../core/services/product.service';
@@ -8,13 +9,15 @@ import { AuthService } from '../../../core/services/auth.service';
 import { LocationService } from '../../../core/services/location.service';
 import { ExchangeRateService } from '../../../core/services/exchange-rate.service';
 import { ProductCardComponent, ProductCardData } from '../product-card/product-card.component';
+import { CartPopoverComponent } from '../cart-popover/cart-popover.component';
+import { VEHICLE_TYPE_LABELS, VehicleType } from '../../../models/product.model';
 
 const PLACEHOLDER = 'https://placehold.co/400x400/e5e7eb/9ca3af?text=Sin+imagen';
 
 @Component({
   selector: 'app-product-detail-overlay',
   standalone: true,
-  imports: [CommonModule, ProductCardComponent],
+  imports: [CommonModule, ProductCardComponent, CartPopoverComponent],
   templateUrl: './product-detail-overlay.component.html',
   styleUrl: './product-detail-overlay.component.scss',
 })
@@ -25,6 +28,7 @@ export class ProductDetailOverlayComponent {
   private readonly authService = inject(AuthService);
   private readonly locationService = inject(LocationService);
   protected readonly exchangeRateService = inject(ExchangeRateService);
+  private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
   // Core state
@@ -90,6 +94,11 @@ export class ProductDetailOverlayComponent {
     return Math.max(0, stock - this.quantityInCart());
   });
 
+  /** Total items across all products in cart. Drives the "Ir al carrito" CTA
+   *  so the user is never stranded inside the full-screen detail overlay
+   *  after adding a product (critical on mobile where the header is covered). */
+  protected readonly cartItemCount = computed(() => this.cartService.totalItems());
+
   protected readonly canAddMore = computed(() => this.quantity() < this.availableStock());
   protected readonly canRemove = computed(() => this.quantity() > 1);
   protected readonly canAddToCart = computed(() => {
@@ -116,6 +125,11 @@ export class ProductDetailOverlayComponent {
 
   close(): void {
     this.overlayService.close();
+  }
+
+  goToCart(): void {
+    this.overlayService.close();
+    this.router.navigate(['/carrito']);
   }
 
   // ==================== DATA LOADING (SINGLE REQUEST) ====================
@@ -211,4 +225,14 @@ export class ProductDetailOverlayComponent {
   getCategoryName(cat: any): string { return typeof cat === 'string' ? cat : cat?.name || ''; }
   getBrandName(brand: any): string { if (!brand) return ''; return typeof brand === 'string' ? brand : brand?.name || ''; }
   getLineName(line: any): string { if (!line) return ''; return typeof line === 'string' ? line : line?.name || ''; }
+
+  /**
+   * Human-readable list of vehicle types the product applies to. Collapses to
+   * a single "Todos los vehículos" label when `all` is present.
+   */
+  getVehicleTypesLabel(types?: string[]): string {
+    if (!types || !types.length) return '';
+    if (types.includes(VehicleType.ALL)) return VEHICLE_TYPE_LABELS[VehicleType.ALL];
+    return types.map(t => VEHICLE_TYPE_LABELS[t as VehicleType] || t).join(', ');
+  }
 }

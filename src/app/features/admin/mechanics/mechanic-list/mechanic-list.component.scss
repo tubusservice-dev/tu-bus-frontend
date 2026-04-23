@@ -20,8 +20,9 @@
 }
 
 .btn-primary {
-  @apply inline-flex items-center gap-2 px-4 py-2.5 bg-red-600 text-white text-sm font-medium rounded-lg;
-  @apply hover:bg-red-700 transition-colors;
+  @apply inline-flex items-center gap-2 px-4 py-2.5 text-white text-sm font-medium rounded-lg transition-colors;
+  background-color: var(--accent-primary);
+  &:hover { background-color: var(--accent-hover, rgb(0, 20, 60)); }
 
   svg {
     @apply w-5 h-5;
@@ -196,7 +197,10 @@
   @apply disabled:opacity-50 disabled:cursor-not-allowed;
 
   &.active {
-    @apply bg-red-600 text-white border-red-600 hover:bg-red-700;
+    @apply text-white;
+    background-color: var(--accent-primary);
+    border-color: var(--accent-primary);
+    &:hover { background-color: var(--accent-hover, rgb(0, 20, 60)); }
   }
 
   svg {

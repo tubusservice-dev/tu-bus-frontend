@@ -344,6 +344,15 @@
         </section>
       }
 
+      @if (dispatchType === 'oil_change_service') {
+        <section class="summary-section">
+          <app-service-date-picker
+            [initial]="checkoutService.requestedServiceDate()"
+            (changed)="onServiceDateChange($event)"
+          />
+        </section>
+      }
+
       <!-- Sección: Seleccionar Sucursal (store_pickup / in_store_oil_change) -->
       @if (needsBranchSelection()) {
         <section class="summary-section">
@@ -515,27 +524,39 @@
           <h2>Dirección de Facturación</h2>
         </div>
         <div class="section-content">
-          <div class="billing-options">
+          <div class="billing-options" role="radiogroup" aria-label="Origen de dirección de facturación">
             @if (canUseShippingAddress()) {
-              <label class="billing-radio" [class.active]="billingSource() === 'shipping'">
-                <input type="radio" name="billingSource" value="shipping"
-                  [checked]="billingSource() === 'shipping'"
-                  (change)="onBillingSourceChange('shipping')" />
-                <span>Usar dirección de envío</span>
-              </label>
+              <button type="button" class="billing-option"
+                role="radio"
+                [attr.aria-checked]="billingSource() === 'shipping'"
+                [class.active]="billingSource() === 'shipping'"
+                (click)="onBillingSourceChange('shipping')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="billing-option-icon" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 0 0-3.213-9.193 2.056 2.056 0 0 0-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 0 0-10.026 0 1.106 1.106 0 0 0-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+                </svg>
+                <span>Envío</span>
+              </button>
             }
-            <label class="billing-radio" [class.active]="billingSource() === 'profile'">
-              <input type="radio" name="billingSource" value="profile"
-                [checked]="billingSource() === 'profile'"
-                (change)="onBillingSourceChange('profile')" />
-              <span>Usar dirección de mi perfil</span>
-            </label>
-            <label class="billing-radio" [class.active]="billingSource() === 'custom'">
-              <input type="radio" name="billingSource" value="custom"
-                [checked]="billingSource() === 'custom'"
-                (change)="onBillingSourceChange('custom')" />
-              <span>Ingresar nueva dirección</span>
-            </label>
+            <button type="button" class="billing-option"
+              role="radio"
+              [attr.aria-checked]="billingSource() === 'profile'"
+              [class.active]="billingSource() === 'profile'"
+              (click)="onBillingSourceChange('profile')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="billing-option-icon" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+              </svg>
+              <span>Mi perfil</span>
+            </button>
+            <button type="button" class="billing-option"
+              role="radio"
+              [attr.aria-checked]="billingSource() === 'custom'"
+              [class.active]="billingSource() === 'custom'"
+              (click)="onBillingSourceChange('custom')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="billing-option-icon" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              <span>Nueva</span>
+            </button>
           </div>
 
           @if (billingSource() === 'custom') {
@@ -587,13 +608,18 @@
 
           @if (billingSource() !== 'custom' && checkoutService.billingAddress(); as ba) {
             <div class="billing-preview">
-              <p class="billing-preview-name">{{ ba.fullName }}</p>
-              @if (ba.address) {
-                <p class="billing-preview-address">{{ ba.address }}</p>
-              }
-              @if (ba.city || ba.municipality || ba.state) {
-                <p class="billing-preview-location">{{ ba.city }}{{ ba.municipality ? ', ' + ba.municipality : '' }}{{ ba.state ? ', ' + ba.state : '' }}</p>
-              }
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="billing-preview-check" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+              </svg>
+              <div class="billing-preview-text">
+                <span class="billing-preview-name">{{ ba.fullName }}</span>
+                @if (ba.address) {
+                  <span class="billing-preview-address">{{ ba.address }}</span>
+                }
+                @if (ba.city || ba.municipality || ba.state) {
+                  <span class="billing-preview-location">{{ ba.city }}{{ ba.municipality ? ', ' + ba.municipality : '' }}{{ ba.state ? ', ' + ba.state : '' }}</span>
+                }
+              </div>
             </div>
           }
         </div>
@@ -725,17 +751,75 @@
         </div>
       </section>
 
-      <!-- Disclaimer -->
-      <section class="summary-section disclaimer-section">
+      <!-- Disclaimer (doble opción con toggle) -->
+      <section class="summary-section disclaimer-section"
+               [class.disclaimer-section-active]="hasDisclaimerSelection()"
+               [class.disclaimer-section-conflict]="hasDisclaimerConflict()">
         <div class="section-content">
+
+          <!-- A. Motor sin modificaciones (siempre visible) -->
           <label class="disclaimer-label">
-            <input type="checkbox" [checked]="disclaimerAccepted()" (change)="onDisclaimerChange($event)" class="disclaimer-checkbox" />
+            <input
+              type="checkbox"
+              [checked]="originalEngineChecked()"
+              (change)="onOriginalEngineChange($event)"
+              class="disclaimer-checkbox"
+            />
             <span class="disclaimer-text">
-              Confirmo que mi motor no tiene modificaciones no originales. Acepto cargos adicionales si el filtro estándar no aplica.
+              Confirmo que mi motor es <strong>original de serie</strong>, y que el filtro
+              estándar asociado a este pedido es compatible con mi vehículo.
             </span>
           </label>
+
+          <!-- Toggle para revelar la segunda sección -->
+          <div class="disclaimer-divider">
+            <button
+              type="button"
+              class="disclaimer-toggle"
+              (click)="toggleModifiedSection()"
+              [attr.aria-expanded]="isModifiedSectionExpanded()"
+            >
+              <span>Mi motor tiene modificaciones</span>
+              <svg class="disclaimer-toggle-arrow"
+                   [class.is-open]="isModifiedSectionExpanded()"
+                   viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                   aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- B. Motor con modificaciones (colapsable) -->
+          @if (isModifiedSectionExpanded()) {
+            <label class="disclaimer-label disclaimer-label-secondary">
+              <input
+                type="checkbox"
+                [checked]="modifiedEngineChecked()"
+                (change)="onModifiedEngineChange($event)"
+                class="disclaimer-checkbox"
+              />
+              <span class="disclaimer-text">
+                Declaro que mi motor <strong>ha sido modificado</strong> y el filtro estándar podría no aplicar.
+                Autorizo que se comuniquen conmigo para coordinar el filtro correcto
+                y acepto el posible cargo adicional.
+              </span>
+            </label>
+          }
         </div>
       </section>
+
+      <!-- Advertencia de conflicto entre disclaimers -->
+      @if (hasDisclaimerConflict()) {
+        <div class="disclaimer-conflict-warning" role="alert">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+          </svg>
+          <span>
+            Has marcado ambas opciones, lo cual es contradictorio.
+            Desmarca una para poder continuar con tu orden.
+          </span>
+        </div>
+      }
 
       <!-- Error -->
       @if (errorMessage()) {
@@ -758,11 +842,14 @@
             Procesar Orden
           }
         </button>
-        @if (!paymentSubmitted() && disclaimerAccepted()) {
+        @if (hasDisclaimerConflict()) {
+          <p class="action-hint action-hint-error">
+            No puedes continuar porque marcaste los dos disclaimers. Desmarca uno para proceder.
+          </p>
+        } @else if (!paymentSubmitted() && hasDisclaimerSelection()) {
           <p class="action-hint">Debes seleccionar un método de pago para continuar</p>
-        }
-        @if (!disclaimerAccepted() && paymentSubmitted()) {
-          <p class="action-hint">Debes aceptar el disclaimer para continuar</p>
+        } @else if (!hasDisclaimerSelection() && paymentSubmitted()) {
+          <p class="action-hint">Debes seleccionar un disclaimer para continuar</p>
         }
       </div>
     </div>
@@ -832,16 +919,38 @@
           <!-- Payment amount summary -->
           <div class="method-details-card payment-amount-card">
             <h4>Monto a pagar</h4>
-            <div class="method-detail-row">
-              <span class="detail-label">Total (USD)</span>
-              <span class="detail-value">{{ total | currency:'USD':'symbol':'1.2-2' }}</span>
-            </div>
+            <app-copyable-value
+              label="Total (USD)"
+              [value]="(total | currency:'USD':'symbol':'1.2-2') ?? ''"
+              [copyValue]="totalUsdRaw()"
+            />
             @if (exchangeRateService.showBsPrice()) {
-              <div class="method-detail-row">
-                <span class="detail-label">Total (Bs)</span>
-                <span class="detail-value detail-value-bs">{{ exchangeRateService.formatBsPrice(total) }}</span>
-              </div>
+              <app-copyable-value
+                label="Total (Bs)"
+                [value]="exchangeRateService.formatBsPrice(total)"
+                [copyValue]="totalBsRaw()"
+              />
             }
+
+            <button
+              type="button"
+              class="copy-all-btn"
+              [class.copied]="copiedAll()"
+              (click)="copyAllPaymentDetails()"
+              aria-label="Copiar datos de pago y monto"
+            >
+              @if (copiedAll()) {
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+                <span>Copiado</span>
+              } @else {
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H9.75" />
+                </svg>
+                <span>Copiar todo</span>
+              }
+            </button>
           </div>
         }
 
@@ -894,7 +1003,13 @@
               </div>
               <div class="form-group">
                 <label for="paymentDate">Fecha del pago *</label>
-                <input type="date" id="paymentDate" [value]="formPaymentDate()" (input)="onFormInput('paymentDate', $event)" [attr.max]="todayStr" [class.input-invalid]="isPaymentDateInvalid()" />
+                <app-date-input
+                  id="paymentDate"
+                  [value]="formPaymentDate()"
+                  (valueChange)="formPaymentDate.set($event)"
+                  [max]="todayStr"
+                  [required]="true"
+                />
                 @if (isPaymentDateInvalid()) {
                   <span class="form-error">La fecha no puede ser futura</span>
                 }
@@ -966,11 +1081,97 @@
         ¿Deseas continuar?
       </p>
 
-      <div class="confirm-details">
-        <div class="confirm-detail-row">
-          <span class="confirm-label">Productos</span>
-          <span class="confirm-value">{{ cartService.totalItems() }} artículo{{ cartService.totalItems() > 1 ? 's' : '' }}</span>
+      <!-- Products list -->
+      <div class="confirm-products">
+        <div class="confirm-products-header">
+          <span>Productos</span>
+          <span>{{ cartService.totalItems() }} artículo{{ cartService.totalItems() > 1 ? 's' : '' }}</span>
         </div>
+        <div class="confirm-products-list">
+          @for (item of cartService.items(); track item.id) {
+            <div class="confirm-product-row">
+              @if (item.image) {
+                <img [src]="item.image" [alt]="item.name" class="confirm-product-image" />
+              } @else {
+                <div class="confirm-product-placeholder">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+                  </svg>
+                </div>
+              }
+              <div class="confirm-product-info">
+                <div class="confirm-product-name">{{ item.name }}</div>
+                <div class="confirm-product-qty">{{ item.quantity }} × {{ item.price | currency:'USD':'symbol':'1.2-2' }}</div>
+              </div>
+              <div class="confirm-product-total">{{ (item.price * item.quantity) | currency:'USD':'symbol':'1.2-2' }}</div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Order metadata (dispatch / address / payment / vehicle) -->
+      <div class="confirm-meta">
+        <!-- Despacho (siempre visible) -->
+        <div class="confirm-meta-row">
+          <span class="confirm-meta-label">Despacho</span>
+          <span class="confirm-meta-value">{{ selectedDispatch?.name || '—' }}</span>
+        </div>
+
+        <!-- Sucursal para pickup / in-store oil change -->
+        @if ((dispatchType === 'store_pickup' || dispatchType === 'in_store_oil_change') && checkoutService.selectedBranch(); as branch) {
+          <div class="confirm-meta-row">
+            <span class="confirm-meta-label">Sucursal</span>
+            <span class="confirm-meta-value">{{ branch.name }}</span>
+          </div>
+        }
+
+        <!-- Agencia para shipping_agency -->
+        @if (dispatchType === 'shipping_agency' && shippingAgency) {
+          <div class="confirm-meta-row">
+            <span class="confirm-meta-label">Agencia</span>
+            <span class="confirm-meta-value">{{ shippingAgency.name }}</span>
+          </div>
+        }
+
+        <!-- Dirección según tipo de despacho -->
+        @if (dispatchType === 'shipping_agency' && recipientInfo) {
+          <div class="confirm-meta-row">
+            <span class="confirm-meta-label">Dirección</span>
+            <span class="confirm-meta-value">{{ recipientInfo.address }}@if (recipientInfo.city) {, {{ recipientInfo.city }}}</span>
+          </div>
+        } @else if (dispatchType === 'local_delivery' && localDeliveryInfo) {
+          <div class="confirm-meta-row">
+            <span class="confirm-meta-label">Dirección</span>
+            <span class="confirm-meta-value">{{ localDeliveryInfo.address }}@if (localDeliveryInfo.cityName) {, {{ localDeliveryInfo.cityName }}}</span>
+          </div>
+        } @else if (dispatchType === 'oil_change_service' && oilChangeServiceInfo) {
+          <div class="confirm-meta-row">
+            <span class="confirm-meta-label">Dirección</span>
+            <span class="confirm-meta-value">{{ oilChangeServiceInfo.address }}@if (oilChangeServiceInfo.cityName) {, {{ oilChangeServiceInfo.cityName }}}</span>
+          </div>
+        }
+
+        <!-- Pago (si ya fue enviado) -->
+        @if (submittedPayment(); as pm) {
+          <div class="confirm-meta-row">
+            <span class="confirm-meta-label">Pago</span>
+            <span class="confirm-meta-value">{{ pm.methodLabel }}@if (pm.referenceNumber) { · Ref: {{ pm.referenceNumber }}}</span>
+          </div>
+        }
+
+        <!-- Vehículo (solo para oil change) -->
+        @if (needsVehicle() && checkoutService.selectedVehicles().length > 0) {
+          <div class="confirm-meta-row">
+            <span class="confirm-meta-label">Vehículo</span>
+            <span class="confirm-meta-value">
+              @for (v of checkoutService.selectedVehicles(); track v.id; let last = $last) {{{ v.placa }} · {{ v.marca }} {{ v.modelo }}@if (!last) {, }}
+            </span>
+          </div>
+        }
+      </div>
+
+      <!-- Totals -->
+      <div class="confirm-details">
         <div class="confirm-detail-row">
           <span class="confirm-label">Subtotal</span>
           <div class="confirm-values">
@@ -980,17 +1181,19 @@
             }
           </div>
         </div>
-        @if (shippingCost > 0) {
-          <div class="confirm-detail-row">
-            <span class="confirm-label">{{ deliveryConceptLabel() }}</span>
-            <div class="confirm-values">
+        <div class="confirm-detail-row">
+          <span class="confirm-label">{{ deliveryConceptLabel() }}</span>
+          <div class="confirm-values">
+            @if (shippingCost === 0) {
+              <span class="confirm-value shipping-value">Gratis</span>
+            } @else {
               <span class="confirm-value">{{ shippingCost | currency:'USD':'symbol':'1.2-2' }}</span>
               @if (exchangeRateService.showBsPrice()) {
                 <span class="confirm-bs">{{ exchangeRateService.formatBsPrice(shippingCost) }}</span>
               }
-            </div>
+            }
           </div>
-        }
+        </div>
         <div class="confirm-detail-row total-row">
           <span class="confirm-label">Total</span>
           <div class="confirm-values">

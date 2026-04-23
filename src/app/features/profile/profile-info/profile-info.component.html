@@ -107,7 +107,7 @@
 
             <div class="form-group">
               <label for="birthDate" class="form-label">Fecha de nacimiento</label>
-              <input type="date" id="birthDate" formControlName="birthDate" class="form-input" [attr.max]="todayStr" />
+              <app-date-input id="birthDate" formControlName="birthDate" [max]="todayStr" />
             </div>
 
             <div class="form-group">

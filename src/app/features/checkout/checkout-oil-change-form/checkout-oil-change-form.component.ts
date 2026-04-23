@@ -14,7 +14,7 @@ import { Vehicle } from '../../../models/vehicle.model';
 import {
   NAME_PATTERN, PHONE_VE_PATTERN, DOCUMENT_NUMBER_PATTERN, EMAIL_PATTERN,
   MAX_FULLNAME_LENGTH, MAX_ADDRESS_LENGTH, MAX_REFERENCE_LENGTH, MAX_NOTES_LENGTH,
-  noNumbersValidator,
+  noNumbersValidator, scrollToFirstFormError,
 } from '../../../shared/validators/form-validators';
 import { VehicleFormComponent } from '../../garage/vehicle-form/vehicle-form.component';
 
@@ -37,6 +37,16 @@ export class CheckoutOilChangeFormComponent implements OnInit {
   private readonly router = inject(Router);
 
   protected readonly lockedFields = signal<Record<string, boolean>>({});
+
+  /** Flips to `true` once the user tries to submit at least once. Used to
+   *  surface domain-level errors (e.g. "no vehicle selected") that live
+   *  outside the FormGroup and therefore can't rely on `touched`. */
+  protected readonly submitAttempted = signal(false);
+
+  /** Submit-time error surfaced when the form is valid but referential data
+   *  (city/municipality objects) cannot be resolved — covers the edge case
+   *  where an admin removed a zone after the user saved their selection. */
+  protected readonly submitError = signal<string | null>(null);
 
   protected oilChangeForm!: FormGroup;
 
@@ -156,6 +166,15 @@ export class CheckoutOilChangeFormComponent implements OnInit {
 
         this.branchCities.set(Array.from(cityMap.values()));
         this.allMunicipalities.set(muniList);
+
+        // If the user returned to this screen with pre-saved data, loadSavedData()
+        // already ran while allMunicipalities was empty — the municipality dropdown
+        // stayed blank and submit couldn't resolve the object. Re-populate it now
+        // using the saved cityCode (municipalityCode in the form is already correct).
+        const savedInfo = this.checkoutService.oilChangeServiceInfo();
+        if (savedInfo?.cityCode) {
+          this.populateMunicipalitiesForCity(savedInfo.cityCode);
+        }
       },
     });
   }
@@ -329,24 +348,39 @@ export class CheckoutOilChangeFormComponent implements OnInit {
     this.selectedCityName.set('');
   }
 
-  onCityChange(cityCode: string): void {
+  /**
+   * Populates availableMunicipalities + selectedCityName for a given cityCode.
+   * Does NOT mutate the FormGroup — safe to call during re-hydration when the
+   * async zones payload arrives after saved form data was already patched in.
+   */
+  private populateMunicipalitiesForCity(cityCode: string): void {
     const munis = this.allMunicipalities()
       .filter((m) => m.citySlug === cityCode)
       .map((m) => ({ code: m.slug, name: m.name }));
     this.availableMunicipalities.set(munis);
     const city = this.branchCities().find((c) => c.code === cityCode);
     this.selectedCityName.set(city?.name || '');
+  }
+
+  onCityChange(cityCode: string): void {
+    this.populateMunicipalitiesForCity(cityCode);
     this.oilChangeForm.patchValue({ municipalityCode: '' });
   }
 
   onSubmit(): void {
+    // Always flip this first so domain-level errors (e.g. no vehicle selected)
+    // are allowed to render even if the FormGroup itself is valid.
+    this.submitAttempted.set(true);
+
     if (this.oilChangeForm.invalid) {
       this.oilChangeForm.markAllAsTouched();
+      scrollToFirstFormError();
       return;
     }
 
     // At least one vehicle is mandatory for oil change service
     if (this.checkoutService.selectedVehicles().length === 0) {
+      scrollToFirstFormError();
       return;
     }
 
@@ -354,7 +388,14 @@ export class CheckoutOilChangeFormComponent implements OnInit {
     const city = this.branchCities().find(c => c.code === formValue.cityCode);
     const municipality = this.availableMunicipalities().find(m => m.code === formValue.municipalityCode);
 
-    if (!city || !municipality) return;
+    if (!city || !municipality) {
+      this.submitError.set(
+        'No se pudo validar la ciudad o el municipio seleccionado. Por favor, vuelve a elegirlos.'
+      );
+      scrollToFirstFormError();
+      return;
+    }
+    this.submitError.set(null);
 
     const info: OilChangeServiceInfo = {
       fullName: formValue.fullName.trim(),

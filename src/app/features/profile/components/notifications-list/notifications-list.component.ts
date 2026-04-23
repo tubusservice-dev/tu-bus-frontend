@@ -1,24 +1,24 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
 import { UserNotificationService } from '../../../../core/services/user-notification.service';
 import { UserNotification } from '../../../../models/user-notification.model';
+import { UserNotificationDetailModalComponent } from '../../../../shared/components/user-notification-detail-modal/user-notification-detail-modal.component';
 
 @Component({
   selector: 'app-notifications-list',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, UserNotificationDetailModalComponent],
   templateUrl: './notifications-list.component.html',
   styleUrl: './notifications-list.component.scss',
 })
 export class NotificationsListComponent implements OnInit {
   private readonly notifService = inject(UserNotificationService);
-  private readonly router = inject(Router);
 
   protected readonly notifications = signal<UserNotification[]>([]);
   protected readonly isLoading = signal(true);
   protected readonly currentPage = signal(1);
   protected readonly totalPages = signal(1);
+  protected readonly selectedNotification = signal<UserNotification | null>(null);
 
   ngOnInit(): void {
     this.loadPage(1);
@@ -43,10 +43,11 @@ export class NotificationsListComponent implements OnInit {
         this.notifications.update(list => list.map(x => x.id === n.id ? { ...x, isRead: true } : x));
       });
     }
-    const orderId = typeof n.relatedOrder === 'object' ? (n.relatedOrder?.id || '') : String(n.relatedOrder || '');
-    if (orderId) {
-      this.router.navigate(['/perfil/pedidos', orderId]);
-    }
+    this.selectedNotification.set(n);
+  }
+
+  closeDetail(): void {
+    this.selectedNotification.set(null);
   }
 
   markAllRead(): void {

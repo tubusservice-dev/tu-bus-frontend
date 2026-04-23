@@ -8,6 +8,15 @@
   overflow-y: auto;
   background-color: var(--bg-primary, #ffffff);
   animation: overlayFadeIn 0.2s ease-out;
+
+  // Hide scrollbar in every viewport. Touch + wheel scroll keep working
+  // natively; the visible bar was only visual clutter.
+  scrollbar-width: none;            // Firefox
+  -ms-overflow-style: none;         // legacy IE/Edge
+
+  &::-webkit-scrollbar {
+    display: none;                  // Chrome / Safari / Samsung Internet
+  }
 }
 
 .overlay-top-bar {
@@ -22,7 +31,10 @@
   max-width: 80rem;
   margin: 0 auto;
   padding: 0.75rem 1rem;
-  padding-left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
 }
 
 .overlay-back-btn {
@@ -282,13 +294,55 @@
 }
 
 .btn-add-to-cart {
-  @apply w-full flex items-center justify-center gap-2 px-6 py-3 bg-red-600 text-white font-semibold rounded-lg transition-all;
-  @apply hover:bg-red-700 active:scale-[0.98];
+  @apply w-full flex items-center justify-center gap-2 px-6 py-3 text-white font-semibold rounded-lg transition-all;
+  @apply active:scale-[0.98];
   @apply disabled:bg-gray-400 disabled:cursor-not-allowed disabled:hover:bg-gray-400;
+  background-color: var(--accent-primary);
+  &:hover:not(:disabled) { background-color: var(--accent-hover, rgb(0, 20, 60)); }
   svg { @apply w-5 h-5; }
   .spinner { @apply w-5 h-5 animate-spin; }
-  &.adding { @apply bg-red-500; }
+  &.adding { background-color: var(--accent-hover, rgb(0, 20, 60)); }
   &.added { @apply bg-green-600 hover:bg-green-600; }
+}
+
+.btn-go-to-cart {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  margin-top: 0.625rem;
+  padding: 0.75rem 1rem;
+  border: 1.5px solid var(--accent-primary, #001d56);
+  background-color: transparent;
+  color: var(--accent-primary, #001d56);
+  border-radius: 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+
+  svg { width: 1.125rem; height: 1.125rem; flex-shrink: 0; }
+  .chevron-right { width: 1rem; height: 1rem; }
+
+  &:hover {
+    background-color: var(--accent-primary, #001d56);
+    color: #ffffff;
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+:host-context(.dark) .btn-go-to-cart {
+  border-color: #93c5fd;
+  color: #93c5fd;
+
+  &:hover {
+    background-color: #93c5fd;
+    color: #0f172a;
+  }
 }
 
 .stock-error-message {
@@ -305,8 +359,9 @@
 }
 
 .btn-primary {
-  @apply px-6 py-3 bg-red-600 text-white font-semibold rounded-lg transition-colors;
-  @apply hover:bg-red-700;
+  @apply px-6 py-3 text-white font-semibold rounded-lg transition-colors;
+  background-color: var(--accent-primary);
+  &:hover { background-color: var(--accent-hover, rgb(0, 20, 60)); }
 }
 
 .description-section {

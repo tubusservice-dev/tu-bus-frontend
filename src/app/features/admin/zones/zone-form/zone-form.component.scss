@@ -290,6 +290,8 @@
 }
 
 .btn-submit {
-  @apply inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-red-700 hover:bg-red-800 rounded-lg transition-colors;
+  @apply inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white rounded-lg transition-colors;
   @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  background-color: var(--accent-primary);
+  &:hover:not(:disabled) { background-color: var(--accent-hover, rgb(0, 20, 60)); }
 }

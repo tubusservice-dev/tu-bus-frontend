@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { CheckoutService, SellerAgreementInfo } from '../services/checkout.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { scrollToFirstFormError } from '../../../shared/validators/form-validators';
 
 @Component({
   selector: 'app-checkout-seller-agreement-form',
@@ -134,6 +135,7 @@ export class CheckoutSellerAgreementFormComponent implements OnInit {
   onSubmit(): void {
     if (this.contactForm.invalid) {
       this.contactForm.markAllAsTouched();
+      scrollToFirstFormError();
       return;
     }
 

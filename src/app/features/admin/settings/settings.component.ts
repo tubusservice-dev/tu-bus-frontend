@@ -150,14 +150,13 @@ export class SettingsComponent implements OnInit {
 
     this.floatingStatsForm = this.fb.group({
       stat1: this.fb.group({
-        value: ['500+', [Validators.required, Validators.maxLength(10), Validators.pattern(/^[\d.,+%\s]{1,10}$/)]],
-        label: ['Servicios', [Validators.required, Validators.maxLength(20)]],
+        value: ['500', [Validators.required, Validators.pattern(/^[0-9]{1,4}$/)]],
         isVisible: [true],
       }),
       stat2: this.fb.group({
-        value: ['4.9', [Validators.required, Validators.maxLength(10), Validators.pattern(/^[\d.,+%\s]{1,10}$/)]],
-        label: ['Valoración', [Validators.required, Validators.maxLength(20)]],
+        value: ['5', [Validators.required, Validators.pattern(/^[1-5]$/)]],
         isVisible: [true],
+        source: ['manual'],
       }),
     });
 
@@ -205,7 +204,7 @@ export class SettingsComponent implements OnInit {
       firstName: ['', [Validators.required, Validators.maxLength(20)]],
       lastName: ['', [Validators.required, Validators.maxLength(20)]],
       phone: ['', [Validators.required, Validators.pattern(/^04\d{2}-?\d{7}$/)]],
-      email: ['', [Validators.required, Validators.email, Validators.maxLength(50)]],
+      whatsapp: ['', [Validators.pattern(/^(?:\+?\d{1,3})?[\s-]?\d{10,11}$/), Validators.maxLength(20)]],
     });
 
     this.adminNotificationsForm = this.fb.group({
@@ -235,7 +234,9 @@ export class SettingsComponent implements OnInit {
             const left = data.heroImages.floatingStats.find((s) => s.position === 'left');
             const right = data.heroImages.floatingStats.find((s) => s.position === 'right');
             if (left) {
-              this.floatingStatsForm.get('stat1')?.patchValue(left);
+              // Sanitize legacy values like "500+" → "500" to satisfy the new pattern.
+              const cleanValue = String(left.value ?? '').replace(/\D/g, '').slice(0, 3) || '500';
+              this.floatingStatsForm.get('stat1')?.patchValue({ ...left, value: cleanValue });
             }
             if (right) {
               this.floatingStatsForm.get('stat2')?.patchValue(right);
@@ -367,6 +368,15 @@ export class SettingsComponent implements OnInit {
     this.heroImages.set(images.map((img, i) => ({ ...img, order: i })));
   }
 
+  protected isAutoRating(): boolean {
+    return this.floatingStatsForm.get('stat2.source')?.value === 'reviews_average';
+  }
+
+  protected toggleAutoRating(event: Event): void {
+    const checked = (event.target as HTMLInputElement).checked;
+    this.floatingStatsForm.get('stat2.source')?.setValue(checked ? 'reviews_average' : 'manual');
+  }
+
   saveHeroImages(): void {
     if (this.floatingStatsForm.invalid) {
       this.floatingStatsForm.markAllAsTouched();
@@ -380,9 +390,11 @@ export class SettingsComponent implements OnInit {
     const stat1 = this.floatingStatsForm.get('stat1')?.value;
     const stat2 = this.floatingStatsForm.get('stat2')?.value;
 
+    // Labels are hardcoded on the landing, but the backend schema requires
+    // the field — we inject a fixed placeholder to satisfy validation.
     const floatingStats: FloatingStat[] = [
-      { ...stat1, position: 'left' as const },
-      { ...stat2, position: 'right' as const },
+      { ...stat1, label: 'Servicios', position: 'left' as const, source: 'manual' as const },
+      { ...stat2, label: 'Valoración', position: 'right' as const },
     ];
 
     const payload = {

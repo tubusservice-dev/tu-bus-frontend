@@ -11,17 +11,21 @@ import {
   PAYMENT_METHOD_LABELS,
   PaymentMethod,
 } from '../../../../models/payment.model';
+import { DateInputComponent } from '../../../../shared/components/date-input/date-input.component';
 
 @Component({
   selector: 'app-payment-history',
   standalone: true,
-  imports: [CommonModule, FormsModule, CurrencyPipe, DatePipe],
+  imports: [CommonModule, FormsModule, CurrencyPipe, DatePipe, DateInputComponent],
   templateUrl: './payment-history.component.html',
   styleUrl: './payment-history.component.scss',
 })
 export class PaymentHistoryComponent implements OnInit {
   private readonly paymentService = inject(PaymentService);
   private readonly uploadService = inject(UploadService);
+
+  /** Today as ISO `YYYY-MM-DD` — used to cap editable payment dates in the past. */
+  protected readonly todayStr = new Date().toISOString().split('T')[0];
 
   protected readonly payments = signal<Payment[]>([]);
   protected readonly isLoading = signal(true);

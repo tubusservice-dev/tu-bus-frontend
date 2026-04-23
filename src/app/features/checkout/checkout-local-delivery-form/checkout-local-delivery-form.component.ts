@@ -11,7 +11,7 @@ import { BranchZoneService } from '../../../core/services/branch-zone.service';
 import {
   NAME_PATTERN, PHONE_VE_PATTERN, DOCUMENT_NUMBER_PATTERN, EMAIL_PATTERN,
   MAX_FULLNAME_LENGTH, MAX_ADDRESS_LENGTH, MAX_REFERENCE_LENGTH, MAX_NOTES_LENGTH,
-  noNumbersValidator,
+  noNumbersValidator, scrollToFirstFormError,
 } from '../../../shared/validators/form-validators';
 
 @Component({
@@ -269,6 +269,7 @@ export class CheckoutLocalDeliveryFormComponent implements OnInit {
   onSubmit(): void {
     if (this.deliveryForm.invalid) {
       this.deliveryForm.markAllAsTouched();
+      scrollToFirstFormError();
       return;
     }
 

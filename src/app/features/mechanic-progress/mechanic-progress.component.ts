@@ -31,6 +31,34 @@ export class MechanicProgressComponent implements OnInit {
   protected readonly rejectReason = signal('');
   protected readonly isRejecting = signal(false);
 
+  // Contextual modal content — set based on the next step before opening
+  protected readonly confirmModalTitle = signal('Confirmar avance');
+  protected readonly confirmModalDescription = signal('');
+  protected readonly confirmModalButtonLabel = signal('Confirmar');
+  protected readonly confirmModalIsFinal = signal(false);
+
+  // Map each step to its contextual modal content
+  private readonly STEP_MODAL_CONTENT: Record<string, { title: string; description: string; button: string; final: boolean }> = {
+    en_camino: {
+      title: 'Confirmar que estas en camino',
+      description: 'Al confirmar, el cliente sera notificado de que te encuentras en camino a su ubicacion.',
+      button: 'Si, voy en camino',
+      final: false,
+    },
+    en_proceso: {
+      title: 'Iniciar el servicio',
+      description: 'Al confirmar, el cliente sera notificado de que el servicio de cambio de aceite ha comenzado.',
+      button: 'Iniciar servicio',
+      final: false,
+    },
+    completado: {
+      title: 'Completar el servicio',
+      description: 'Al confirmar, el servicio se marcara como completado. Esta accion no se puede deshacer.',
+      button: 'Completar servicio',
+      final: true,
+    },
+  };
+
   // Support modal state
   protected readonly showSupportModal = signal(false);
   protected readonly supportContact = signal<SupportContactConfig | null>(null);
@@ -156,22 +184,47 @@ export class MechanicProgressComponent implements OnInit {
     this.activePhonePopover.set(null);
   }
 
+  /** Strip non-digits and normalize to international (58...) form.
+   *  Accepts local `04XXXXXXXXXX`, international `+58412...` or bare digits. */
+  private toInternationalDigits(phone: string): string {
+    const digits = (phone || '').replace(/\D/g, '');
+    if (!digits) return '';
+    if (digits.startsWith('0')) return '58' + digits.substring(1);
+    return digits;
+  }
+
   openWhatsApp(phone: string): void {
-    const cleaned = phone.replace(/-/g, '');
-    const international = '58' + cleaned.substring(1);
+    const international = this.toInternationalDigits(phone);
+    if (!international) return;
     window.open(`https://wa.me/${international}`, '_blank');
     this.activePhonePopover.set(null);
   }
 
   callPhone(phone: string): void {
-    const cleaned = phone.replace(/-/g, '');
-    const international = '+58' + cleaned.substring(1);
-    window.open(`tel:${international}`, '_self');
+    const international = this.toInternationalDigits(phone);
+    if (!international) return;
+    window.open(`tel:+${international}`, '_self');
     this.activePhonePopover.set(null);
   }
 
   // ========== Advance/Reject ==========
   openConfirmModal(): void {
+    const next = this.nextStep();
+    if (!next) return;
+
+    const content = this.STEP_MODAL_CONTENT[next.step];
+    if (content) {
+      this.confirmModalTitle.set(content.title);
+      this.confirmModalDescription.set(content.description);
+      this.confirmModalButtonLabel.set(content.button);
+      this.confirmModalIsFinal.set(content.final);
+    } else {
+      // Fallback for any unexpected step name
+      this.confirmModalTitle.set('Confirmar avance');
+      this.confirmModalDescription.set(`Deseas avanzar al siguiente paso: ${this.getStepLabel(next)}?`);
+      this.confirmModalButtonLabel.set('Confirmar');
+      this.confirmModalIsFinal.set(false);
+    }
     this.showConfirmModal.set(true);
   }
 

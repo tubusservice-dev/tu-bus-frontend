@@ -1,18 +1,25 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, DestroyRef, computed, inject, signal, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { OrderService } from '../../../core/services/order.service';
 import { ExchangeRateService } from '../../../core/services/exchange-rate.service';
+import { UploadService } from '../../../core/services/upload.service';
+import { ReviewService } from '../../../core/services/review.service';
 import {
-  Order, OrderStatus,
+  Order, OrderStatus, DispatchStatus,
   ORDER_STATUS_LABELS, ORDER_STATUS_COLORS, ORDER_STATUS_DESCRIPTIONS,
+  DISPATCH_STATUS_LABELS, DISPATCH_STATUS_COLORS, DISPATCH_STATUS_DESCRIPTIONS,
+  isShippingOrder, isOilChangeOrder,
 } from '../../../models/order.model';
 import { MechanicAvatarComponent } from '../../../shared/components/mechanic-avatar/mechanic-avatar.component';
+import { OrderCommentsComponent } from '../../../shared/components/order-comments/order-comments.component';
+import { RatingModalComponent } from '../../../shared/components/rating-modal/rating-modal.component';
 
 @Component({
   selector: 'app-order-detail',
   standalone: true,
-  imports: [CommonModule, CurrencyPipe, RouterLink, MechanicAvatarComponent],
+  imports: [CommonModule, CurrencyPipe, RouterLink, MechanicAvatarComponent, OrderCommentsComponent, RatingModalComponent],
   templateUrl: './order-detail.component.html',
   styleUrl: './order-detail.component.scss',
 })
@@ -20,6 +27,9 @@ export class OrderDetailComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly orderService = inject(OrderService);
+  private readonly uploadService = inject(UploadService);
+  private readonly reviewService = inject(ReviewService);
+  private readonly destroyRef = inject(DestroyRef);
   protected readonly exchangeRateService = inject(ExchangeRateService);
 
   // ========== ESTADO PRINCIPAL ==========
@@ -39,11 +49,12 @@ export class OrderDetailComponent implements OnInit {
   // ========== DETALLE DE PAGO ==========
   protected readonly isPaymentExpanded = signal(false);
 
-  // ========== COMENTARIO DE PAGO ==========
-  protected readonly paymentNote = signal('');
-  protected readonly isSavingNote = signal(false);
-  protected readonly noteSuccess = signal<string | null>(null);
-  protected readonly noteError = signal<string | null>(null);
+  // ========== RE-SUBIDA DE COMPROBANTE ==========
+  protected readonly uploadProofFile = signal<File | null>(null);
+  protected readonly uploadProofPreview = signal<string | null>(null);
+  protected readonly isUploadingProof = signal(false);
+  protected readonly uploadProofError = signal<string | null>(null);
+  protected readonly uploadProofSuccess = signal<string | null>(null);
 
   // ========== POPOVERS DE TELÉFONO ==========
   protected readonly activePhonePopover = signal<string | null>(null);
@@ -51,21 +62,135 @@ export class OrderDetailComponent implements OnInit {
   // ========== IMPRESIÓN ==========
   protected printedAt = '';
 
+  // ========== RATING / VALORACIÓN ==========
+  protected readonly showRatingModal = signal(false);
+  protected readonly isSubmittingRating = signal(false);
+  protected readonly ratingSubmitError = signal<string | null>(null);
+  /** Prevents duplicate review lookups while the same order is loaded. */
+  private hasCheckedReview = false;
+  /** sessionStorage key prefix for "user dismissed the modal for order X". */
+  private readonly REVIEW_DISMISSED_KEY = 'review-modal-dismissed';
+
   // ========== LABELS ==========
   protected readonly statusLabels = ORDER_STATUS_LABELS;
   protected readonly statusColors = ORDER_STATUS_COLORS;
+  protected readonly dispatchStatusLabels = DISPATCH_STATUS_LABELS;
+  protected readonly dispatchStatusColors = DISPATCH_STATUS_COLORS;
+
+  /**
+   * Human label for the shipping-cost row, chosen by dispatch type so the
+   * wording matches the rest of the checkout flow (service / envío / despacho).
+   */
+  protected readonly deliveryConceptLabel = computed<string>(() => {
+    const dt = this.order()?.dispatchType;
+    switch (dt) {
+      case 'oil_change_service':
+      case 'in_store_oil_change':
+        return 'Coste del Servicio';
+      case 'shipping_agency':
+      case 'local_delivery':
+        return 'Coste del Envío';
+      case 'store_pickup':
+      case 'seller_agreement':
+        return 'Coste del Despacho';
+      default:
+        return 'Envío';
+    }
+  });
+
+  /**
+   * Combined timeline for the "Estado de la Orden" card. Merges statusHistory
+   * (order status transitions) with serviceEvents (reschedules and future
+   * service-level events), sorted newest first. Each entry carries its own
+   * label, description and color class ready for rendering.
+   */
+  protected readonly timelineEntries = computed(() => {
+    const o = this.order();
+    if (!o) return [] as Array<{
+      kind: 'status' | 'event';
+      label: string;
+      description: string;
+      colorClass: string;
+      note?: string;
+      timestamp: string;
+    }>;
+
+    const statusEntries = (o.statusHistory || []).map(s => ({
+      kind: 'status' as const,
+      label: this.getStatusLabel(s.status),
+      description: this.getStatusDescription(s.status),
+      colorClass: this.getStatusClass(s.status),
+      note: s.note,
+      timestamp: s.timestamp,
+    }));
+
+    const eventEntries = (o.serviceEvents || []).map(ev => {
+      if (ev.type === 'date_rescheduled') {
+        const newDate = ev.metadata?.newDate
+          ? this.formatRescheduleDate(ev.metadata.newDate)
+          : '';
+        return {
+          kind: 'event' as const,
+          label: 'Fecha reprogramada',
+          description: newDate ? `Nueva fecha: ${newDate}` : 'La fecha del servicio fue reprogramada.',
+          colorClass: 'bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300',
+          note: ev.note,
+          timestamp: ev.timestamp,
+        };
+      }
+      return {
+        kind: 'event' as const,
+        label: 'Evento del servicio',
+        description: '',
+        colorClass: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+        note: ev.note,
+        timestamp: ev.timestamp,
+      };
+    });
+
+    return [...statusEntries, ...eventEntries].sort(
+      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+  });
+
+  /** Format an ISO date (YYYY-MM-DD) as a long Spanish label, UTC-anchored. */
+  private formatRescheduleDate(iso: string): string {
+    try {
+      const [y, m, d] = iso.split('-').map(Number);
+      const date = new Date(Date.UTC(y, (m || 1) - 1, d || 1));
+      return new Intl.DateTimeFormat('es-VE', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        timeZone: 'UTC',
+      }).format(date);
+    } catch {
+      return iso;
+    }
+  }
 
   // ============================================
   // CICLO DE VIDA
   // ============================================
   ngOnInit(): void {
-    const id = this.route.snapshot.paramMap.get('id');
-    if (!id) {
-      this.error.set('ID de orden no proporcionado');
-      this.isLoading.set(false);
-      return;
-    }
-    this.loadOrder(id);
+    // Subscribe to paramMap (not snapshot) so Angular router reuse across
+    // /perfil/pedidos/:id → /perfil/pedidos/:other-id triggers a reload.
+    this.route.paramMap
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((params) => {
+        const id = params.get('id');
+        if (!id) {
+          this.error.set('ID de orden no proporcionado');
+          this.isLoading.set(false);
+          return;
+        }
+        // Reset per-order flags so the review modal can re-evaluate for the new order.
+        this.hasCheckedReview = false;
+        this.showRatingModal.set(false);
+        this.ratingSubmitError.set(null);
+        this.loadOrder(id);
+      });
   }
 
   private loadOrder(id: string): void {
@@ -75,14 +200,91 @@ export class OrderDetailComponent implements OnInit {
     this.orderService.getOrderById(id).subscribe({
       next: (res) => {
         this.order.set(res.data);
-        this.paymentNote.set(res.data.paymentSubmission?.notes || '');
         this.isLoading.set(false);
+        if (res.data.status === OrderStatus.COMPLETED) {
+          this.checkReviewAndMaybeOpenModal(res.data.id);
+        }
       },
       error: (err) => {
         this.error.set(err.error?.message || 'Error al cargar la orden');
         this.isLoading.set(false);
       },
     });
+  }
+
+  // ============================================
+  // RATING / VALORACIÓN
+  // ============================================
+  /**
+   * Gate + fetch: only runs once per loaded order. If the user already
+   * dismissed the modal for this order in the current browser session, we
+   * stay quiet. Otherwise we ask the backend if a review exists; if not,
+   * the modal opens.
+   */
+  private checkReviewAndMaybeOpenModal(orderId: string): void {
+    if (this.hasCheckedReview) return;
+    this.hasCheckedReview = true;
+
+    if (this.wasReviewDismissed(orderId)) return;
+
+    this.reviewService.getByOrder(orderId).subscribe({
+      next: (res) => {
+        if (!res.data) {
+          this.showRatingModal.set(true);
+        }
+      },
+      error: () => {
+        // Silent: offline, 401, 403 → simply skip opening the modal.
+      },
+    });
+  }
+
+  protected onRatingClosed(): void {
+    const id = this.order()?.id;
+    if (id) this.markReviewDismissed(id);
+    this.showRatingModal.set(false);
+    this.ratingSubmitError.set(null);
+  }
+
+  protected onRatingSubmitted(payload: { rating: number; comment: string }): void {
+    const id = this.order()?.id;
+    if (!id) return;
+
+    this.isSubmittingRating.set(true);
+    this.ratingSubmitError.set(null);
+
+    this.reviewService.create({
+      orderId: id,
+      rating: payload.rating,
+      comment: payload.comment || undefined,
+    }).subscribe({
+      next: () => {
+        this.isSubmittingRating.set(false);
+        this.showRatingModal.set(false);
+      },
+      error: (err) => {
+        this.isSubmittingRating.set(false);
+        this.ratingSubmitError.set(
+          err?.error?.message ?? 'No pudimos guardar tu valoración. Intenta nuevamente.',
+        );
+      },
+    });
+  }
+
+  private wasReviewDismissed(orderId: string): boolean {
+    try {
+      return sessionStorage.getItem(`${this.REVIEW_DISMISSED_KEY}:${orderId}`) === '1';
+    } catch {
+      return false;
+    }
+  }
+
+  private markReviewDismissed(orderId: string): void {
+    try {
+      sessionStorage.setItem(`${this.REVIEW_DISMISSED_KEY}:${orderId}`, '1');
+    } catch {
+      // SSR or storage disabled — ignore silently.
+    }
   }
 
   // ============================================
@@ -105,6 +307,32 @@ export class OrderDetailComponent implements OnInit {
 
   getStatusDescription(status: OrderStatus | string): string {
     return ORDER_STATUS_DESCRIPTIONS[status as OrderStatus] || '';
+  }
+
+  // ========== DISPATCH STATUS HELPERS ==========
+
+  getDispatchStatusLabel(status?: DispatchStatus | string): string {
+    if (!status) return '';
+    return DISPATCH_STATUS_LABELS[status as DispatchStatus] || status;
+  }
+
+  getDispatchStatusClass(status?: DispatchStatus | string): string {
+    if (!status) return '';
+    return DISPATCH_STATUS_COLORS[status as DispatchStatus] || '';
+  }
+
+  getDispatchStatusDescription(status?: DispatchStatus | string): string {
+    if (!status) return '';
+    return DISPATCH_STATUS_DESCRIPTIONS[status as DispatchStatus] || '';
+  }
+
+  /** Whether to show the dispatch tracking section (shipping/delivery orders after approval) */
+  showDispatchTracking(order: Order): boolean {
+    return isShippingOrder(order);
+  }
+
+  isOilChange(order: Order): boolean {
+    return isOilChangeOrder(order);
   }
 
   getDispatchLabel(type: string): string {
@@ -153,9 +381,8 @@ export class OrderDetailComponent implements OnInit {
     const a = order.mechanicAssignment as any;
     if (a && typeof a === 'object' && a.mechanic && typeof a.mechanic === 'object' && (a.mechanic.name || a.mechanic.whatsapp)) return true;
 
-    // Fuente 3: el status implica que hay un mecánico asignado
-    const statusesWithMechanic = ['mechanic_assigned', 'en_route', 'in_service'];
-    if (statusesWithMechanic.includes(order.status)) return true;
+    // Fuente 3: mechanicAssignment populated means mechanic was assigned
+    if (order.mechanicAssignment && typeof order.mechanicAssignment === 'object') return true;
 
     return false;
   }
@@ -184,6 +411,16 @@ export class OrderDetailComponent implements OnInit {
     return '';
   }
 
+  /**
+   * Phone is only exposed to the client while the mechanic is en route
+   * (`en_camino`) or actively performing the service (`in_progress`).
+   */
+  canShowMechanicPhone(order: Order): boolean {
+    const a = order.mechanicAssignment as any;
+    const status = a && typeof a === 'object' ? a.status : null;
+    return status === 'en_camino' || status === 'in_progress';
+  }
+
   mechanicAvatar(order: Order): string {
     const m = order.mechanic as any;
     if (m && typeof m === 'object' && m.avatar) return m.avatar;
@@ -205,6 +442,10 @@ export class OrderDetailComponent implements OnInit {
 
   closePopovers(): void {
     this.activePhonePopover.set(null);
+  }
+
+  onCommentsUpdated(updatedOrder: Order): void {
+    this.order.set(updatedOrder);
   }
 
   openWhatsApp(phone: string): void {
@@ -270,28 +511,95 @@ export class OrderDetailComponent implements OnInit {
   }
 
   // ============================================
-  // COMENTARIO DE PAGO
+  // RE-SUBIDA DE COMPROBANTE DE PAGO
   // ============================================
-  savePaymentNote(): void {
+
+  /** Determines whether the re-upload section should be visible */
+  canUploadProof(order: Order): boolean {
+    if (!order.paymentSubmission) return false;
+    if (order.paymentSubmission.proofUrl) return false;
+    const editable: string[] = [OrderStatus.PENDING, OrderStatus.APPROVED];
+    return editable.includes(order.status);
+  }
+
+  onProofFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    // Reset previous messages
+    this.uploadProofError.set(null);
+    this.uploadProofSuccess.set(null);
+
+    // Validate type and size client-side
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!validTypes.includes(file.type)) {
+      this.uploadProofError.set('Tipo de archivo no permitido. Usa JPG, PNG, WebP o GIF.');
+      input.value = '';
+      return;
+    }
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      this.uploadProofError.set('El archivo excede el tamano maximo de 5MB.');
+      input.value = '';
+      return;
+    }
+
+    this.uploadProofFile.set(file);
+    const reader = new FileReader();
+    reader.onload = () => this.uploadProofPreview.set(reader.result as string);
+    reader.readAsDataURL(file);
+    input.value = '';
+  }
+
+  removeProofSelection(): void {
+    this.uploadProofFile.set(null);
+    this.uploadProofPreview.set(null);
+    this.uploadProofError.set(null);
+  }
+
+  saveProof(): void {
     const o = this.order();
-    if (!o || !o.paymentSubmission) return;
+    const file = this.uploadProofFile();
+    if (!o || !o.paymentSubmission || !file) return;
 
-    const note = this.paymentNote().trim();
-    this.isSavingNote.set(true);
-    this.noteError.set(null);
+    this.isUploadingProof.set(true);
+    this.uploadProofError.set(null);
+    this.uploadProofSuccess.set(null);
 
-    const updated = { ...o.paymentSubmission, notes: note || undefined };
+    this.uploadService.uploadImage(file, 'payment-proofs').subscribe({
+      next: (uploadRes) => {
+        if (!uploadRes?.data?.url) {
+          this.isUploadingProof.set(false);
+          this.uploadProofError.set('Error al subir el comprobante: respuesta invalida del servidor.');
+          return;
+        }
 
-    this.orderService.updatePayment(o.id, updated).subscribe({
-      next: (res) => {
-        this.order.set(res.data);
-        this.isSavingNote.set(false);
-        this.noteSuccess.set('Comentario guardado');
-        setTimeout(() => this.noteSuccess.set(null), 3000);
+        // Preserve all existing paymentSubmission fields, add proofUrl and proofPublicId
+        const updated = {
+          ...o.paymentSubmission!,
+          proofUrl: uploadRes.data.url,
+          proofPublicId: uploadRes.data.publicId,
+        };
+
+        this.orderService.updatePayment(o.id, updated).subscribe({
+          next: (res) => {
+            this.order.set(res.data);
+            this.uploadProofFile.set(null);
+            this.uploadProofPreview.set(null);
+            this.isUploadingProof.set(false);
+            this.uploadProofSuccess.set('Comprobante guardado exitosamente');
+            setTimeout(() => this.uploadProofSuccess.set(null), 3000);
+          },
+          error: (err) => {
+            this.isUploadingProof.set(false);
+            this.uploadProofError.set(err?.error?.message || 'Error al guardar el comprobante.');
+          },
+        });
       },
       error: (err) => {
-        this.isSavingNote.set(false);
-        this.noteError.set(err.error?.message || 'Error al guardar el comentario');
+        this.isUploadingProof.set(false);
+        this.uploadProofError.set(err?.error?.message || 'No se pudo subir el comprobante. Intenta nuevamente.');
       },
     });
   }

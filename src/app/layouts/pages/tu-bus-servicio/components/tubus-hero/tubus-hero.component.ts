@@ -2,6 +2,8 @@ import { Component, inject, signal, computed, effect, DestroyRef } from '@angula
 import { Router } from '@angular/router';
 import { HERO_CONTENT } from '../../data/mock-data';
 import { SettingsService } from '../../../../../core/services/settings.service';
+import { ReviewService } from '../../../../../core/services/review.service';
+import { FloatingStat } from '../../../../../models/settings.model';
 
 @Component({
   selector: 'app-tubus-hero',
@@ -13,7 +15,10 @@ import { SettingsService } from '../../../../../core/services/settings.service';
 export class TubusHeroComponent {
   private readonly router = inject(Router);
   private readonly settingsService = inject(SettingsService);
+  private readonly reviewService = inject(ReviewService);
   private readonly destroyRef = inject(DestroyRef);
+
+  private readonly reviewsAverage = signal<number | null>(null);
 
   protected readonly hero = HERO_CONTENT;
   private static readonly FALLBACK_IMAGE = 'assets/img/promociones.jpg';
@@ -37,7 +42,8 @@ export class TubusHeroComponent {
   private currentIdx = 0;
 
   protected readonly floatingStats = computed(() => {
-    return this.settingsService.heroImagesConfig().floatingStats || [];
+    const stats = this.settingsService.heroImagesConfig().floatingStats || [];
+    return stats.map((s) => this.resolveStat(s));
   });
 
   protected readonly leftStat = computed(() => {
@@ -47,6 +53,28 @@ export class TubusHeroComponent {
   protected readonly rightStat = computed(() => {
     return this.floatingStats().find((s) => s.position === 'right' && s.isVisible) || null;
   });
+
+  /**
+   * Resolves the display value for a stat. If the stat is sourced from reviews
+   * and a live average is available, it overrides the manual value with the
+   * numeric average (the template renders a golden star alongside).
+   */
+  private resolveStat(stat: FloatingStat): FloatingStat {
+    if (stat.source === 'reviews_average') {
+      const avg = this.reviewsAverage();
+      if (avg !== null) {
+        return { ...stat, value: avg.toFixed(1) };
+      }
+    }
+    return stat;
+  }
+
+  /** Append "+" suffix only when the value doesn't already end with one,
+   *  preventing "150++" when admins type "150+" in settings. */
+  protected withPlus(value: string): string {
+    const v = (value || '').trim();
+    return v.endsWith('+') ? v : `${v}+`;
+  }
 
   protected readonly heroImages = computed(() => {
     const config = this.settingsService.heroImagesConfig();
@@ -93,6 +121,25 @@ export class TubusHeroComponent {
 
     this.destroyRef.onDestroy(() => {
       this.stopAutoPlay();
+    });
+
+    this.loadReviewsAverage();
+  }
+
+  private loadReviewsAverage(): void {
+    const needsAverage = (this.settingsService.heroImagesConfig().floatingStats || [])
+      .some((s) => s.source === 'reviews_average' && s.isVisible);
+    if (!needsAverage) return;
+
+    this.reviewService.getStats().subscribe({
+      next: (stats) => {
+        if (stats.count > 0 && stats.average !== null) {
+          this.reviewsAverage.set(stats.average);
+        }
+      },
+      error: () => {
+        // Silent fallback — the manual value in settings remains visible.
+      },
     });
   }
 

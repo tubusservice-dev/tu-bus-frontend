@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, Input } from '@angular/core';
 import { Router } from '@angular/router';
 import { CurrencyPipe } from '@angular/common';
 import { CartService, CartItem } from '../../../core/services/cart.service';
@@ -19,8 +19,26 @@ export class CartPopoverComponent {
   /** Controla si el popover está abierto */
   protected readonly isOpen = signal(false);
 
+  /**
+   * When true (default), tapping the cart button on mobile (≤639px) navigates
+   * directly to /carrito instead of opening the full-screen popover. Desktop
+   * behavior stays unchanged — the anchored popover still opens. Set to
+   * `false` explicitly only if a consumer needs the legacy full-screen popover
+   * on mobile (no current consumer does).
+   */
+  @Input() mobileNavigatesToCart = true;
+
   togglePopover(): void {
+    if (this.mobileNavigatesToCart && this.isMobileViewport()) {
+      this.goToCart();
+      return;
+    }
     this.isOpen.update((value) => !value);
+  }
+
+  private isMobileViewport(): boolean {
+    return typeof window !== 'undefined'
+      && window.matchMedia('(max-width: 639px)').matches;
   }
 
   closePopover(): void {
@@ -30,6 +48,11 @@ export class CartPopoverComponent {
   /** Navegar a la página del carrito */
   goToCart(): void {
     this.router.navigate(['/carrito']);
+    this.closePopover();
+  }
+
+  goToCatalog(): void {
+    this.router.navigate(['/catalogo']);
     this.closePopover();
   }
 

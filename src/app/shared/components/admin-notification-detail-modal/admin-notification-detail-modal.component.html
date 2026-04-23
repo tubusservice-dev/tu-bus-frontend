@@ -1,0 +1,150 @@
+@if (n(); as notif) {
+  <div class="notif-modal-overlay" (click)="close()">
+    <div class="notif-modal" (click)="$event.stopPropagation()">
+      <!-- HEADER -->
+      <div class="notif-modal-header">
+        <div class="notif-modal-type" [ngClass]="typeBadgeClass()">
+          {{ getNotificationTypeLabel(notif.type) }}
+        </div>
+        <button type="button" class="notif-modal-close" (click)="close()" aria-label="Cerrar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- BODY -->
+      <div class="notif-modal-body">
+        <h3 class="notif-modal-title">{{ notif.title }}</h3>
+        <p class="notif-modal-msg">{{ notif.message }}</p>
+
+        <!-- SECCIÓN: ORDEN -->
+        @if (meta()['orderNumber'] || meta()['dispatchType'] || meta()['total'] !== undefined) {
+          <div class="notif-modal-details">
+            <div class="nd-section-title">Orden</div>
+            @if (meta()['orderNumber']) {
+              <div class="notif-detail-row">
+                <span class="nd-label">Número</span>
+                <span class="nd-value">#{{ meta()['orderNumber'] }}</span>
+              </div>
+            }
+            @if (meta()['dispatchType']) {
+              <div class="notif-detail-row">
+                <span class="nd-label">Tipo</span>
+                <span class="nd-value">{{ getDispatchTypeLabel(meta()['dispatchType']) }}</span>
+              </div>
+            }
+            @if (meta()['total'] !== undefined && meta()['total'] !== null) {
+              <div class="notif-detail-row">
+                <span class="nd-label">Total</span>
+                <span class="nd-value">{{ formatMoney(meta()['total']) }}</span>
+              </div>
+            }
+            @if (meta()['itemsCount']) {
+              <div class="notif-detail-row">
+                <span class="nd-label">Productos</span>
+                <span class="nd-value">{{ meta()['itemsCount'] }}</span>
+              </div>
+            }
+            @if (meta()['paymentMethod']) {
+              <div class="notif-detail-row">
+                <span class="nd-label">Método de pago</span>
+                <span class="nd-value">{{ getPaymentMethodLabel(meta()['paymentMethod']) }}</span>
+              </div>
+            }
+            @if (meta()['scheduledDate']) {
+              <div class="notif-detail-row">
+                <span class="nd-label">Fecha programada</span>
+                <span class="nd-value">{{ meta()['scheduledDate'] | date:'dd/MM/yyyy' }}</span>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- SECCIÓN: CLIENTE -->
+        @if (meta()['customerName'] || meta()['customerPhone'] || meta()['recipientAddress']) {
+          <div class="notif-modal-details">
+            <div class="nd-section-title">Cliente</div>
+            @if (meta()['customerName']) {
+              <div class="notif-detail-row">
+                <span class="nd-label">Nombre</span>
+                <span class="nd-value">{{ meta()['customerName'] }}</span>
+              </div>
+            }
+            @if (meta()['customerPhone']) {
+              <div class="notif-detail-row">
+                <span class="nd-label">Teléfono</span>
+                <span class="nd-value">{{ meta()['customerPhone'] }}</span>
+              </div>
+            }
+            @if (meta()['recipientAddress']) {
+              <div class="notif-detail-row">
+                <span class="nd-label">Dirección</span>
+                <span class="nd-value">{{ meta()['recipientAddress'] }}</span>
+              </div>
+            }
+            @if (meta()['recipientCity']) {
+              <div class="notif-detail-row">
+                <span class="nd-label">Ciudad</span>
+                <span class="nd-value">{{ meta()['recipientCity'] }}</span>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- SECCIÓN: MECÁNICO -->
+        @if (meta()['mechanicName'] || meta()['startTime']) {
+          <div class="notif-modal-details">
+            <div class="nd-section-title">Mecánico</div>
+            @if (meta()['mechanicName']) {
+              <div class="notif-detail-row">
+                <span class="nd-label">Nombre</span>
+                <span class="nd-value">{{ meta()['mechanicName'] }}</span>
+              </div>
+            }
+            @if (meta()['startTime']) {
+              <div class="notif-detail-row">
+                <span class="nd-label">Horario</span>
+                <span class="nd-value">{{ meta()['startTime'] }} - {{ meta()['endTime'] }}</span>
+              </div>
+            }
+            @if (meta()['step']) {
+              <div class="notif-detail-row">
+                <span class="nd-label">Etapa</span>
+                <span class="nd-value">{{ getStepLabel(meta()['step']) }}</span>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- SECCIÓN: CONTEXTO DEL EVENTO -->
+        @if (meta()['reason'] || meta()['note']) {
+          <div class="notif-modal-details">
+            @if (meta()['reason']) {
+              <div class="notif-detail-row">
+                <span class="nd-label">Motivo</span>
+                <span class="nd-value nd-reason">{{ meta()['reason'] }}</span>
+              </div>
+            }
+            @if (meta()['note']) {
+              <div class="notif-detail-row nd-row-stacked">
+                <span class="nd-label">Comentario</span>
+                <span class="nd-value nd-value-block">{{ meta()['note'] }}</span>
+              </div>
+            }
+          </div>
+        }
+
+        <div class="notif-modal-time">{{ notif.createdAt | date:'dd/MM/yyyy HH:mm' }}</div>
+      </div>
+
+      <!-- FOOTER -->
+      <div class="notif-modal-footer">
+        @if (orderId()) {
+          <a class="notif-btn-order" [routerLink]="['/admin/orders', orderId()]" (click)="close()">Ver orden</a>
+        }
+        <button type="button" class="notif-btn-close" (click)="close()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+}

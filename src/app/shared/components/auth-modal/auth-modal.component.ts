@@ -4,13 +4,18 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angula
 import { Subscription } from 'rxjs';
 import { AuthService } from '../../../core/services';
 import { RegisterRequest } from '../../../models/auth.model';
+import { DateInputComponent } from '../date-input/date-input.component';
+import { minAgeValidator } from '../../validators/form-validators';
+
+/** Minimum age (years) required to create an account. */
+const MIN_REGISTRATION_AGE = 18;
 
 type AuthMode = 'login' | 'register';
 
 @Component({
   selector: 'app-auth-modal',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, DateInputComponent],
   templateUrl: './auth-modal.component.html',
   styleUrl: './auth-modal.component.scss',
 })
@@ -21,6 +26,17 @@ export class AuthModalComponent implements OnInit, OnDestroy {
 
   readonly closeModal = output<void>();
 
+  /**
+   * Latest ISO `YYYY-MM-DD` a user may pick as birth date.
+   * Equals today minus `MIN_REGISTRATION_AGE` years — enforces the age gate at
+   * the calendar level so underage dates are visually unreachable.
+   */
+  protected readonly maxBirthDateStr = (() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - MIN_REGISTRATION_AGE);
+    return d.toISOString().split('T')[0];
+  })();
+
   protected readonly mode = signal<AuthMode>('login');
   protected readonly isLoading = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
@@ -29,6 +45,11 @@ export class AuthModalComponent implements OnInit, OnDestroy {
   // Stepper — always 2 steps
   protected readonly currentStep = signal(1);
   protected readonly isJuridical = signal(false);
+
+  // Registration success state — shown after POST /register returns OK.
+  // Keeps the modal open on a confirmation screen until the user presses Continuar.
+  protected readonly registrationSuccess = signal(false);
+  protected readonly registeredFirstName = signal('');
 
   // Password visibility
   protected readonly showLoginPassword = signal(false);
@@ -93,7 +114,7 @@ export class AuthModalComponent implements OnInit, OnDestroy {
         birthCtrl.setValue('');
         companyCtrl.setValidators([Validators.required, Validators.minLength(3), Validators.maxLength(100)]);
       } else {
-        birthCtrl.setValidators([Validators.required]);
+        birthCtrl.setValidators([Validators.required, minAgeValidator(MIN_REGISTRATION_AGE)]);
         companyCtrl.clearValidators();
         companyCtrl.setValue('');
       }
@@ -111,6 +132,8 @@ export class AuthModalComponent implements OnInit, OnDestroy {
     this.errorMessage.set(null);
     this.currentStep.set(1);
     this.isJuridical.set(false);
+    this.registrationSuccess.set(false);
+    this.registeredFirstName.set('');
     this.loginForm.reset();
     this.step1Form.reset();
     this.step2Form.reset();
@@ -164,6 +187,12 @@ export class AuthModalComponent implements OnInit, OnDestroy {
       },
       error: (error) => {
         this.isLoading.set(false);
+        // When the account is blocked/suspended/deleted, raise the global
+        // modal and close this form — the inline error is insufficient.
+        if (this.authService.triggerAccountBlocked(error)) {
+          this.closeModal.emit();
+          return;
+        }
         this.errorMessage.set(error.error?.message || 'Error al iniciar sesión. Intenta de nuevo.');
       },
     });
@@ -197,9 +226,13 @@ export class AuthModalComponent implements OnInit, OnDestroy {
     this.errorMessage.set(null);
 
     this.authService.register(payload).subscribe({
-      next: () => {
+      next: (response) => {
         this.isLoading.set(false);
-        this.closeModal.emit();
+        // Show the in-modal success screen; user stays authenticated (handleAuthSuccess
+        // already ran inside AuthService.register via tap). The modal stays open
+        // until they press "Continuar" — parent never navigates.
+        this.registeredFirstName.set(response?.data?.user?.firstName || '');
+        this.registrationSuccess.set(true);
       },
       error: (error) => {
         this.isLoading.set(false);
@@ -212,6 +245,11 @@ export class AuthModalComponent implements OnInit, OnDestroy {
         }
       },
     });
+  }
+
+  continueAfterRegistration(): void {
+    this.registrationSuccess.set(false);
+    this.closeModal.emit();
   }
 
   // ========== OAuth ==========
@@ -228,12 +266,6 @@ export class AuthModalComponent implements OnInit, OnDestroy {
   }
 
   // ========== Helpers ==========
-
-  onOverlayClick(event: MouseEvent): void {
-    if ((event.target as HTMLElement).classList.contains('modal-overlay')) {
-      this.closeModal.emit();
-    }
-  }
 
   hasError(form: FormGroup, field: string): boolean {
     const control = form.get(field);
@@ -256,6 +288,9 @@ export class AuthModalComponent implements OnInit, OnDestroy {
       if (field === 'phone') return 'Formato: 04XX seguido de 7 dígitos';
       if (field === 'documentNumber') return 'Formato de documento inválido';
       return 'Formato inválido';
+    }
+    if (control.errors['minAge']) {
+      return `Debes tener al menos ${control.errors['minAge'].requiredAge} años para registrarte`;
     }
 
     return 'Campo inválido';

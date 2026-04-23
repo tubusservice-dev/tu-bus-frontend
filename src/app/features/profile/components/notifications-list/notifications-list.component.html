@@ -69,4 +69,10 @@
       </div>
     }
   }
+
+  <!-- Detail modal (shared with the bell popover) -->
+  <app-user-notification-detail-modal
+    [notification]="selectedNotification()"
+    (closed)="closeDetail()"
+  />
 </div>

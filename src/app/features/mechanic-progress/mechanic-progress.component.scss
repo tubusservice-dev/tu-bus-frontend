@@ -181,9 +181,11 @@
 }
 
 .btn-advance {
-  @apply w-full inline-flex items-center justify-center gap-2 px-6 py-4 bg-red-600 text-white text-base font-semibold rounded-xl;
-  @apply hover:bg-red-700 active:bg-red-800 transition-colors shadow-lg;
-  @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  @apply w-full inline-flex items-center justify-center gap-2 px-6 py-4 text-white text-base font-semibold rounded-xl;
+  @apply transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed;
+  background-color: var(--accent-primary);
+  &:hover:not(:disabled) { background-color: var(--accent-hover, rgb(0, 20, 60)); }
+  &:active:not(:disabled) { background-color: rgb(0, 15, 45); }
 }
 
 .btn-reject {
@@ -342,12 +344,21 @@
 }
 
 .support-phone-btn {
-  @apply w-full flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm font-medium transition-colors;
+  @apply w-full flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm font-medium transition-colors mb-2;
   @apply bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-white;
   @apply hover:bg-gray-100 dark:hover:bg-gray-700 active:bg-gray-200 dark:active:bg-gray-600;
   @apply border border-gray-200 dark:border-gray-600;
 
   svg { @apply w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0; }
+}
+
+.support-whatsapp-btn {
+  @apply w-full flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm font-medium transition-colors mb-2;
+  @apply bg-green-50 dark:bg-green-900/15 text-green-700 dark:text-green-300;
+  @apply hover:bg-green-100 dark:hover:bg-green-900/25 active:bg-green-200 dark:active:bg-green-900/35;
+  @apply border border-green-200 dark:border-green-800/40;
+
+  svg { @apply w-4 h-4 flex-shrink-0; }
 }
 
 .phone-popover {
@@ -399,4 +410,30 @@
   text-decoration: none;
 
   svg { @apply w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0; }
+}
+
+// ============================================
+// CONTEXTUAL MODAL VARIANTS (Fase 6)
+// ============================================
+.confirm-icon-final {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: #fff !important;
+}
+
+.confirm-accept-final {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+
+  &:hover:not(:disabled) {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+  }
+}
+
+.confirm-modal-final {
+  .confirm-title {
+    color: #059669;
+  }
+}
+
+:host-context(.dark) .confirm-modal-final .confirm-title {
+  color: #34d399;
 }

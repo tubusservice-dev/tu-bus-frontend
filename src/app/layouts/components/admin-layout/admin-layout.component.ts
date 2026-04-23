@@ -5,11 +5,12 @@ import { AuthService, AdminNotificationService } from '../../../core/services';
 import { AdminNotificationsService } from '../../../core/services/admin-notifications.service';
 import { AdminNotification } from '../../../models/notification.model';
 import { environment } from '../../../../environments/environment';
+import { AdminNotificationDetailModalComponent } from '../../../shared/components/admin-notification-detail-modal/admin-notification-detail-modal.component';
 
 @Component({
   selector: 'app-admin-layout',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, AdminNotificationDetailModalComponent],
   templateUrl: './admin-layout.component.html',
   styleUrl: './admin-layout.component.scss',
 })
@@ -65,6 +66,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
       icon: 'users',
       route: '/admin/users',
       exact: false,
+      disabled: true,
     },
     {
       label: 'Productos',
@@ -121,6 +123,12 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
       exact: false,
     },
     {
+      label: 'Valoraciones',
+      icon: 'star',
+      route: '/admin/reviews',
+      exact: false,
+    },
+    {
       label: 'Configuraciones',
       icon: 'settings',
       route: '/admin/settings',
@@ -164,22 +172,6 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
 
   closeNotification(): void {
     this.selectedNotification.set(null);
-  }
-
-  getNotificationTypeLabel(type: string): string {
-    const labels: Record<string, string> = {
-      mechanic_rejection: 'Rechazo de mecánico',
-      customer_cancellation: 'Cancelación de cliente',
-      new_order: 'Nueva orden',
-      payment_note: 'Comentario de pago',
-      service_progress: 'Progreso del servicio',
-    };
-    return labels[type] || type;
-  }
-
-  getOrderId(n: AdminNotification): string {
-    if (n.relatedOrder && typeof n.relatedOrder === 'object') return n.relatedOrder.id || n.relatedOrder._id || '';
-    return String(n.relatedOrder || '');
   }
 
   /** Toggle del sidebar en móvil */

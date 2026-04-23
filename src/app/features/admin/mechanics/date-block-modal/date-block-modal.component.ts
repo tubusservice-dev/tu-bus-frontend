@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MechanicService } from '../../../../core/services/mechanic.service';
 import { Mechanic } from '../../../../models/mechanic.model';
+import { DateInputComponent } from '../../../../shared/components/date-input/date-input.component';
 
 @Component({
   selector: 'app-date-block-modal',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, DateInputComponent],
   templateUrl: './date-block-modal.component.html',
   styleUrl: './date-block-modal.component.scss',
 })

@@ -1,0 +1,403 @@
+<div class="user-detail-page">
+  @if (isLoading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <span>Cargando información del usuario...</span>
+    </div>
+  } @else if (errorMessage() || !user()) {
+    <div class="error-state">
+      <p>{{ errorMessage() || 'Usuario no encontrado' }}</p>
+      <a routerLink="/admin/users" class="btn-primary">Volver a la lista</a>
+    </div>
+  } @else if (user(); as u) {
+    <!-- Header -->
+    <div class="detail-header">
+      <a routerLink="/admin/users" class="back-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+        </svg>
+        Usuarios
+      </a>
+
+      <div class="header-main">
+        <img [src]="avatarUrl()" [alt]="displayName()" class="header-avatar" />
+        <div class="header-info">
+          <div class="header-row">
+            <h1 class="header-name">{{ displayName() }}</h1>
+            <span class="status-badge" [ngClass]="statusClass(u.status)">
+              {{ statusLabel(u.status) }}
+            </span>
+          </div>
+          <div class="header-sub">
+            @if (u.email) { <span>{{ u.email }}</span> }
+            @if (u.phone) { <span>·</span><span>{{ u.phone }}</span> }
+            <span>·</span><span>{{ roleLabel(u.role) }}</span>
+            <span>·</span><span>Miembro desde {{ u.createdAt | date: 'dd MMM yyyy' }}</span>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          @if (u.status === UserStatusEnum.ACTIVE) {
+            <button type="button" class="btn-secondary" (click)="openStatusModal(UserStatusEnum.SUSPENDED)">
+              Suspender
+            </button>
+            <button type="button" class="btn-danger" (click)="openStatusModal(UserStatusEnum.BLOCKED)">
+              Bloquear
+            </button>
+          } @else if (u.status === UserStatusEnum.SUSPENDED || u.status === UserStatusEnum.BLOCKED) {
+            <button type="button" class="btn-primary" (click)="openStatusModal(UserStatusEnum.ACTIVE)">
+              Reactivar
+            </button>
+            @if (u.status !== UserStatusEnum.BLOCKED) {
+              <button type="button" class="btn-danger" (click)="openStatusModal(UserStatusEnum.BLOCKED)">
+                Bloquear
+              </button>
+            }
+          }
+
+          @if (u.status !== UserStatusEnum.DELETED) {
+            <button type="button" class="btn-danger-outline" (click)="openStatusModal(UserStatusEnum.DELETED)">
+              Eliminar
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats cards -->
+    @if (stats(); as s) {
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-label">Órdenes totales</span>
+          <span class="stat-value">{{ s.ordersTotal }}</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Total gastado</span>
+          <span class="stat-value">{{ s.totalSpent | currency: 'USD' : 'symbol' : '1.2-2' }}</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Ticket promedio</span>
+          <span class="stat-value">{{ s.averageTicket | currency: 'USD' : 'symbol' : '1.2-2' }}</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Vehículos</span>
+          <span class="stat-value">{{ s.vehiclesTotal }}</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Última orden</span>
+          <span class="stat-value small">
+            {{ s.lastOrderAt ? (s.lastOrderAt | date: 'dd MMM yyyy') : '—' }}
+          </span>
+        </div>
+      </div>
+    }
+
+    <!-- Tabs -->
+    <nav class="tabs-nav">
+      <button type="button" class="tab" [class.active]="activeTab() === 'info'" (click)="setTab('info')">Información</button>
+      <button type="button" class="tab" [class.active]="activeTab() === 'orders'" (click)="setTab('orders')">Historial de órdenes</button>
+      <button type="button" class="tab" [class.active]="activeTab() === 'vehicles'" (click)="setTab('vehicles')">Garaje</button>
+      <button type="button" class="tab" [class.active]="activeTab() === 'audit'" (click)="setTab('audit')">Auditoría</button>
+    </nav>
+
+    <!-- Tab: Información -->
+    @if (activeTab() === 'info') {
+      <section class="detail-section">
+        <div class="info-grid">
+          <div class="info-card">
+            <h3>Identidad</h3>
+            <dl>
+              <div><dt>Nombre</dt><dd>{{ u.firstName || '—' }}</dd></div>
+              <div><dt>Apellido</dt><dd>{{ u.lastName || '—' }}</dd></div>
+              <div><dt>Usuario</dt><dd>{{ u.username || '—' }}</dd></div>
+              <div><dt>Documento</dt>
+                <dd>
+                  @if (u.documentNumber) { {{ u.documentType }}-{{ u.documentNumber }} } @else { — }
+                </dd>
+              </div>
+              <div><dt>Fecha de nacimiento</dt>
+                <dd>{{ u.birthDate ? (u.birthDate | date: 'dd/MM/yyyy') : '—' }}</dd>
+              </div>
+              <div><dt>Verificado</dt><dd>{{ u.isVerified ? 'Sí' : 'No' }}</dd></div>
+            </dl>
+          </div>
+
+          <div class="info-card">
+            <h3>Contacto</h3>
+            <dl>
+              <div><dt>Email</dt><dd>{{ u.email || '—' }}</dd></div>
+              <div><dt>Teléfono</dt><dd>{{ u.phone || '—' }}</dd></div>
+              <div><dt>Teléfono alternativo</dt><dd>{{ u.alternativePhone || '—' }}</dd></div>
+            </dl>
+          </div>
+
+          <div class="info-card">
+            <h3>Dirección</h3>
+            <dl>
+              <div class="full"><dt>Dirección completa</dt>
+                <dd>{{ fullAddress() || '—' }}</dd>
+              </div>
+              <div><dt>Estado</dt><dd>{{ u.stateName || '—' }}</dd></div>
+              <div><dt>Ciudad</dt><dd>{{ u.cityName || '—' }}</dd></div>
+              <div><dt>Municipio</dt><dd>{{ u.municipalityName || '—' }}</dd></div>
+              <div><dt>Sector</dt><dd>{{ u.neighborhood || '—' }}</dd></div>
+              <div><dt>Zip code</dt><dd>{{ u.zipCode || '—' }}</dd></div>
+              <div class="full"><dt>Punto de referencia</dt><dd>{{ u.referencePoint || '—' }}</dd></div>
+            </dl>
+          </div>
+
+          @if (u.companyName || u.companyRif) {
+            <div class="info-card">
+              <h3>Datos fiscales</h3>
+              <dl>
+                <div><dt>Razón social</dt><dd>{{ u.companyName || '—' }}</dd></div>
+                <div><dt>RIF</dt><dd>{{ u.companyRif || '—' }}</dd></div>
+              </dl>
+            </div>
+          }
+        </div>
+      </section>
+    }
+
+    <!-- Tab: Órdenes -->
+    @if (activeTab() === 'orders') {
+      <section class="detail-section">
+        <div class="section-header">
+          <h2>Historial de órdenes</h2>
+          <div class="section-actions">
+            <span class="muted">{{ ordersTotal() }} en total</span>
+            <button type="button" class="btn-reload" (click)="reloadOrders()" [disabled]="isLoadingOrders()">
+              @if (isLoadingOrders()) { Recargando... } @else { Recargar }
+            </button>
+          </div>
+        </div>
+
+        <div class="status-chips">
+          @for (chip of orderStatusChips; track chip.key) {
+            <button
+              type="button"
+              class="chip"
+              [class.active]="ordersStatusFilter() === chip.key"
+              (click)="setOrdersStatus(chip.key)"
+            >
+              {{ chip.label }}
+            </button>
+          }
+        </div>
+
+        @if (isLoadingOrders()) {
+          <div class="loading-state small">
+            <div class="spinner"></div>
+          </div>
+        } @else if (ordersError()) {
+          <div class="error-state small">
+            <p>{{ ordersError() }}</p>
+            <button type="button" class="btn-reload" (click)="reloadOrders()">Reintentar</button>
+          </div>
+        } @else if (orders().length === 0) {
+          <div class="empty-state small">
+            <p>Sin órdenes registradas con este filtro.</p>
+            <p class="muted tiny">El backend reportó {{ ordersTotal() }} órdenes totales para este usuario.</p>
+          </div>
+        } @else {
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Orden</th>
+                  <th>Tipo</th>
+                  <th class="num">Total</th>
+                  <th>Estado</th>
+                  <th>Fecha</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (order of orders(); track order.id) {
+                  <tr (click)="viewOrder(order)">
+                    <td class="mono">{{ order.orderNumber }}</td>
+                    <td>{{ order.dispatchType }}</td>
+                    <td class="num">{{ order.total | currency: 'USD' : 'symbol' : '1.2-2' }}</td>
+                    <td>
+                      <span class="status-badge" [ngClass]="orderStatusClass(order.status)">
+                        {{ orderStatusLabel(order.status) }}
+                      </span>
+                    </td>
+                    <td>{{ order.createdAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          @if (ordersPages() > 1) {
+            <div class="pagination">
+              <span class="pagination-info">
+                Página {{ ordersPage() }} de {{ ordersPages() }}
+              </span>
+              <div class="pagination-buttons">
+                <button class="btn-page" [disabled]="ordersPage() === 1" (click)="goToOrdersPage(ordersPage() - 1)">‹</button>
+                @for (p of ordersPageNumbers(); track p) {
+                  <button class="btn-page" [class.active]="p === ordersPage()" (click)="goToOrdersPage(p)">{{ p }}</button>
+                }
+                <button class="btn-page" [disabled]="ordersPage() === ordersPages()" (click)="goToOrdersPage(ordersPage() + 1)">›</button>
+              </div>
+            </div>
+          }
+        }
+      </section>
+    }
+
+    <!-- Tab: Garaje -->
+    @if (activeTab() === 'vehicles') {
+      <section class="detail-section">
+        <div class="section-header">
+          <h2>Garaje</h2>
+          <div class="section-actions">
+            <span class="muted">{{ vehicles().length }} vehículo(s)</span>
+            <button type="button" class="btn-reload" (click)="reloadVehicles()" [disabled]="isLoadingVehicles()">
+              @if (isLoadingVehicles()) { Recargando... } @else { Recargar }
+            </button>
+          </div>
+        </div>
+
+        @if (isLoadingVehicles()) {
+          <div class="loading-state small">
+            <div class="spinner"></div>
+          </div>
+        } @else if (vehiclesError()) {
+          <div class="error-state small">
+            <p>{{ vehiclesError() }}</p>
+            <button type="button" class="btn-reload" (click)="reloadVehicles()">Reintentar</button>
+          </div>
+        } @else if (vehicles().length === 0) {
+          <div class="empty-state small">
+            <p>El usuario no ha registrado vehículos.</p>
+          </div>
+        } @else {
+          <div class="vehicles-grid">
+            @for (v of vehicles(); track v.id) {
+              <div class="vehicle-card">
+                <div class="vehicle-header">
+                  <h4>{{ vehicleLabel(v) }}</h4>
+                  @if (v.placa) { <span class="plate">{{ v.placa }}</span> }
+                </div>
+                <dl>
+                  <div><dt>Tipo</dt><dd>{{ v.vehicleType }}</dd></div>
+                  @if (v.engineType?.fuelType) {
+                    <div><dt>Combustible</dt><dd>{{ v.engineType?.fuelType }}</dd></div>
+                  }
+                  @if (v.engineType?.displacement) {
+                    <div><dt>Cilindrada</dt><dd>{{ v.engineType?.displacement }}</dd></div>
+                  }
+                  @if (v.engineType?.oilType) {
+                    <div><dt>Aceite</dt><dd>{{ v.engineType?.oilType }}</dd></div>
+                  }
+                  <div><dt>Kilometraje</dt><dd>{{ v.kilometraje | number }}</dd></div>
+                </dl>
+              </div>
+            }
+          </div>
+        }
+      </section>
+    }
+
+    <!-- Tab: Auditoría -->
+    @if (activeTab() === 'audit') {
+      <section class="detail-section">
+        <div class="section-header">
+          <h2>Auditoría de la cuenta</h2>
+        </div>
+
+        <div class="audit-grid">
+          <div class="info-card">
+            <h3>Estado actual</h3>
+            <dl>
+              <div><dt>Estado</dt>
+                <dd>
+                  <span class="status-badge" [ngClass]="statusClass(u.status)">
+                    {{ statusLabel(u.status) }}
+                  </span>
+                </dd>
+              </div>
+              <div><dt>isActive (legacy)</dt><dd>{{ u.isActive ? 'true' : 'false' }}</dd></div>
+              @if (u.suspendedUntil) {
+                <div><dt>Suspendido hasta</dt>
+                  <dd>{{ u.suspendedUntil | date: 'dd/MM/yyyy HH:mm' }}</dd>
+                </div>
+              }
+            </dl>
+          </div>
+
+          @if (u.status !== UserStatusEnum.ACTIVE && u.blockReason) {
+            <div class="info-card danger">
+              <h3>Motivo del bloqueo/suspensión</h3>
+              <dl>
+                <div class="full"><dt>Motivo</dt>
+                  <dd class="pre">{{ u.blockReason }}</dd>
+                </div>
+                @if (u.blockedAt) {
+                  <div><dt>Fecha</dt>
+                    <dd>{{ u.blockedAt | date: 'dd/MM/yyyy HH:mm' }}</dd>
+                  </div>
+                }
+                @if (u.blockedBy) {
+                  <div><dt>Por admin ID</dt><dd class="mono">{{ u.blockedBy }}</dd></div>
+                }
+              </dl>
+            </div>
+          }
+        </div>
+      </section>
+    }
+
+    <!-- Modal de cambio de estado -->
+    @if (statusModal(); as modal) {
+      <div class="modal-overlay" (click)="closeStatusModal()">
+        <div class="modal-content" (click)="$event.stopPropagation()">
+          <h3 class="modal-title">{{ modal.title }}</h3>
+          <p class="modal-message">
+            Usuario: <strong>{{ displayName() }}</strong>
+          </p>
+
+          @if (modal.requiresReason) {
+            <label class="form-field">
+              <span>Motivo <em>*</em></span>
+              <textarea rows="3" maxlength="500"
+                [ngModel]="modalReason()"
+                (ngModelChange)="modalReason.set($event)"
+                placeholder="Explica por qué se realiza esta acción"
+              ></textarea>
+            </label>
+          }
+
+          @if (modal.allowsDuration) {
+            <label class="form-field">
+              <span>Suspender hasta (opcional)</span>
+              <input type="datetime-local"
+                [ngModel]="modalSuspendedUntil()"
+                (ngModelChange)="modalSuspendedUntil.set($event)"
+              />
+            </label>
+          }
+
+          @if (modalError()) {
+            <p class="form-error">{{ modalError() }}</p>
+          }
+
+          <div class="modal-actions">
+            <button type="button" class="btn-modal-cancel" [disabled]="modalBusy()" (click)="closeStatusModal()">
+              Cancelar
+            </button>
+            <button type="button" class="btn-modal-confirm"
+              [class.danger]="modal.danger"
+              [disabled]="modalBusy()"
+              (click)="confirmStatusChange()"
+            >
+              @if (modalBusy()) { Procesando... } @else { {{ modal.confirmLabel }} }
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+  }
+</div>

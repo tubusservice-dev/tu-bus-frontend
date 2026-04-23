@@ -116,6 +116,12 @@ export class ServiceTrackingComponent implements OnInit {
   protected readonly isCancelled = computed(() => this.assignment()?.status === 'cancelled');
   protected readonly isPaused = computed(() => this.assignment()?.status === 'paused');
 
+  /** Phone is only exposed while the mechanic is en route or actively servicing. */
+  protected readonly canShowMechanicPhone = computed(() => {
+    const status = this.assignment()?.status;
+    return status === 'en_camino' || status === 'in_progress';
+  });
+
   /** Paso actual con su label visual */
   protected readonly currentStepLabel = computed(() => {
     const steps = this.progressSteps();

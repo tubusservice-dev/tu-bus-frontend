@@ -14,10 +14,10 @@
 }
 
 .confirmation-card {
-  @apply w-full max-w-lg text-center;
+  @apply w-full max-w-2xl text-center;
   @apply bg-white dark:bg-gray-800 rounded-2xl shadow-lg;
   @apply border border-gray-200 dark:border-gray-700;
-  @apply p-8;
+  @apply p-6 sm:p-8;
   animation: slideUp 0.4s ease-out;
 }
 
@@ -52,7 +52,7 @@
 }
 
 .order-details-grid {
-  @apply grid grid-cols-2 gap-4;
+  @apply grid grid-cols-2 sm:grid-cols-3 gap-4;
 }
 
 .detail {
@@ -68,6 +68,181 @@
 }
 
 .capitalize { text-transform: capitalize; }
+
+// ============================================
+// DETAIL SECTIONS — products, dispatch, vehicle, payment, billing
+// Left-aligned cards with heading + content, sit below the quick summary.
+// ============================================
+.detail-section {
+  @apply rounded-xl mb-5 overflow-hidden text-left;
+  @apply bg-gray-50 dark:bg-gray-900/50;
+  @apply border border-gray-200 dark:border-gray-700;
+}
+
+.detail-section-header {
+  @apply flex items-center gap-2.5 px-4 sm:px-5 py-3;
+  @apply border-b border-gray-200 dark:border-gray-700;
+  @apply bg-white/50 dark:bg-black/20;
+
+  h3 {
+    @apply text-sm font-semibold;
+    color: var(--text-primary);
+  }
+}
+
+.detail-section-icon {
+  @apply w-4 h-4 flex-shrink-0;
+  color: var(--accent-primary);
+}
+
+// Source badge — indicates where the billing data came from
+.billing-source-badge {
+  @apply ml-auto px-2 py-0.5 rounded-full text-[11px] font-medium;
+  background-color: var(--accent-light, rgba(0, 29, 86, 0.1));
+  color: var(--accent-primary);
+  white-space: nowrap;
+}
+
+// Muted explanatory text (e.g. "la factura se emitirá a la misma dirección del envío")
+.info-muted {
+  font-style: italic;
+  color: var(--text-tertiary) !important;
+}
+
+// ========== Items list (products inside detail section) ==========
+.items-list {
+  @apply flex flex-col px-4 sm:px-5 py-2;
+}
+
+.item-row {
+  @apply flex items-center gap-3 py-3;
+  border-bottom: 1px solid var(--border-color);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.item-image {
+  @apply w-12 h-12 sm:w-14 sm:h-14 rounded-lg object-cover flex-shrink-0;
+  background-color: var(--bg-tertiary);
+}
+
+.item-placeholder {
+  @apply w-12 h-12 sm:w-14 sm:h-14 rounded-lg flex items-center justify-center flex-shrink-0;
+  background-color: var(--bg-tertiary);
+
+  svg {
+    @apply w-5 h-5;
+    color: var(--text-tertiary);
+  }
+}
+
+.item-info {
+  @apply flex-1 min-w-0;
+}
+
+.item-name {
+  @apply text-sm font-medium line-clamp-2;
+  color: var(--text-primary);
+}
+
+.item-qty {
+  @apply text-xs mt-0.5;
+  color: var(--text-secondary);
+}
+
+.item-total {
+  @apply text-sm font-semibold flex-shrink-0;
+  color: var(--text-primary);
+}
+
+// ========== Totals block (below items) ==========
+.items-totals {
+  @apply flex flex-col gap-1 px-4 sm:px-5 py-3;
+  @apply bg-white dark:bg-gray-800;
+  border-top: 1px solid var(--border-color);
+}
+
+.totals-row {
+  @apply flex items-center justify-between text-sm;
+  color: var(--text-secondary);
+
+  span:last-child {
+    @apply font-medium;
+    color: var(--text-primary);
+  }
+
+  .shipping-value {
+    color: #16a34a;
+    font-weight: 600;
+  }
+
+  &.totals-total {
+    @apply pt-2 mt-1 text-base font-bold;
+    border-top: 1px solid var(--border-color);
+
+    span:first-child,
+    span:last-child {
+      color: var(--text-primary);
+    }
+
+    span:last-child {
+      color: var(--accent-primary);
+      @apply text-lg;
+    }
+  }
+}
+
+// ========== Info grid (dispatch, payment, billing) ==========
+.info-grid {
+  @apply grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 sm:p-5;
+}
+
+.info-item {
+  @apply flex flex-col gap-0.5 min-w-0;
+
+  &.info-item-wide {
+    @apply sm:col-span-2;
+  }
+
+  dt {
+    @apply text-xs font-medium uppercase tracking-wide;
+    color: var(--text-tertiary);
+  }
+
+  dd {
+    @apply text-sm break-words;
+    color: var(--text-primary);
+  }
+}
+
+.info-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  letter-spacing: 0.02em;
+}
+
+// ========== Vehicle list ==========
+.vehicle-list {
+  @apply flex flex-col gap-2 p-4 sm:p-5;
+}
+
+.vehicle-item {
+  @apply flex items-center gap-3 flex-wrap p-3 rounded-lg;
+  @apply bg-white dark:bg-gray-800;
+  border: 1px solid var(--border-color);
+}
+
+.vehicle-plate {
+  @apply text-xs font-mono font-bold px-2 py-0.5 rounded;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.vehicle-specs {
+  @apply text-sm;
+  color: var(--text-secondary);
+}
 
 // Seller agreement banner
 .seller-agreement-banner {
@@ -213,5 +388,97 @@
 
     .banner-title { color: #f3f4f6; }
     .banner-text { color: #9ca3af; }
+  }
+
+  // ========== Detail sections ==========
+  .detail-section {
+    background-color: rgba(17, 24, 39, 0.6);
+    border-color: #374151;
+  }
+
+  .detail-section-header {
+    background-color: rgba(0, 0, 0, 0.25);
+    border-bottom-color: #374151;
+
+    h3 { color: #f3f4f6; }
+  }
+
+  .detail-section-icon {
+    color: var(--tubus-text-accent, #4d94ff);
+  }
+
+  // Items list
+  .item-row {
+    border-bottom-color: #374151;
+  }
+
+  .item-image,
+  .item-placeholder {
+    background-color: #374151;
+  }
+
+  .item-placeholder svg {
+    color: #6b7280;
+  }
+
+  .item-name,
+  .item-total {
+    color: #f3f4f6;
+  }
+
+  .item-qty {
+    color: #9ca3af;
+  }
+
+  // Totals
+  .items-totals {
+    background-color: #1f2937;
+    border-top-color: #374151;
+  }
+
+  .totals-row {
+    color: #9ca3af;
+
+    span:last-child { color: #f3f4f6; }
+
+    .shipping-value { color: #4ade80; }
+
+    &.totals-total {
+      border-top-color: #374151;
+
+      span:first-child { color: #ffffff; }
+      span:last-child { color: var(--tubus-text-accent, #4d94ff); }
+    }
+  }
+
+  // Info grid
+  .info-item {
+    dt { color: #6b7280; }
+    dd { color: #f3f4f6; }
+  }
+
+  // Vehicle list
+  .vehicle-item {
+    background-color: #1f2937;
+    border-color: #374151;
+  }
+
+  .vehicle-plate {
+    background-color: #374151;
+    color: #f3f4f6;
+  }
+
+  .vehicle-specs {
+    color: #9ca3af;
+  }
+
+  // Billing source badge + muted hint
+  .billing-source-badge {
+    background-color: rgba(77, 148, 255, 0.15);
+    color: var(--tubus-text-accent, #93c5fd);
+  }
+
+  .info-muted {
+    color: #9ca3af !important;
   }
 }

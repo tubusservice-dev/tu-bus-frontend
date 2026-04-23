@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { CurrencyPipe, CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { forkJoin } from 'rxjs';
-import { CheckoutService } from '../services/checkout.service';
+import { CheckoutService, RequestedServiceDate } from '../services/checkout.service';
 import { CartService } from '../../../core/services/cart.service';
 import { OrderService } from '../../../core/services/order.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -13,7 +13,7 @@ import { UploadService } from '../../../core/services/upload.service';
 import { BranchProductService } from '../../../core/services/branch-product.service';
 import { ProductService } from '../../../core/services/product.service';
 import { ExchangeRateService } from '../../../core/services/exchange-rate.service';
-import { CreateOrderRequest, PaymentSubmission } from '../../../models/order.model';
+import { CreateOrderRequest, PaymentSubmission, EngineModificationStatus } from '../../../models/order.model';
 import {
   PaymentMethodConfig,
   PaymentMethodType,
@@ -24,11 +24,14 @@ import {
   PAYMENT_TYPES_INFO_ONLY,
 } from '../../../models/payment-method.model';
 import { CopyableValueComponent } from '../../../shared/components/copyable-value/copyable-value.component';
+import { DateInputComponent } from '../../../shared/components/date-input/date-input.component';
+import { ServiceDatePickerComponent } from '../../../shared/components/service-date-picker/service-date-picker.component';
+import { ClipboardService } from '../../../shared/services/clipboard.service';
 
 @Component({
   selector: 'app-checkout-summary',
   standalone: true,
-  imports: [CurrencyPipe, CommonModule, ReactiveFormsModule, CopyableValueComponent],
+  imports: [CurrencyPipe, CommonModule, ReactiveFormsModule, CopyableValueComponent, DateInputComponent, ServiceDatePickerComponent],
   templateUrl: './checkout-summary.component.html',
   styleUrl: './checkout-summary.component.scss',
 })
@@ -45,16 +48,53 @@ export class CheckoutSummaryComponent implements OnInit {
   private readonly productService = inject(ProductService);
   private readonly router = inject(Router);
   protected readonly exchangeRateService = inject(ExchangeRateService);
+  private readonly clipboard = inject(ClipboardService);
 
   protected readonly todayStr = new Date().toISOString().split('T')[0];
+
+  // Transient "Copiado" feedback for the "Copiar todo" action (1.5s).
+  protected readonly copiedAll = signal(false);
+  private copyAllTimeout: ReturnType<typeof setTimeout> | null = null;
 
   // State signals
   protected readonly isGenerating = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
-  protected readonly disclaimerAccepted = signal(false);
+  /**
+   * Two mutually-exclusive disclaimer checkboxes. The user must tick exactly
+   * one to generate the order; ticking both at once is a contradiction and
+   * blocks submission with an inline warning.
+   */
+  protected readonly originalEngineChecked = signal(false);
+  protected readonly modifiedEngineChecked = signal(false);
+
+  /**
+   * Whether the "modified engine" disclaimer is visible. Collapsed by default
+   * so the common case (stock engine) stays uncluttered. Collapsing also
+   * unchecks the underlying box — we never keep an invisible acknowledgment.
+   */
+  protected readonly isModifiedSectionExpanded = signal(false);
   protected readonly showConfirmModal = signal(false);
   protected readonly isProcessingConfirm = signal(false);
   protected readonly isSubmittingPayment = signal(false);
+
+  /** True when exactly one disclaimer is selected (XOR). */
+  protected readonly hasDisclaimerSelection = computed(
+    () => this.originalEngineChecked() !== this.modifiedEngineChecked(),
+  );
+
+  /** True when the user accidentally ticked both checkboxes. */
+  protected readonly hasDisclaimerConflict = computed(
+    () => this.originalEngineChecked() && this.modifiedEngineChecked(),
+  );
+
+  /**
+   * Resolved engine-modification value to send to the backend, or `null`
+   * while no valid selection exists.
+   */
+  protected readonly selectedEngineModification = computed<EngineModificationStatus | null>(() => {
+    if (!this.hasDisclaimerSelection()) return null;
+    return this.originalEngineChecked() ? 'original' : 'modified';
+  });
 
   // Payment methods from API
   protected readonly paymentMethods = signal<PaymentMethodConfig[]>([]);
@@ -314,11 +354,19 @@ export class CheckoutSummaryComponent implements OnInit {
   // ========== Can Generate Order ==========
 
   protected readonly canGenerateOrder = computed(() => {
-    if (!this.disclaimerAccepted() || !this.paymentSubmitted()) return false;
+    if (!this.hasDisclaimerSelection() || !this.paymentSubmitted()) return false;
     if (this.isBranchMandatory() && !this.checkoutService.hasBranch()) return false;
     if (this.needsVehicle() && !this.checkoutService.hasVehicle()) return false;
+    if (
+      this.checkoutService.dispatchType() === 'oil_change_service'
+      && !this.checkoutService.hasRequestedServiceDate()
+    ) return false;
     return true;
   });
+
+  protected onServiceDateChange(value: RequestedServiceDate | null): void {
+    this.checkoutService.setRequestedServiceDate(value);
+  }
 
   ngOnInit(): void {
     if (!this.checkoutService.hasDispatchType()) {
@@ -606,6 +654,67 @@ export class CheckoutSummaryComponent implements OnInit {
     return `${symbol} ${formatted}`;
   }
 
+  // ========== Copyable payment amounts ==========
+
+  /** Raw USD total as a paste-ready decimal string (no currency symbol). */
+  protected totalUsdRaw(): string {
+    return this.total.toFixed(2);
+  }
+
+  /** Raw Bs total as a paste-ready decimal string, or '' when rate unavailable. */
+  protected totalBsRaw(): string {
+    const bs = this.exchangeRateService.convertToBs(this.total);
+    return bs !== null ? bs.toFixed(2) : '';
+  }
+
+  /**
+   * Builds a human-readable payment-details block that consolidates the
+   * selected account info + the amount due. Output shape (example):
+   *
+   *   Banco: Banesco
+   *   Teléfono: 0412-1234567
+   *   Cédula: V-12345678
+   *   Monto: 1234.56 Bs
+   */
+  private buildPaymentSummary(): string {
+    const method = this.selectedMethodInModal();
+    const group = this.selectedGroup();
+    if (!method || !group) return '';
+
+    const lines: string[] = [];
+
+    if (method.type === 'pago_movil' && method.pagoMovil) {
+      lines.push(`Banco: ${method.pagoMovil.bankName}`);
+      lines.push(`Teléfono: ${method.pagoMovil.phoneNumber}`);
+      lines.push(`Cédula: ${method.pagoMovil.documentId}`);
+    } else if (method.type === 'transferencia' && method.transferencia) {
+      lines.push(`Banco: ${method.transferencia.bankName}`);
+      lines.push(`Cuenta: ${method.transferencia.accountNumber}`);
+      lines.push(`Cédula: ${method.transferencia.documentId}`);
+    }
+
+    if (group.type === 'pago_movil' || group.type === 'transferencia') {
+      const bs = this.totalBsRaw();
+      if (bs) lines.push(`Monto: ${bs} Bs`);
+    } else {
+      lines.push(`Monto: ${this.totalUsdRaw()} USD`);
+    }
+
+    return lines.join('\n');
+  }
+
+  async copyAllPaymentDetails(): Promise<void> {
+    const text = this.buildPaymentSummary();
+    if (!text) return;
+
+    const ok = await this.clipboard.write(text);
+    if (!ok) return;
+
+    this.copiedAll.set(true);
+    if (this.copyAllTimeout) clearTimeout(this.copyAllTimeout);
+    this.copyAllTimeout = setTimeout(() => this.copiedAll.set(false), 1500);
+  }
+
   isFormType(type: PaymentMethodType): boolean {
     return PAYMENT_TYPES_WITH_FORM.includes(type);
   }
@@ -766,13 +875,20 @@ export class CheckoutSummaryComponent implements OnInit {
     if (this.formProofFile()) {
       this.uploadService.uploadImage(this.formProofFile()!, 'payment-proofs').subscribe({
         next: (uploadRes) => {
+          if (!uploadRes?.data?.url) {
+            this.isSubmittingPayment.set(false);
+            this.errorMessage.set('Error al subir el comprobante: respuesta invalida del servidor. Intenta nuevamente.');
+            return;
+          }
           submission.proofUrl = uploadRes.data.url;
           submission.proofPublicId = uploadRes.data.publicId;
           this.finalizePaymentSubmission(submission, group.type);
         },
-        error: () => {
-          // Proceed without proof on upload failure
-          this.finalizePaymentSubmission(submission, group.type);
+        error: (err) => {
+          // Stop the submission and surface the error so the user can retry
+          this.isSubmittingPayment.set(false);
+          const msg = err?.error?.message || 'No se pudo subir el comprobante. Verifica tu conexion e intenta nuevamente.';
+          this.errorMessage.set(msg);
         },
       });
     } else {
@@ -900,6 +1016,8 @@ export class CheckoutSummaryComponent implements OnInit {
       dispatchDetails.referencePoint = this.oilChangeServiceInfo.referencePoint;
     }
 
+    const requestedDate = this.checkoutService.requestedServiceDate();
+
     const orderData: CreateOrderRequest = {
       items,
       subtotal: this.cartService.subtotal(),
@@ -907,12 +1025,17 @@ export class CheckoutSummaryComponent implements OnInit {
       total: this.total,
       dispatchType: this.dispatchType as any,
       paymentMethod: this.submittedPayment()?.methodType as any,
-      disclaimerAccepted: this.disclaimerAccepted(),
+      disclaimerAccepted: this.hasDisclaimerSelection(),
+      engineModification: this.selectedEngineModification() ?? undefined,
       vehicles: selectedVehicles.length > 0 ? selectedVehicles.map((v) => v.id) : undefined,
       selectedBranch: selectedBranch?.id,
       billingAddress: this.checkoutService.billingAddress() || undefined,
       paymentSubmission: this.submittedPayment() || undefined,
       dispatchDetails,
+      requestedServiceDate:
+        this.dispatchType === 'oil_change_service' && requestedDate ? requestedDate.date : undefined,
+      requestedServiceTier:
+        this.dispatchType === 'oil_change_service' && requestedDate ? requestedDate.tier : undefined,
     };
 
     this.orderService.createOrder(orderData).subscribe({
@@ -929,10 +1052,39 @@ export class CheckoutSummaryComponent implements OnInit {
     });
   }
 
-  onDisclaimerChange(event: Event): void {
+  onOriginalEngineChange(event: Event): void {
     const checked = (event.target as HTMLInputElement).checked;
-    this.disclaimerAccepted.set(checked);
-    this.checkoutService.setDisclaimerAccepted(checked);
+    this.originalEngineChecked.set(checked);
+    this.syncDisclaimerState();
+  }
+
+  onModifiedEngineChange(event: Event): void {
+    const checked = (event.target as HTMLInputElement).checked;
+    this.modifiedEngineChecked.set(checked);
+    this.syncDisclaimerState();
+  }
+
+  toggleModifiedSection(): void {
+    const next = !this.isModifiedSectionExpanded();
+    this.isModifiedSectionExpanded.set(next);
+
+    // Collapsing invalidates any prior acknowledgment so the user never keeps
+    // a ticked-but-hidden disclaimer.
+    if (!next && this.modifiedEngineChecked()) {
+      this.modifiedEngineChecked.set(false);
+      this.syncDisclaimerState();
+    }
+  }
+
+  /**
+   * Propagates the XOR state to the checkout service. While the user has both
+   * boxes ticked (conflict) we keep `disclaimerAccepted=false` so downstream
+   * gates also stay closed, not just the submit button.
+   */
+  private syncDisclaimerState(): void {
+    const accepted = this.hasDisclaimerSelection();
+    this.checkoutService.setDisclaimerAccepted(accepted);
+    this.checkoutService.setEngineModification(this.selectedEngineModification());
   }
 
   goBack(): void {

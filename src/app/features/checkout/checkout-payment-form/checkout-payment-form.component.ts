@@ -4,11 +4,13 @@ import { ReactiveFormsModule, FormBuilder, Validators, AbstractControl, Validati
 import { PaymentService } from '../../../core/services/payment.service';
 import { UploadService } from '../../../core/services/upload.service';
 import { CreatePaymentRequest, PaymentMethod } from '../../../models/payment.model';
+import { DateInputComponent } from '../../../shared/components/date-input/date-input.component';
+import { scrollToFirstFormError } from '../../../shared/validators/form-validators';
 
 @Component({
   selector: 'app-checkout-payment-form',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, DateInputComponent],
   template: `
     <div class="payment-form-page">
       <!-- Header -->
@@ -60,12 +62,11 @@ import { CreatePaymentRequest, PaymentMethod } from '../../../models/payment.mod
             <!-- Fecha del pago -->
             <div class="form-group">
               <label for="paymentDate" class="form-label">Fecha del pago <span class="required">*</span></label>
-              <input
-                type="date"
+              <app-date-input
                 id="paymentDate"
                 formControlName="paymentDate"
-                class="form-input"
-                [attr.max]="todayStr"
+                [max]="todayStr"
+                [required]="true"
               />
               @if (paymentForm.get('paymentDate')?.touched && paymentForm.get('paymentDate')?.hasError('required')) {
                 <span class="form-error">La fecha de pago es requerida</span>
@@ -125,7 +126,7 @@ import { CreatePaymentRequest, PaymentMethod } from '../../../models/payment.mod
               <button
                 type="submit"
                 class="btn-submit"
-                [disabled]="paymentForm.invalid || isSubmitting() || isUploading()"
+                [disabled]="isSubmitting() || isUploading()"
               >
                 @if (isSubmitting()) {
                   <span class="spinner-sm"></span>
@@ -209,7 +210,11 @@ export class CheckoutPaymentFormComponent implements OnInit {
   }
 
   onSubmit(): void {
-    if (this.paymentForm.invalid) return;
+    if (this.paymentForm.invalid) {
+      this.paymentForm.markAllAsTouched();
+      scrollToFirstFormError();
+      return;
+    }
 
     this.isSubmitting.set(true);
     this.errorMessage.set(null);

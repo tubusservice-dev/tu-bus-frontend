@@ -1,0 +1,474 @@
+// ============================================
+// DISCLAIMER
+// ============================================
+.disclaimer-section {
+  transition: border-color 150ms ease, background-color 150ms ease;
+
+  .section-content {
+    @apply p-4 sm:p-5 flex flex-col gap-3;
+  }
+
+  &.disclaimer-section-active {
+    border-color: var(--accent-primary);
+    background-color: rgba(var(--accent-primary-rgb, 59, 130, 246), 0.04);
+  }
+
+  &.disclaimer-section-conflict {
+    border-color: rgb(245 158 11); // amber-500
+    background-color: rgba(245, 158, 11, 0.06);
+  }
+}
+
+// Centered toggle wrapper — no surrounding lines.
+.disclaimer-divider {
+  display: flex;
+  justify-content: center;
+  margin: 0.25rem 0;
+}
+
+// Mimics .footer-link: plain text, gray base, accent on hover.
+.disclaimer-toggle {
+  @apply text-sm transition-colors duration-200;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0;
+  line-height: 1.2;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  text-decoration: none;
+
+  &:hover {
+    color: var(--tubus-text-accent, #4d94ff);
+  }
+
+  &:focus-visible {
+    outline: none;
+    color: var(--tubus-text-accent, #4d94ff);
+  }
+}
+
+.disclaimer-toggle-arrow {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  transition: transform 200ms ease;
+
+  &.is-open {
+    transform: rotate(180deg);
+  }
+}
+
+// Dividing line only shows when section B is expanded, sitting directly
+// under the toggle button. Uses an absolutely-positioned pseudo-element so
+// the line can extend past the section's horizontal padding and span the
+// full card width. Tone matches the footer's divider so it's visible on
+// the dark theme (where --border-color is nearly invisible).
+.disclaimer-label-secondary {
+  position: relative;
+  padding-top: 0.85rem;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -1rem;   // cancels .section-content p-4
+    right: -1rem;
+    height: 1px;
+    background: var(--border-color);
+  }
+
+  @screen sm {
+    &::before {
+      left: -1.25rem;   // cancels .section-content sm:p-5
+      right: -1.25rem;
+    }
+  }
+}
+
+:host-context(.dark) .disclaimer-label-secondary::before,
+.dark .disclaimer-label-secondary::before {
+  background: #374151; // gray-700 — same as .footer-divider in dark mode
+}
+
+.disclaimer-label {
+  @apply flex items-center gap-3 cursor-pointer;
+}
+
+// Premium custom checkbox — layers depth (inner shadow), gradient, glow,
+// hover ring, lift, draw-in checkmark and double focus ring on top of the
+// appearance: none base.
+.disclaimer-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 1.35rem;
+  height: 1.35rem;
+  flex-shrink: 0;
+  position: relative;
+  margin: 0;
+  border: 2px solid var(--border-color-hover, #d4d4d4);
+  border-radius: 7px;
+  background-color: var(--bg-primary);
+  cursor: pointer;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition:
+    border-color 200ms cubic-bezier(0.4, 0, 0.2, 1),
+    background 200ms cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1),
+    transform 150ms ease;
+
+  // Check mark is always present; starts collapsed + invisible. When the
+  // input becomes :checked, the draw-in animation runs forward.
+  &::after {
+    content: '';
+    position: absolute;
+    top: 45%;
+    left: 50%;
+    width: 6px;
+    height: 11px;
+    border: solid #ffffff;
+    border-width: 0 2.5px 2.5px 0;
+    transform: translate(-50%, -55%) rotate(45deg) scale(0);
+    opacity: 0;
+  }
+
+  &:hover:not(:checked):not(:disabled) {
+    border-color: var(--accent-primary);
+    transform: translateY(-1px);
+    box-shadow:
+      inset 0 1px 2px rgba(0, 0, 0, 0.04),
+      0 0 0 4px rgba(var(--accent-primary-rgb, 59, 130, 246), 0.08);
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.92);
+  }
+
+  &:checked {
+    background: linear-gradient(135deg,
+      var(--accent-primary) 0%,
+      rgba(var(--accent-primary-rgb, 59, 130, 246), 0.88) 100%);
+    border-color: var(--accent-primary);
+    box-shadow:
+      0 2px 8px -1px rgba(var(--accent-primary-rgb, 59, 130, 246), 0.4),
+      0 0 0 1px var(--accent-primary);
+
+    &::after {
+      animation: checkmark-draw 240ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 3px rgba(var(--accent-primary-rgb, 59, 130, 246), 0.3),
+      0 0 0 5px rgba(var(--accent-primary-rgb, 59, 130, 246), 0.1);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+// Dark mode: lean on the brighter accent so the checked state pops on a
+// dark background. Matches the blue we already use for links/hovers.
+:host-context(.dark) .disclaimer-checkbox,
+.dark .disclaimer-checkbox {
+  background-color: rgba(255, 255, 255, 0.03);
+  border-color: #4b5563; // gray-600
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+
+  &:hover:not(:checked):not(:disabled) {
+    border-color: var(--tubus-text-accent, #4d94ff);
+    box-shadow:
+      inset 0 1px 2px rgba(0, 0, 0, 0.3),
+      0 0 0 4px rgba(77, 148, 255, 0.1);
+  }
+
+  &:checked {
+    background: linear-gradient(135deg, #4d94ff 0%, #3b82f6 100%);
+    border-color: #4d94ff;
+    box-shadow:
+      0 2px 12px -2px rgba(77, 148, 255, 0.5),
+      0 0 0 1px #4d94ff;
+  }
+
+  &:focus-visible {
+    box-shadow:
+      0 0 0 3px rgba(77, 148, 255, 0.35),
+      0 0 0 5px rgba(77, 148, 255, 0.15);
+  }
+}
+
+@keyframes checkmark-draw {
+  0% {
+    transform: translate(-50%, -55%) rotate(45deg) scale(0);
+    opacity: 0;
+  }
+  60% {
+    transform: translate(-50%, -55%) rotate(45deg) scale(1.15);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -55%) rotate(45deg) scale(1);
+    opacity: 1;
+  }
+}
+
+.disclaimer-text {
+  @apply text-sm leading-relaxed;
+  color: var(--text-secondary);
+
+  strong {
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+}
+
+.disclaimer-conflict-warning {
+  @apply flex items-start gap-2 p-3 rounded-xl text-sm font-medium;
+  @apply bg-amber-50 text-amber-800 border border-amber-200;
+  @apply dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-800/50;
+
+  svg {
+    @apply w-5 h-5 flex-shrink-0 mt-0.5;
+  }
+}
+
+.action-hint-error {
+  @apply text-red-600 dark:text-red-400 font-medium;
+}
+
+// ============================================
+// BRANCH OPTIONAL HINT
+// ============================================
+.branch-optional-hint {
+  @apply text-xs mt-3 italic;
+  color: var(--text-tertiary);
+}
+
+// ============================================
+// MULTI-VEHICLE SELECTION
+// ============================================
+.vehicle-select-list {
+  @apply space-y-2;
+}
+
+.vehicle-select-card {
+  @apply w-full flex items-center justify-between p-4 rounded-xl text-left transition-all;
+  background-color: var(--bg-secondary);
+  border: 2px solid var(--border-color);
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--accent-primary);
+  }
+
+  &.selected {
+    border-color: var(--accent-primary);
+    background-color: rgba(var(--accent-primary-rgb, 59, 130, 246), 0.06);
+  }
+}
+
+.vehicle-select-info {
+  @apply flex flex-col gap-0.5;
+}
+
+.vehicle-select-name {
+  @apply text-sm font-semibold;
+  color: var(--text-primary);
+}
+
+.vehicle-select-plate {
+  @apply text-xs font-mono px-2 py-0.5 rounded inline-block w-fit;
+  background-color: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.vehicle-select-specs {
+  @apply text-xs mt-1;
+  color: var(--text-secondary);
+}
+
+.vehicle-add-btn {
+  @apply flex items-center justify-center gap-2 w-full py-3 mt-3 rounded-xl text-sm font-medium transition-all;
+  color: var(--accent-primary);
+  border: 2px dashed var(--border-color);
+  background: transparent;
+
+  &:hover {
+    border-color: var(--accent-primary);
+    background-color: rgba(var(--accent-primary-rgb, 59, 130, 246), 0.04);
+  }
+
+  svg { @apply w-5 h-5; }
+}
+
+.vehicle-hint-required {
+  @apply text-xs mt-2 text-amber-600 dark:text-amber-400;
+}
+
+.inline-vehicle-form {
+  @apply mt-4 p-4 rounded-xl;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-secondary);
+}
+
+// ============================================
+// BILLING ADDRESS — segmented control
+// ============================================
+.billing-options {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.billing-option {
+  flex: 1 1 0;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease;
+
+  .billing-option-icon {
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+  }
+
+  span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &:hover:not(.active) {
+    color: var(--text-primary);
+    background: var(--bg-tertiary);
+  }
+
+  &.active {
+    background: var(--accent-primary);
+    color: #ffffff;
+  }
+}
+
+@media (max-width: 420px) {
+  .billing-option {
+    padding: 8px 6px;
+    font-size: 12px;
+    gap: 4px;
+
+    .billing-option-icon { width: 14px; height: 14px; }
+  }
+}
+
+.billing-custom-form {
+  @apply mt-4;
+}
+
+.billing-form-grid {
+  @apply grid grid-cols-1 md:grid-cols-2 gap-3;
+}
+
+.billing-form-group {
+  @apply space-y-1;
+
+  &.full-width {
+    @apply md:col-span-2;
+  }
+
+  label {
+    @apply block text-xs font-medium;
+    color: var(--text-secondary);
+  }
+}
+
+.billing-input {
+  @apply w-full px-3 py-2 rounded-lg text-sm;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+
+  &::placeholder {
+    color: var(--text-tertiary);
+  }
+
+  &:focus {
+    @apply ring-2 ring-blue-500 border-transparent outline-none;
+  }
+}
+
+.billing-save-btn {
+  @apply mt-4 w-full py-2.5 text-sm font-semibold text-white rounded-xl transition-all;
+  background-color: var(--accent-primary);
+
+  &:hover {
+    background-color: var(--accent-hover);
+  }
+}
+
+.billing-preview {
+  @apply mt-3 flex items-start gap-2.5 p-3 rounded-lg;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.billing-preview-check {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: #22c55e;
+}
+
+:host-context(.dark) .billing-preview-check {
+  color: #4ade80;
+}
+
+.billing-preview-text {
+  @apply flex flex-col min-w-0 flex-1;
+}
+
+.billing-preview-name {
+  @apply text-sm font-semibold truncate;
+  color: var(--text-primary);
+}
+
+.billing-preview-address,
+.billing-preview-location {
+  @apply text-xs mt-0.5 truncate;
+  color: var(--text-secondary);
+}
+
+// ============================================
+// ERROR & SPINNER
+// ============================================
+.error-alert {
+  @apply flex items-center gap-3 p-4 rounded-xl text-sm;
+  @apply bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400;
+  @apply border border-red-200 dark:border-red-800;
+  svg { @apply w-5 h-5 flex-shrink-0; }
+}
+
+.spinner-sm {
+  @apply w-5 h-5 border-2 rounded-full animate-spin;
+  @apply border-white/30 border-t-white;
+}

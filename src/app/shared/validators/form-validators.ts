@@ -1,4 +1,4 @@
-import { AbstractControl, ValidationErrors } from '@angular/forms';
+import { AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
 
 // ==================== REGEX PATTERNS ====================
 
@@ -52,4 +52,61 @@ export function noNumbersValidator(control: AbstractControl): ValidationErrors |
     return { noNumbers: true };
   }
   return null;
+}
+
+/**
+ * Ensures the ISO date (`YYYY-MM-DD`) represents at least `minAge` full years
+ * relative to today. Skips empty values so `Validators.required` owns emptiness.
+ * Returns `{ minAge: { requiredAge, actualAge } }` on failure.
+ */
+export function minAgeValidator(minAge: number): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const value: string | null = control.value;
+    if (!value) return null;
+
+    const birth = new Date(value);
+    if (Number.isNaN(birth.getTime())) return null;
+
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+
+    return age < minAge ? { minAge: { requiredAge: minAge, actualAge: age } } : null;
+  };
+}
+
+// ==================== UI HELPERS ====================
+
+/**
+ * Scrolls the first visible invalid/error field into view and focuses it.
+ *
+ * Call this AFTER `form.markAllAsTouched()` inside `onSubmit()` so Angular has
+ * already stamped the `.ng-invalid.ng-touched` classes (or the project's own
+ * `.input.error` class) on the offending controls.
+ *
+ * Uses a micro-delay (requestAnimationFrame) to wait for Angular's change
+ * detection to flush the CSS classes into the DOM before querying.
+ */
+export function scrollToFirstFormError(container?: HTMLElement | null): void {
+  // Defer one frame so template bindings ([class.error]) are applied first
+  requestAnimationFrame(() => {
+    const root: ParentNode = container ?? document;
+    const selector = '.input.error, .ng-invalid.ng-touched, .field-error-anchor';
+    const target = root.querySelector<HTMLElement>(selector);
+    if (!target) return;
+
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    // Focus the input if it's focusable — helps screen readers and keyboard users
+    if (typeof target.focus === 'function') {
+      try {
+        target.focus({ preventScroll: true });
+      } catch {
+        /* noop — some elements throw on focus() */
+      }
+    }
+  });
 }

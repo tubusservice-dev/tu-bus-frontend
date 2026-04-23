@@ -33,7 +33,11 @@
 .contact-text { @apply text-sm text-gray-500 dark:text-gray-400; }
 .hero-actions { @apply flex gap-2 flex-shrink-0; }
 .btn-outline { @apply px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors; }
-.btn-primary { @apply px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors; }
+.btn-primary {
+  @apply px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors;
+  background-color: var(--accent-primary);
+  &:hover { background-color: var(--accent-hover, rgb(0, 20, 60)); }
+}
 
 // Info Row
 .info-row-grid { @apply grid grid-cols-1 md:grid-cols-2 gap-4; }
@@ -70,7 +74,11 @@
 .filter-btn {
   @apply px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-full transition-colors;
   @apply hover:bg-gray-50 dark:hover:bg-gray-700;
-  &.active { @apply bg-red-600 text-white border-red-600; }
+  &.active {
+    @apply text-white;
+    background-color: var(--accent-primary);
+    border-color: var(--accent-primary);
+  }
 }
 
 // Table Card

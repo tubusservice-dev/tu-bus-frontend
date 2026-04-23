@@ -41,6 +41,27 @@ export enum UserRole {
   SELLER = 'seller',
 }
 
+export enum UserStatus {
+  ACTIVE = 'active',
+  SUSPENDED = 'suspended',
+  BLOCKED = 'blocked',
+  DELETED = 'deleted',
+}
+
+export interface AdminUser extends User {
+  status: UserStatus;
+  isActive: boolean;
+  blockReason?: string;
+  blockedAt?: string | Date;
+  blockedBy?: string;
+  suspendedUntil?: string | Date;
+  updatedAt?: string | Date;
+  ordersCount?: number;
+  vehiclesCount?: number;
+  totalSpent?: number;
+  lastOrderAt?: string | Date;
+}
+
 export interface UserProfile {
   id: string;
   email: string;

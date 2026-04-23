@@ -1,0 +1,266 @@
+<div class="user-list-page">
+  <header class="page-header">
+    <div class="header-content">
+      <div>
+        <h1 class="page-title">Usuarios</h1>
+        <p class="page-subtitle">Gestiona las cuentas de clientes y vendedores registrados</p>
+      </div>
+    </div>
+
+    <!-- Filtros principales -->
+    <div class="filters-row">
+      <div class="search-box">
+        <app-search-input
+          placeholder="Buscar por nombre, email, documento, teléfono..."
+          ariaLabel="Buscar usuarios"
+          [value]="searchTerm()"
+          [debounceMs]="300"
+          (searchChanged)="onSearchChanged($event)"
+        />
+      </div>
+
+      <div class="selectors">
+        <label class="selector">
+          <span>Rol</span>
+          <select [ngModel]="roleFilter()" (ngModelChange)="setRole($event)">
+            <option value="all">Todos</option>
+            <option value="customer">Cliente</option>
+            <option value="seller">Vendedor</option>
+          </select>
+        </label>
+
+        <label class="selector">
+          <span>Verificados</span>
+          <select [ngModel]="verifiedFilter()" (ngModelChange)="setVerified($event)">
+            <option value="all">Todos</option>
+            <option value="yes">Sí</option>
+            <option value="no">No</option>
+          </select>
+        </label>
+
+        <label class="selector">
+          <span>OAuth</span>
+          <select [ngModel]="oauthFilter()" (ngModelChange)="setOAuth($event)">
+            <option value="all">Todos</option>
+            <option value="yes">Con OAuth</option>
+            <option value="no">Sin OAuth</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <!-- Chips de estado -->
+    <div class="status-chips">
+      @for (chip of statusChips; track chip.key) {
+        <button
+          type="button"
+          class="chip"
+          [class.active]="statusFilter() === chip.key"
+          (click)="setStatus(chip.key)"
+        >
+          {{ chip.label }}
+        </button>
+      }
+    </div>
+  </header>
+
+  <main class="page-content">
+    @if (isLoading()) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <span>Cargando usuarios...</span>
+      </div>
+    } @else if (errorMessage()) {
+      <div class="error-state">
+        <p>{{ errorMessage() }}</p>
+        <button type="button" class="btn-primary" (click)="load()">Reintentar</button>
+      </div>
+    } @else if (users().length === 0) {
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Zm4.5 9a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-16.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
+        </svg>
+        <h3>No se encontraron usuarios</h3>
+        <p>Ajusta los filtros para ver más resultados.</p>
+      </div>
+    } @else {
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Usuario</th>
+              <th>Contacto</th>
+              <th>Documento</th>
+              <th>Rol</th>
+              <th>Estado</th>
+              <th class="num">Órdenes</th>
+              <th>Registrado</th>
+              <th class="actions-head">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (user of users(); track user.id) {
+              <tr
+                [class.blocked-row]="user.status !== 'active'"
+                (click)="navigateToDetail(user)"
+              >
+                <td class="user-cell">
+                  <img [src]="avatarUrl(user)" [alt]="fullName(user)" class="avatar" />
+                  <div class="user-text">
+                    <span class="user-name">{{ fullName(user) }}</span>
+                    @if (user.email) { <span class="user-sub">{{ user.email }}</span> }
+                  </div>
+                </td>
+                <td>
+                  <div class="contact-cell">
+                    @if (user.phone) { <span>{{ user.phone }}</span> }
+                    @if (user.alternativePhone) { <span class="muted">{{ user.alternativePhone }}</span> }
+                    @if (!user.phone && !user.alternativePhone) { <span class="muted">—</span> }
+                  </div>
+                </td>
+                <td>
+                  @if (user.documentNumber) {
+                    <span>{{ user.documentType }}-{{ user.documentNumber }}</span>
+                  } @else {
+                    <span class="muted">—</span>
+                  }
+                </td>
+                <td>{{ roleLabel(user.role) }}</td>
+                <td>
+                  <span class="status-badge" [ngClass]="statusClass(user.status)">
+                    {{ statusLabel(user.status) }}
+                  </span>
+                </td>
+                <td class="num">{{ user.ordersCount ?? 0 }}</td>
+                <td>{{ user.createdAt | date: 'dd/MM/yyyy' }}</td>
+                <td class="actions-cell" (click)="$event.stopPropagation()">
+                  <app-kebab-menu
+                    [actions]="actionsFor(user)"
+                    (select)="onAction(user, $event)"
+                  />
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      @if (pages() > 1) {
+        <div class="pagination">
+          <span class="pagination-info">
+            Página {{ page() }} de {{ pages() }} ({{ total() }} usuarios)
+          </span>
+          <div class="pagination-buttons">
+            <button
+              class="btn-page"
+              [disabled]="page() === 1"
+              (click)="goToPage(page() - 1)"
+              aria-label="Página anterior"
+            >
+              ‹
+            </button>
+            @for (p of pageNumbers(); track p) {
+              <button
+                class="btn-page"
+                [class.active]="p === page()"
+                (click)="goToPage(p)"
+              >
+                {{ p }}
+              </button>
+            }
+            <button
+              class="btn-page"
+              [disabled]="page() === pages()"
+              (click)="goToPage(page() + 1)"
+              aria-label="Página siguiente"
+            >
+              ›
+            </button>
+          </div>
+        </div>
+      }
+    }
+  </main>
+
+  <!-- Modal de cambio de estado (suspend/block/reactivate) -->
+  @if (statusModal(); as modal) {
+    <div class="modal-overlay" (click)="closeStatusModal()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <h3 class="modal-title">{{ modal.title }}</h3>
+        <p class="modal-message">
+          Usuario: <strong>{{ fullName(modal.user) }}</strong>
+          @if (modal.user.email) { <span class="muted"> · {{ modal.user.email }}</span> }
+        </p>
+
+        @if (modal.requiresReason) {
+          <label class="form-field">
+            <span>Motivo <em>*</em></span>
+            <textarea
+              rows="3"
+              maxlength="500"
+              [ngModel]="modalReason()"
+              (ngModelChange)="modalReason.set($event)"
+              placeholder="Explica por qué se realiza esta acción"
+            ></textarea>
+          </label>
+        }
+
+        @if (modal.allowsDuration) {
+          <label class="form-field">
+            <span>Suspender hasta (opcional)</span>
+            <input
+              type="datetime-local"
+              [ngModel]="modalSuspendedUntil()"
+              (ngModelChange)="modalSuspendedUntil.set($event)"
+            />
+          </label>
+        }
+
+        @if (modalError()) {
+          <p class="form-error">{{ modalError() }}</p>
+        }
+
+        <div class="modal-actions">
+          <button type="button" class="btn-modal-cancel" [disabled]="modalBusy()" (click)="closeStatusModal()">
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="btn-modal-confirm"
+            [class.danger]="modal.danger"
+            [disabled]="modalBusy()"
+            (click)="confirmStatusChange()"
+          >
+            @if (modalBusy()) { Procesando... } @else { {{ modal.confirmLabel }} }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal de eliminación -->
+  @if (userToDelete(); as user) {
+    <div class="modal-overlay" (click)="closeDeleteModal()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <h3 class="modal-title">Eliminar usuario</h3>
+        <p class="modal-message">
+          ¿Eliminar a <strong>{{ fullName(user) }}</strong>?
+          La cuenta quedará inaccesible y no podrá iniciar sesión.
+        </p>
+        <div class="modal-actions">
+          <button type="button" class="btn-modal-cancel" [disabled]="modalBusy()" (click)="closeDeleteModal()">
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="btn-modal-confirm danger"
+            [disabled]="modalBusy()"
+            (click)="confirmDelete()"
+          >
+            @if (modalBusy()) { Eliminando... } @else { Eliminar }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

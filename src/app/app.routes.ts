@@ -55,13 +55,12 @@ export const routes: Routes = [
                 (m) => m.AdminFormComponent
               ),
           },
-          // Usuarios (placeholder)
+          // Usuarios — deshabilitado temporalmente hasta completar el módulo.
+          // Cualquier intento de acceso por URL directa redirige al dashboard.
           {
             path: 'users',
-            loadComponent: () =>
-              import('./features/admin/dashboard/admin-dashboard.component').then(
-                (m) => m.AdminDashboardComponent
-              ),
+            redirectTo: '',
+            pathMatch: 'prefix',
           },
           // Productos
           {
@@ -286,6 +285,14 @@ export const routes: Routes = [
             loadComponent: () =>
               import('./features/admin/payment-methods/payment-method-form/payment-method-form.component').then(
                 (m) => m.PaymentMethodFormComponent
+              ),
+          },
+          // Valoraciones (admin)
+          {
+            path: 'reviews',
+            loadComponent: () =>
+              import('./features/admin/reviews/review-list/review-list.component').then(
+                (m) => m.AdminReviewListComponent
               ),
           },
           // Configuraciones

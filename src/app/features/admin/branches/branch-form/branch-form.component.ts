@@ -6,6 +6,7 @@ import { forkJoin, Observable } from 'rxjs';
 import { BranchService } from '../../../../core/services/branch.service';
 import { ZoneService } from '../../../../core/services/zone.service';
 import { BranchZoneService } from '../../../../core/services/branch-zone.service';
+import { ToastService } from '../../../../shared/services/toast.service';
 import { CreateBranchRequest } from '../../../../models/branch.model';
 import { Zone } from '../../../../models/zone.model';
 import { BranchZone, DeliveryConfigItem } from '../../../../models/branch-zone.model';
@@ -31,6 +32,7 @@ export class BranchFormComponent implements OnInit {
   private readonly branchService = inject(BranchService);
   private readonly zoneService = inject(ZoneService);
   private readonly branchZoneService = inject(BranchZoneService);
+  private readonly toastService = inject(ToastService);
 
   protected readonly branchId = signal<string | null>(null);
   protected readonly isEditMode = signal(false);
@@ -406,7 +408,9 @@ export class BranchFormComponent implements OnInit {
         this.saveBranchZones(branchId);
       },
       error: (error) => {
-        this.errorMessage.set(error.error?.message || 'Error al guardar sucursal');
+        const msg = error.error?.message || 'Error al guardar sucursal';
+        this.errorMessage.set(msg);
+        this.toastService.error(msg);
         this.isSubmitting.set(false);
       },
     });
@@ -443,17 +447,25 @@ export class BranchFormComponent implements OnInit {
       }));
     }
 
+    const successMessage = this.isEditMode()
+      ? 'Sucursal actualizada exitosamente'
+      : 'Sucursal creada exitosamente';
+
     if (tasks.length === 0) {
+      this.toastService.success(successMessage);
       this.router.navigate(['/admin/branches']);
       return;
     }
 
     forkJoin(tasks).subscribe({
       next: () => {
+        this.toastService.success(successMessage);
         this.router.navigate(['/admin/branches']);
       },
       error: (error) => {
-        this.errorMessage.set(error.error?.message || 'Sucursal guardada, pero hubo un error al guardar las zonas');
+        const msg = error.error?.message || 'Sucursal guardada, pero hubo un error al guardar las zonas';
+        this.errorMessage.set(msg);
+        this.toastService.error(msg);
         this.isSubmitting.set(false);
       },
     });

@@ -1,0 +1,36 @@
+<div class="kebab-wrapper">
+  <button
+    type="button"
+    class="kebab-trigger"
+    [attr.aria-label]="ariaLabel"
+    [attr.aria-expanded]="open()"
+    (click)="toggle($event)"
+  >
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="5" r="1.25" fill="currentColor" />
+      <circle cx="12" cy="12" r="1.25" fill="currentColor" />
+      <circle cx="12" cy="19" r="1.25" fill="currentColor" />
+    </svg>
+  </button>
+
+  @if (open()) {
+    <div class="kebab-menu" role="menu">
+      @for (action of visibleActions(); track action.key) {
+        @if (action.divider) {
+          <div class="kebab-divider" aria-hidden="true"></div>
+        } @else {
+          <button
+            type="button"
+            role="menuitem"
+            class="kebab-item"
+            [class.danger]="action.danger"
+            [disabled]="action.disabled"
+            (click)="onSelect(action, $event)"
+          >
+            {{ action.label }}
+          </button>
+        }
+      }
+    </div>
+  }
+</div>

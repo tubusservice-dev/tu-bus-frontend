@@ -106,7 +106,7 @@
     background-color: var(--accent-hover, #b91c1c);
   }
 
-  .btn-spinner {
+  .loading-spinner-sm {
     @apply w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin;
   }
 }

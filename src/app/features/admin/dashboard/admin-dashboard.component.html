@@ -8,7 +8,15 @@
   <!-- Dashboard cards -->
   <div class="dashboard-grid">
     @for (card of dashboardCards; track card.route) {
-      <a [routerLink]="card.route" class="dashboard-card" [attr.data-color]="card.color">
+      <a
+        [routerLink]="$any(card).disabled ? null : card.route"
+        class="dashboard-card"
+        [class.disabled]="$any(card).disabled"
+        [attr.aria-disabled]="$any(card).disabled ? 'true' : null"
+        [attr.title]="$any(card).disabled ? 'Próximamente' : null"
+        [attr.data-color]="card.color"
+        (click)="$any(card).disabled ? $event.preventDefault() : null"
+      >
         <div class="card-icon" [attr.data-color]="card.color">
           @switch (card.icon) {
             @case ('admin') {

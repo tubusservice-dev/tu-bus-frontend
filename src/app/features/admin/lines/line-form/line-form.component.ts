@@ -4,6 +4,7 @@ import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { LineService } from '../../../../core/services/line.service';
 import { UploadService } from '../../../../core/services/upload.service';
+import { ToastService } from '../../../../shared/services/toast.service';
 
 @Component({
   selector: 'app-line-form',
@@ -18,6 +19,7 @@ export class LineFormComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly lineService = inject(LineService);
   private readonly uploadService = inject(UploadService);
+  private readonly toastService = inject(ToastService);
 
   protected readonly lineId = signal<string | null>(null);
   protected readonly isEditMode = signal(false);
@@ -110,10 +112,15 @@ export class LineFormComponent implements OnInit {
 
     request$.subscribe({
       next: () => {
+        this.toastService.success(
+          this.isEditMode() ? 'Línea actualizada exitosamente' : 'Línea creada exitosamente',
+        );
         this.router.navigate(['/admin/lines']);
       },
       error: (error) => {
-        this.errorMessage.set(error.error?.message || 'Error al guardar línea');
+        const msg = error.error?.message || 'Error al guardar línea';
+        this.errorMessage.set(msg);
+        this.toastService.error(msg);
         this.isSubmitting.set(false);
       },
     });

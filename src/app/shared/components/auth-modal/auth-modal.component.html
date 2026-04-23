@@ -1,4 +1,4 @@
-<div class="modal-overlay" (click)="onOverlayClick($event)">
+<div class="modal-overlay">
   <div class="modal-container">
     <!-- Header del modal -->
     <div class="modal-header">
@@ -12,18 +12,41 @@
       </button>
     </div>
 
-    <!-- Tabs -->
-    <div class="tabs">
-      <button type="button" class="tab" [class.active]="mode() === 'login'" (click)="switchMode('login')">
-        Iniciar Sesión
-      </button>
-      <button type="button" class="tab" [class.active]="mode() === 'register'" (click)="switchMode('register')">
-        Registrarse
-      </button>
-    </div>
+    <!-- Tabs (ocultas durante la vista de éxito post-registro) -->
+    @if (!registrationSuccess()) {
+      <div class="tabs">
+        <button type="button" class="tab" [class.active]="mode() === 'login'" (click)="switchMode('login')">
+          Iniciar Sesión
+        </button>
+        <button type="button" class="tab" [class.active]="mode() === 'register'" (click)="switchMode('register')">
+          Registrarse
+        </button>
+      </div>
+    }
 
     <!-- Contenido del modal -->
     <div class="modal-content">
+      <!-- ========== REGISTRO EXITOSO ========== -->
+      @if (mode() === 'register' && registrationSuccess()) {
+        <div class="success-view">
+          <div class="success-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+            </svg>
+          </div>
+          <h3 class="success-title">¡Registro exitoso!</h3>
+          <p class="success-message">
+            @if (registeredFirstName()) {
+              Bienvenido, {{ registeredFirstName() }}. Tu cuenta fue creada correctamente.
+            } @else {
+              Tu cuenta fue creada correctamente.
+            }
+          </p>
+          <button type="button" class="submit-btn" (click)="continueAfterRegistration()">
+            Continuar
+          </button>
+        </div>
+      }
       <!-- Mensaje de sesión expirada -->
       @if (sessionExpired()) {
         <div class="session-expired-alert">
@@ -83,7 +106,7 @@
       }
 
       <!-- ========== REGISTER (Stepper) ========== -->
-      @if (mode() === 'register') {
+      @if (mode() === 'register' && !registrationSuccess()) {
         <!-- Step indicator (fixed 2 steps) -->
         <div class="stepper-indicator">
           <div class="step-item">
@@ -202,7 +225,7 @@
               @if (step2Form.get('documentType')?.value && step2Form.get('documentType')?.value !== 'J') {
                 <div class="form-group">
                   <label class="form-label">Fecha de Nacimiento</label>
-                  <input type="date" formControlName="birthDate" class="form-input" [class.error]="hasError(step2Form, 'birthDate')" />
+                  <app-date-input formControlName="birthDate" [max]="maxBirthDateStr" />
                   @if (hasError(step2Form, 'birthDate')) {
                     <span class="field-error">{{ getErrorMessage(step2Form, 'birthDate') }}</span>
                   }
@@ -250,6 +273,7 @@
         </div>
       }
 
+      @if (!registrationSuccess()) {
       <!-- Separador -->
       <div class="divider">
         <span>o continuar con</span>
@@ -272,6 +296,7 @@
           }
         </button>
       </div>
+      }
     </div>
   </div>
 </div>

@@ -1,0 +1,305 @@
+// ============================================
+// DELIVERY — dispatch info, agency, store, recipient, branch selector, vehicle
+// ============================================
+.delivery-info {
+  @apply flex flex-col gap-4;
+}
+
+.delivery-type {
+  @apply flex items-center gap-3 flex-wrap;
+}
+
+.delivery-badge {
+  @apply px-3 py-1.5 text-sm font-semibold rounded-lg;
+  background-color: var(--accent-light);
+  color: var(--accent-primary);
+}
+
+.delivery-cost {
+  @apply px-2 py-1 text-xs font-semibold rounded-full;
+
+  &.free {
+    background-color: rgba(34, 197, 94, 0.1);
+    color: #16a34a;
+  }
+
+  &.pay-on-delivery {
+    background-color: rgba(245, 158, 11, 0.1);
+    color: #d97706;
+  }
+
+  &:not(.free):not(.pay-on-delivery) {
+    background-color: rgba(59, 130, 246, 0.1);
+    color: #2563eb;
+  }
+}
+
+.store-details,
+.agency-details,
+.recipient-details {
+  @apply flex flex-col gap-2 p-4 rounded-lg;
+  background-color: var(--bg-secondary);
+}
+
+.agency-header {
+  @apply flex items-center gap-3;
+}
+
+.agency-logo {
+  @apply w-10 h-10 rounded-lg object-contain;
+  background-color: var(--bg-primary);
+}
+
+.agency-name {
+  @apply font-semibold;
+  color: var(--text-primary);
+}
+
+.detail-row {
+  @apply flex items-start gap-3 text-sm;
+  color: var(--text-secondary);
+
+  svg {
+    @apply w-5 h-5 flex-shrink-0 mt-0.5;
+    color: var(--text-tertiary);
+  }
+
+  span {
+    @apply leading-relaxed;
+
+    strong {
+      color: var(--text-primary);
+    }
+  }
+
+  &.address-row,
+  &.notes-row {
+    span {
+      @apply text-xs;
+    }
+  }
+
+  &.seller-notice {
+    @apply mt-3;
+  }
+}
+
+.seller-agreement-notice {
+  @apply flex items-center gap-3 mt-4 p-4 rounded-lg;
+  background-color: rgba(34, 197, 94, 0.08);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+
+  .whatsapp-icon {
+    @apply w-6 h-6 flex-shrink-0;
+    color: #25D366;
+  }
+
+  p {
+    @apply text-sm;
+    color: var(--text-secondary);
+  }
+}
+
+.detail-row {
+  &.reference-row {
+    @apply text-xs italic;
+    color: var(--text-tertiary);
+  }
+}
+
+// ============================================
+// BRANCH SELECTOR
+// ============================================
+.branch-empty-hint {
+  @apply text-sm text-center py-4;
+  color: var(--text-secondary);
+}
+
+.branch-selector-list {
+  @apply space-y-2;
+}
+
+// Mirrors .vehicle-select-card from checkout-oil-change-form for visual
+// consistency across all "pick-one" selectors on the summary page.
+.branch-selector-card {
+  @apply w-full flex items-center justify-between p-4 rounded-xl text-left transition-all;
+  background-color: var(--bg-tertiary);
+  border: 2px solid var(--border-color);
+  cursor: pointer;
+
+  &:hover { border-color: #16a34a; }
+
+  &.selected {
+    border-color: #16a34a;
+    background-color: rgba(34, 197, 94, 0.06);
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.12);
+  }
+
+  // Higher contrast in dark mode when NOT selected
+  :host-context(.dark) &:not(.selected) {
+    background-color: rgba(255, 255, 255, 0.04);
+    border-color: #374151;
+  }
+
+  &.disabled {
+    @apply opacity-50 cursor-not-allowed;
+    border-color: var(--border-color);
+    background-color: var(--bg-secondary);
+    box-shadow: none;
+
+    &:hover {
+      border-color: var(--border-color);
+      background-color: var(--bg-secondary);
+    }
+  }
+}
+
+.branch-selector-info {
+  @apply flex flex-col gap-0.5;
+}
+
+.branch-selector-name {
+  @apply text-sm font-semibold;
+  color: var(--text-primary);
+}
+
+.branch-selector-address {
+  @apply text-xs;
+  color: var(--text-secondary);
+}
+
+.branch-selector-phone {
+  @apply text-xs font-mono px-2 py-0.5 rounded inline-block w-fit mt-1;
+  background-color: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.branch-selector-badges {
+  @apply flex items-center gap-2 flex-shrink-0;
+}
+
+// Selection check icon — matches vehicle-check-icon
+.branch-check-icon {
+  @apply w-6 h-6 flex-shrink-0;
+  color: #16a34a;
+}
+
+.branch-badge {
+  @apply text-[10px] font-medium px-2 py-0.5 rounded-full;
+}
+
+.branch-badge-oil {
+  @apply bg-amber-100 text-amber-700;
+}
+
+.branch-badge-no-stock {
+  @apply bg-red-100 text-red-600 text-[10px] font-medium px-2 py-0.5 rounded-full;
+}
+
+:host-context(.dark) .branch-badge-oil {
+  @apply bg-amber-900/30 text-amber-400;
+}
+
+:host-context(.dark) .branch-badge-no-stock {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+
+// ============================================
+// VEHICLE SUMMARY
+// ============================================
+.vehicle-summary-card {
+  @apply flex flex-col gap-2 p-4 rounded-lg;
+  background-color: var(--bg-secondary);
+}
+
+.vehicle-summary-main {
+  @apply flex items-center justify-between;
+}
+
+.vehicle-summary-name {
+  @apply font-semibold text-sm;
+  color: var(--text-primary);
+}
+
+.vehicle-summary-plate {
+  @apply text-xs font-mono font-bold px-2 py-0.5 rounded;
+  background-color: var(--bg-tertiary, var(--bg-primary));
+  color: var(--text-secondary);
+}
+
+.vehicle-summary-details {
+  @apply flex flex-wrap gap-x-4 gap-y-1 text-xs;
+  color: var(--text-secondary);
+}
+
+.vehicle-missing-warning {
+  @apply flex items-center gap-3 p-4 rounded-lg text-sm;
+  background-color: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  color: rgb(180, 120, 10);
+
+  svg {
+    @apply w-5 h-5 flex-shrink-0;
+    color: rgb(245, 158, 11);
+  }
+}
+
+:host-context(.dark) .vehicle-missing-warning {
+  background-color: rgba(245, 158, 11, 0.1);
+  color: #fbbf24;
+}
+
+// ========== Compatibility alert (vehicle ↔ product) ==========
+.compat-alert {
+  @apply flex items-center gap-3 p-4 mt-3 rounded-xl;
+  background-color: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.compat-alert-icon {
+  @apply w-5 h-5 flex-shrink-0;
+  color: #d97706;
+}
+
+.compat-alert-body {
+  @apply flex flex-col gap-0.5 min-w-0;
+}
+
+.compat-alert-title {
+  @apply text-sm font-semibold;
+  color: #b45309;
+}
+
+.compat-alert-text {
+  @apply text-xs leading-relaxed;
+  color: #92400e;
+
+  strong {
+    @apply font-semibold;
+    color: #78350f;
+  }
+}
+
+:host-context(.dark) {
+  .compat-alert {
+    background-color: rgba(245, 158, 11, 0.12);
+    border-color: rgba(245, 158, 11, 0.45);
+  }
+  .compat-alert-icon { color: #fbbf24; }
+  .compat-alert-title { color: #fcd34d; }
+  .compat-alert-text {
+    color: #fde68a;
+    strong { color: #fef3c7; }
+  }
+}
+
+// ============================================
+// IN-STORE OIL CHANGE NOTICE
+// ============================================
+.in-store-oil-notice {
+  @apply text-sm mt-3 p-3 rounded-lg text-center;
+  background-color: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  color: var(--text-secondary);
+}

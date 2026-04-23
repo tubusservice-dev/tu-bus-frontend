@@ -333,40 +333,151 @@
 
 // ========== Floating Stats Config ==========
 .floating-stats-config {
-  @apply p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-200 dark:border-gray-600 space-y-3;
+  @apply p-5 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-200 dark:border-gray-600;
+  @apply space-y-4;
+}
+
+.stats-heading {
+  @apply mb-1;
 }
 
 .stats-config-title {
   @apply text-sm font-semibold text-gray-900 dark:text-white;
 }
 
-.stats-row {
-  @apply flex items-center gap-2;
+.stats-config-desc {
+  @apply text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed;
 }
 
-.stats-position-label {
-  @apply text-xs font-medium text-gray-500 dark:text-gray-400 w-16 flex-shrink-0;
+// --- Grid of both stat cards (side-by-side on md+) ---
+.stats-cards-grid {
+  @apply grid grid-cols-1 md:grid-cols-2 gap-4;
+}
+
+// --- Stat card ---
+.stat-card {
+  @apply rounded-lg overflow-hidden;
+  @apply bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600;
+  @apply flex flex-col;
+}
+
+.stat-card-header {
+  @apply flex items-center justify-between px-4 py-2.5;
+  @apply bg-gray-50 dark:bg-gray-700/60 border-b border-gray-200 dark:border-gray-600;
+}
+
+.stat-position-tag {
+  @apply inline-flex items-center gap-2 text-xs font-semibold;
+  color: var(--text-secondary, #6b7280);
+}
+
+.stat-position-icon {
+  @apply w-4 h-4;
+  color: var(--accent-primary);
+}
+
+.stat-card-body {
+  @apply p-4 space-y-3;
+}
+
+.stat-field {
+  @apply flex flex-col gap-1.5;
+
+  &.stat-field--inline {
+    @apply flex-row items-center justify-between gap-4;
+  }
+}
+
+.stat-field-label {
+  @apply text-xs font-medium text-gray-600 dark:text-gray-300;
+}
+
+.stat-field-hint {
+  @apply text-xs font-normal text-gray-400 dark:text-gray-500 ml-1;
+}
+
+.stat-field-helper {
+  @apply block text-xs leading-relaxed text-gray-500 dark:text-gray-400 mt-1;
+
+  strong {
+    @apply font-semibold text-gray-700 dark:text-gray-200;
+  }
 }
 
 .stats-input {
-  @apply px-3 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors;
+  @apply w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors;
 
   &:focus {
     @apply ring-2 ring-offset-0 border-transparent outline-none;
     ring-color: var(--accent-primary);
   }
 
-  &.stats-input-value {
-    @apply w-20 flex-shrink-0;
+  &::placeholder {
+    @apply text-gray-400 dark:text-gray-500;
   }
 
-  &.stats-input-label {
-    @apply flex-1 min-w-0;
+  &--compact {
+    @apply w-20 flex-shrink-0 text-center font-semibold;
   }
 }
 
+// --- Auto-rating banner ---
+.auto-rating-banner {
+  @apply flex items-start justify-between gap-4 px-4 py-3;
+  @apply bg-gray-50 dark:bg-gray-700/40 border-b border-gray-200 dark:border-gray-600;
+  transition: background-color 0.2s ease;
+
+  &--active {
+    background-color: rgba(245, 158, 11, 0.08);
+    border-bottom-color: rgba(245, 158, 11, 0.25);
+  }
+}
+
+.auto-rating-info {
+  @apply flex-1 min-w-0;
+}
+
+.auto-rating-title {
+  @apply inline-flex items-center gap-1.5 text-sm font-semibold;
+  color: var(--text-primary);
+}
+
+.auto-rating-icon {
+  @apply w-4 h-4;
+  color: #f59e0b;
+}
+
+.auto-rating-desc {
+  @apply text-xs leading-relaxed mt-1;
+  color: var(--text-secondary, #6b7280);
+}
+
+// --- Error + info note ---
 .stats-error {
-  @apply block text-xs text-red-600 dark:text-red-400 pl-16;
+  @apply block text-xs text-red-600 dark:text-red-400;
+}
+
+.stats-info-note {
+  @apply flex items-start gap-2 px-3 py-2 rounded-lg text-xs leading-relaxed;
+  background-color: rgba(59, 130, 246, 0.08);
+  color: #1d4ed8;
+
+  .info-icon {
+    @apply w-4 h-4 flex-shrink-0 mt-0.5;
+  }
+}
+
+// Dark mode override for info note
+:host-context(.dark) {
+  .stats-info-note {
+    background-color: rgba(59, 130, 246, 0.14);
+    color: #93c5fd;
+  }
+
+  .auto-rating-banner--active {
+    background-color: rgba(245, 158, 11, 0.12);
+    border-bottom-color: rgba(245, 158, 11, 0.3);
+  }
 }
 
 // ========== Lightbox ==========

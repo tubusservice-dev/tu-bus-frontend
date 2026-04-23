@@ -57,6 +57,9 @@ export class AdminLoginComponent {
       },
       error: (error) => {
         this.isLoading.set(false);
+        if (this.authService.triggerAccountBlocked(error)) {
+          return;
+        }
         this.errorMessage.set(error.error?.message || 'Error al iniciar sesión');
       },
     });

@@ -8,7 +8,24 @@
 
   <form [formGroup]="form" (ngSubmit)="onSubmit()" class="form-body">
     <div class="form-grid">
-      <!-- 1. Marca (obligatorio) — selector buscable -->
+      <!-- 1. Tipo de Vehículo (obligatorio) — selector buscable -->
+      <div class="form-group">
+        <label class="form-label">Tipo de Vehículo <span class="required">*</span></label>
+        <app-searchable-select
+          [options]="vehicleTypeOptions"
+          [selected]="selectedVehicleType()"
+          [invalid]="vehicleTypeInvalid()"
+          placeholder="Buscar tipo..."
+          ariaLabel="Seleccionar tipo de vehículo"
+          chipVariant="blue"
+          (selectedChange)="onVehicleTypeChange($event)"
+        />
+        @if (vehicleTypeInvalid()) {
+          <span class="form-error">El tipo de vehículo es requerido</span>
+        }
+      </div>
+
+      <!-- 2. Marca (obligatorio) — selector buscable -->
       <div class="form-group">
         <label class="form-label">Marca <span class="required">*</span></label>
         <app-searchable-select
@@ -25,7 +42,7 @@
         }
       </div>
 
-      <!-- 2. Modelo (obligatorio) -->
+      <!-- 3. Modelo (obligatorio) -->
       <div class="form-group">
         <label class="form-label">Modelo <span class="required">*</span></label>
         <input
@@ -38,23 +55,6 @@
         />
         @if (hasError('modelo')) {
           <span class="form-error">{{ getErrorMessage('modelo') }}</span>
-        }
-      </div>
-
-      <!-- 3. Tipo de Vehículo (obligatorio) — selector buscable -->
-      <div class="form-group">
-        <label class="form-label">Tipo de Vehículo <span class="required">*</span></label>
-        <app-searchable-select
-          [options]="vehicleTypeOptions"
-          [selected]="selectedVehicleType()"
-          [invalid]="vehicleTypeInvalid()"
-          placeholder="Buscar tipo..."
-          ariaLabel="Seleccionar tipo de vehículo"
-          chipVariant="blue"
-          (selectedChange)="onVehicleTypeChange($event)"
-        />
-        @if (vehicleTypeInvalid()) {
-          <span class="form-error">El tipo de vehículo es requerido</span>
         }
       </div>
 

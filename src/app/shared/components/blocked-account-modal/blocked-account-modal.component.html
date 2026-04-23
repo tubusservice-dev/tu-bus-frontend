@@ -1,0 +1,35 @@
+@if (info(); as i) {
+  @if (copy(); as c) {
+    <div class="blocked-overlay" role="dialog" aria-modal="true" (click)="close()">
+      <div class="blocked-modal" [class.danger]="c.tone === 'danger'" [class.warning]="c.tone === 'warning'" (click)="$event.stopPropagation()">
+        <div class="blocked-icon">
+          @if (c.tone === 'danger') {
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0 3h.008M4.697 4.697l14.606 14.606M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+            </svg>
+          } @else {
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+            </svg>
+          }
+        </div>
+
+        <h2 class="blocked-title">{{ c.title }}</h2>
+        <p class="blocked-message">{{ i.message }}</p>
+
+        @if (i.reason) {
+          <div class="blocked-reason">
+            <span class="reason-label">Motivo:</span>
+            <span class="reason-text">{{ i.reason }}</span>
+          </div>
+        }
+
+        <p class="blocked-help">{{ c.helpText }}</p>
+
+        <button type="button" class="btn-dismiss" (click)="close()">
+          Entendido
+        </button>
+      </div>
+    </div>
+  }
+}

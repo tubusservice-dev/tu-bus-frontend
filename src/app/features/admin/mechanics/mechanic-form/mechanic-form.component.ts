@@ -10,6 +10,7 @@ import {
   NAME_PATTERN, PHONE_VE_PATTERN, EMAIL_PATTERN, MAX_NAME_LENGTH, noNumbersValidator,
 } from '../../../../shared/validators/form-validators';
 import { MechanicAvatarComponent } from '../../../../shared/components/mechanic-avatar/mechanic-avatar.component';
+import { ToastService } from '../../../../shared/services/toast.service';
 
 interface BranchItem {
   id: string;
@@ -33,6 +34,7 @@ export class MechanicFormComponent implements OnInit {
   private readonly mechanicService = inject(MechanicService);
   private readonly branchService = inject(BranchService);
   private readonly uploadService = inject(UploadService);
+  private readonly toastService = inject(ToastService);
 
   // ===== Avatar upload =====
   protected readonly avatarUrl = signal<string>('');
@@ -263,9 +265,18 @@ export class MechanicFormComponent implements OnInit {
       : this.mechanicService.create(data);
 
     req$.subscribe({
-      next: () => this.router.navigate(['/admin/mechanics']),
+      next: () => {
+        this.toastService.success(
+          this.isEditMode()
+            ? 'Mecánico actualizado exitosamente'
+            : 'Mecánico creado exitosamente',
+        );
+        this.router.navigate(['/admin/mechanics']);
+      },
       error: (err) => {
-        this.errorMessage.set(err.error?.message || 'Error al guardar mecanico');
+        const msg = err.error?.message || 'Error al guardar mecanico';
+        this.errorMessage.set(msg);
+        this.toastService.error(msg);
         this.isSubmitting.set(false);
       },
     });

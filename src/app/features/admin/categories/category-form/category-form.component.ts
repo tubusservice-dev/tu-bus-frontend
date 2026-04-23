@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CategoryService } from '../../../../core/services/category.service';
+import { ToastService } from '../../../../shared/services/toast.service';
 import { VehicleType, VEHICLE_TYPE_LABELS } from '../../../../models';
 
 interface VehicleTypeOption {
@@ -22,6 +23,7 @@ export class CategoryFormComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly categoryService = inject(CategoryService);
+  private readonly toastService = inject(ToastService);
   private readonly elementRef = inject(ElementRef);
 
   protected readonly categoryId = signal<string | null>(null);
@@ -133,10 +135,15 @@ export class CategoryFormComponent implements OnInit {
 
     request$.subscribe({
       next: () => {
+        this.toastService.success(
+          this.isEditMode() ? 'Categoría actualizada exitosamente' : 'Categoría creada exitosamente',
+        );
         this.router.navigate(['/admin/categories']);
       },
       error: (error) => {
-        this.errorMessage.set(error.error?.message || 'Error al guardar categoría');
+        const msg = error.error?.message || 'Error al guardar categoría';
+        this.errorMessage.set(msg);
+        this.toastService.error(msg);
         this.isSubmitting.set(false);
       },
     });

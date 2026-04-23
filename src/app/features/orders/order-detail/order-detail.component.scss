@@ -4,6 +4,11 @@
 
 .order-detail-page {
   @apply max-w-6xl mx-auto px-4 py-6;
+  // Safety net: contain any inner overflow so low-width viewports
+  // (iPhone SE 1st gen @320px, older Androids @360px) never produce
+  // horizontal scroll on the body.
+  min-width: 0;
+  overflow-x: hidden;
 }
 
 // ============================================
@@ -25,10 +30,13 @@
 
 .header-info {
   @apply flex items-center gap-3 flex-wrap;
+  min-width: 0;
 }
 
 .page-title {
   @apply text-xl sm:text-2xl font-bold text-gray-900 dark:text-white m-0;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .header-actions {
@@ -117,10 +125,11 @@
 }
 
 .card-title {
-  @apply flex items-center gap-2 px-4 sm:px-5 py-3 text-sm font-semibold border-b;
+  @apply flex items-center flex-wrap gap-2 px-4 sm:px-5 py-3 text-sm font-semibold border-b;
   @apply text-gray-700 bg-gray-50 border-gray-200;
   border-top-left-radius: 0.75rem;
   border-top-right-radius: 0.75rem;
+  min-width: 0;
 
   :host-context(.dark) & {
     @apply text-gray-200;
@@ -133,6 +142,13 @@
     color: #3b82f6;
 
     :host-context(.dark) & { color: #60a5fa; }
+  }
+
+  // Title text may be long on narrow screens; let it wrap instead of
+  // pushing the adjacent badge off the card.
+  > span {
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
 }
 
@@ -169,7 +185,11 @@
   @apply text-xs text-gray-500 dark:text-gray-400;
 }
 .mechanic-identity-name {
-  @apply text-base font-semibold text-gray-900 dark:text-white truncate;
+  @apply text-base font-semibold text-gray-900 dark:text-white;
+  // Long names wrap to a second line on narrow viewports rather than
+  // getting silently truncated with an ellipsis.
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .info-row {
@@ -189,6 +209,12 @@
 
 .info-value {
   @apply text-xs sm:text-sm text-gray-900 dark:text-gray-100 text-right;
+  // Allow the value to shrink inside the flex row and to break long,
+  // space-less tokens (bank references, dense addresses, mono IDs).
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 
   &.mono { font-family: monospace; }
   &.fw-600 { font-weight: 600; }
@@ -251,10 +277,21 @@
 
 .total-row-values {
   @apply flex flex-col items-end;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .total-row-bs {
   @apply text-xs text-blue-600 dark:text-blue-400 mt-0.5;
+}
+
+.shipping-value {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+:host-context(.dark) .shipping-value {
+  color: #4ade80;
 }
 
 .total-final {
@@ -309,19 +346,30 @@
 
 // Comprobante
 .proof-section {
-  @apply flex flex-col gap-2 px-4 sm:px-5 py-3;
+  @apply flex items-center justify-between gap-3 px-4 sm:px-5 py-3;
 }
 
 .proof-image {
-  @apply w-48 h-auto rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer mx-auto;
-  transition: transform 0.15s;
-  &:hover { transform: scale(1.02); }
+  @apply rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer object-cover flex-shrink-0;
+  width: 72px;
+  height: 72px;
+  transition: transform 0.15s, box-shadow 0.15s;
+
+  &:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
 }
 
 // ============================================
 // SECCIÓN MECÁNICO — Popover de teléfono
 // ============================================
-.info-row-phone { @apply relative; }
+.info-row-phone {
+  @apply relative flex-wrap;
+  // On narrow viewports the "Teléfono" label + phone button may not fit
+  // on the same line — allow the button to wrap to a new line.
+  row-gap: 0.5rem;
+}
 
 .mechanic-phone-wrapper { @apply relative; }
 
@@ -329,6 +377,8 @@
   @apply inline-flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-colors;
   @apply bg-blue-50 text-blue-600 border border-blue-200;
   @apply hover:bg-blue-100 active:bg-blue-200;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 
   :host-context(.dark) & {
     @apply text-blue-400 border-blue-800;
@@ -414,6 +464,7 @@
 .current-status-date {
   @apply text-xs text-gray-400 dark:text-gray-500;
 }
+
 
 // ============================================
 // CANCELAR ORDEN
@@ -661,4 +712,174 @@
     padding: 0 !important;
     svg { display: none !important; }
   }
+}
+
+// ============================================
+// DISPATCH TRACKING (Fase 5)
+// ============================================
+
+.dispatch-current-row {
+  @apply flex flex-col gap-2 mb-3 pb-3 border-b border-gray-100 dark:border-gray-700/50;
+}
+
+.dispatch-current-description {
+  @apply text-sm text-gray-600 dark:text-gray-400;
+}
+
+.dispatch-timeline {
+  @apply relative space-y-4 mt-2 pl-1;
+
+  &::before {
+    content: '';
+    @apply absolute left-[7px] top-2 bottom-2 w-0.5 bg-gray-200 dark:bg-gray-700;
+  }
+}
+
+.dispatch-timeline-entry {
+  @apply relative flex items-start gap-3 pl-5;
+}
+
+.dispatch-timeline-dot {
+  @apply absolute left-0 top-1.5 w-[15px] h-[15px] rounded-full border-[3px] z-10;
+  @apply border-indigo-500 bg-white dark:bg-gray-800;
+}
+
+.dispatch-timeline-content {
+  @apply flex flex-col gap-0.5 flex-1 min-w-0;
+}
+
+.dispatch-timeline-badge {
+  @apply inline-flex w-fit items-center px-2 py-0.5 text-[10px] font-medium rounded-full;
+}
+
+.dispatch-timeline-date {
+  @apply text-xs text-gray-500 dark:text-gray-400;
+}
+
+.dispatch-timeline-note {
+  @apply text-xs text-gray-700 dark:text-gray-300 italic;
+}
+
+.dispatch-empty-hint {
+  @apply text-sm text-gray-400 dark:text-gray-500 italic py-2;
+}
+
+// Print fallback
+@media print {
+  .dispatch-timeline::before {
+    @apply bg-gray-300;
+  }
+}
+
+// ============================================
+// RE-UPLOAD PAYMENT PROOF
+// ============================================
+
+.proof-upload-section {
+  @apply mt-4 p-4 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-amber-50/60 dark:bg-amber-900/10;
+  @apply flex flex-col gap-3;
+}
+
+.proof-upload-header {
+  @apply flex items-start gap-3;
+}
+
+.proof-upload-icon {
+  @apply w-5 h-5 flex-shrink-0 text-amber-600 dark:text-amber-400 mt-0.5;
+}
+
+.proof-upload-header-text {
+  @apply flex flex-col gap-0.5 min-w-0;
+}
+
+.proof-upload-title {
+  @apply text-sm font-semibold text-amber-900 dark:text-amber-200;
+}
+
+.proof-upload-hint {
+  @apply text-xs text-amber-700 dark:text-amber-300/80 leading-relaxed;
+}
+
+.proof-upload-area {
+  @apply flex flex-col items-center justify-center gap-2 p-6 rounded-lg border-2 border-dashed cursor-pointer transition-colors;
+  @apply border-amber-300 dark:border-amber-700/50 bg-white dark:bg-gray-800/40;
+  @apply hover:border-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20;
+
+  svg {
+    @apply w-8 h-8 text-amber-500;
+  }
+
+  span {
+    @apply text-sm font-medium text-amber-700 dark:text-amber-300;
+  }
+
+  .proof-upload-meta {
+    @apply text-[10px] font-normal text-amber-600/70 dark:text-amber-400/70;
+  }
+}
+
+.proof-upload-input {
+  @apply hidden;
+}
+
+.proof-upload-preview {
+  @apply relative rounded-lg overflow-hidden border border-amber-200 dark:border-amber-800/40 bg-white dark:bg-gray-800;
+
+  img {
+    @apply w-full max-h-64 object-contain;
+  }
+}
+
+.proof-upload-remove {
+  @apply absolute top-2 right-2 w-8 h-8 flex items-center justify-center rounded-full;
+  @apply bg-black/60 text-white hover:bg-black/80 transition-colors;
+  @apply disabled:opacity-50 disabled:cursor-not-allowed;
+
+  svg {
+    @apply w-4 h-4;
+  }
+}
+
+.proof-upload-actions {
+  @apply flex justify-end;
+}
+
+.btn-save-proof {
+  @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-colors;
+  @apply bg-amber-600 hover:bg-amber-700;
+  @apply disabled:opacity-60 disabled:cursor-not-allowed;
+}
+
+// Print: hide upload UI
+@media print {
+  .proof-upload-section {
+    display: none !important;
+  }
+}
+
+// ============================================
+// CLIENT DISCLAIMER ACKNOWLEDGMENT CARD
+// ============================================
+.disclaimer-accepted-block {
+  @apply flex flex-col gap-2 px-4 sm:px-5 py-4;
+}
+
+.disclaimer-accepted-badge {
+  @apply inline-flex items-center self-start px-3 py-1 rounded-full text-xs font-semibold;
+
+  &.badge-original {
+    @apply bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300;
+  }
+
+  &.badge-modified {
+    @apply bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300;
+  }
+}
+
+.disclaimer-accepted-text {
+  @apply text-sm leading-relaxed text-gray-700 dark:text-gray-300 m-0;
+}
+
+.disclaimer-accepted-date {
+  @apply text-xs text-gray-500 dark:text-gray-400 mt-1;
 }

@@ -1,0 +1,62 @@
+<div class="date-picker-wrapper">
+  <div class="picker-header">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="header-icon" aria-hidden="true">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+    </svg>
+    <h4 class="picker-title">Fecha del servicio</h4>
+  </div>
+
+  <div class="tier-grid">
+    <button
+      type="button"
+      class="tier-option"
+      [class.selected]="tier() === 'express'"
+      (click)="selectTier('express')"
+    >
+      <span class="tier-chip tier-chip-express">Express</span>
+      <span class="tier-main">Hoy</span>
+      <span class="tier-sub">{{ todayLabel }}</span>
+    </button>
+
+    <button
+      type="button"
+      class="tier-option"
+      [class.selected]="tier() === 'tomorrow'"
+      (click)="selectTier('tomorrow')"
+    >
+      <span class="tier-chip tier-chip-tomorrow">Mañana</span>
+      <span class="tier-main">Próximo día</span>
+      <span class="tier-sub">{{ tomorrowLabel }}</span>
+    </button>
+
+    <button
+      type="button"
+      class="tier-option"
+      [class.selected]="tier() === 'scheduled'"
+      (click)="selectTier('scheduled')"
+    >
+      <span class="tier-chip tier-chip-scheduled">Agendar</span>
+      <span class="tier-main">Elegir fecha</span>
+      <span class="tier-sub">Desde pasado mañana</span>
+    </button>
+  </div>
+
+  @if (tier() === 'scheduled') {
+    <div class="scheduled-input">
+      <label class="field-label" for="scheduled-service-date">Selecciona la fecha</label>
+      <app-date-input
+        id="scheduled-service-date"
+        [ngModel]="scheduledDate()"
+        (ngModelChange)="onScheduledDateChange($event)"
+        [min]="minScheduledIso"
+      />
+      @if (scheduledLabel()) {
+        <p class="scheduled-hint">{{ scheduledLabel() }}</p>
+      } @else {
+        <p class="scheduled-hint scheduled-hint-warning">
+          La fecha debe ser posterior a mañana.
+        </p>
+      }
+    </div>
+  }
+</div>

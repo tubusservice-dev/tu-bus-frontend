@@ -8,6 +8,28 @@
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
+// ========== Post-registration success view ==========
+.success-view {
+  @apply flex flex-col items-center text-center gap-4 py-6;
+}
+
+.success-icon {
+  @apply w-20 h-20 rounded-full flex items-center justify-center;
+  @apply bg-green-100 dark:bg-green-900/30;
+
+  svg {
+    @apply w-12 h-12 text-green-600 dark:text-green-400;
+  }
+}
+
+.success-title {
+  @apply text-xl font-bold text-gray-900 dark:text-white m-0;
+}
+
+.success-message {
+  @apply text-sm text-gray-600 dark:text-gray-300 m-0 leading-relaxed max-w-sm;
+}
+
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }

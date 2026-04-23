@@ -11,11 +11,12 @@ import {
 } from '../../../shared/validators/form-validators';
 import { ChangePasswordModalComponent } from '../change-password-modal/change-password-modal.component';
 import { CopyableValueComponent } from '../../../shared/components/copyable-value/copyable-value.component';
+import { DateInputComponent } from '../../../shared/components/date-input/date-input.component';
 
 @Component({
   selector: 'app-profile-info',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ChangePasswordModalComponent, CopyableValueComponent],
+  imports: [CommonModule, ReactiveFormsModule, ChangePasswordModalComponent, CopyableValueComponent, DateInputComponent],
   templateUrl: './profile-info.component.html',
   styleUrl: './profile-info.component.scss',
 })

@@ -8,6 +8,7 @@ import { City, Municipality } from '../../../../models/city.model';
 import { Zone, CreateZoneRequest, UpdateZoneRequest } from '../../../../models/zone.model';
 import { CityService } from '../../../../core/services/city.service';
 import { ZoneService } from '../../../../core/services/zone.service';
+import { ToastService } from '../../../../shared/services/toast.service';
 
 @Component({
   selector: 'app-zone-form',
@@ -22,6 +23,7 @@ export class ZoneFormComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly cityService = inject(CityService);
   private readonly zoneService = inject(ZoneService);
+  private readonly toastService = inject(ToastService);
 
   // Core state
   protected readonly zoneId = signal<string | null>(null);
@@ -223,10 +225,13 @@ export class ZoneFormComponent implements OnInit {
 
       this.zoneService.update(this.zoneId()!, updateData).subscribe({
         next: () => {
+          this.toastService.success('Zona actualizada exitosamente');
           this.router.navigate(['/admin/zones']);
         },
         error: (error) => {
-          this.errorMessage.set(error.error?.message || 'Error al guardar zona');
+          const msg = error.error?.message || 'Error al guardar zona';
+          this.errorMessage.set(msg);
+          this.toastService.error(msg);
           this.isSubmitting.set(false);
         },
       });
@@ -240,10 +245,13 @@ export class ZoneFormComponent implements OnInit {
 
       this.zoneService.create(createData).subscribe({
         next: () => {
+          this.toastService.success('Zona creada exitosamente');
           this.router.navigate(['/admin/zones']);
         },
         error: (error) => {
-          this.errorMessage.set(error.error?.message || 'Error al guardar zona');
+          const msg = error.error?.message || 'Error al guardar zona';
+          this.errorMessage.set(msg);
+          this.toastService.error(msg);
           this.isSubmitting.set(false);
         },
       });
