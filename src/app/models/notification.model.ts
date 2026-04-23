@@ -3,7 +3,10 @@ export type NotificationType =
   | 'customer_cancellation'
   | 'new_order'
   | 'payment_note'
-  | 'service_progress';
+  | 'service_progress'
+  | 'order_approved'
+  | 'dispatch_update'
+  | 'order_comment';
 
 export interface AdminNotification {
   id: string;

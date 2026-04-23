@@ -215,56 +215,11 @@
         </div>
       </div>
 
-      <!-- Notification Detail Modal -->
-      @if (selectedNotification()) {
-        <div class="notif-modal-overlay" (click)="closeNotification()">
-          <div class="notif-modal" (click)="$event.stopPropagation()">
-            <div class="notif-modal-header">
-              <div class="notif-modal-type" [class.mechanic]="selectedNotification()!.type === 'mechanic_rejection'" [class.customer]="selectedNotification()!.type === 'customer_cancellation'" [class.new-order]="selectedNotification()!.type === 'new_order'" [class.payment-note]="selectedNotification()!.type === 'payment_note'" [class.service-progress]="selectedNotification()!.type === 'service_progress'">
-                {{ getNotificationTypeLabel(selectedNotification()!.type) }}
-              </div>
-              <button (click)="closeNotification()" class="notif-modal-close">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
-              </button>
-            </div>
-            <div class="notif-modal-body">
-              <h3 class="notif-modal-title">{{ selectedNotification()!.title }}</h3>
-              <p class="notif-modal-msg">{{ selectedNotification()!.message }}</p>
-
-              @if (selectedNotification()!.metadata) {
-                <div class="notif-modal-details">
-                  @if (selectedNotification()!.metadata!['orderNumber']) {
-                    <div class="notif-detail-row"><span class="nd-label">Orden</span><span class="nd-value">{{ selectedNotification()!.metadata!['orderNumber'] }}</span></div>
-                  }
-                  @if (selectedNotification()!.metadata!['mechanicName']) {
-                    <div class="notif-detail-row"><span class="nd-label">Mecanico</span><span class="nd-value">{{ selectedNotification()!.metadata!['mechanicName'] }}</span></div>
-                  }
-                  @if (selectedNotification()!.metadata!['recipientAddress']) {
-                    <div class="notif-detail-row"><span class="nd-label">Direccion</span><span class="nd-value">{{ selectedNotification()!.metadata!['recipientAddress'] }}</span></div>
-                  }
-                  @if (selectedNotification()!.metadata!['scheduledDate']) {
-                    <div class="notif-detail-row"><span class="nd-label">Fecha</span><span class="nd-value">{{ selectedNotification()!.metadata!['scheduledDate'] | date:'dd/MM/yyyy' }}</span></div>
-                  }
-                  @if (selectedNotification()!.metadata!['startTime']) {
-                    <div class="notif-detail-row"><span class="nd-label">Horario</span><span class="nd-value">{{ selectedNotification()!.metadata!['startTime'] }} - {{ selectedNotification()!.metadata!['endTime'] }}</span></div>
-                  }
-                  @if (selectedNotification()!.metadata!['reason']) {
-                    <div class="notif-detail-row"><span class="nd-label">Motivo</span><span class="nd-value nd-reason">{{ selectedNotification()!.metadata!['reason'] }}</span></div>
-                  }
-                </div>
-              }
-
-              <div class="notif-modal-time">{{ selectedNotification()!.createdAt | date:'dd/MM/yyyy HH:mm' }}</div>
-            </div>
-            <div class="notif-modal-footer">
-              @if (selectedNotification()!.metadata?.['orderNumber']) {
-                <a class="notif-btn-order" [routerLink]="['/admin/orders', getOrderId(selectedNotification()!)]">Ver orden</a>
-              }
-              <button class="notif-btn-close" (click)="closeNotification()">Cerrar</button>
-            </div>
-          </div>
-        </div>
-      }
+      <!-- Notification Detail Modal (extracted to standalone component) -->
+      <app-admin-notification-detail-modal
+        [notification]="selectedNotification()"
+        (closed)="closeNotification()"
+      />
     </header>
 
     <!-- Contenido -->

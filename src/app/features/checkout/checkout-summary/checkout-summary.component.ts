@@ -13,7 +13,7 @@ import { UploadService } from '../../../core/services/upload.service';
 import { BranchProductService } from '../../../core/services/branch-product.service';
 import { ProductService } from '../../../core/services/product.service';
 import { ExchangeRateService } from '../../../core/services/exchange-rate.service';
-import { CreateOrderRequest, PaymentSubmission } from '../../../models/order.model';
+import { CreateOrderRequest, PaymentSubmission, EngineModificationStatus } from '../../../models/order.model';
 import {
   PaymentMethodConfig,
   PaymentMethodType,
@@ -59,10 +59,42 @@ export class CheckoutSummaryComponent implements OnInit {
   // State signals
   protected readonly isGenerating = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
-  protected readonly disclaimerAccepted = signal(false);
+  /**
+   * Two mutually-exclusive disclaimer checkboxes. The user must tick exactly
+   * one to generate the order; ticking both at once is a contradiction and
+   * blocks submission with an inline warning.
+   */
+  protected readonly originalEngineChecked = signal(false);
+  protected readonly modifiedEngineChecked = signal(false);
+
+  /**
+   * Whether the "modified engine" disclaimer is visible. Collapsed by default
+   * so the common case (stock engine) stays uncluttered. Collapsing also
+   * unchecks the underlying box — we never keep an invisible acknowledgment.
+   */
+  protected readonly isModifiedSectionExpanded = signal(false);
   protected readonly showConfirmModal = signal(false);
   protected readonly isProcessingConfirm = signal(false);
   protected readonly isSubmittingPayment = signal(false);
+
+  /** True when exactly one disclaimer is selected (XOR). */
+  protected readonly hasDisclaimerSelection = computed(
+    () => this.originalEngineChecked() !== this.modifiedEngineChecked(),
+  );
+
+  /** True when the user accidentally ticked both checkboxes. */
+  protected readonly hasDisclaimerConflict = computed(
+    () => this.originalEngineChecked() && this.modifiedEngineChecked(),
+  );
+
+  /**
+   * Resolved engine-modification value to send to the backend, or `null`
+   * while no valid selection exists.
+   */
+  protected readonly selectedEngineModification = computed<EngineModificationStatus | null>(() => {
+    if (!this.hasDisclaimerSelection()) return null;
+    return this.originalEngineChecked() ? 'original' : 'modified';
+  });
 
   // Payment methods from API
   protected readonly paymentMethods = signal<PaymentMethodConfig[]>([]);
@@ -322,7 +354,7 @@ export class CheckoutSummaryComponent implements OnInit {
   // ========== Can Generate Order ==========
 
   protected readonly canGenerateOrder = computed(() => {
-    if (!this.disclaimerAccepted() || !this.paymentSubmitted()) return false;
+    if (!this.hasDisclaimerSelection() || !this.paymentSubmitted()) return false;
     if (this.isBranchMandatory() && !this.checkoutService.hasBranch()) return false;
     if (this.needsVehicle() && !this.checkoutService.hasVehicle()) return false;
     if (
@@ -993,7 +1025,8 @@ export class CheckoutSummaryComponent implements OnInit {
       total: this.total,
       dispatchType: this.dispatchType as any,
       paymentMethod: this.submittedPayment()?.methodType as any,
-      disclaimerAccepted: this.disclaimerAccepted(),
+      disclaimerAccepted: this.hasDisclaimerSelection(),
+      engineModification: this.selectedEngineModification() ?? undefined,
       vehicles: selectedVehicles.length > 0 ? selectedVehicles.map((v) => v.id) : undefined,
       selectedBranch: selectedBranch?.id,
       billingAddress: this.checkoutService.billingAddress() || undefined,
@@ -1019,10 +1052,39 @@ export class CheckoutSummaryComponent implements OnInit {
     });
   }
 
-  onDisclaimerChange(event: Event): void {
+  onOriginalEngineChange(event: Event): void {
     const checked = (event.target as HTMLInputElement).checked;
-    this.disclaimerAccepted.set(checked);
-    this.checkoutService.setDisclaimerAccepted(checked);
+    this.originalEngineChecked.set(checked);
+    this.syncDisclaimerState();
+  }
+
+  onModifiedEngineChange(event: Event): void {
+    const checked = (event.target as HTMLInputElement).checked;
+    this.modifiedEngineChecked.set(checked);
+    this.syncDisclaimerState();
+  }
+
+  toggleModifiedSection(): void {
+    const next = !this.isModifiedSectionExpanded();
+    this.isModifiedSectionExpanded.set(next);
+
+    // Collapsing invalidates any prior acknowledgment so the user never keeps
+    // a ticked-but-hidden disclaimer.
+    if (!next && this.modifiedEngineChecked()) {
+      this.modifiedEngineChecked.set(false);
+      this.syncDisclaimerState();
+    }
+  }
+
+  /**
+   * Propagates the XOR state to the checkout service. While the user has both
+   * boxes ticked (conflict) we keep `disclaimerAccepted=false` so downstream
+   * gates also stay closed, not just the submit button.
+   */
+  private syncDisclaimerState(): void {
+    const accepted = this.hasDisclaimerSelection();
+    this.checkoutService.setDisclaimerAccepted(accepted);
+    this.checkoutService.setEngineModification(this.selectedEngineModification());
   }
 
   goBack(): void {

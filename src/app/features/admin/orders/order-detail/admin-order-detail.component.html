@@ -742,8 +742,17 @@
             </div>
             <div class="info-row">
               <span class="info-label">Disclaimer</span>
-              <span class="info-value" [class.text-green-600]="o.disclaimerAccepted" [class.text-red-500]="!o.disclaimerAccepted">
-                {{ o.disclaimerAccepted ? 'Aceptado' : 'No aceptado' }}
+              <span class="info-value"
+                    [class.text-green-600]="o.disclaimerAccepted && (o.engineModification || 'original') === 'original'"
+                    [class.text-amber-600]="o.disclaimerAccepted && o.engineModification === 'modified'"
+                    [class.text-red-500]="!o.disclaimerAccepted">
+                @if (!o.disclaimerAccepted) {
+                  No aceptado
+                } @else if (o.engineModification === 'modified') {
+                  Aceptado — Motor con modificaciones
+                } @else {
+                  Aceptado — Motor sin modificaciones
+                }
               </span>
             </div>
             <div class="info-row" [class.info-row-stacked]="hasLongNotes()">

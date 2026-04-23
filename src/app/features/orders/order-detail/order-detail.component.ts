@@ -1,9 +1,11 @@
-import { Component, computed, inject, signal, OnInit } from '@angular/core';
+import { Component, DestroyRef, computed, inject, signal, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { OrderService } from '../../../core/services/order.service';
 import { ExchangeRateService } from '../../../core/services/exchange-rate.service';
 import { UploadService } from '../../../core/services/upload.service';
+import { ReviewService } from '../../../core/services/review.service';
 import {
   Order, OrderStatus, DispatchStatus,
   ORDER_STATUS_LABELS, ORDER_STATUS_COLORS, ORDER_STATUS_DESCRIPTIONS,
@@ -12,11 +14,12 @@ import {
 } from '../../../models/order.model';
 import { MechanicAvatarComponent } from '../../../shared/components/mechanic-avatar/mechanic-avatar.component';
 import { OrderCommentsComponent } from '../../../shared/components/order-comments/order-comments.component';
+import { RatingModalComponent } from '../../../shared/components/rating-modal/rating-modal.component';
 
 @Component({
   selector: 'app-order-detail',
   standalone: true,
-  imports: [CommonModule, CurrencyPipe, RouterLink, MechanicAvatarComponent, OrderCommentsComponent],
+  imports: [CommonModule, CurrencyPipe, RouterLink, MechanicAvatarComponent, OrderCommentsComponent, RatingModalComponent],
   templateUrl: './order-detail.component.html',
   styleUrl: './order-detail.component.scss',
 })
@@ -25,6 +28,8 @@ export class OrderDetailComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly orderService = inject(OrderService);
   private readonly uploadService = inject(UploadService);
+  private readonly reviewService = inject(ReviewService);
+  private readonly destroyRef = inject(DestroyRef);
   protected readonly exchangeRateService = inject(ExchangeRateService);
 
   // ========== ESTADO PRINCIPAL ==========
@@ -56,6 +61,15 @@ export class OrderDetailComponent implements OnInit {
 
   // ========== IMPRESIÓN ==========
   protected printedAt = '';
+
+  // ========== RATING / VALORACIÓN ==========
+  protected readonly showRatingModal = signal(false);
+  protected readonly isSubmittingRating = signal(false);
+  protected readonly ratingSubmitError = signal<string | null>(null);
+  /** Prevents duplicate review lookups while the same order is loaded. */
+  private hasCheckedReview = false;
+  /** sessionStorage key prefix for "user dismissed the modal for order X". */
+  private readonly REVIEW_DISMISSED_KEY = 'review-modal-dismissed';
 
   // ========== LABELS ==========
   protected readonly statusLabels = ORDER_STATUS_LABELS;
@@ -160,13 +174,23 @@ export class OrderDetailComponent implements OnInit {
   // CICLO DE VIDA
   // ============================================
   ngOnInit(): void {
-    const id = this.route.snapshot.paramMap.get('id');
-    if (!id) {
-      this.error.set('ID de orden no proporcionado');
-      this.isLoading.set(false);
-      return;
-    }
-    this.loadOrder(id);
+    // Subscribe to paramMap (not snapshot) so Angular router reuse across
+    // /perfil/pedidos/:id → /perfil/pedidos/:other-id triggers a reload.
+    this.route.paramMap
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((params) => {
+        const id = params.get('id');
+        if (!id) {
+          this.error.set('ID de orden no proporcionado');
+          this.isLoading.set(false);
+          return;
+        }
+        // Reset per-order flags so the review modal can re-evaluate for the new order.
+        this.hasCheckedReview = false;
+        this.showRatingModal.set(false);
+        this.ratingSubmitError.set(null);
+        this.loadOrder(id);
+      });
   }
 
   private loadOrder(id: string): void {
@@ -177,12 +201,90 @@ export class OrderDetailComponent implements OnInit {
       next: (res) => {
         this.order.set(res.data);
         this.isLoading.set(false);
+        if (res.data.status === OrderStatus.COMPLETED) {
+          this.checkReviewAndMaybeOpenModal(res.data.id);
+        }
       },
       error: (err) => {
         this.error.set(err.error?.message || 'Error al cargar la orden');
         this.isLoading.set(false);
       },
     });
+  }
+
+  // ============================================
+  // RATING / VALORACIÓN
+  // ============================================
+  /**
+   * Gate + fetch: only runs once per loaded order. If the user already
+   * dismissed the modal for this order in the current browser session, we
+   * stay quiet. Otherwise we ask the backend if a review exists; if not,
+   * the modal opens.
+   */
+  private checkReviewAndMaybeOpenModal(orderId: string): void {
+    if (this.hasCheckedReview) return;
+    this.hasCheckedReview = true;
+
+    if (this.wasReviewDismissed(orderId)) return;
+
+    this.reviewService.getByOrder(orderId).subscribe({
+      next: (res) => {
+        if (!res.data) {
+          this.showRatingModal.set(true);
+        }
+      },
+      error: () => {
+        // Silent: offline, 401, 403 → simply skip opening the modal.
+      },
+    });
+  }
+
+  protected onRatingClosed(): void {
+    const id = this.order()?.id;
+    if (id) this.markReviewDismissed(id);
+    this.showRatingModal.set(false);
+    this.ratingSubmitError.set(null);
+  }
+
+  protected onRatingSubmitted(payload: { rating: number; comment: string }): void {
+    const id = this.order()?.id;
+    if (!id) return;
+
+    this.isSubmittingRating.set(true);
+    this.ratingSubmitError.set(null);
+
+    this.reviewService.create({
+      orderId: id,
+      rating: payload.rating,
+      comment: payload.comment || undefined,
+    }).subscribe({
+      next: () => {
+        this.isSubmittingRating.set(false);
+        this.showRatingModal.set(false);
+      },
+      error: (err) => {
+        this.isSubmittingRating.set(false);
+        this.ratingSubmitError.set(
+          err?.error?.message ?? 'No pudimos guardar tu valoración. Intenta nuevamente.',
+        );
+      },
+    });
+  }
+
+  private wasReviewDismissed(orderId: string): boolean {
+    try {
+      return sessionStorage.getItem(`${this.REVIEW_DISMISSED_KEY}:${orderId}`) === '1';
+    } catch {
+      return false;
+    }
+  }
+
+  private markReviewDismissed(orderId: string): void {
+    try {
+      sessionStorage.setItem(`${this.REVIEW_DISMISSED_KEY}:${orderId}`, '1');
+    } catch {
+      // SSR or storage disabled — ignore silently.
+    }
   }
 
   // ============================================
@@ -307,6 +409,16 @@ export class OrderDetailComponent implements OnInit {
     }
 
     return '';
+  }
+
+  /**
+   * Phone is only exposed to the client while the mechanic is en route
+   * (`en_camino`) or actively performing the service (`in_progress`).
+   */
+  canShowMechanicPhone(order: Order): boolean {
+    const a = order.mechanicAssignment as any;
+    const status = a && typeof a === 'object' ? a.status : null;
+    return status === 'en_camino' || status === 'in_progress';
   }
 
   mechanicAvatar(order: Order): string {

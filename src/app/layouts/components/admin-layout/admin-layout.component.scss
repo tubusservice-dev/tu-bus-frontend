@@ -161,37 +161,6 @@
 .notif-item-preview { @apply text-[11px] text-gray-500 dark:text-gray-400 truncate; }
 .notif-item-time { @apply text-[10px] text-gray-400 dark:text-gray-500 mt-0.5; }
 
-// Notification Detail Modal
-.notif-modal-overlay { @apply fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4; }
-.notif-modal { @apply bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md overflow-hidden; }
-.notif-modal-header {
-  @apply flex items-center justify-between px-5 py-3 border-b border-gray-200 dark:border-gray-700;
-}
-.notif-modal-type {
-  @apply px-3 py-1 text-xs font-semibold rounded-full;
-  &.mechanic { @apply bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400; }
-  &.customer { @apply bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400; }
-  &.new-order { @apply bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400; }
-  &.payment-note { @apply bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400; }
-  &.service-progress { @apply bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400; }
-}
-.notif-modal-close {
-  @apply p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors;
-  svg { @apply w-5 h-5; }
-}
-.notif-modal-body { @apply px-5 py-4 space-y-3; }
-.notif-modal-title { @apply text-base font-semibold text-gray-900 dark:text-white; }
-.notif-modal-msg { @apply text-sm text-gray-600 dark:text-gray-400; }
-.notif-modal-details { @apply p-3 bg-gray-50 dark:bg-gray-700/30 rounded-xl space-y-2; }
-.notif-detail-row { @apply flex justify-between text-xs; }
-.nd-label { @apply text-gray-400 dark:text-gray-500; }
-.nd-value { @apply text-gray-900 dark:text-white font-medium text-right; }
-.nd-reason { @apply text-red-600 dark:text-red-400 italic; }
-.notif-modal-time { @apply text-[10px] text-gray-400 dark:text-gray-500; }
-.notif-modal-footer { @apply flex items-center justify-end gap-2 px-5 py-3 border-t border-gray-200 dark:border-gray-700; }
-.notif-btn-order { @apply px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors; }
-.notif-btn-close { @apply px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors; }
-
 .user-info {
   @apply flex items-center gap-3;
 }

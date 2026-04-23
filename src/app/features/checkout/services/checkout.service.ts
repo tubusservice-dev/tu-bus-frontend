@@ -4,6 +4,7 @@ import { CartService } from '../../../core/services/cart.service';
 import { LocationService, BranchSummary } from '../../../core/services/location.service';
 import { ShippingAgency } from '../../../models/product.model';
 import { Vehicle } from '../../../models/vehicle.model';
+import { EngineModificationStatus } from '../../../models/order.model';
 
 // ============================================
 // TYPES
@@ -128,6 +129,7 @@ export interface CheckoutState {
   billingAddress: BillingAddress | null;
   paymentMethod: string | null;
   disclaimerAccepted: boolean;
+  engineModification: EngineModificationStatus | null;
 }
 
 const BRANCH_AWARE_DISPATCH_TYPES: DispatchType[] = [
@@ -150,6 +152,7 @@ const INITIAL_STATE: CheckoutState = {
   billingAddress: null,
   paymentMethod: null,
   disclaimerAccepted: false,
+  engineModification: null,
 };
 
 // ============================================
@@ -289,6 +292,7 @@ export class CheckoutService {
   readonly billingAddress = computed(() => this._state().billingAddress);
   readonly paymentMethod = computed(() => this._state().paymentMethod);
   readonly disclaimerAccepted = computed(() => this._state().disclaimerAccepted);
+  readonly engineModification = computed(() => this._state().engineModification);
 
   readonly hasShippingAgency = computed(() => this._state().selectedShippingAgency !== null);
   readonly hasShippingRecipientInfo = computed(() => this._state().shippingRecipientInfo !== null);
@@ -465,6 +469,10 @@ export class CheckoutService {
 
   setDisclaimerAccepted(accepted: boolean): void {
     this._state.update((s) => ({ ...s, disclaimerAccepted: accepted }));
+  }
+
+  setEngineModification(value: EngineModificationStatus | null): void {
+    this._state.update((s) => ({ ...s, engineModification: value }));
   }
 
   // ==================== CLEAR / RESET ====================

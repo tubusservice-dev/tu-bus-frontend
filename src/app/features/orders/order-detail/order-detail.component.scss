@@ -821,3 +821,30 @@
     display: none !important;
   }
 }
+
+// ============================================
+// CLIENT DISCLAIMER ACKNOWLEDGMENT CARD
+// ============================================
+.disclaimer-accepted-block {
+  @apply flex flex-col gap-2 px-5 sm:px-6 py-4;
+}
+
+.disclaimer-accepted-badge {
+  @apply inline-flex items-center self-start px-3 py-1 rounded-full text-xs font-semibold;
+
+  &.badge-original {
+    @apply bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300;
+  }
+
+  &.badge-modified {
+    @apply bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300;
+  }
+}
+
+.disclaimer-accepted-text {
+  @apply text-sm leading-relaxed text-gray-700 dark:text-gray-300 m-0;
+}
+
+.disclaimer-accepted-date {
+  @apply text-xs text-gray-500 dark:text-gray-400 mt-1;
+}

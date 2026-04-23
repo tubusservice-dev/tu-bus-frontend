@@ -10,6 +10,7 @@ import { LocationService } from '../../../core/services/location.service';
 import { ExchangeRateService } from '../../../core/services/exchange-rate.service';
 import { ProductCardComponent, ProductCardData } from '../product-card/product-card.component';
 import { CartPopoverComponent } from '../cart-popover/cart-popover.component';
+import { VEHICLE_TYPE_LABELS, VehicleType } from '../../../models/product.model';
 
 const PLACEHOLDER = 'https://placehold.co/400x400/e5e7eb/9ca3af?text=Sin+imagen';
 
@@ -224,4 +225,14 @@ export class ProductDetailOverlayComponent {
   getCategoryName(cat: any): string { return typeof cat === 'string' ? cat : cat?.name || ''; }
   getBrandName(brand: any): string { if (!brand) return ''; return typeof brand === 'string' ? brand : brand?.name || ''; }
   getLineName(line: any): string { if (!line) return ''; return typeof line === 'string' ? line : line?.name || ''; }
+
+  /**
+   * Human-readable list of vehicle types the product applies to. Collapses to
+   * a single "Todos los vehículos" label when `all` is present.
+   */
+  getVehicleTypesLabel(types?: string[]): string {
+    if (!types || !types.length) return '';
+    if (types.includes(VehicleType.ALL)) return VEHICLE_TYPE_LABELS[VehicleType.ALL];
+    return types.map(t => VEHICLE_TYPE_LABELS[t as VehicleType] || t).join(', ');
+  }
 }

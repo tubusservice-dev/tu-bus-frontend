@@ -223,15 +223,15 @@ import { AvailableSlot } from '../../../../models/mechanic-assignment.model';
                         />
                       </div>
                       <div class="reschedule-field">
-                        <label class="reschedule-label">Nota para el cliente <span class="required-mark">*</span></label>
+                        <label class="reschedule-label">Nota para el cliente <span class="optional-mark">(opcional)</span></label>
                         <textarea
                           class="form-input reschedule-note"
                           rows="3"
-                          placeholder="Explica brevemente al cliente por qué se reprograma la fecha (mínimo 10 caracteres)."
+                          placeholder="Explica brevemente al cliente por qué se reprograma la fecha."
                           [(ngModel)]="rescheduleNote"
                           maxlength="300"
                         ></textarea>
-                        <span class="reschedule-hint">{{ rescheduleNote.length }}/300 · mínimo 10</span>
+                        <span class="reschedule-hint">{{ rescheduleNote.length }}/300</span>
                       </div>
                       @if (rescheduleError()) {
                         <div class="date-error">{{ rescheduleError() }}</div>
@@ -593,6 +593,7 @@ import { AvailableSlot } from '../../../../models/mechanic-assignment.model';
     .reschedule-label {
       @apply text-xs font-semibold text-gray-700 dark:text-gray-300;
       .required-mark { @apply text-red-500 ml-0.5; }
+      .optional-mark { @apply ml-1 font-normal text-gray-400 dark:text-gray-500; }
     }
     .reschedule-note { @apply resize-y min-h-[70px]; }
     .reschedule-hint { @apply text-[10px] text-gray-500 dark:text-gray-400 self-end; }
@@ -1003,9 +1004,7 @@ export class OrderDispatchModalComponent {
   }
 
   protected canSaveReschedule(): boolean {
-    return !!this.selectedDate
-      && !this.isDatePast()
-      && this.rescheduleNote.trim().length >= 10;
+    return !!this.selectedDate && !this.isDatePast();
   }
 
   protected saveReschedule(): void {

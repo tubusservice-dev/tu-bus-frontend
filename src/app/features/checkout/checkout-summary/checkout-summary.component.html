@@ -751,17 +751,75 @@
         </div>
       </section>
 
-      <!-- Disclaimer -->
-      <section class="summary-section disclaimer-section">
+      <!-- Disclaimer (doble opción con toggle) -->
+      <section class="summary-section disclaimer-section"
+               [class.disclaimer-section-active]="hasDisclaimerSelection()"
+               [class.disclaimer-section-conflict]="hasDisclaimerConflict()">
         <div class="section-content">
+
+          <!-- A. Motor sin modificaciones (siempre visible) -->
           <label class="disclaimer-label">
-            <input type="checkbox" [checked]="disclaimerAccepted()" (change)="onDisclaimerChange($event)" class="disclaimer-checkbox" />
+            <input
+              type="checkbox"
+              [checked]="originalEngineChecked()"
+              (change)="onOriginalEngineChange($event)"
+              class="disclaimer-checkbox"
+            />
             <span class="disclaimer-text">
-              Confirmo que mi motor no tiene modificaciones no originales. Acepto cargos adicionales si el filtro estándar no aplica.
+              Confirmo que mi motor es <strong>original de serie</strong>, y que el filtro
+              estándar asociado a este pedido es compatible con mi vehículo.
             </span>
           </label>
+
+          <!-- Toggle para revelar la segunda sección -->
+          <div class="disclaimer-divider">
+            <button
+              type="button"
+              class="disclaimer-toggle"
+              (click)="toggleModifiedSection()"
+              [attr.aria-expanded]="isModifiedSectionExpanded()"
+            >
+              <span>Mi motor tiene modificaciones</span>
+              <svg class="disclaimer-toggle-arrow"
+                   [class.is-open]="isModifiedSectionExpanded()"
+                   viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                   aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- B. Motor con modificaciones (colapsable) -->
+          @if (isModifiedSectionExpanded()) {
+            <label class="disclaimer-label disclaimer-label-secondary">
+              <input
+                type="checkbox"
+                [checked]="modifiedEngineChecked()"
+                (change)="onModifiedEngineChange($event)"
+                class="disclaimer-checkbox"
+              />
+              <span class="disclaimer-text">
+                Declaro que mi motor <strong>ha sido modificado</strong> y el filtro estándar podría no aplicar.
+                Autorizo que se comuniquen conmigo para coordinar el filtro correcto
+                y acepto el posible cargo adicional.
+              </span>
+            </label>
+          }
         </div>
       </section>
+
+      <!-- Advertencia de conflicto entre disclaimers -->
+      @if (hasDisclaimerConflict()) {
+        <div class="disclaimer-conflict-warning" role="alert">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+          </svg>
+          <span>
+            Has marcado ambas opciones, lo cual es contradictorio.
+            Desmarca una para poder continuar con tu orden.
+          </span>
+        </div>
+      }
 
       <!-- Error -->
       @if (errorMessage()) {
@@ -784,11 +842,14 @@
             Procesar Orden
           }
         </button>
-        @if (!paymentSubmitted() && disclaimerAccepted()) {
+        @if (hasDisclaimerConflict()) {
+          <p class="action-hint action-hint-error">
+            No puedes continuar porque marcaste los dos disclaimers. Desmarca uno para proceder.
+          </p>
+        } @else if (!paymentSubmitted() && hasDisclaimerSelection()) {
           <p class="action-hint">Debes seleccionar un método de pago para continuar</p>
-        }
-        @if (!disclaimerAccepted() && paymentSubmitted()) {
-          <p class="action-hint">Debes aceptar el disclaimer para continuar</p>
+        } @else if (!hasDisclaimerSelection() && paymentSubmitted()) {
+          <p class="action-hint">Debes seleccionar un disclaimer para continuar</p>
         }
       </div>
     </div>

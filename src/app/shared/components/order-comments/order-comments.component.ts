@@ -1,7 +1,15 @@
-import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { OrderComment, Order } from '../../../models/order.model';
 import { OrderService } from '../../../core/services/order.service';
+
+/**
+ * Business rule mirrored from the backend (see
+ * `backend/src/modules/orders/interfaces/order.interface.ts`).
+ * Duplicated here because frontend and backend are separate packages with no
+ * shared type source; keep both values in sync.
+ */
+const MAX_CLIENT_COMMENTS_PER_ORDER = 5;
 
 /**
  * Chat-like comment thread between client and admin for a single order.
@@ -44,12 +52,38 @@ import { OrderService } from '../../../core/services/order.service';
       }
 
       <div class="comments-form">
+        @if (mode() === 'client') {
+          @if (hasReachedClientLimit()) {
+            <div class="comments-limit-notice comments-limit-reached" role="status">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008Zm-9-4.5a9 9 0 1 1 18 0 9 9 0 0 1-18 0Z" />
+              </svg>
+              <span>
+                Has alcanzado el límite de {{ maxClientComments }} comentarios para esta orden.
+                Espera la respuesta de un agente para continuar la conversación.
+              </span>
+            </div>
+          } @else {
+            <div class="comments-limit-notice comments-limit-info" role="status">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
+              </svg>
+              <span>
+                Puedes enviar
+                <strong>{{ clientCommentsRemaining() }}</strong>
+                {{ clientCommentsRemaining() === 1 ? 'comentario más' : 'comentarios más' }}
+                en esta orden ({{ clientCommentsCount() }}/{{ maxClientComments }} utilizados).
+              </span>
+            </div>
+          }
+        }
         <textarea
           class="comments-textarea"
           rows="3"
           maxlength="1000"
-          placeholder="Escribe un comentario…"
+          [placeholder]="hasReachedClientLimit() ? 'Has alcanzado el límite de comentarios.' : 'Escribe un comentario…'"
           [value]="draftMessage()"
+          [disabled]="hasReachedClientLimit()"
           (input)="draftMessage.set($any($event.target).value); sendError.set(null)"
         ></textarea>
         <div class="comments-form-footer">
@@ -129,8 +163,22 @@ import { OrderService } from '../../../core/services/order.service';
       @apply bg-white border border-gray-300 text-gray-900 placeholder-gray-400;
       @apply dark:bg-gray-900 dark:border-gray-600 dark:text-white dark:placeholder-gray-500;
       @apply focus:outline-none focus:ring-2 focus:border-transparent;
+      @apply disabled:opacity-60 disabled:cursor-not-allowed;
       min-height: 70px;
       &:focus { --tw-ring-color: var(--accent-primary, #2563eb); }
+    }
+
+    .comments-limit-notice {
+      @apply flex items-start gap-2 px-3 py-2 rounded-md text-xs font-medium;
+      svg { @apply w-4 h-4 flex-shrink-0 mt-0.5; }
+    }
+    .comments-limit-info {
+      @apply bg-blue-50 text-blue-700 border border-blue-200;
+      @apply dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800/50;
+    }
+    .comments-limit-reached {
+      @apply bg-amber-50 text-amber-800 border border-amber-200;
+      @apply dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-800/50;
     }
     .comments-form-footer {
       @apply flex items-center justify-between gap-3;
@@ -160,7 +208,25 @@ export class OrderCommentsComponent {
   protected readonly isSending = signal(false);
   protected readonly sendError = signal<string | null>(null);
 
+  protected readonly maxClientComments = MAX_CLIENT_COMMENTS_PER_ORDER;
+
+  /** Count of existing client-authored comments in this order's thread. */
+  protected readonly clientCommentsCount = computed(
+    () => this.comments().filter((c) => c.authorType === 'client').length,
+  );
+
+  /** Remaining comments the client may still post (floored at 0). */
+  protected readonly clientCommentsRemaining = computed(
+    () => Math.max(0, MAX_CLIENT_COMMENTS_PER_ORDER - this.clientCommentsCount()),
+  );
+
+  /** True only for client mode when the cap has been reached. */
+  protected readonly hasReachedClientLimit = computed(
+    () => this.mode() === 'client' && this.clientCommentsRemaining() === 0,
+  );
+
   protected canSend(): boolean {
+    if (this.hasReachedClientLimit()) return false;
     return this.draftMessage().trim().length > 0 && this.draftMessage().length <= 1000;
   }
 

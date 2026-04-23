@@ -109,6 +109,9 @@ export interface ServiceEvent {
 
 export type OrderCommentAuthorType = 'client' | 'admin';
 
+/** Engine modification status declared by the client at checkout. */
+export type EngineModificationStatus = 'original' | 'modified';
+
 export interface OrderComment {
   _id?: string;
   author: string;
@@ -154,6 +157,7 @@ export interface Order {
   billingAddress?: BillingAddress;
   disclaimerAccepted: boolean;
   disclaimerAcceptedAt?: string;
+  engineModification?: EngineModificationStatus;
   notes?: string;
   paymentSubmission?: PaymentSubmission;
   mechanic?: string | { id: string; name: string; phone: string; whatsapp?: string; avatar?: string };
@@ -181,6 +185,7 @@ export interface CreateOrderRequest {
   requestedServiceTier?: ServiceDateTier;
   billingAddress?: BillingAddress;
   disclaimerAccepted: boolean;
+  engineModification?: EngineModificationStatus;
   notes?: string;
   paymentSubmission?: PaymentSubmission;
 }
