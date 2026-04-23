@@ -97,4 +97,25 @@ export class OrderService {
   updateNotes(orderId: string, notes: string): Observable<OrderResponse> {
     return this.http.patch<OrderResponse>(`${this.adminApiUrl}/${orderId}/notes`, { notes });
   }
+
+  /**
+   * Admin-only: reprogramar la fecha solicitada del servicio. Dispara una
+   * notificación al cliente con la nota del admin.
+   */
+  rescheduleService(
+    orderId: string,
+    payload: { newDate: string; newTier: 'express' | 'tomorrow' | 'scheduled'; adminNote: string },
+  ): Observable<OrderResponse> {
+    return this.http.patch<OrderResponse>(`${this.adminApiUrl}/${orderId}/reschedule-service`, payload);
+  }
+
+  /** Client: agregar un comentario al hilo de la orden. */
+  addCommentAsClient(orderId: string, message: string): Observable<OrderResponse> {
+    return this.http.post<OrderResponse>(`${this.apiUrl}/${orderId}/comments`, { message });
+  }
+
+  /** Admin: agregar un comentario al hilo de la orden (se guarda como "Agente TuBusExpress"). */
+  addCommentAsAdmin(orderId: string, message: string): Observable<OrderResponse> {
+    return this.http.post<OrderResponse>(`${this.adminApiUrl}/${orderId}/comments`, { message });
+  }
 }

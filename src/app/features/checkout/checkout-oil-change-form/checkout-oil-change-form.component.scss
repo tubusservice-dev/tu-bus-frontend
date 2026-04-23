@@ -261,6 +261,12 @@ select.input {
 
 .vehicle-hint-required {
   @apply text-xs mt-2 text-amber-600 dark:text-amber-400;
+
+  // When the user tries to submit without picking a vehicle, the component
+  // adds the `error-message` class so the hint escalates from amber to red.
+  &.error-message {
+    @apply text-red-500 font-medium;
+  }
 }
 
 // ========== Compatibility alert (vehicle ↔ product) ==========

@@ -25,7 +25,7 @@
 
   button {
     @apply px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 transition-colors;
-    &.active { @apply bg-red-600 text-white; }
+    &.active { @apply text-white; background-color: var(--accent-primary); }
     &:not(.active):hover { @apply bg-gray-50 dark:bg-gray-700; }
   }
 }
@@ -68,7 +68,11 @@
 
 // Block Management
 .block-actions { @apply mt-4 pt-4 border-t border-gray-200 dark:border-gray-700; }
-.btn-add-block { @apply inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors; }
+.btn-add-block {
+  @apply inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors;
+  background-color: var(--accent-primary);
+  &:hover { background-color: var(--accent-hover, rgb(0, 20, 60)); }
+}
 .date-blocks-list { @apply mt-4 space-y-2; }
 .blocks-title { @apply text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2; }
 .block-item { @apply flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-lg; }

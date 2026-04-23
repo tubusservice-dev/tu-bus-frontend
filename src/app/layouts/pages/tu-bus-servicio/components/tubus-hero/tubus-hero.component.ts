@@ -69,6 +69,13 @@ export class TubusHeroComponent {
     return stat;
   }
 
+  /** Append "+" suffix only when the value doesn't already end with one,
+   *  preventing "150++" when admins type "150+" in settings. */
+  protected withPlus(value: string): string {
+    const v = (value || '').trim();
+    return v.endsWith('+') ? v : `${v}+`;
+  }
+
   protected readonly heroImages = computed(() => {
     const config = this.settingsService.heroImagesConfig();
     const images = config.images || [];

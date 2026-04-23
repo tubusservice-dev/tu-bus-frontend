@@ -90,6 +90,34 @@ export interface DispatchStatusEntry {
   note?: string;
 }
 
+/** Non-status timeline events (reschedules, reassignments, etc.) */
+export type ServiceEventType = 'date_rescheduled' | 'mechanic_reassigned' | 'note';
+
+export interface ServiceEventMetadata {
+  previousDate?: string;
+  newDate?: string;
+  previousTier?: ServiceDateTier;
+  newTier?: ServiceDateTier;
+}
+
+export interface ServiceEvent {
+  type: ServiceEventType;
+  timestamp: string;
+  note?: string;
+  metadata?: ServiceEventMetadata;
+}
+
+export type OrderCommentAuthorType = 'client' | 'admin';
+
+export interface OrderComment {
+  _id?: string;
+  author: string;
+  authorType: OrderCommentAuthorType;
+  authorName: string;
+  message: string;
+  createdAt: string;
+}
+
 export type DispatchType = 'store_pickup' | 'shipping_agency' | 'local_delivery' | 'seller_agreement' | 'oil_change_service' | 'in_store_oil_change';
 
 export interface Order {
@@ -134,6 +162,8 @@ export interface Order {
   dispatchStatus?: DispatchStatus;
   dispatchStatusHistory?: DispatchStatusEntry[];
   statusHistory: StatusHistoryEntry[];
+  serviceEvents?: ServiceEvent[];
+  comments?: OrderComment[];
   createdAt: string;
 }
 

@@ -85,12 +85,14 @@
             <span>Subtotal</span>
             <span>{{ o.subtotal | currency:'USD':'symbol':'1.2-2' }}</span>
           </div>
-          @if (o.shippingCost > 0) {
-            <div class="totals-row">
-              <span>Envío / Servicio</span>
+          <div class="totals-row">
+            <span>{{ deliveryConceptLabel() }}</span>
+            @if (o.shippingCost === 0) {
+              <span class="shipping-value">Gratis</span>
+            } @else {
               <span>{{ o.shippingCost | currency:'USD':'symbol':'1.2-2' }}</span>
-            </div>
-          }
+            }
+          </div>
           <div class="totals-row totals-total">
             <span>Total</span>
             <span>{{ o.total | currency:'USD':'symbol':'1.2-2' }}</span>

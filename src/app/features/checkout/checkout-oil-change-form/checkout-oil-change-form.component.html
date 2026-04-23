@@ -239,7 +239,13 @@
             }
 
             @if (checkoutService.selectedVehicles().length === 0 && vehicles().length > 0) {
-              <p class="vehicle-hint-required">Selecciona al menos un vehículo para continuar.</p>
+              <p
+                class="vehicle-hint-required field-error-anchor"
+                [class.error-message]="submitAttempted()"
+                tabindex="-1"
+              >
+                Selecciona al menos un vehículo para continuar.
+              </p>
             }
 
             <!-- Vehicle ↔ Product compatibility warning (non-blocking) -->
@@ -290,7 +296,10 @@
 
         <!-- Acciones -->
         <div class="form-actions">
-          <button type="submit" class="btn-continue" [disabled]="oilChangeForm.invalid">
+          @if (submitError()) {
+            <p class="error-message submit-error" role="alert">{{ submitError() }}</p>
+          }
+          <button type="submit" class="btn-continue">
             Continuar al resumen
           </button>
         </div>

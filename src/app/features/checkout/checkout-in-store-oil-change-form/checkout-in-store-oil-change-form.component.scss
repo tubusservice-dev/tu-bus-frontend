@@ -156,6 +156,12 @@
 
 .vehicle-hint-required {
   @apply text-xs mt-2 text-amber-600 dark:text-amber-400;
+
+  // When the user tries to continue without picking a vehicle, the component
+  // adds the `error-message` class so the hint escalates from amber to red.
+  &.error-message {
+    @apply text-red-500 font-medium;
+  }
 }
 
 .vehicle-empty-state {

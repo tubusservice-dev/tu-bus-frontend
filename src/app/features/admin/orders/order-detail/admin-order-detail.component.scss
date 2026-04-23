@@ -100,6 +100,67 @@
   }
 }
 
+.order-type-inline {
+  @apply ml-auto text-xs font-semibold tracking-wide;
+  color: var(--accent-primary, #2563eb);
+}
+
+:host-context(.dark) .order-type-inline {
+  color: #60a5fa;
+}
+
+.order-type-body {
+  @apply px-5 sm:px-6 py-4;
+}
+
+.order-type-description {
+  @apply text-sm leading-relaxed m-0;
+  color: var(--text-secondary);
+}
+
+:host-context(.dark) .order-type-description {
+  color: #d1d5db;
+}
+
+.requested-service-body {
+  @apply px-5 sm:px-6 py-4 flex flex-col gap-2;
+}
+
+.requested-service-date {
+  @apply text-base font-semibold m-0 capitalize;
+  color: var(--text-primary);
+}
+
+:host-context(.dark) .requested-service-date {
+  color: #f3f4f6;
+}
+
+.requested-service-hint {
+  @apply text-xs leading-relaxed m-0;
+  color: var(--text-tertiary, #6b7280);
+}
+
+:host-context(.dark) .requested-service-hint {
+  color: #9ca3af;
+}
+
+// Inline copy-to-clipboard button (used on the reference number row)
+.info-value-copy {
+  @apply inline-flex items-center gap-2;
+}
+
+.btn-copy-inline {
+  @apply inline-flex items-center justify-center w-6 h-6 rounded-md transition-colors flex-shrink-0;
+  @apply text-gray-400 hover:text-blue-600 hover:bg-blue-50;
+  @apply dark:text-gray-500 dark:hover:text-blue-400 dark:hover:bg-blue-900/30;
+
+  svg { @apply w-3.5 h-3.5; }
+
+  &.copied {
+    @apply text-green-600 dark:text-green-400;
+  }
+}
+
 // ============================================
 // GRID LAYOUT
 // ============================================
@@ -148,11 +209,27 @@
   @apply text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex-shrink-0;
 }
 
+.info-label-hint {
+  @apply text-[10px] font-normal text-gray-400 dark:text-gray-500 ml-1;
+  text-transform: none;
+}
+
 .info-value {
   @apply text-xs sm:text-sm text-gray-900 dark:text-gray-100 text-right break-words min-w-0;
 
   &.mono {
     font-family: monospace;
+  }
+}
+
+// Adaptive stacked layout for rows whose value is too long to fit inline
+// alongside the label. Applied via [class.info-row-stacked]="hasLongNotes()".
+.info-row-stacked {
+  @apply flex-col items-stretch gap-1.5;
+
+  .info-value,
+  .notes-value {
+    @apply text-left;
   }
 }
 
@@ -263,16 +340,24 @@
   }
 
   &.total-final {
-    @apply bg-gray-50 dark:bg-gray-900/50 py-3;
+    @apply bg-gray-50 dark:bg-gray-900/50 py-3 items-start rounded-b-xl;
 
     span:first-child {
       @apply font-semibold text-gray-900 dark:text-gray-100;
     }
-
-    span:last-child {
-      @apply text-lg font-bold text-blue-600 dark:text-blue-400;
-    }
   }
+}
+
+.total-values {
+  @apply flex flex-col items-end gap-0.5;
+}
+
+.total-usd {
+  @apply text-lg font-bold text-blue-600 dark:text-blue-400 leading-tight;
+}
+
+.total-bs {
+  @apply text-xs font-medium text-gray-500 dark:text-gray-400 leading-tight;
 }
 
 // ============================================
@@ -504,6 +589,10 @@
   @apply dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-800/40 dark:hover:bg-emerald-900/30;
 
   svg { @apply w-4 h-4; }
+
+  &:disabled {
+    @apply opacity-60 cursor-not-allowed pointer-events-none;
+  }
 }
 
 // Dispatch selector (header)

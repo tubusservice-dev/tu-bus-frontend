@@ -1,6 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, tap, interval, Subscription } from 'rxjs';
+import { Router, NavigationEnd, NavigationCancel, NavigationError } from '@angular/router';
+import { Observable, tap, interval, Subscription, filter } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { AuthService } from './auth.service';
 import {
@@ -15,6 +16,7 @@ import {
 export class UserNotificationService {
   private readonly http = inject(HttpClient);
   private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
   private readonly apiUrl = `${environment.apiUrl}/user-notifications`;
   private pollSub?: Subscription;
   private lastKnownCount = 0;
@@ -27,6 +29,28 @@ export class UserNotificationService {
   readonly unreadCount = this._unreadCount.asReadonly();
   readonly notifications = this._notifications.asReadonly();
   readonly showPopover = this._showPopover.asReadonly();
+
+  constructor() {
+    // The popover floats outside <router-outlet>; auto-close on any navigation
+    // completion keeps it in sync with the visible view. Backstop for in-panel
+    // CTAs (e.g. "Ver pedido") that navigate to a lazy-loaded route — prevents
+    // the panel from appearing stuck during the chunk download. Cancel/Error
+    // covered so a rejected guard doesn't leave it hanging.
+    this.router.events
+      .pipe(
+        filter(
+          (e): e is NavigationEnd | NavigationCancel | NavigationError =>
+            e instanceof NavigationEnd ||
+            e instanceof NavigationCancel ||
+            e instanceof NavigationError,
+        ),
+      )
+      .subscribe(() => {
+        if (this._showPopover()) {
+          this._showPopover.set(false);
+        }
+      });
+  }
 
   startPolling(): void {
     this.fetchUnreadCount();

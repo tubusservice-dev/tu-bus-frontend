@@ -81,7 +81,7 @@
         <!-- Floating stats -->
         @if (leftStat(); as stat) {
           <div class="floating-stat stat-1">
-            <span class="stat-number">{{ stat.value }}+</span>
+            <span class="stat-number">{{ withPlus(stat.value) }}</span>
             <span class="stat-label">Servicios</span>
           </div>
         }

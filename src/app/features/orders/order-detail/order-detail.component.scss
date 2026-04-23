@@ -257,6 +257,15 @@
   @apply text-xs text-blue-600 dark:text-blue-400 mt-0.5;
 }
 
+.shipping-value {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+:host-context(.dark) .shipping-value {
+  color: #4ade80;
+}
+
 .total-final {
   @apply text-base font-bold text-gray-900 dark:text-white mt-1 pt-2 border-t border-gray-100 dark:border-gray-700;
 }
@@ -420,6 +429,7 @@
 .current-status-date {
   @apply text-xs text-gray-400 dark:text-gray-500;
 }
+
 
 // ============================================
 // CANCELAR ORDEN

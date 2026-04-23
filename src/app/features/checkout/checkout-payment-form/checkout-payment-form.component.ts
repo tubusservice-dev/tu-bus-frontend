@@ -5,6 +5,7 @@ import { PaymentService } from '../../../core/services/payment.service';
 import { UploadService } from '../../../core/services/upload.service';
 import { CreatePaymentRequest, PaymentMethod } from '../../../models/payment.model';
 import { DateInputComponent } from '../../../shared/components/date-input/date-input.component';
+import { scrollToFirstFormError } from '../../../shared/validators/form-validators';
 
 @Component({
   selector: 'app-checkout-payment-form',
@@ -125,7 +126,7 @@ import { DateInputComponent } from '../../../shared/components/date-input/date-i
               <button
                 type="submit"
                 class="btn-submit"
-                [disabled]="paymentForm.invalid || isSubmitting() || isUploading()"
+                [disabled]="isSubmitting() || isUploading()"
               >
                 @if (isSubmitting()) {
                   <span class="spinner-sm"></span>
@@ -209,7 +210,11 @@ export class CheckoutPaymentFormComponent implements OnInit {
   }
 
   onSubmit(): void {
-    if (this.paymentForm.invalid) return;
+    if (this.paymentForm.invalid) {
+      this.paymentForm.markAllAsTouched();
+      scrollToFirstFormError();
+      return;
+    }
 
     this.isSubmitting.set(true);
     this.errorMessage.set(null);

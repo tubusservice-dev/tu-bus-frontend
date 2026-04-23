@@ -5,7 +5,9 @@
 .page-subtitle { @apply text-sm text-gray-500 dark:text-gray-400; }
 
 .btn-primary {
-  @apply inline-flex items-center gap-2 px-4 py-2.5 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors;
+  @apply inline-flex items-center gap-2 px-4 py-2.5 text-white text-sm font-medium rounded-lg transition-colors;
+  background-color: var(--accent-primary);
+  &:hover { background-color: var(--accent-hover, rgb(0, 20, 60)); }
   svg { @apply w-5 h-5; }
 }
 

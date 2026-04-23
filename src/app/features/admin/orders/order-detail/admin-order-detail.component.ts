@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { OrderService } from '../../../../core/services/order.service';
+import { ExchangeRateService } from '../../../../core/services/exchange-rate.service';
+import { ClipboardService } from '../../../../shared/services/clipboard.service';
 import {
   Order,
   OrderStatus,
@@ -13,6 +15,7 @@ import {
   DISPATCH_STATUS_LABELS,
   DISPATCH_STATUS_COLORS,
   DISPATCH_TYPE_LABELS,
+  DISPATCH_TYPE_COLORS,
   isOilChangeOrder,
   isShippingOrder,
   isInStoreOilChange,
@@ -23,6 +26,7 @@ import { PAYMENT_METHOD_TYPE_LABELS, PaymentMethodType } from '../../../../model
 import { MechanicAssignment, ProgressStep } from '../../../../models/mechanic-assignment.model';
 import { OrderDispatchModalComponent } from '../order-dispatch-modal/order-dispatch-modal.component';
 import { MechanicAvatarComponent } from '../../../../shared/components/mechanic-avatar/mechanic-avatar.component';
+import { OrderCommentsComponent } from '../../../../shared/components/order-comments/order-comments.component';
 import { ClickOutsideDirective } from '../../../../shared/directives/click-outside.directive';
 import { MechanicAssignmentService } from '../../../../core/services/mechanic-assignment.service';
 
@@ -34,6 +38,7 @@ import { MechanicAssignmentService } from '../../../../core/services/mechanic-as
     FormsModule,
     OrderDispatchModalComponent,
     MechanicAvatarComponent,
+    OrderCommentsComponent,
     ClickOutsideDirective,
   ],
   templateUrl: './admin-order-detail.component.html',
@@ -44,6 +49,8 @@ export class AdminOrderDetailComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly orderService = inject(OrderService);
   private readonly assignmentService = inject(MechanicAssignmentService);
+  protected readonly exchangeRateService = inject(ExchangeRateService);
+  private readonly clipboard = inject(ClipboardService);
 
   protected readonly isLoading = signal(true);
   protected readonly order = signal<Order | null>(null);
@@ -88,6 +95,13 @@ export class AdminOrderDetailComponent implements OnInit {
   protected readonly editNotesValue = signal('');
   protected readonly isSavingNotes = signal(false);
 
+  /** True when the admin note is long enough that inline layout breaks.
+   *  Drives the `.info-row-stacked` modifier on the Notas row. */
+  protected readonly hasLongNotes = computed(() => {
+    const n = this.order()?.notes ?? '';
+    return n.length > 40;
+  });
+
   // ========== IMAGE LIGHTBOX ==========
   protected readonly proofPreview = signal<string | null>(null);
 
@@ -129,6 +143,71 @@ export class AdminOrderDetailComponent implements OnInit {
     const o = this.order();
     if (!o) return false;
     return !!(o.mechanicAssignment && typeof o.mechanicAssignment === 'object');
+  });
+
+  /**
+   * True when the order has a requested service date. Drives the visibility
+   * of the "Fecha del Servicio" card in the left column.
+   */
+  protected readonly hasRequestedServiceDate = computed(() => !!this.order()?.requestedServiceDate);
+
+  /**
+   * Spanish label for the requested service tier (express/mañana/agendado).
+   */
+  protected readonly requestedTierLabel = computed<string>(() => {
+    const tier = this.order()?.requestedServiceTier;
+    switch (tier) {
+      case 'express':   return 'Express (hoy)';
+      case 'tomorrow':  return 'Mañana';
+      case 'scheduled': return 'Agendado';
+      default:          return '';
+    }
+  });
+
+  /**
+   * Long-form date in Spanish (e.g. "miércoles, 22 de abril de 2026") for the
+   * requested service date. UTC-anchored to avoid off-by-one on ISO dates.
+   */
+  protected readonly requestedDateLabel = computed<string>(() => {
+    const raw = this.order()?.requestedServiceDate;
+    if (!raw) return '';
+    try {
+      const d = new Date(raw);
+      return new Intl.DateTimeFormat('es-VE', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        timeZone: 'UTC',
+      }).format(d);
+    } catch {
+      return String(raw);
+    }
+  });
+
+  /**
+   * Narrative description per dispatch type — gives the admin an at-a-glance
+   * understanding of what this order entails without having to cross-reference
+   * multiple sections. Empty string for unknown types (defensive).
+   */
+  protected readonly dispatchTypeDescription = computed<string>(() => {
+    const dt = this.order()?.dispatchType;
+    switch (dt) {
+      case 'oil_change_service':
+        return 'Esta orden fue marcada como Servicio de Cambio de Aceite a Domicilio. Un mecánico se trasladará a la dirección del cliente para realizar el servicio.';
+      case 'in_store_oil_change':
+        return 'Esta orden fue marcada como Cambio de Aceite en Tienda. El cliente llevará su vehículo a la sucursal seleccionada.';
+      case 'store_pickup':
+        return 'Esta orden fue marcada como Retiro en Tienda. El cliente recogerá personalmente el pedido.';
+      case 'local_delivery':
+        return 'Esta orden fue marcada como Delivery Local. Un repartidor llevará el pedido a la dirección del cliente dentro de la zona de cobertura.';
+      case 'shipping_agency':
+        return 'Esta orden será enviada por Agencia. El pedido se despachará a través de una agencia de envío a nivel nacional.';
+      case 'seller_agreement':
+        return 'El método de entrega se coordinará directamente con el cliente a través de nuestro equipo de ventas.';
+      default:
+        return '';
+    }
   });
 
   protected readonly availableDispatchStatuses = computed(() => {
@@ -240,6 +319,10 @@ export class AdminOrderDetailComponent implements OnInit {
   getDispatchStatusColor(status?: DispatchStatus): string {
     if (!status) return '';
     return DISPATCH_STATUS_COLORS[status] || '';
+  }
+
+  getDispatchTypeColor(type: string): string {
+    return DISPATCH_TYPE_COLORS[type as DispatchType] || '';
   }
 
   getDispatchTypeLabel(type: string): string {
@@ -543,6 +626,31 @@ export class AdminOrderDetailComponent implements OnInit {
   onMechanicAssigned(updatedOrder: Order): void {
     this.order.set(updatedOrder);
     this.loadServiceTracking(updatedOrder.id);
+  }
+
+  onServiceRescheduled(): void {
+    // Reload full order so the requested date card + modal reflect the change
+    const id = this.order()?.id;
+    if (id) this.loadOrder(id);
+  }
+
+  onCommentsUpdated(updatedOrder: Order): void {
+    this.order.set(updatedOrder);
+  }
+
+  // ========== COPY REFERENCE NUMBER ==========
+
+  protected readonly referenceCopied = signal(false);
+  private referenceCopyTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  async copyReference(): Promise<void> {
+    const ref = this.order()?.paymentSubmission?.referenceNumber;
+    if (!ref) return;
+    const ok = await this.clipboard.write(ref);
+    if (!ok) return;
+    this.referenceCopied.set(true);
+    if (this.referenceCopyTimeout) clearTimeout(this.referenceCopyTimeout);
+    this.referenceCopyTimeout = setTimeout(() => this.referenceCopied.set(false), 1500);
   }
 
   // ========== NOTES ==========

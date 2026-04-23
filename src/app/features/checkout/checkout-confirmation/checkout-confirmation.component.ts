@@ -71,6 +71,27 @@ export class CheckoutConfirmationComponent implements OnInit {
     return !!(ba && (ba.fullName || ba.address));
   });
 
+  /**
+   * Human label for the shipping-cost row, chosen by dispatch type so the
+   * wording matches the rest of the checkout flow (service / envío / despacho).
+   */
+  protected readonly deliveryConceptLabel = computed<string>(() => {
+    const dt = this.order()?.dispatchType;
+    switch (dt) {
+      case 'oil_change_service':
+      case 'in_store_oil_change':
+        return 'Coste del Servicio';
+      case 'shipping_agency':
+      case 'local_delivery':
+        return 'Coste del Envío';
+      case 'store_pickup':
+      case 'seller_agreement':
+        return 'Coste del Despacho';
+      default:
+        return 'Envío';
+    }
+  });
+
   ngOnInit(): void {
     const orderId = this.route.snapshot.paramMap.get('orderId');
     if (!orderId) {

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MechanicAssignmentService } from '../../../../core/services/mechanic-assignment.service';
 import { MechanicService } from '../../../../core/services/mechanic.service';
+import { OrderService } from '../../../../core/services/order.service';
 import { AvailableMechanic, MechanicAssignment } from '../../../../models/mechanic-assignment.model';
 import { Mechanic } from '../../../../models/mechanic.model';
 import {
@@ -10,6 +11,7 @@ import {
   ORDER_STATUS_LABELS,
   ORDER_STATUS_COLORS,
   OrderStatus,
+  ServiceDateTier,
 } from '../../../../models/order.model';
 import { environment } from '../../../../../environments/environment';
 import { MechanicAvatarComponent } from '../../../../shared/components/mechanic-avatar/mechanic-avatar.component';
@@ -196,14 +198,57 @@ import { AvailableSlot } from '../../../../models/mechanic-assignment.model';
                     Fecha del servicio
                   </h4>
 
-                  @if (hasRequestedDate()) {
+                  @if (hasRequestedDate() && !isRescheduling()) {
                     <div class="requested-date-banner">
+                      <button type="button" class="btn-reschedule-toggle" title="Reprogramar fecha" aria-label="Reprogramar fecha" (click)="startRescheduling()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Z" />
+                        </svg>
+                      </button>
                       <div class="requested-date-headline">
                         <span class="requested-date-tier">{{ requestedTierLabel() }}</span>
                         <span class="requested-date-value">{{ requestedDateLabel() }}</span>
                       </div>
-                      <p class="requested-date-hint">Fecha solicitada por el cliente. No puede modificarse desde aquí.</p>
+                      <p class="requested-date-hint">Fecha seleccionada por el cliente.</p>
                     </div>
+                  } @else if (isRescheduling()) {
+                    <div class="reschedule-panel">
+                      <div class="reschedule-field">
+                        <label class="reschedule-label">Nueva fecha</label>
+                        <app-date-input
+                          id="reschedule-date"
+                          [(ngModel)]="selectedDate"
+                          (ngModelChange)="onDateChange()"
+                          [min]="todayStr"
+                        />
+                      </div>
+                      <div class="reschedule-field">
+                        <label class="reschedule-label">Nota para el cliente <span class="required-mark">*</span></label>
+                        <textarea
+                          class="form-input reschedule-note"
+                          rows="3"
+                          placeholder="Explica brevemente al cliente por qué se reprograma la fecha (mínimo 10 caracteres)."
+                          [(ngModel)]="rescheduleNote"
+                          maxlength="300"
+                        ></textarea>
+                        <span class="reschedule-hint">{{ rescheduleNote.length }}/300 · mínimo 10</span>
+                      </div>
+                      @if (rescheduleError()) {
+                        <div class="date-error">{{ rescheduleError() }}</div>
+                      }
+                      <div class="reschedule-actions">
+                        <button type="button" class="btn-reschedule-cancel" (click)="cancelRescheduling()">Cancelar</button>
+                        <button type="button" class="btn-reschedule-save" [disabled]="!canSaveReschedule() || isSavingReschedule()" (click)="saveReschedule()">
+                          @if (isSavingReschedule()) { Guardando... } @else { Guardar reprogramación }
+                        </button>
+                      </div>
+                    </div>
+                    @if (isDatePast()) {
+                      <div class="date-error">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" /></svg>
+                        Fecha no valida — seleccione una fecha a partir de hoy
+                      </div>
+                    }
                   } @else {
                     <app-date-input
                       id="schedule-date"
@@ -519,7 +564,7 @@ import { AvailableSlot } from '../../../../models/mechanic-assignment.model';
 
     // Client-locked date banner
     .requested-date-banner {
-      @apply flex flex-col gap-1 px-3 py-2.5 rounded-lg border;
+      @apply relative flex flex-col gap-1 px-3 py-2.5 pr-10 rounded-lg border;
       @apply bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800;
     }
     .requested-date-headline { @apply flex flex-col gap-0.5; }
@@ -530,7 +575,37 @@ import { AvailableSlot } from '../../../../models/mechanic-assignment.model';
       @apply text-sm font-semibold text-gray-900 dark:text-white capitalize;
     }
     .requested-date-hint {
-      @apply text-[11px] text-gray-500 dark:text-gray-400 m-0;
+      @apply text-[11px] text-gray-500 dark:text-gray-400 m-0 mt-0.5;
+    }
+    .btn-reschedule-toggle {
+      @apply absolute top-1.5 right-1.5 inline-flex items-center justify-center w-7 h-7 rounded-md;
+      @apply text-blue-700 bg-white/70 border border-blue-200 hover:bg-blue-100;
+      @apply dark:text-blue-300 dark:bg-blue-900/30 dark:border-blue-800/50 dark:hover:bg-blue-900/50 transition-colors;
+      svg { @apply w-4 h-4; }
+    }
+
+    // Reschedule panel
+    .reschedule-panel {
+      @apply flex flex-col gap-3 p-3 rounded-lg border;
+      @apply bg-amber-50/60 border-amber-200 dark:bg-amber-900/10 dark:border-amber-900/40;
+    }
+    .reschedule-field { @apply flex flex-col gap-1; }
+    .reschedule-label {
+      @apply text-xs font-semibold text-gray-700 dark:text-gray-300;
+      .required-mark { @apply text-red-500 ml-0.5; }
+    }
+    .reschedule-note { @apply resize-y min-h-[70px]; }
+    .reschedule-hint { @apply text-[10px] text-gray-500 dark:text-gray-400 self-end; }
+    .reschedule-actions {
+      @apply flex items-center justify-end gap-2 pt-1;
+    }
+    .btn-reschedule-cancel {
+      @apply px-3 py-1.5 text-xs font-medium rounded-md;
+      @apply text-gray-700 bg-gray-100 hover:bg-gray-200 dark:text-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 transition-colors;
+    }
+    .btn-reschedule-save {
+      @apply px-3 py-1.5 text-xs font-semibold rounded-md text-white;
+      @apply bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors;
     }
 
     // Cancel current assignment
@@ -541,7 +616,9 @@ import { AvailableSlot } from '../../../../models/mechanic-assignment.model';
 
     .assign-error { @apply p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm rounded-lg; }
     .btn-assign {
-      @apply w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+      @apply w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+      background-color: var(--accent-primary);
+      &:hover:not(:disabled) { background-color: var(--accent-hover, rgb(0, 20, 60)); }
     }
     .spinner-sm-white { @apply w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin; }
     .modal-footer { @apply px-5 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end; }
@@ -551,11 +628,13 @@ import { AvailableSlot } from '../../../../models/mechanic-assignment.model';
 export class OrderDispatchModalComponent {
   private readonly mechanicAssignmentService = inject(MechanicAssignmentService);
   private readonly mechanicService = inject(MechanicService);
+  private readonly orderService = inject(OrderService);
 
   readonly order = input<Order | null>(null);
   readonly isOpen = input<boolean>(false);
   readonly close = output<void>();
   readonly assigned = output<Order>();
+  readonly rescheduled = output<Order>();
 
   protected readonly isAssigning = signal(false);
   protected readonly isLoadingMechanics = signal(true);
@@ -568,6 +647,12 @@ export class OrderDispatchModalComponent {
   protected readonly progressLink = signal<string>('');
   protected readonly availabilityStatus = signal<'unchecked' | 'checking' | 'available' | 'conflict' | 'outside'>('unchecked');
   protected readonly isCancellingAssignment = signal(false);
+
+  // Reschedule state
+  protected readonly isRescheduling = signal(false);
+  protected readonly isSavingReschedule = signal(false);
+  protected readonly rescheduleError = signal<string | null>(null);
+  protected rescheduleNote = '';
 
   // When the customer locked a date on checkout, the admin picks only the
   // hour — the date is frozen and prefilled here.
@@ -881,7 +966,71 @@ export class OrderDispatchModalComponent {
     // Keep date if the client locked it — the effect() repopulates on reopen
     this.selectedDate = '';
     this.selectedStartTime = '';
+    this.cancelRescheduling();
     this.close.emit();
+  }
+
+  // ==================== RESCHEDULE ====================
+
+  protected startRescheduling(): void {
+    this.isRescheduling.set(true);
+    this.rescheduleError.set(null);
+    this.rescheduleNote = '';
+    // selectedDate already holds the current requestedServiceDate thanks to the effect
+  }
+
+  /**
+   * Derives the service tier from a date relative to today.
+   * Today → express, tomorrow → tomorrow, further out → scheduled.
+   */
+  private deriveTierFromDate(iso: string): ServiceDateTier {
+    if (!iso) return 'scheduled';
+    if (iso === this.todayStr) return 'express';
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowIso = tomorrow.toISOString().split('T')[0];
+    if (iso === tomorrowIso) return 'tomorrow';
+    return 'scheduled';
+  }
+
+  protected cancelRescheduling(): void {
+    this.isRescheduling.set(false);
+    this.isSavingReschedule.set(false);
+    this.rescheduleError.set(null);
+    this.rescheduleNote = '';
+    // Reset selectedDate back to the client's requested date
+    this.selectedDate = this.requestedDateIso();
+  }
+
+  protected canSaveReschedule(): boolean {
+    return !!this.selectedDate
+      && !this.isDatePast()
+      && this.rescheduleNote.trim().length >= 10;
+  }
+
+  protected saveReschedule(): void {
+    const order = this.order();
+    if (!order) return;
+    if (!this.canSaveReschedule()) return;
+
+    this.isSavingReschedule.set(true);
+    this.rescheduleError.set(null);
+
+    this.orderService.rescheduleService(order.id, {
+      newDate: this.selectedDate,
+      newTier: this.deriveTierFromDate(this.selectedDate),
+      adminNote: this.rescheduleNote.trim(),
+    }).subscribe({
+      next: (res) => {
+        this.isSavingReschedule.set(false);
+        this.isRescheduling.set(false);
+        this.rescheduled.emit(res.data as any);
+      },
+      error: (err) => {
+        this.isSavingReschedule.set(false);
+        this.rescheduleError.set(err?.error?.message || 'No se pudo reprogramar la fecha');
+      },
+    });
   }
 
   private loadAssignment(order: Order): void {

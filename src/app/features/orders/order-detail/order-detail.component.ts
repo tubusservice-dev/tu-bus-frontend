@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, computed, inject, signal, OnInit } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { OrderService } from '../../../core/services/order.service';
@@ -11,11 +11,12 @@ import {
   isShippingOrder, isOilChangeOrder,
 } from '../../../models/order.model';
 import { MechanicAvatarComponent } from '../../../shared/components/mechanic-avatar/mechanic-avatar.component';
+import { OrderCommentsComponent } from '../../../shared/components/order-comments/order-comments.component';
 
 @Component({
   selector: 'app-order-detail',
   standalone: true,
-  imports: [CommonModule, CurrencyPipe, RouterLink, MechanicAvatarComponent],
+  imports: [CommonModule, CurrencyPipe, RouterLink, MechanicAvatarComponent, OrderCommentsComponent],
   templateUrl: './order-detail.component.html',
   styleUrl: './order-detail.component.scss',
 })
@@ -43,12 +44,6 @@ export class OrderDetailComponent implements OnInit {
   // ========== DETALLE DE PAGO ==========
   protected readonly isPaymentExpanded = signal(false);
 
-  // ========== COMENTARIO DE PAGO ==========
-  protected readonly paymentNote = signal('');
-  protected readonly isSavingNote = signal(false);
-  protected readonly noteSuccess = signal<string | null>(null);
-  protected readonly noteError = signal<string | null>(null);
-
   // ========== RE-SUBIDA DE COMPROBANTE ==========
   protected readonly uploadProofFile = signal<File | null>(null);
   protected readonly uploadProofPreview = signal<string | null>(null);
@@ -67,6 +62,99 @@ export class OrderDetailComponent implements OnInit {
   protected readonly statusColors = ORDER_STATUS_COLORS;
   protected readonly dispatchStatusLabels = DISPATCH_STATUS_LABELS;
   protected readonly dispatchStatusColors = DISPATCH_STATUS_COLORS;
+
+  /**
+   * Human label for the shipping-cost row, chosen by dispatch type so the
+   * wording matches the rest of the checkout flow (service / envío / despacho).
+   */
+  protected readonly deliveryConceptLabel = computed<string>(() => {
+    const dt = this.order()?.dispatchType;
+    switch (dt) {
+      case 'oil_change_service':
+      case 'in_store_oil_change':
+        return 'Coste del Servicio';
+      case 'shipping_agency':
+      case 'local_delivery':
+        return 'Coste del Envío';
+      case 'store_pickup':
+      case 'seller_agreement':
+        return 'Coste del Despacho';
+      default:
+        return 'Envío';
+    }
+  });
+
+  /**
+   * Combined timeline for the "Estado de la Orden" card. Merges statusHistory
+   * (order status transitions) with serviceEvents (reschedules and future
+   * service-level events), sorted newest first. Each entry carries its own
+   * label, description and color class ready for rendering.
+   */
+  protected readonly timelineEntries = computed(() => {
+    const o = this.order();
+    if (!o) return [] as Array<{
+      kind: 'status' | 'event';
+      label: string;
+      description: string;
+      colorClass: string;
+      note?: string;
+      timestamp: string;
+    }>;
+
+    const statusEntries = (o.statusHistory || []).map(s => ({
+      kind: 'status' as const,
+      label: this.getStatusLabel(s.status),
+      description: this.getStatusDescription(s.status),
+      colorClass: this.getStatusClass(s.status),
+      note: s.note,
+      timestamp: s.timestamp,
+    }));
+
+    const eventEntries = (o.serviceEvents || []).map(ev => {
+      if (ev.type === 'date_rescheduled') {
+        const newDate = ev.metadata?.newDate
+          ? this.formatRescheduleDate(ev.metadata.newDate)
+          : '';
+        return {
+          kind: 'event' as const,
+          label: 'Fecha reprogramada',
+          description: newDate ? `Nueva fecha: ${newDate}` : 'La fecha del servicio fue reprogramada.',
+          colorClass: 'bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300',
+          note: ev.note,
+          timestamp: ev.timestamp,
+        };
+      }
+      return {
+        kind: 'event' as const,
+        label: 'Evento del servicio',
+        description: '',
+        colorClass: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+        note: ev.note,
+        timestamp: ev.timestamp,
+      };
+    });
+
+    return [...statusEntries, ...eventEntries].sort(
+      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+  });
+
+  /** Format an ISO date (YYYY-MM-DD) as a long Spanish label, UTC-anchored. */
+  private formatRescheduleDate(iso: string): string {
+    try {
+      const [y, m, d] = iso.split('-').map(Number);
+      const date = new Date(Date.UTC(y, (m || 1) - 1, d || 1));
+      return new Intl.DateTimeFormat('es-VE', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        timeZone: 'UTC',
+      }).format(date);
+    } catch {
+      return iso;
+    }
+  }
 
   // ============================================
   // CICLO DE VIDA
@@ -88,7 +176,6 @@ export class OrderDetailComponent implements OnInit {
     this.orderService.getOrderById(id).subscribe({
       next: (res) => {
         this.order.set(res.data);
-        this.paymentNote.set(res.data.paymentSubmission?.notes || '');
         this.isLoading.set(false);
       },
       error: (err) => {
@@ -245,6 +332,10 @@ export class OrderDetailComponent implements OnInit {
     this.activePhonePopover.set(null);
   }
 
+  onCommentsUpdated(updatedOrder: Order): void {
+    this.order.set(updatedOrder);
+  }
+
   openWhatsApp(phone: string): void {
     if (!phone) return;
     const cleaned = phone.replace(/-/g, '').replace(/\s/g, '');
@@ -305,33 +396,6 @@ export class OrderDetailComponent implements OnInit {
   // ============================================
   togglePaymentDetail(): void {
     this.isPaymentExpanded.update((v) => !v);
-  }
-
-  // ============================================
-  // COMENTARIO DE PAGO
-  // ============================================
-  savePaymentNote(): void {
-    const o = this.order();
-    if (!o || !o.paymentSubmission) return;
-
-    const note = this.paymentNote().trim();
-    this.isSavingNote.set(true);
-    this.noteError.set(null);
-
-    const updated = { ...o.paymentSubmission, notes: note || undefined };
-
-    this.orderService.updatePayment(o.id, updated).subscribe({
-      next: (res) => {
-        this.order.set(res.data);
-        this.isSavingNote.set(false);
-        this.noteSuccess.set('Comentario guardado');
-        setTimeout(() => this.noteSuccess.set(null), 3000);
-      },
-      error: (err) => {
-        this.isSavingNote.set(false);
-        this.noteError.set(err.error?.message || 'Error al guardar el comentario');
-      },
-    });
   }
 
   // ============================================

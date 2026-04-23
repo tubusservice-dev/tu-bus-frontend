@@ -110,9 +110,9 @@
               </div>
             </div>
             <div class="total-row">
-              <span>Envío</span>
+              <span>{{ deliveryConceptLabel() }}</span>
               <div class="total-row-values">
-                <span>{{ o.shippingCost === 0 ? 'Gratis' : (o.shippingCost | currency:'USD') }}</span>
+                <span [class.shipping-value]="o.shippingCost === 0">{{ o.shippingCost === 0 ? 'Gratis' : (o.shippingCost | currency:'USD') }}</span>
                 @if (exchangeRateService.showBsPrice() && o.shippingCost > 0) {
                   <span class="total-row-bs">{{ exchangeRateService.formatBsPrice(o.shippingCost) }}</span>
                 }
@@ -241,6 +241,14 @@
           </section>
         }
 
+        <!-- ===== SECCIÓN: COMENTARIOS (cliente) ===== -->
+        <app-order-comments
+          [orderId]="o.id"
+          [comments]="o.comments || []"
+          mode="client"
+          (commentsUpdated)="onCommentsUpdated($event)"
+        />
+
         <!-- ===== SECCIÓN 3: DATOS DEL PAGO ===== -->
         <section class="detail-card">
           <h3 class="card-title">
@@ -366,33 +374,6 @@
               </div>
             }
 
-            <!-- Comentario del pago -->
-            <div class="payment-note-section no-print">
-              @if (noteSuccess()) {
-                <div class="alert-success-inline">{{ noteSuccess() }}</div>
-              }
-              @if (noteError()) {
-                <div class="alert-error-inline">{{ noteError() }}</div>
-              }
-              <label class="note-label">Comentario sobre el pago</label>
-              <textarea
-                class="note-textarea"
-                rows="2"
-                placeholder="Escribe un comentario sobre tu pago..."
-                [value]="paymentNote()"
-                (input)="paymentNote.set($any($event.target).value)"
-              ></textarea>
-              <div class="note-actions">
-                <button
-                  type="button"
-                  class="btn-save-note"
-                  [disabled]="isSavingNote()"
-                  (click)="savePaymentNote()"
-                >
-                  @if (isSavingNote()) { Guardando... } @else { Enviar comentario }
-                </button>
-              </div>
-            </div>
           } @else {
             <p class="no-data">No se han registrado datos de pago.</p>
           }
@@ -466,8 +447,8 @@
           </section>
         }
 
-        <!-- ===== SECCIÓN 5: ESTADO DE LA ORDEN ===== -->
-        @if (o.statusHistory && o.statusHistory.length > 0) {
+        <!-- ===== SECCIÓN 5: ESTADO DE LA ORDEN (última actualización) ===== -->
+        @if (timelineEntries()[0]; as latest) {
           <section class="detail-card">
             <h3 class="card-title">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -476,14 +457,14 @@
               Estado de la Orden
             </h3>
             <div class="current-status-row">
-              <span class="status-badge" [ngClass]="getStatusClass(o.statusHistory[o.statusHistory.length - 1].status)">
-                {{ getStatusLabel(o.statusHistory[o.statusHistory.length - 1].status) }}
-              </span>
-              <p class="current-status-description">{{ getStatusDescription(o.statusHistory[o.statusHistory.length - 1].status) }}</p>
-              @if (o.statusHistory[o.statusHistory.length - 1].note) {
-                <span class="current-status-note">{{ o.statusHistory[o.statusHistory.length - 1].note }}</span>
+              <span class="status-badge" [ngClass]="latest.colorClass">{{ latest.label }}</span>
+              @if (latest.description) {
+                <p class="current-status-description">{{ latest.description }}</p>
               }
-              <span class="current-status-date">{{ formatDate(o.statusHistory[o.statusHistory.length - 1].timestamp) }}</span>
+              @if (latest.note) {
+                <span class="current-status-note">{{ latest.note }}</span>
+              }
+              <span class="current-status-date">{{ formatDate(latest.timestamp) }}</span>
             </div>
           </section>
         }

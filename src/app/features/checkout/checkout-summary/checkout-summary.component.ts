@@ -26,6 +26,7 @@ import {
 import { CopyableValueComponent } from '../../../shared/components/copyable-value/copyable-value.component';
 import { DateInputComponent } from '../../../shared/components/date-input/date-input.component';
 import { ServiceDatePickerComponent } from '../../../shared/components/service-date-picker/service-date-picker.component';
+import { ClipboardService } from '../../../shared/services/clipboard.service';
 
 @Component({
   selector: 'app-checkout-summary',
@@ -47,8 +48,13 @@ export class CheckoutSummaryComponent implements OnInit {
   private readonly productService = inject(ProductService);
   private readonly router = inject(Router);
   protected readonly exchangeRateService = inject(ExchangeRateService);
+  private readonly clipboard = inject(ClipboardService);
 
   protected readonly todayStr = new Date().toISOString().split('T')[0];
+
+  // Transient "Copiado" feedback for the "Copiar todo" action (1.5s).
+  protected readonly copiedAll = signal(false);
+  private copyAllTimeout: ReturnType<typeof setTimeout> | null = null;
 
   // State signals
   protected readonly isGenerating = signal(false);
@@ -614,6 +620,67 @@ export class CheckoutSummaryComponent implements OnInit {
     const symbol = this.getCurrencySymbol(type);
     const formatted = amount.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     return `${symbol} ${formatted}`;
+  }
+
+  // ========== Copyable payment amounts ==========
+
+  /** Raw USD total as a paste-ready decimal string (no currency symbol). */
+  protected totalUsdRaw(): string {
+    return this.total.toFixed(2);
+  }
+
+  /** Raw Bs total as a paste-ready decimal string, or '' when rate unavailable. */
+  protected totalBsRaw(): string {
+    const bs = this.exchangeRateService.convertToBs(this.total);
+    return bs !== null ? bs.toFixed(2) : '';
+  }
+
+  /**
+   * Builds a human-readable payment-details block that consolidates the
+   * selected account info + the amount due. Output shape (example):
+   *
+   *   Banco: Banesco
+   *   Teléfono: 0412-1234567
+   *   Cédula: V-12345678
+   *   Monto: 1234.56 Bs
+   */
+  private buildPaymentSummary(): string {
+    const method = this.selectedMethodInModal();
+    const group = this.selectedGroup();
+    if (!method || !group) return '';
+
+    const lines: string[] = [];
+
+    if (method.type === 'pago_movil' && method.pagoMovil) {
+      lines.push(`Banco: ${method.pagoMovil.bankName}`);
+      lines.push(`Teléfono: ${method.pagoMovil.phoneNumber}`);
+      lines.push(`Cédula: ${method.pagoMovil.documentId}`);
+    } else if (method.type === 'transferencia' && method.transferencia) {
+      lines.push(`Banco: ${method.transferencia.bankName}`);
+      lines.push(`Cuenta: ${method.transferencia.accountNumber}`);
+      lines.push(`Cédula: ${method.transferencia.documentId}`);
+    }
+
+    if (group.type === 'pago_movil' || group.type === 'transferencia') {
+      const bs = this.totalBsRaw();
+      if (bs) lines.push(`Monto: ${bs} Bs`);
+    } else {
+      lines.push(`Monto: ${this.totalUsdRaw()} USD`);
+    }
+
+    return lines.join('\n');
+  }
+
+  async copyAllPaymentDetails(): Promise<void> {
+    const text = this.buildPaymentSummary();
+    if (!text) return;
+
+    const ok = await this.clipboard.write(text);
+    if (!ok) return;
+
+    this.copiedAll.set(true);
+    if (this.copyAllTimeout) clearTimeout(this.copyAllTimeout);
+    this.copyAllTimeout = setTimeout(() => this.copiedAll.set(false), 1500);
   }
 
   isFormType(type: PaymentMethodType): boolean {

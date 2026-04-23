@@ -273,7 +273,12 @@ import { UserNotification } from '../../../models/user-notification.model';
       &.icon-box { @apply bg-indigo-100 dark:bg-indigo-900/30; svg { @apply text-indigo-600; } }
     }
     .detail-title { @apply text-base font-semibold text-gray-900 dark:text-white mb-2; }
-    .detail-message { @apply text-sm text-gray-600 dark:text-gray-400 mb-3; }
+    .detail-message {
+      @apply text-sm text-gray-600 dark:text-gray-400 mb-3 leading-relaxed;
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
     .detail-time { @apply text-xs text-gray-400 dark:text-gray-500 mb-6; }
     .detail-btn {
       @apply px-6 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors;

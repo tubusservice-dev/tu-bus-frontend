@@ -79,6 +79,7 @@ export interface SupportContactConfig {
   lastName: string;
   phone: string;
   email: string;
+  whatsapp: string;
 }
 
 export interface AdminNotificationsConfig {
@@ -172,6 +173,7 @@ export const DEFAULT_SETTINGS: Settings = {
     lastName: '',
     phone: '',
     email: '',
+    whatsapp: '',
   },
   adminNotifications: {
     newOrder: true,

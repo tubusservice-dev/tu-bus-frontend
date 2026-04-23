@@ -17,7 +17,7 @@ import { AuthService } from '../../core/services/auth.service';
             <p class="text-gray-600 mb-4">{{ error }}</p>
             <button
               (click)="goHome()"
-              class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+              class="px-4 py-2 bg-blue-900 text-white rounded-lg hover:bg-blue-950 transition-colors">
               Volver al inicio
             </button>
           </div>

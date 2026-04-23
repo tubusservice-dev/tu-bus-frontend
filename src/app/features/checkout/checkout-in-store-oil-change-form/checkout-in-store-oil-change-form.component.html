@@ -86,7 +86,13 @@
         }
 
         @if (checkoutService.selectedVehicles().length === 0 && vehicles().length > 0) {
-          <p class="vehicle-hint-required">Selecciona al menos un vehículo para continuar.</p>
+          <p
+            class="vehicle-hint-required field-error-anchor"
+            [class.error-message]="submitAttempted()"
+            tabindex="-1"
+          >
+            Selecciona al menos un vehículo para continuar.
+          </p>
         }
 
         <!-- Vehicle ↔ Product compatibility warning (non-blocking) -->
@@ -124,7 +130,6 @@
       <button
         type="button"
         class="btn-continue"
-        [disabled]="checkoutService.selectedVehicles().length === 0"
         (click)="onContinue()"
       >
         Continuar al Resumen

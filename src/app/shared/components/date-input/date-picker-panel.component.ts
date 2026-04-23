@@ -933,11 +933,28 @@ export class DatePickerPanelComponent {
         this.viewMonth.set(date.getMonth());
         this.viewYear.set(date.getFullYear());
       } else {
-        const today = new Date();
-        this.viewMonth.set(today.getMonth());
-        this.viewYear.set(today.getFullYear());
+        // Anchor viewport to today, clamped into [min, max] so bounded pickers
+        // never open on a fully-disabled month (e.g. age-gated birth date).
+        const anchor = this.computeInitialAnchor();
+        this.viewMonth.set(anchor.getMonth());
+        this.viewYear.set(anchor.getFullYear());
       }
     });
+  }
+
+  private computeInitialAnchor(): Date {
+    const today = new Date();
+    const todayIsoStr = formatIsoLocal(today);
+    const maxBound = this.max();
+    const minBound = this.min();
+
+    if (maxBound && compareIso(todayIsoStr, maxBound) > 0) {
+      return parseIsoLocal(maxBound) ?? today;
+    }
+    if (minBound && compareIso(todayIsoStr, minBound) < 0) {
+      return parseIsoLocal(minBound) ?? today;
+    }
+    return today;
   }
 
   @HostListener('document:keydown.escape')

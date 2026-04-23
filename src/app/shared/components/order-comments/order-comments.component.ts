@@ -1,0 +1,193 @@
+import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
+import { CommonModule, DatePipe } from '@angular/common';
+import { OrderComment, Order } from '../../../models/order.model';
+import { OrderService } from '../../../core/services/order.service';
+
+/**
+ * Chat-like comment thread between client and admin for a single order.
+ *
+ * Shared between the admin order-detail and the client order-detail. The
+ * `mode` input decides which endpoint to call when posting and which side
+ * gets a special styling on the message bubble.
+ *
+ * Emits `commentsUpdated` with the updated order so the parent can sync its
+ * own state (signal or reload).
+ */
+@Component({
+  selector: 'app-order-comments',
+  standalone: true,
+  imports: [CommonModule, DatePipe],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <section class="comments-card">
+      <header class="comments-header">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="comments-icon" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 9.75a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375m-13.5 3.01c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />
+        </svg>
+        <h3>Comentarios</h3>
+      </header>
+
+      @if (comments().length === 0) {
+        <p class="comments-empty">Aún no hay comentarios en esta orden. Sé el primero en escribir.</p>
+      } @else {
+        <ul class="comments-list">
+          @for (c of comments(); track c._id || c.createdAt) {
+            <li class="comment-item" [class.is-admin]="c.authorType === 'admin'">
+              <div class="comment-head">
+                <span class="comment-author">{{ c.authorName }}</span>
+                <span class="comment-date">{{ c.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
+              </div>
+              <p class="comment-body">{{ c.message }}</p>
+            </li>
+          }
+        </ul>
+      }
+
+      <div class="comments-form">
+        <textarea
+          class="comments-textarea"
+          rows="3"
+          maxlength="1000"
+          placeholder="Escribe un comentario…"
+          [value]="draftMessage()"
+          (input)="draftMessage.set($any($event.target).value); sendError.set(null)"
+        ></textarea>
+        <div class="comments-form-footer">
+          @if (sendError()) {
+            <span class="comments-error">{{ sendError() }}</span>
+          } @else {
+            <span class="comments-count">{{ draftMessage().length }}/1000</span>
+          }
+          <button
+            type="button"
+            class="comments-send-btn"
+            [disabled]="!canSend() || isSending()"
+            (click)="send()"
+          >
+            @if (isSending()) { Enviando… } @else { Enviar comentario }
+          </button>
+        </div>
+      </div>
+    </section>
+  `,
+  styles: [`
+    .comments-card {
+      @apply rounded-xl border bg-white dark:bg-gray-800 dark:border-gray-700;
+      border-color: #e5e7eb;
+    }
+    .comments-header {
+      @apply flex items-center gap-2 px-5 sm:px-6 py-3 text-sm font-semibold border-b rounded-t-xl;
+      @apply text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700;
+      h3 { @apply m-0 text-sm font-semibold; }
+    }
+    .comments-icon { @apply w-5 h-5 text-blue-600 dark:text-blue-400; }
+
+    .comments-empty {
+      @apply px-5 sm:px-6 py-6 text-sm italic text-gray-500 dark:text-gray-400 m-0 text-center;
+    }
+
+    .comments-list {
+      @apply flex flex-col gap-3 px-4 sm:px-5 py-4 m-0 list-none;
+      max-height: 360px;
+      overflow-y: auto;
+    }
+
+    .comment-item {
+      @apply flex flex-col gap-1 p-3 rounded-lg border;
+      @apply bg-gray-50 border-gray-200 dark:bg-gray-900/40 dark:border-gray-700;
+      border-left-width: 3px;
+      border-left-color: #9ca3af;
+
+      &.is-admin {
+        @apply bg-blue-50/60 dark:bg-blue-900/15;
+        border-left-color: #2563eb;
+      }
+    }
+    :host-context(.dark) .comment-item.is-admin { border-left-color: #60a5fa; }
+
+    .comment-head {
+      @apply flex items-center justify-between gap-2 flex-wrap;
+    }
+    .comment-author {
+      @apply text-xs font-semibold text-gray-900 dark:text-white;
+    }
+    .comment-date {
+      @apply text-[11px] text-gray-500 dark:text-gray-400;
+    }
+    .comment-body {
+      @apply text-sm text-gray-700 dark:text-gray-200 m-0 leading-relaxed;
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    .comments-form {
+      @apply flex flex-col gap-2 px-4 sm:px-5 py-4 border-t border-gray-100 dark:border-gray-700/50;
+    }
+    .comments-textarea {
+      @apply w-full px-3 py-2 text-sm rounded-lg resize-y;
+      @apply bg-white border border-gray-300 text-gray-900 placeholder-gray-400;
+      @apply dark:bg-gray-900 dark:border-gray-600 dark:text-white dark:placeholder-gray-500;
+      @apply focus:outline-none focus:ring-2 focus:border-transparent;
+      min-height: 70px;
+      &:focus { --tw-ring-color: var(--accent-primary, #2563eb); }
+    }
+    .comments-form-footer {
+      @apply flex items-center justify-between gap-3;
+    }
+    .comments-count {
+      @apply text-[11px] text-gray-400 dark:text-gray-500;
+    }
+    .comments-error {
+      @apply text-xs text-red-600 dark:text-red-400 font-medium;
+    }
+    .comments-send-btn {
+      @apply px-4 py-2 text-xs font-semibold rounded-md text-white;
+      @apply bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors;
+    }
+  `],
+})
+export class OrderCommentsComponent {
+  private readonly orderService = inject(OrderService);
+
+  readonly orderId = input.required<string>();
+  readonly comments = input.required<OrderComment[]>();
+  readonly mode = input.required<'client' | 'admin'>();
+
+  readonly commentsUpdated = output<Order>();
+
+  protected readonly draftMessage = signal('');
+  protected readonly isSending = signal(false);
+  protected readonly sendError = signal<string | null>(null);
+
+  protected canSend(): boolean {
+    return this.draftMessage().trim().length > 0 && this.draftMessage().length <= 1000;
+  }
+
+  protected send(): void {
+    if (!this.canSend() || this.isSending()) return;
+
+    const id = this.orderId();
+    const msg = this.draftMessage().trim();
+    const isAdmin = this.mode() === 'admin';
+
+    this.isSending.set(true);
+    this.sendError.set(null);
+
+    const req$ = isAdmin
+      ? this.orderService.addCommentAsAdmin(id, msg)
+      : this.orderService.addCommentAsClient(id, msg);
+
+    req$.subscribe({
+      next: (res) => {
+        this.isSending.set(false);
+        this.draftMessage.set('');
+        this.commentsUpdated.emit(res.data as Order);
+      },
+      error: (err) => {
+        this.isSending.set(false);
+        this.sendError.set(err?.error?.message || 'No se pudo enviar el comentario. Intenta de nuevo.');
+      },
+    });
+  }
+}

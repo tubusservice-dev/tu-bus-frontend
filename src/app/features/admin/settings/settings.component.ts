@@ -150,7 +150,7 @@ export class SettingsComponent implements OnInit {
 
     this.floatingStatsForm = this.fb.group({
       stat1: this.fb.group({
-        value: ['500', [Validators.required, Validators.pattern(/^[0-9]{1,3}$/)]],
+        value: ['500', [Validators.required, Validators.pattern(/^[0-9]{1,4}$/)]],
         isVisible: [true],
       }),
       stat2: this.fb.group({
@@ -204,7 +204,7 @@ export class SettingsComponent implements OnInit {
       firstName: ['', [Validators.required, Validators.maxLength(20)]],
       lastName: ['', [Validators.required, Validators.maxLength(20)]],
       phone: ['', [Validators.required, Validators.pattern(/^04\d{2}-?\d{7}$/)]],
-      email: ['', [Validators.required, Validators.email, Validators.maxLength(50)]],
+      whatsapp: ['', [Validators.pattern(/^(?:\+?\d{1,3})?[\s-]?\d{10,11}$/), Validators.maxLength(20)]],
     });
 
     this.adminNotificationsForm = this.fb.group({

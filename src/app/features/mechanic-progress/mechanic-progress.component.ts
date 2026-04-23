@@ -184,17 +184,26 @@ export class MechanicProgressComponent implements OnInit {
     this.activePhonePopover.set(null);
   }
 
+  /** Strip non-digits and normalize to international (58...) form.
+   *  Accepts local `04XXXXXXXXXX`, international `+58412...` or bare digits. */
+  private toInternationalDigits(phone: string): string {
+    const digits = (phone || '').replace(/\D/g, '');
+    if (!digits) return '';
+    if (digits.startsWith('0')) return '58' + digits.substring(1);
+    return digits;
+  }
+
   openWhatsApp(phone: string): void {
-    const cleaned = phone.replace(/-/g, '');
-    const international = '58' + cleaned.substring(1);
+    const international = this.toInternationalDigits(phone);
+    if (!international) return;
     window.open(`https://wa.me/${international}`, '_blank');
     this.activePhonePopover.set(null);
   }
 
   callPhone(phone: string): void {
-    const cleaned = phone.replace(/-/g, '');
-    const international = '+58' + cleaned.substring(1);
-    window.open(`tel:${international}`, '_self');
+    const international = this.toInternationalDigits(phone);
+    if (!international) return;
+    window.open(`tel:+${international}`, '_self');
     this.activePhonePopover.set(null);
   }
 

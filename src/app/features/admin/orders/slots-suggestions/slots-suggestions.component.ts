@@ -207,10 +207,6 @@ import {
       background: rgba(234, 179, 8, 0.05);
     }
     .slot-chip.slot-past     { border-color: rgba(107, 114, 128, 0.3); }
-    .slot-chip.slot-booked .slot-time,
-    .slot-chip.slot-past .slot-time {
-      text-decoration: line-through;
-    }
     .slot-time {
       font-size: 0.75rem;
       font-weight: 600;
