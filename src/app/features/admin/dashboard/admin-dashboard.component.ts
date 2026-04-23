@@ -44,6 +44,7 @@ export class AdminDashboardComponent {
       icon: 'users',
       route: '/admin/users',
       color: 'blue',
+      disabled: true,
     },
     {
       title: 'Productos',

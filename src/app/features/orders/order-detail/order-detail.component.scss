@@ -4,6 +4,11 @@
 
 .order-detail-page {
   @apply max-w-6xl mx-auto px-4 py-6;
+  // Safety net: contain any inner overflow so low-width viewports
+  // (iPhone SE 1st gen @320px, older Androids @360px) never produce
+  // horizontal scroll on the body.
+  min-width: 0;
+  overflow-x: hidden;
 }
 
 // ============================================
@@ -25,10 +30,13 @@
 
 .header-info {
   @apply flex items-center gap-3 flex-wrap;
+  min-width: 0;
 }
 
 .page-title {
   @apply text-xl sm:text-2xl font-bold text-gray-900 dark:text-white m-0;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .header-actions {
@@ -117,10 +125,11 @@
 }
 
 .card-title {
-  @apply flex items-center gap-2 px-4 sm:px-5 py-3 text-sm font-semibold border-b;
+  @apply flex items-center flex-wrap gap-2 px-4 sm:px-5 py-3 text-sm font-semibold border-b;
   @apply text-gray-700 bg-gray-50 border-gray-200;
   border-top-left-radius: 0.75rem;
   border-top-right-radius: 0.75rem;
+  min-width: 0;
 
   :host-context(.dark) & {
     @apply text-gray-200;
@@ -133,6 +142,13 @@
     color: #3b82f6;
 
     :host-context(.dark) & { color: #60a5fa; }
+  }
+
+  // Title text may be long on narrow screens; let it wrap instead of
+  // pushing the adjacent badge off the card.
+  > span {
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
 }
 
@@ -169,7 +185,11 @@
   @apply text-xs text-gray-500 dark:text-gray-400;
 }
 .mechanic-identity-name {
-  @apply text-base font-semibold text-gray-900 dark:text-white truncate;
+  @apply text-base font-semibold text-gray-900 dark:text-white;
+  // Long names wrap to a second line on narrow viewports rather than
+  // getting silently truncated with an ellipsis.
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .info-row {
@@ -189,6 +209,12 @@
 
 .info-value {
   @apply text-xs sm:text-sm text-gray-900 dark:text-gray-100 text-right;
+  // Allow the value to shrink inside the flex row and to break long,
+  // space-less tokens (bank references, dense addresses, mono IDs).
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 
   &.mono { font-family: monospace; }
   &.fw-600 { font-weight: 600; }
@@ -251,6 +277,8 @@
 
 .total-row-values {
   @apply flex flex-col items-end;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .total-row-bs {
@@ -336,7 +364,12 @@
 // ============================================
 // SECCIÓN MECÁNICO — Popover de teléfono
 // ============================================
-.info-row-phone { @apply relative; }
+.info-row-phone {
+  @apply relative flex-wrap;
+  // On narrow viewports the "Teléfono" label + phone button may not fit
+  // on the same line — allow the button to wrap to a new line.
+  row-gap: 0.5rem;
+}
 
 .mechanic-phone-wrapper { @apply relative; }
 
@@ -344,6 +377,8 @@
   @apply inline-flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-colors;
   @apply bg-blue-50 text-blue-600 border border-blue-200;
   @apply hover:bg-blue-100 active:bg-blue-200;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 
   :host-context(.dark) & {
     @apply text-blue-400 border-blue-800;
@@ -826,7 +861,7 @@
 // CLIENT DISCLAIMER ACKNOWLEDGMENT CARD
 // ============================================
 .disclaimer-accepted-block {
-  @apply flex flex-col gap-2 px-5 sm:px-6 py-4;
+  @apply flex flex-col gap-2 px-4 sm:px-5 py-4;
 }
 
 .disclaimer-accepted-badge {

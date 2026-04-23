@@ -1,0 +1,249 @@
+.user-list-page {
+  @apply space-y-6;
+}
+
+.page-header {
+  @apply space-y-4;
+}
+
+.header-content {
+  @apply flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4;
+}
+
+.page-title {
+  @apply text-2xl font-bold text-gray-900 dark:text-white;
+}
+
+.page-subtitle {
+  @apply text-sm text-gray-500 dark:text-gray-400;
+}
+
+.filters-row {
+  @apply flex flex-col lg:flex-row lg:items-end gap-4;
+}
+
+.search-box {
+  @apply flex-1 min-w-0;
+}
+
+.selectors {
+  @apply flex flex-wrap gap-3;
+}
+
+.selector {
+  @apply flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400;
+
+  select {
+    @apply min-w-[9rem] px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white;
+    @apply focus:outline-none focus:ring-2 focus:border-transparent;
+    &:focus { --tw-ring-color: var(--accent-primary); }
+  }
+}
+
+.status-chips {
+  @apply flex flex-wrap gap-2;
+}
+
+.chip {
+  @apply px-3 py-1.5 text-sm rounded-full border transition-colors;
+  @apply border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800;
+  @apply hover:bg-gray-50 dark:hover:bg-gray-700/60;
+
+  &.active {
+    @apply text-white border-transparent;
+    background-color: var(--accent-primary);
+  }
+}
+
+// Estados
+.loading-state {
+  @apply flex flex-col items-center justify-center py-16 text-gray-500 dark:text-gray-400;
+
+  .spinner {
+    @apply w-10 h-10 border-4 border-gray-200 dark:border-gray-700 border-t-blue-600 rounded-full animate-spin mb-4;
+  }
+}
+
+.error-state {
+  @apply flex flex-col items-center justify-center py-12 gap-3 text-red-600 dark:text-red-400;
+}
+
+.empty-state {
+  @apply flex flex-col items-center justify-center py-16 text-center;
+
+  svg {
+    @apply w-16 h-16 text-gray-300 dark:text-gray-600 mb-4;
+  }
+
+  h3 {
+    @apply text-xl font-semibold text-gray-900 dark:text-white mb-2;
+  }
+
+  p {
+    @apply text-gray-500 dark:text-gray-400;
+  }
+}
+
+// Tabla
+.table-container {
+  @apply bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden overflow-x-auto;
+}
+
+.data-table {
+  @apply w-full text-sm;
+
+  thead {
+    @apply bg-gray-50 dark:bg-gray-700/50;
+  }
+
+  th {
+    @apply text-left font-semibold text-gray-600 dark:text-gray-300 px-4 py-3 whitespace-nowrap;
+    &.num { @apply text-right; }
+    &.actions-head { @apply text-right; }
+  }
+
+  tbody tr {
+    @apply border-t border-gray-100 dark:border-gray-700 cursor-pointer transition-colors;
+    @apply hover:bg-gray-50 dark:hover:bg-gray-700/40;
+
+    &.blocked-row {
+      @apply opacity-75;
+    }
+  }
+
+  td {
+    @apply px-4 py-3 text-gray-800 dark:text-gray-200 align-middle;
+    &.num { @apply text-right; }
+  }
+}
+
+.user-cell {
+  @apply flex items-center gap-3;
+
+  .avatar {
+    @apply w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-700;
+  }
+
+  .user-text {
+    @apply flex flex-col;
+
+    .user-name {
+      @apply font-medium text-gray-900 dark:text-white;
+    }
+
+    .user-sub {
+      @apply text-xs text-gray-500 dark:text-gray-400;
+    }
+  }
+}
+
+.contact-cell {
+  @apply flex flex-col text-sm;
+  .muted { @apply text-gray-400 dark:text-gray-500 text-xs; }
+}
+
+.muted {
+  @apply text-gray-400 dark:text-gray-500;
+}
+
+.status-badge {
+  @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium;
+
+  &.badge-green { @apply bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300; }
+  &.badge-yellow { @apply bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300; }
+  &.badge-red { @apply bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300; }
+  &.badge-gray { @apply bg-gray-200 text-gray-600 dark:bg-gray-600/30 dark:text-gray-300; }
+}
+
+.actions-cell {
+  @apply text-right;
+}
+
+// Paginación
+.pagination {
+  @apply flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-4 px-2;
+}
+
+.pagination-info {
+  @apply text-sm text-gray-500 dark:text-gray-400;
+}
+
+.pagination-buttons {
+  @apply flex items-center gap-1;
+}
+
+.btn-page {
+  @apply inline-flex items-center justify-center w-9 h-9 text-sm rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 transition-colors;
+  @apply hover:bg-gray-50 dark:hover:bg-gray-700/60;
+  @apply disabled:opacity-50 disabled:cursor-not-allowed;
+
+  &.active {
+    @apply text-white border-transparent;
+    background-color: var(--accent-primary);
+  }
+}
+
+.btn-primary {
+  @apply inline-flex items-center gap-2 px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors;
+  background-color: var(--accent-primary);
+  &:hover { background-color: var(--accent-hover, rgb(0, 20, 60)); }
+}
+
+// Modal
+.modal-overlay {
+  @apply fixed inset-0 z-50 flex items-center justify-center p-4;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+  @apply w-full max-w-md p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xl;
+}
+
+.modal-title {
+  @apply text-lg font-semibold text-gray-900 dark:text-white mb-2;
+}
+
+.modal-message {
+  @apply text-sm text-gray-600 dark:text-gray-300 mb-4;
+}
+
+.form-field {
+  @apply flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-200 mb-3;
+
+  em {
+    @apply text-red-500 not-italic;
+  }
+
+  textarea, input {
+    @apply w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg;
+    @apply text-gray-900 dark:text-white placeholder-gray-400;
+    @apply focus:outline-none focus:ring-2 focus:border-transparent;
+    &:focus { --tw-ring-color: var(--accent-primary); }
+  }
+}
+
+.form-error {
+  @apply text-sm text-red-500 mb-3;
+}
+
+.modal-actions {
+  @apply flex justify-end gap-2 mt-4;
+}
+
+.btn-modal-cancel {
+  @apply px-4 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800;
+  @apply hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors;
+  @apply disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.btn-modal-confirm {
+  @apply px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors;
+  background-color: var(--accent-primary);
+  &:hover { background-color: var(--accent-hover, rgb(0, 20, 60)); }
+  @apply disabled:opacity-60 disabled:cursor-not-allowed;
+
+  &.danger {
+    @apply bg-red-600;
+    &:hover { @apply bg-red-700; }
+  }
+}

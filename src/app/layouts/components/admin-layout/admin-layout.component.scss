@@ -67,6 +67,11 @@
       color: var(--accent-primary);
     }
   }
+
+  &.disabled {
+    @apply opacity-40 cursor-not-allowed;
+    @apply hover:bg-transparent dark:hover:bg-transparent;
+  }
 }
 
 // Notification badge

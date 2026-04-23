@@ -23,11 +23,14 @@
     <nav class="sidebar-nav">
       @for (item of menuItems; track item.route) {
         <a
-          [routerLink]="item.route"
+          [routerLink]="$any(item).disabled ? null : item.route"
           routerLinkActive="active"
           [routerLinkActiveOptions]="{ exact: item.exact }"
           class="nav-item"
-          (click)="closeSidebar()"
+          [class.disabled]="$any(item).disabled"
+          [attr.aria-disabled]="$any(item).disabled ? 'true' : null"
+          [attr.title]="$any(item).disabled ? 'Próximamente' : null"
+          (click)="$any(item).disabled ? $event.preventDefault() : closeSidebar()"
         >
           <!-- Iconos SVG según el tipo -->
           @switch (item.icon) {

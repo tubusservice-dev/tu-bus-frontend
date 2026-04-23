@@ -1,6 +1,13 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { AuthService } from '../../core/services/auth.service';
+import { AccountBlockedCode, AuthService } from '../../core/services/auth.service';
+
+const BLOCK_CODES: ReadonlySet<string> = new Set<string>([
+  'ACCOUNT_BLOCKED',
+  'ACCOUNT_SUSPENDED',
+  'ACCOUNT_DELETED',
+  'ACCOUNT_NOT_FOUND',
+]);
 
 @Component({
   selector: 'app-auth-callback',
@@ -43,7 +50,17 @@ export class AuthCallbackComponent implements OnInit {
     const errorParam = this.route.snapshot.queryParamMap.get('error');
 
     if (errorParam) {
-      this.error = 'No se pudo iniciar sesión con Google. Por favor, intenta de nuevo.';
+      // OAuth account-blocked errors should appear as the global modal instead
+      // of an inline page — consistent UX with the login form flow.
+      if (BLOCK_CODES.has(errorParam)) {
+        this.authService.notifyAccountBlocked(
+          errorParam as AccountBlockedCode,
+          this.messageForError(errorParam)
+        );
+        this.router.navigate(['/']);
+        return;
+      }
+      this.error = this.messageForError(errorParam);
       return;
     }
 
@@ -68,5 +85,20 @@ export class AuthCallbackComponent implements OnInit {
 
   goHome(): void {
     this.router.navigate(['/']);
+  }
+
+  private messageForError(code: string): string {
+    switch (code) {
+      case 'ACCOUNT_BLOCKED':
+        return 'Tu cuenta está bloqueada. Contacta al soporte para más información.';
+      case 'ACCOUNT_SUSPENDED':
+        return 'Tu cuenta está suspendida. No puedes iniciar sesión en este momento.';
+      case 'ACCOUNT_DELETED':
+        return 'Esta cuenta ya no existe.';
+      case 'ACCOUNT_NOT_FOUND':
+        return 'No se encontró una cuenta asociada.';
+      default:
+        return 'No se pudo iniciar sesión. Por favor, intenta de nuevo.';
+    }
   }
 }

@@ -23,6 +23,7 @@ import {
   SearchableSelectComponent,
   SearchableOption,
 } from '../../../../shared/components/searchable-select/searchable-select.component';
+import { ToastService } from '../../../../shared/services/toast.service';
 
 @Component({
   selector: 'app-product-form',
@@ -44,6 +45,7 @@ export class ProductFormComponent implements OnInit {
   private readonly elementRef = inject(ElementRef);
   private readonly branchProductService = inject(BranchProductService);
   private readonly branchService = inject(BranchService);
+  private readonly toastService = inject(ToastService);
 
   // Estado
   protected readonly productId = signal<string | null>(null);
@@ -443,10 +445,26 @@ export class ProductFormComponent implements OnInit {
         this.saveBranchProducts(productId);
       },
       error: (error) => {
-        this.errorMessage.set(error.error?.message || 'Error al guardar producto');
+        const msg = error.error?.message || 'Error al guardar producto';
+        this.errorMessage.set(msg);
+        this.toastService.error(msg);
         this.isSubmitting.set(false);
       },
     });
+  }
+
+  /**
+   * Fire a success toast + navigate back. Called from every terminal branch
+   * of the product save flow so the user always gets feedback, no matter
+   * which combination of branch-product operations ran.
+   */
+  private finishProductSave(): void {
+    this.toastService.success(
+      this.isEditMode()
+        ? 'Producto actualizado exitosamente'
+        : 'Producto creado exitosamente',
+    );
+    this.location.back();
   }
 
   /**
@@ -624,21 +642,21 @@ export class ProductFormComponent implements OnInit {
           if (newAssignments.length > 0) {
             this.createNewBranchProducts(productId);
           } else {
-            this.location.back();
+            this.finishProductSave();
           }
         },
         error: () => {
           if (newAssignments.length > 0) {
             this.createNewBranchProducts(productId);
           } else {
-            this.location.back();
+            this.finishProductSave();
           }
         },
       });
     } else if (newAssignments.length > 0) {
       this.createNewBranchProducts(productId);
     } else {
-      this.location.back();
+      this.finishProductSave();
     }
   }
 
@@ -654,8 +672,8 @@ export class ProductFormComponent implements OnInit {
       })),
     };
     this.branchProductService.createBatch(data).subscribe({
-      next: () => this.location.back(),
-      error: () => this.location.back(),
+      next: () => this.finishProductSave(),
+      error: () => this.finishProductSave(),
     });
   }
 

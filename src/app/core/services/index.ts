@@ -9,6 +9,7 @@ export * from './auth.service';
 export * from './user.service';
 export * from './upload.service';
 export * from './admin.service';
+export * from './admin-user.service';
 export * from './product.service';
 export * from './line.service';
 export * from './category.service';

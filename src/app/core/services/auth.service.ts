@@ -1,5 +1,5 @@
 import { Injectable, signal, computed } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, tap, catchError, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -18,6 +18,25 @@ const CLIENT_USER_KEY = 'auth_user';
 const ADMIN_TOKEN_KEY = 'admin_auth_token';
 const ADMIN_USER_KEY = 'admin_auth_user';
 
+export type AccountBlockedCode =
+  | 'ACCOUNT_BLOCKED'
+  | 'ACCOUNT_SUSPENDED'
+  | 'ACCOUNT_DELETED'
+  | 'ACCOUNT_NOT_FOUND';
+
+export interface AccountBlockedInfo {
+  code: AccountBlockedCode;
+  message: string;
+  reason?: string;
+}
+
+const BLOCK_CODES: ReadonlySet<AccountBlockedCode> = new Set<AccountBlockedCode>([
+  'ACCOUNT_BLOCKED',
+  'ACCOUNT_SUSPENDED',
+  'ACCOUNT_DELETED',
+  'ACCOUNT_NOT_FOUND',
+]);
+
 @Injectable({
   providedIn: 'root',
 })
@@ -29,6 +48,42 @@ export class AuthService {
 
   /** Indica si la sesión expiró (para mostrar mensaje) */
   private readonly sessionExpiredSignal = signal(false);
+
+  /** Información estructurada cuando una cuenta no puede usar el sistema. */
+  private readonly blockedInfoSignal = signal<AccountBlockedInfo | null>(null);
+  readonly blockedInfo = this.blockedInfoSignal.asReadonly();
+
+  /**
+   * Reads an HTTP error and, if its `code` matches a blocked-account status,
+   * raises the global account-blocked modal. Returns true when the modal was
+   * triggered so callers can skip their inline error handling.
+   */
+  triggerAccountBlocked(error: HttpErrorResponse | null | undefined): boolean {
+    const body = error?.error as { code?: string; message?: string; details?: { reason?: string } } | undefined;
+    const code = body?.code;
+    if (!code || !BLOCK_CODES.has(code as AccountBlockedCode)) return false;
+
+    this.blockedInfoSignal.set({
+      code: code as AccountBlockedCode,
+      message: body?.message || 'Tu cuenta no puede acceder al sistema.',
+      reason: body?.details?.reason,
+    });
+    return true;
+  }
+
+  /** Dismisses the account-blocked modal. */
+  clearAccountBlocked(): void {
+    this.blockedInfoSignal.set(null);
+  }
+
+  /**
+   * Raises the blocked-account modal with an explicit code/message, for
+   * callers that don't have a full HttpErrorResponse — e.g. the OAuth
+   * callback decoding the error from query params.
+   */
+  notifyAccountBlocked(code: AccountBlockedCode, message: string, reason?: string): void {
+    this.blockedInfoSignal.set({ code, message, reason });
+  }
 
   /** Controla la visibilidad del modal de auth desde cualquier componente */
   private readonly authModalOpenSignal = signal(false);
@@ -154,7 +209,9 @@ export class AuthService {
 
   /**
    * Maneja la expiración de sesión.
-   * Llamado desde el interceptor cuando recibe un 401.
+   * Llamado desde el interceptor cuando recibe un 401 o un 403 de cuenta bloqueada.
+   * El mensaje específico de bloqueo vive en blockedInfo — este método solo
+   * se encarga de limpiar la sesión local.
    */
   handleSessionExpired(): void {
     const { tokenKey, userKey } = this.getStorageKeys();

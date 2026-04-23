@@ -187,6 +187,12 @@ export class AuthModalComponent implements OnInit, OnDestroy {
       },
       error: (error) => {
         this.isLoading.set(false);
+        // When the account is blocked/suspended/deleted, raise the global
+        // modal and close this form — the inline error is insufficient.
+        if (this.authService.triggerAccountBlocked(error)) {
+          this.closeModal.emit();
+          return;
+        }
         this.errorMessage.set(error.error?.message || 'Error al iniciar sesión. Intenta de nuevo.');
       },
     });

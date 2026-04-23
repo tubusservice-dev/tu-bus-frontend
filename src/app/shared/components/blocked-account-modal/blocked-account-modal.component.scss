@@ -1,0 +1,81 @@
+.blocked-overlay {
+  @apply fixed inset-0 z-[100] flex items-center justify-center p-4;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(2px);
+  animation: overlayFadeIn 150ms ease-out;
+}
+
+.blocked-modal {
+  @apply relative w-full max-w-md p-8 rounded-2xl bg-white dark:bg-gray-800 border shadow-2xl text-center;
+  animation: modalFadeIn 200ms ease-out;
+
+  &.danger {
+    @apply border-red-200 dark:border-red-500/40;
+  }
+
+  &.warning {
+    @apply border-amber-200 dark:border-amber-500/40;
+  }
+}
+
+.blocked-icon {
+  @apply mx-auto mb-4 flex items-center justify-center w-16 h-16 rounded-full;
+
+  svg {
+    @apply w-8 h-8;
+  }
+
+  .danger & {
+    @apply bg-red-100 dark:bg-red-500/15 text-red-600 dark:text-red-400;
+  }
+
+  .warning & {
+    @apply bg-amber-100 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400;
+  }
+}
+
+.blocked-title {
+  @apply text-xl font-bold text-gray-900 dark:text-white mb-2;
+}
+
+.blocked-message {
+  @apply text-sm text-gray-700 dark:text-gray-200 mb-4;
+}
+
+.blocked-reason {
+  @apply text-left p-3 mb-4 rounded-lg bg-gray-50 dark:bg-gray-700/40 border border-gray-200 dark:border-gray-600;
+
+  .reason-label {
+    @apply block text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1;
+  }
+
+  .reason-text {
+    @apply block text-sm text-gray-900 dark:text-white whitespace-pre-wrap break-words;
+  }
+}
+
+.blocked-help {
+  @apply text-xs text-gray-500 dark:text-gray-400 mb-6;
+}
+
+.btn-dismiss {
+  @apply inline-flex items-center justify-center w-full px-4 py-2.5 text-sm font-semibold text-white rounded-lg transition-colors;
+  background-color: var(--accent-primary);
+  &:hover { background-color: var(--accent-hover, rgb(0, 20, 60)); }
+
+  .danger & {
+    @apply bg-red-600 hover:bg-red-700;
+    background-color: #dc2626;
+    &:hover { background-color: #b91c1c; }
+  }
+}
+
+@keyframes overlayFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AdminService } from '../../../../core/services/admin.service';
+import { ToastService } from '../../../../shared/services/toast.service';
 
 @Component({
   selector: 'app-admin-form',
@@ -16,6 +17,7 @@ export class AdminFormComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly adminService = inject(AdminService);
+  private readonly toastService = inject(ToastService);
 
   /** ID del admin (si es edición) */
   protected readonly adminId = signal<string | null>(null);
@@ -108,10 +110,17 @@ export class AdminFormComponent implements OnInit {
 
     request$.subscribe({
       next: () => {
+        this.toastService.success(
+          this.isEditMode()
+            ? 'Administrador actualizado exitosamente'
+            : 'Administrador creado exitosamente',
+        );
         this.router.navigate(['/admin/administrators']);
       },
       error: (error) => {
-        this.errorMessage.set(error.error?.message || 'Error al guardar administrador');
+        const msg = error.error?.message || 'Error al guardar administrador';
+        this.errorMessage.set(msg);
+        this.toastService.error(msg);
         this.isSubmitting.set(false);
       },
     });

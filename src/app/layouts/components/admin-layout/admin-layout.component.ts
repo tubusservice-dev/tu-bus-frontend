@@ -66,6 +66,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
       icon: 'users',
       route: '/admin/users',
       exact: false,
+      disabled: true,
     },
     {
       label: 'Productos',

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { PaymentMethodService } from '../../../../core/services/payment-method.service';
+import { ToastService } from '../../../../shared/services/toast.service';
 import {
   PaymentMethodType,
   PAYMENT_METHOD_TYPE_OPTIONS,
@@ -21,9 +22,10 @@ export class PaymentMethodFormComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly service = inject(PaymentMethodService);
+  private readonly toastService = inject(ToastService);
 
   protected readonly isLoading = signal(false);
-  protected readonly isSaving = signal(false);
+  protected readonly isSubmitting = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly isEditMode = signal(false);
   protected readonly methodId = signal<string | null>(null);
@@ -173,7 +175,7 @@ export class PaymentMethodFormComponent implements OnInit {
       return;
     }
 
-    this.isSaving.set(true);
+    this.isSubmitting.set(true);
     this.errorMessage.set(null);
 
     const rawValue = this.form.getRawValue();
@@ -212,12 +214,19 @@ export class PaymentMethodFormComponent implements OnInit {
 
     request$.subscribe({
       next: () => {
-        this.isSaving.set(false);
+        this.isSubmitting.set(false);
+        this.toastService.success(
+          this.isEditMode()
+            ? 'Método de pago actualizado exitosamente'
+            : 'Método de pago creado exitosamente',
+        );
         this.router.navigate(['/admin/payment-methods']);
       },
       error: (error) => {
-        this.isSaving.set(false);
-        this.errorMessage.set(error.error?.message || 'Error al guardar');
+        this.isSubmitting.set(false);
+        const msg = error.error?.message || 'Error al guardar';
+        this.errorMessage.set(msg);
+        this.toastService.error(msg);
       },
     });
   }

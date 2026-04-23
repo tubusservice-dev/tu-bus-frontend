@@ -230,10 +230,10 @@
         <button
           type="submit"
           class="btn-save"
-          [disabled]="isSaving()"
+          [disabled]="isSubmitting()"
         >
-          @if (isSaving()) {
-            <span class="btn-spinner"></span>
+          @if (isSubmitting()) {
+            <span class="loading-spinner-sm"></span>
             Guardando...
           } @else {
             {{ isEditMode() ? 'Actualizar' : 'Crear' }} Método de Pago
