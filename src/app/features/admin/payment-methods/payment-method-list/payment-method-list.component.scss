@@ -95,6 +95,16 @@
   &[data-type='tarjeta'] {
     @apply bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400;
   }
+
+  // Zelle ships its own brand pill (rect + letter with solid fills) so the
+  // container background is cleared to avoid stacking two coloured shapes.
+  &[data-type='zelle'] {
+    background-color: transparent;
+
+    .card-icon-brand {
+      @apply w-full h-full;
+    }
+  }
 }
 
 .card-title-group {

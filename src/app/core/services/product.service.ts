@@ -120,6 +120,7 @@ export interface DetailProduct {
   brand: { name: string } | null;
   productModel: string;
   freeOilChangeService: boolean;
+  isCombo: boolean;
   /** Aggregated vehicleTypes from all categories — for vehicle-match warnings */
   vehicleTypes?: string[];
 }

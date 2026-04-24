@@ -40,9 +40,20 @@
           <div class="method-card" [class.inactive-card]="!method.isActive">
             <div class="card-header">
               <div class="card-icon" [attr.data-type]="method.type">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path stroke-linecap="round" stroke-linejoin="round" [attr.d]="getTypeIcon(method.type)" />
-                </svg>
+                @if (method.type === 'zelle') {
+                  <!-- Brand pill: Z blanca sobre fondo púrpura. El contrato
+                       `getTypeIcon → path outline` no aplica aquí porque el
+                       logo requiere fill sólido + fondo. Se mantiene inline
+                       para aislar la excepción de los otros 4 tipos. -->
+                  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="card-icon-brand">
+                    <rect x="2" y="2" width="20" height="20" rx="4" fill="#6D1ED4" />
+                    <path d="M8 7h8v1.8L10.2 15H16v2H8v-1.8L13.8 9H8z" fill="#FFFFFF" />
+                  </svg>
+                } @else {
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" [attr.d]="getTypeIcon(method.type)" />
+                  </svg>
+                }
               </div>
               <div class="card-title-group">
                 <h3 class="card-title">{{ method.label }}</h3>

@@ -128,6 +128,13 @@
 .copyright {
   @apply text-sm;
   color: var(--text-tertiary);
+
+  // Mobile: center each wrapped line. `.footer-bottom` already centers the
+  // block via flex, but when the text wraps into two lines the individual
+  // lines keep their default left alignment without this rule.
+  @media (max-width: 639px) {
+    text-align: center;
+  }
 }
 
 

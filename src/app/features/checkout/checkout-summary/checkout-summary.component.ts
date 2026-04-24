@@ -154,6 +154,7 @@ export class CheckoutSummaryComponent implements OnInit {
   // Payment form state
   protected readonly formReferenceNumber = signal('');
   protected readonly formSourceBank = signal('');
+  protected readonly formSenderName = signal('');
   protected readonly formAmount = signal('');
   protected readonly formPaymentDate = signal('');
   protected readonly formProofFile = signal<File | null>(null);
@@ -691,6 +692,9 @@ export class CheckoutSummaryComponent implements OnInit {
       lines.push(`Banco: ${method.transferencia.bankName}`);
       lines.push(`Cuenta: ${method.transferencia.accountNumber}`);
       lines.push(`Cédula: ${method.transferencia.documentId}`);
+    } else if (method.type === 'zelle' && method.zelle) {
+      if (method.zelle.phoneNumber) lines.push(`Teléfono: ${method.zelle.phoneNumber}`);
+      if (method.zelle.email) lines.push(`Correo: ${method.zelle.email}`);
     }
 
     if (group.type === 'pago_movil' || group.type === 'transferencia') {
@@ -758,13 +762,19 @@ export class CheckoutSummaryComponent implements OnInit {
       const bs = this.exchangeRateService.convertToBs(this.total);
       return bs !== null ? bs.toFixed(2) : '';
     }
+    if (type === PaymentMethodType.ZELLE) {
+      // Zelle settles in USD directly — prefill with the order total, no
+      // Bs conversion needed.
+      return this.total.toFixed(2);
+    }
     return '';
   }
 
   /**
    * True when the amount field should be locked. For Bs-based methods it
    * requires a valid exchange rate; when the rate is unavailable we fall back
-   * to editable so the user can still complete the form manually.
+   * to editable so the user can still complete the form manually. Zelle is
+   * always locked because USD is native to the order total.
    */
   protected readonly amountReadonly = computed<boolean>(() => {
     const g = this.selectedGroup();
@@ -772,8 +782,17 @@ export class CheckoutSummaryComponent implements OnInit {
     if (g.type === PaymentMethodType.PAGO_MOVIL || g.type === PaymentMethodType.TRANSFERENCIA) {
       return this.exchangeRateService.convertToBs(this.total) !== null;
     }
+    if (g.type === PaymentMethodType.ZELLE) return true;
     return false;
   });
+
+  /** Label for the reference-number input. Zelle users copy a confirmation
+   *  number from their banking app, so the wording changes to match. */
+  protected referenceLabel(): string {
+    return this.selectedGroup()?.type === PaymentMethodType.ZELLE
+      ? 'Número de confirmación'
+      : 'Número de referencia';
+  }
 
   closeModal(): void {
     this.showModal.set(false);
@@ -791,6 +810,7 @@ export class CheckoutSummaryComponent implements OnInit {
   private resetForm(): void {
     this.formReferenceNumber.set('');
     this.formSourceBank.set('');
+    this.formSenderName.set('');
     this.formAmount.set('');
     this.formPaymentDate.set('');
     this.formProofFile.set(null);
@@ -802,6 +822,7 @@ export class CheckoutSummaryComponent implements OnInit {
     switch (field) {
       case 'referenceNumber': this.formReferenceNumber.set(value); break;
       case 'sourceBank': this.formSourceBank.set(value); break;
+      case 'senderName': this.formSenderName.set(value); break;
       case 'amount': this.formAmount.set(value); break;
       case 'paymentDate': this.formPaymentDate.set(value); break;
     }
@@ -831,6 +852,16 @@ export class CheckoutSummaryComponent implements OnInit {
     }
 
     if (this.isFormType(group.type)) {
+      // Zelle has a distinct field set: no sourceBank (USA banks not listed),
+      // plus a required senderName to match the incoming Zelle notification.
+      if (group.type === PaymentMethodType.ZELLE) {
+        return !!(
+          this.formReferenceNumber().trim() &&
+          this.formSenderName().trim() &&
+          this.formAmount().trim() &&
+          this.formPaymentDate().trim()
+        );
+      }
       return !!(
         this.formReferenceNumber().trim() &&
         this.formSourceBank().trim() &&
@@ -863,9 +894,14 @@ export class CheckoutSummaryComponent implements OnInit {
         return;
       }
       submission.referenceNumber = this.formReferenceNumber().trim();
-      submission.sourceBank = this.formSourceBank().trim();
       submission.amount = parseFloat(this.formAmount()) || 0;
       submission.paymentDate = paymentDate;
+      // Zelle ships senderName instead of sourceBank (no VE banks apply).
+      if (group.type === PaymentMethodType.ZELLE) {
+        submission.senderName = this.formSenderName().trim();
+      } else {
+        submission.sourceBank = this.formSourceBank().trim();
+      }
     }
 
     this.isSubmittingPayment.set(true);

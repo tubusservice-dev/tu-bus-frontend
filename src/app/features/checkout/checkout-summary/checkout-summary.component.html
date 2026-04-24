@@ -702,6 +702,13 @@
                           <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" />
                         </svg>
                       }
+                      <!-- Zelle (brand pill: Z blanca sobre fondo púrpura) -->
+                      @else if (group.type === 'zelle') {
+                        <svg class="pm-icon-brand" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                          <rect x="2" y="2" width="20" height="20" rx="4" fill="#6D1ED4" />
+                          <path d="M8 7h8v1.8L10.2 15H16v2H8v-1.8L13.8 9H8z" fill="#FFFFFF" />
+                        </svg>
+                      }
                     </div>
                     <span class="pm-label">{{ group.label }}</span>
                   </button>
@@ -831,6 +838,13 @@
 
       <!-- Botón Procesar Orden -->
       <div class="summary-actions">
+        @if (!hasDisclaimerConflict()) {
+          @if (!paymentSubmitted() && hasDisclaimerSelection()) {
+            <p class="action-hint">Debes seleccionar un método de pago para continuar</p>
+          } @else if (!hasDisclaimerSelection() && paymentSubmitted()) {
+            <p class="action-hint">Debes seleccionar un disclaimer para continuar</p>
+          }
+        }
         <button type="button" class="btn-generate" (click)="onGenerateOrder()" [disabled]="isGenerating() || !canGenerateOrder()">
           @if (isGenerating()) {
             <span class="spinner-sm"></span>
@@ -842,15 +856,6 @@
             Procesar Orden
           }
         </button>
-        @if (hasDisclaimerConflict()) {
-          <p class="action-hint action-hint-error">
-            No puedes continuar porque marcaste los dos disclaimers. Desmarca uno para proceder.
-          </p>
-        } @else if (!paymentSubmitted() && hasDisclaimerSelection()) {
-          <p class="action-hint">Debes seleccionar un método de pago para continuar</p>
-        } @else if (!hasDisclaimerSelection() && paymentSubmitted()) {
-          <p class="action-hint">Debes seleccionar un disclaimer para continuar</p>
-        }
       </div>
     </div>
   </div>
@@ -888,6 +893,11 @@
                   @if (method.type === 'transferencia' && method.transferencia) {
                     <span class="method-option-detail">{{ method.transferencia.bankName }}</span>
                   }
+                  @if (method.type === 'zelle' && method.zelle) {
+                    <span class="method-option-detail">
+                      {{ method.zelle.phoneNumber || method.zelle.email }}
+                    </span>
+                  }
                 </button>
               }
             </div>
@@ -909,6 +919,15 @@
               <app-copyable-value label="Cuenta" [value]="selectedMethodInModal()!.transferencia!.accountNumber" />
               <app-copyable-value label="Banco" [value]="selectedMethodInModal()!.transferencia!.bankName" [monospace]="false" />
               <app-copyable-value label="Cédula" [value]="selectedMethodInModal()!.transferencia!.documentId" />
+            }
+
+            @if (selectedMethodInModal()!.type === 'zelle' && selectedMethodInModal()!.zelle) {
+              @if (selectedMethodInModal()!.zelle!.phoneNumber) {
+                <app-copyable-value label="Teléfono" [value]="selectedMethodInModal()!.zelle!.phoneNumber!" />
+              }
+              @if (selectedMethodInModal()!.zelle!.email) {
+                <app-copyable-value label="Correo" [value]="selectedMethodInModal()!.zelle!.email!" [monospace]="false" />
+              }
             }
 
             @if (selectedMethodInModal()!.customMessage) {
@@ -970,19 +989,34 @@
             <h4>Datos de tu pago</h4>
 
             <div class="form-group">
-              <label for="referenceNumber">Número de referencia *</label>
+              <label for="referenceNumber">{{ referenceLabel() }} *</label>
               <input type="text" id="referenceNumber" placeholder="Ej: 123456789" [value]="formReferenceNumber()" (input)="onFormInput('referenceNumber', $event)" />
             </div>
 
-            <div class="form-group">
-              <label for="sourceBank">Banco emisor *</label>
-              <select id="sourceBank" [value]="formSourceBank()" (change)="onFormInput('sourceBank', $event)">
-                <option value="">Seleccionar banco...</option>
-                @for (bank of venezuelanBanks; track bank) {
-                  <option [value]="bank">{{ bank }}</option>
-                }
-              </select>
-            </div>
+            @if (selectedGroup()!.type === 'zelle') {
+              <div class="form-group">
+                <label for="senderName">Nombre del titular *</label>
+                <input
+                  type="text"
+                  id="senderName"
+                  placeholder="Nombre completo del remitente"
+                  autocomplete="name"
+                  [value]="formSenderName()"
+                  (input)="onFormInput('senderName', $event)"
+                />
+                <span class="form-hint">Tal como aparece en la cuenta desde la que envías el Zelle.</span>
+              </div>
+            } @else {
+              <div class="form-group">
+                <label for="sourceBank">Banco emisor *</label>
+                <select id="sourceBank" [value]="formSourceBank()" (change)="onFormInput('sourceBank', $event)">
+                  <option value="">Seleccionar banco...</option>
+                  @for (bank of venezuelanBanks; track bank) {
+                    <option [value]="bank">{{ bank }}</option>
+                  }
+                </select>
+              </div>
+            }
 
             <div class="form-row">
               <div class="form-group">

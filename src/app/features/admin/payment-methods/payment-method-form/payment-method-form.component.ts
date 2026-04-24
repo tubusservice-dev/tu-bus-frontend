@@ -1,6 +1,13 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import {
+  ReactiveFormsModule,
+  FormBuilder,
+  FormGroup,
+  Validators,
+  AbstractControl,
+  ValidationErrors,
+} from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { PaymentMethodService } from '../../../../core/services/payment-method.service';
 import { ToastService } from '../../../../shared/services/toast.service';
@@ -77,22 +84,37 @@ export class PaymentMethodFormComponent implements OnInit {
     }
   }
 
+  // Regex: permite formato nacional (04121234567) o internacional (+58...),
+  // con separadores opcionales. Se normaliza antes de validar longitud.
+  private readonly PHONE_RAW_PATTERN = /^\+?[\d\s\-()]{8,20}$/;
+  private readonly EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
   private initForm(): void {
-    this.form = this.fb.group({
-      type: ['', Validators.required],
-      label: ['', [Validators.required, Validators.maxLength(100)]],
-      isActive: [true],
-      // Pago Móvil
-      pm_phoneNumber: [''],
-      pm_bankName: [''],
-      pm_documentId: [''],
-      // Transferencia
-      tr_accountNumber: [''],
-      tr_bankName: [''],
-      tr_documentId: [''],
-      // Mensaje personalizado (divisas / tarjeta)
-      customMessage: [''],
-    });
+    this.form = this.fb.group(
+      {
+        type: ['', Validators.required],
+        label: ['', [Validators.required, Validators.maxLength(100)]],
+        isActive: [true],
+        // Pago Móvil
+        pm_phoneNumber: [''],
+        pm_bankName: [''],
+        pm_documentId: [''],
+        // Transferencia
+        tr_accountNumber: [''],
+        tr_bankName: [''],
+        tr_documentId: [''],
+        // Zelle
+        zl_phoneNumber: [''],
+        zl_email: [''],
+        // Mensaje personalizado (divisas / tarjeta)
+        customMessage: [''],
+      },
+      {
+        // Group-level validator enforces the "al menos uno" rule for Zelle
+        // without coupling field-level validators to sibling values.
+        validators: [this.zelleAtLeastOneValidator.bind(this)],
+      },
+    );
 
     // Escuchar cambios de tipo
     this.form.get('type')?.valueChanges.subscribe((type: PaymentMethodType) => {
@@ -105,26 +127,60 @@ export class PaymentMethodFormComponent implements OnInit {
     // Limpiar todos los validadores específicos
     const pmFields = ['pm_phoneNumber', 'pm_bankName', 'pm_documentId'];
     const trFields = ['tr_accountNumber', 'tr_bankName', 'tr_documentId'];
+    const zlFields = ['zl_phoneNumber', 'zl_email'];
 
-    [...pmFields, ...trFields, 'customMessage'].forEach((field) => {
+    [...pmFields, ...trFields, ...zlFields, 'customMessage'].forEach((field) => {
       this.form.get(field)?.clearValidators();
-      this.form.get(field)?.updateValueAndValidity();
+      this.form.get(field)?.updateValueAndValidity({ emitEvent: false });
     });
 
     switch (type) {
       case PaymentMethodType.PAGO_MOVIL:
         pmFields.forEach((field) => {
           this.form.get(field)?.setValidators([Validators.required]);
-          this.form.get(field)?.updateValueAndValidity();
+          this.form.get(field)?.updateValueAndValidity({ emitEvent: false });
         });
         break;
       case PaymentMethodType.TRANSFERENCIA:
         trFields.forEach((field) => {
           this.form.get(field)?.setValidators([Validators.required]);
-          this.form.get(field)?.updateValueAndValidity();
+          this.form.get(field)?.updateValueAndValidity({ emitEvent: false });
         });
         break;
+      case PaymentMethodType.ZELLE:
+        // Field-level: format only (both optional). Cross-field "at least
+        // one" lives on the FormGroup validator.
+        this.form.get('zl_phoneNumber')?.setValidators([Validators.pattern(this.PHONE_RAW_PATTERN)]);
+        this.form.get('zl_phoneNumber')?.updateValueAndValidity({ emitEvent: false });
+        this.form.get('zl_email')?.setValidators([Validators.pattern(this.EMAIL_PATTERN)]);
+        this.form.get('zl_email')?.updateValueAndValidity({ emitEvent: false });
+        break;
     }
+
+    // Re-run the group-level validator so the ZELLE "at least one" error
+    // clears/appears as the selected type changes.
+    this.form.updateValueAndValidity({ emitEvent: false });
+  }
+
+  /** Group-level validator: only fires for ZELLE, requires at least one of
+   *  phoneNumber/email to be non-empty after trim. Sets `zelleRequired` on
+   *  the group so the template can render a single combined error. */
+  private zelleAtLeastOneValidator(group: AbstractControl): ValidationErrors | null {
+    const type = group.get('type')?.value;
+    if (type !== PaymentMethodType.ZELLE) return null;
+
+    const phone = (group.get('zl_phoneNumber')?.value || '').trim();
+    const email = (group.get('zl_email')?.value || '').trim();
+
+    return phone.length === 0 && email.length === 0 ? { zelleRequired: true } : null;
+  }
+
+  protected get zelleMissingBoth(): boolean {
+    return (
+      this.selectedType() === PaymentMethodType.ZELLE &&
+      !!this.form.errors?.['zelleRequired'] &&
+      (this.form.get('zl_phoneNumber')?.touched || this.form.get('zl_email')?.touched || this.form.touched)
+    );
   }
 
   private loadMethod(id: string): void {
@@ -154,6 +210,13 @@ export class PaymentMethodFormComponent implements OnInit {
             tr_accountNumber: method.transferencia.accountNumber,
             tr_bankName: method.transferencia.bankName,
             tr_documentId: method.transferencia.documentId,
+          });
+        }
+
+        if (method.zelle) {
+          this.form.patchValue({
+            zl_phoneNumber: method.zelle.phoneNumber || '',
+            zl_email: method.zelle.email || '',
           });
         }
 
@@ -206,6 +269,15 @@ export class PaymentMethodFormComponent implements OnInit {
       case PaymentMethodType.TARJETA:
         payload.customMessage = rawValue.customMessage;
         break;
+      case PaymentMethodType.ZELLE: {
+        const phone = (rawValue.zl_phoneNumber || '').trim();
+        const email = (rawValue.zl_email || '').trim().toLowerCase();
+        payload.zelle = {
+          phoneNumber: phone || undefined,
+          email: email || undefined,
+        };
+        break;
+      }
     }
 
     const request$ = this.isEditMode()
