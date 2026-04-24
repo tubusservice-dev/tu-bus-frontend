@@ -300,20 +300,43 @@
 }
 
 .quantity-selector {
-  @apply flex items-center rounded-lg overflow-hidden;
+  // Fixed height matches `.btn-add-to-cart` exactly (py-3 + text-base ≈ 3rem).
+  // No `align-self: stretch` because we explicitly do NOT want to grow with
+  // the column when "Ir al carrito" is also rendered — the selector should
+  // only match the primary cart button's height.
+  display: flex;
+  align-items: center;
+  height: 3rem;
+  border-radius: 0.5rem;
+  overflow: hidden;
   border: 1px solid var(--border-color);
+
   &.disabled { @apply opacity-50 pointer-events-none; }
 
   .qty-btn {
-    @apply w-10 h-10 flex items-center justify-center transition-colors;
-    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+    width: 2.5rem;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.15s, color 0.15s;
     color: var(--text-secondary);
-    &:hover:not(:disabled) { background-color: var(--bg-tertiary); }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    &:hover:not(:disabled) {
+      background-color: var(--bg-tertiary);
+    }
+
     svg { @apply w-4 h-4; }
   }
 
   .qty-value {
-    @apply w-12 text-center font-semibold;
+    width: 3rem;
+    text-align: center;
+    font-weight: 600;
     color: var(--text-primary);
   }
 }
