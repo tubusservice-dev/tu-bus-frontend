@@ -9,8 +9,14 @@
   </svg>
 
   <input
-    type="text"
+    type="search"
     class="search-field"
+    inputmode="search"
+    enterkeyhint="search"
+    autocomplete="off"
+    autocorrect="off"
+    autocapitalize="off"
+    spellcheck="false"
     [placeholder]="placeholder"
     [attr.aria-label]="ariaLabel"
     [ngModel]="internalValue()"

@@ -17,8 +17,31 @@
   @apply text-sm text-gray-900 dark:text-white placeholder-gray-400;
   @apply focus:outline-none focus:ring-2 focus:border-transparent transition-colors;
 
+  // iOS Safari auto-zooms any form control whose font-size is < 16px on
+  // focus, producing a horizontal-scroll/layout-shift bug. Below the mobile
+  // breakpoint we override `text-sm` (14px) with 16px at the component
+  // level so this input is safe even if the global guard is ever removed.
+  // `touch-action: manipulation` suppresses the legacy 300ms tap delay.
+  touch-action: manipulation;
+
+  @media (max-width: 640px) {
+    font-size: 16px;
+  }
+
   &:focus {
     --tw-ring-color: var(--tubus-text-accent, #4d94ff);
+  }
+
+  // type="search" in WebKit renders a native cancel button ("X") and a
+  // decoration glyph that would collide with our custom trailing slot
+  // (spinner/clear). Strip them so the component owns the trailing area.
+  &::-webkit-search-cancel-button,
+  &::-webkit-search-decoration,
+  &::-webkit-search-results-button,
+  &::-webkit-search-results-decoration {
+    -webkit-appearance: none;
+    appearance: none;
+    display: none;
   }
 }
 

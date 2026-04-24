@@ -95,14 +95,17 @@ export class CatalogComponent implements OnInit {
   protected readonly paginationOptions = PAGINATION_OPTIONS;
   protected readonly currentLimit = signal(this.settingsService.paginationConfig().catalogLimit || 20);
 
-  // Filtros
+  // Filtros. `onlyCombos` arranca en true: combos-first es el orden por
+  // defecto del catálogo para empujar las promociones al inicio del grid.
+  // El usuario puede desactivarlo desde el toggle; no cuenta como filtro
+  // activo porque representa el estado normal, no una selección explícita.
   protected readonly filters = signal<FilterState>({
     search: '',
     vehicleType: '',
     brand: '',
     category: '',
     sortBy: 'createdAt',
-    onlyCombos: false,
+    onlyCombos: true,
   });
 
   // Paginación
@@ -127,14 +130,15 @@ export class CatalogComponent implements OnInit {
     { value: 'name', label: 'Nombre: A-Z' },
   ];
 
-  // Filtros activos
+  // Filtros activos. `onlyCombos` queda fuera a propósito: al ser el
+  // estado por defecto, contarlo inflaría el badge sin reflejar una
+  // selección real del usuario.
   protected readonly activeFiltersCount = computed(() => {
     const f = this.filters();
     let count = 0;
     if (f.vehicleType) count++;
     if (f.brand) count++;
     if (f.category) count++;
-    if (f.onlyCombos) count++;
     return count;
   });
 
@@ -328,13 +332,16 @@ export class CatalogComponent implements OnInit {
   }
 
   clearFilters(): void {
+    // Reset mantiene onlyCombos en true para empatar con el default del
+    // signal — "limpiar filtros" devuelve al estado inicial de la vista,
+    // no a un estado sin ordenamiento.
     this.filters.set({
       search: '',
       vehicleType: '',
       brand: '',
       category: '',
       sortBy: 'createdAt',
-      onlyCombos: false,
+      onlyCombos: true,
     });
     this.currentPage.set(1);
     this.syncPageToUrl();

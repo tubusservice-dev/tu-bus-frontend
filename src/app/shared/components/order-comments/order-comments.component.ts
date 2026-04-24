@@ -252,7 +252,12 @@ export class OrderCommentsComponent {
       },
       error: (err) => {
         this.isSending.set(false);
-        this.sendError.set(err?.error?.message || 'No se pudo enviar el comentario. Intenta de nuevo.');
+        const body = err?.error;
+        const baseMsg = body?.message || 'No se pudo enviar el comentario. Intenta de nuevo.';
+        const detail = Array.isArray(body?.errors) && body.errors.length
+          ? ` (${body.errors[0].field}: ${body.errors[0].message})`
+          : '';
+        this.sendError.set(`${baseMsg}${detail}`);
       },
     });
   }
