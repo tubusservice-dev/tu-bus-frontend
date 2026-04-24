@@ -30,10 +30,20 @@
 
 /* Horizontal overflow guard — defense in depth against stray elements that
    might otherwise leak past the viewport on mobile. Our layouts already use
-   max-width + mx-auto, so this hides nothing legitimate. */
+   max-width + mx-auto, so this hides nothing legitimate.
+   Uses `overflow-x: clip` instead of `hidden` because `hidden` turns <html>
+   into a scroll container, which breaks `position: sticky` on child headers.
+   Fallback to `hidden` for Safari 15 and older where `clip` isn't supported. */
 html,
 body {
   overflow-x: hidden;
+}
+
+@supports (overflow-x: clip) {
+  html,
+  body {
+    overflow-x: clip;
+  }
 }
 
 /* Required field indicators inherit label color */
@@ -162,6 +172,19 @@ router-outlet + * {
     transition: background-color var(--transition-normal), color var(--transition-normal);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    // Defensive reset — some browser stylesheets still apply an 8px default
+    // margin on <body>, which leaves a visible gap above sticky headers.
+    margin: 0;
+    padding: 0;
+  }
+
+  // `<app-root>` is a block container; without `display: block` it's inline
+  // by default (custom elements inherit inline display), which can produce
+  // tiny whitespace gaps around the first child flex item.
+  app-root {
+    display: block;
+    margin: 0;
+    padding: 0;
   }
 
   h1, h2, h3, h4, h5, h6 {

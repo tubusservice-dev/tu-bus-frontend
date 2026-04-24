@@ -10,7 +10,7 @@ import {
   ShowcaseAvailability,
 } from '../../../../../core/services/product.service';
 import { LocationService } from '../../../../../core/services/location.service';
-import { ProductDetailOverlayService } from '../../../../../core/services/product-detail-overlay.service';
+import { OverlayStackService } from '../../../../../core/services/overlay-stack.service';
 import { VehicleType, VEHICLE_TYPE_LABELS } from '../../../../../models/product.model';
 
 interface FilterTab {
@@ -28,7 +28,7 @@ interface FilterTab {
 export class TubusCombosComponent {
   private readonly productService = inject(ProductService);
   private readonly locationService = inject(LocationService);
-  private readonly overlayService = inject(ProductDetailOverlayService);
+  private readonly overlayService = inject(OverlayStackService);
   private readonly destroyRef = inject(DestroyRef);
 
   // Request queue for tab content — switchMap cancels in-flight requests
@@ -141,7 +141,7 @@ export class TubusCombosComponent {
   }
 
   openProductDetail(productId: string): void {
-    this.overlayService.open(productId);
+    this.overlayService.openProduct(productId);
   }
 
   formatPrice(price: number): string {

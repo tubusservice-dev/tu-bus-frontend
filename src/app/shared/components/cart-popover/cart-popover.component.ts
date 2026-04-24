@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { CurrencyPipe } from '@angular/common';
 import { CartService, CartItem } from '../../../core/services/cart.service';
 import { ExchangeRateService } from '../../../core/services/exchange-rate.service';
+import { OverlayStackService } from '../../../core/services/overlay-stack.service';
 
 @Component({
   selector: 'app-cart-popover',
@@ -15,6 +16,7 @@ export class CartPopoverComponent {
   protected readonly cartService = inject(CartService);
   private readonly router = inject(Router);
   protected readonly exchangeRateService = inject(ExchangeRateService);
+  private readonly overlayService = inject(OverlayStackService);
 
   /** Controla si el popover está abierto */
   protected readonly isOpen = signal(false);
@@ -45,9 +47,9 @@ export class CartPopoverComponent {
     this.isOpen.set(false);
   }
 
-  /** Navegar a la página del carrito */
+  /** Abre el carrito como overlay sobre la vista actual. */
   goToCart(): void {
-    this.router.navigate(['/carrito']);
+    this.overlayService.openCart();
     this.closePopover();
   }
 
@@ -57,7 +59,7 @@ export class CartPopoverComponent {
   }
 
   onContinue(): void {
-    this.router.navigate(['/carrito']);
+    this.overlayService.openCart();
     this.closePopover();
   }
 

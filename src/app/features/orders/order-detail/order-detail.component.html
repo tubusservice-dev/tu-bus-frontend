@@ -87,7 +87,19 @@
                   <img [src]="item.image" [alt]="item.name" class="product-img" />
                 }
                 <div class="product-info">
-                  <span class="product-name">{{ item.name }}</span>
+                  <div class="product-name-row">
+                    @if (item.isCombo) {
+                      <span class="badge combo" title="Este producto es un combo">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                          <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                          <line x1="12" y1="22.08" x2="12" y2="12" />
+                        </svg>
+                        Combo
+                      </span>
+                    }
+                    <span class="product-name">{{ item.name }}</span>
+                  </div>
                   <span class="product-qty">x{{ item.quantity }} &middot; {{ item.price | currency:'USD' }} c/u</span>
                 </div>
                 <div class="product-total-col">
@@ -327,6 +339,12 @@
                   <div class="info-row">
                     <span class="info-label">Banco</span>
                     <span class="info-value">{{ o.paymentSubmission.sourceBank }}</span>
+                  </div>
+                }
+                @if (o.paymentSubmission.senderName) {
+                  <div class="info-row">
+                    <span class="info-label">Titular</span>
+                    <span class="info-value">{{ o.paymentSubmission.senderName }}</span>
                   </div>
                 }
                 @if (o.paymentSubmission.paymentDate) {

@@ -551,6 +551,12 @@
                   <span class="info-value">{{ o.paymentSubmission.sourceBank }}</span>
                 </div>
               }
+              @if (o.paymentSubmission.senderName) {
+                <div class="info-row">
+                  <span class="info-label">Titular</span>
+                  <span class="info-value">{{ o.paymentSubmission.senderName }}</span>
+                </div>
+              }
               @if (o.paymentSubmission.paymentDate) {
                 <div class="info-row">
                   <span class="info-label">Fecha del pago</span>

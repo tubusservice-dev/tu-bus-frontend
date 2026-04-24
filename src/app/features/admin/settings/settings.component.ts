@@ -11,6 +11,7 @@ import {
   PaymentMethodConfig,
   PaymentMethodType,
   PAYMENT_METHOD_TYPE_LABELS,
+  getPaymentMethodSummary,
 } from '../../../models/payment-method.model';
 
 type SectionKey = 'heroImages' | 'homeHero' | 'whatsapp' | 'carousels' | 'pagination' | 'dispatchModules' | 'dispatch' | 'paymentMethods' | 'exchangeRate' | 'supportContact' | 'adminNotifications';
@@ -587,19 +588,10 @@ export class SettingsComponent implements OnInit {
     return PAYMENT_METHOD_TYPE_LABELS[type] || type;
   }
 
-  getMethodDetails(method: PaymentMethodConfig): string {
-    switch (method.type) {
-      case PaymentMethodType.PAGO_MOVIL:
-        return method.pagoMovil ? `${method.pagoMovil.phoneNumber} - ${method.pagoMovil.bankName}` : '-';
-      case PaymentMethodType.TRANSFERENCIA:
-        return method.transferencia ? `${method.transferencia.accountNumber} - ${method.transferencia.bankName}` : '-';
-      case PaymentMethodType.EFECTIVO_DIVISAS:
-      case PaymentMethodType.TARJETA:
-        return method.customMessage || 'Sin mensaje';
-      default:
-        return '-';
-    }
-  }
+  /** Template-facing alias that delegates to the shared helper so both admin
+   *  list views (this settings section and `/admin/payment-methods`) stay
+   *  in sync when a new PaymentMethodType is added. */
+  protected readonly getMethodDetails = getPaymentMethodSummary;
 
   toggleMethodStatus(method: PaymentMethodConfig): void {
     this.isTogglingMethod.set(method.id);

@@ -1,8 +1,32 @@
+// Sticky applies to the host element, not the inner `.header`. If we apply
+// sticky inside, the wrapper element (which has the header's natural ~64px
+// height) scrolls away first and drags the sticky child with it. Applying
+// it on `:host` makes the host itself the sticky element relative to the
+// viewport.
+// `position: fixed` instead of `sticky`. Sticky in Chromium has sub-pixel
+// jitter under `overflow-x: clip` containers that causes a white flash as
+// content scrolls past. Fixed is out-of-flow and bulletproof; the layout
+// compensates with top padding on the main content area.
+:host {
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background-color: var(--bg-primary);
+}
+
 .header {
-  @apply sticky top-0 z-50;
   background-color: var(--bg-primary);
   border-bottom: 1px solid var(--border-color);
   transition: background-color var(--transition-normal), border-color var(--transition-normal);
+}
+
+// `:host-context(.dark)` already matches the host when an ancestor has the
+// `.dark` class — concatenating with `:host` is invalid Angular syntax.
+:host-context(.dark) {
+  background-color: #1f2937;
 }
 
 .notif-desktop-only {

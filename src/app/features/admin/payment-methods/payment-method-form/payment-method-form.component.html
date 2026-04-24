@@ -3,7 +3,7 @@
   <header class="page-header">
     <button type="button" class="btn-back" (click)="cancel()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
       </svg>
     </button>
     <div>
@@ -190,6 +190,61 @@
             ></textarea>
             <small class="hint">Este mensaje se mostrará al cliente cuando seleccione este método</small>
           </div>
+        </div>
+      }
+
+      <!-- Campos de Zelle -->
+      @if (selectedType() === PaymentMethodType.ZELLE) {
+        <div class="form-section">
+          <h2 class="section-title">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="section-icon section-icon-brand">
+              <rect x="2" y="2" width="20" height="20" rx="4" fill="#6D1ED4" />
+              <path d="M8 7h8v1.8L10.2 15H16v2H8v-1.8L13.8 9H8z" fill="#FFFFFF" />
+            </svg>
+            Datos de Zelle
+          </h2>
+
+          <p class="form-hint">
+            Debes completar al menos uno de los siguientes campos (teléfono o correo).
+            Puedes ingresar ambos si lo deseas.
+          </p>
+
+          <div class="form-group">
+            <label for="zl_phoneNumber">Número de teléfono (opcional)</label>
+            <input
+              type="tel"
+              id="zl_phoneNumber"
+              formControlName="zl_phoneNumber"
+              placeholder="Ej: 04121234567 o +13055550100"
+              class="input"
+              autocomplete="off"
+            />
+            <small class="hint">Se acepta formato nacional (04121234567) o internacional (+13055550100).</small>
+            @if (isFieldInvalid('zl_phoneNumber')) {
+              <small class="error">Formato de teléfono inválido (8-15 dígitos, código de país opcional)</small>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="zl_email">Correo electrónico (opcional)</label>
+            <input
+              type="email"
+              id="zl_email"
+              formControlName="zl_email"
+              placeholder="Ej: correo@ejemplo.com"
+              class="input"
+              autocomplete="off"
+            />
+            @if (isFieldInvalid('zl_email')) {
+              <small class="error">Formato de correo electrónico inválido</small>
+            }
+          </div>
+
+          @if (zelleMissingBoth) {
+            <div class="alert alert-error">
+              Debes ingresar al menos un número de teléfono o un correo electrónico para Zelle.
+            </div>
+          }
         </div>
       }
 

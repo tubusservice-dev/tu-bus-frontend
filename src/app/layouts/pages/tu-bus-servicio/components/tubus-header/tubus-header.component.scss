@@ -1,8 +1,35 @@
+// The sticky behaviour lives on the host element. Applying it on an inner
+// `.header` breaks because the host wrapper has the header's natural height
+// (~64px) — as soon as that 64px scrolls off-screen the sticky child goes
+// with it. `:host` sticky keeps the bar pinned to the viewport's top edge
+// as long as any ancestor content is still scrolling.
+// `position: fixed` instead of `sticky` because sticky has well-known
+// sub-pixel jitter and repaint-lag quirks in Chromium when the scroll
+// container has `overflow-x: clip` — those quirks manifest as a white
+// flash of the content scrolling underneath. Fixed pulls the host out of
+// flow entirely; the layout shim below reserves space so content isn't
+// hidden beneath it.
+:host {
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background-color: var(--bg-primary);
+}
+
 .header {
-  @apply sticky top-0 z-50;
   background-color: var(--bg-primary);
   border-bottom: 1px solid var(--border-color);
   transition: background-color var(--transition-normal), border-color var(--transition-normal);
+}
+
+// `:host-context(.dark)` already matches the host when an ancestor has the
+// `.dark` class — concatenating with `:host` is invalid Angular syntax and
+// silently drops the rule.
+:host-context(.dark) {
+  background-color: #1f2937;
 }
 
 .notif-desktop-only {

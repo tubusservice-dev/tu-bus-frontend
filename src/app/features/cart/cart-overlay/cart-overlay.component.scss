@@ -1,0 +1,113 @@
+// Chrome mirrors product-detail-page overlay so the two screens are visually
+// interchangeable — same backdrop color, same top-bar padding, same back-btn
+// styling. Only the right-hand slot differs (title + badge instead of the
+// cart popover, since we're already inside the cart).
+
+.overlay-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  overflow-y: auto;
+  background-color: var(--bg-primary, #ffffff);
+  animation: overlayFadeIn 0.2s ease-out;
+  // Reserve space for the fixed top-bar.
+  padding-top: 4rem;
+  // No scroll-chain leak to the body; keeps the underlying route's scroll
+  // position untouched while the overlay is open.
+  overscroll-behavior: contain;
+
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar { display: none; }
+}
+
+// Fixed instead of sticky — same rationale as the global header and the
+// product-detail overlay: avoids Chromium sub-pixel jitter and paint flashes.
+.overlay-top-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1010;
+  background-color: var(--bg-primary, #ffffff);
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+}
+
+.overlay-top-bar-inner {
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.overlay-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background-color 0.15s;
+  background-color: transparent;
+  color: var(--text-primary, #1f2937);
+
+  &:hover { background-color: rgba(0, 0, 0, 0.05); }
+
+  svg { width: 1.25rem; height: 1.25rem; }
+}
+
+.overlay-cart-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-primary, #1f2937);
+  font-size: 0.9375rem;
+  font-weight: 600;
+
+  .title-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    color: var(--tubus-text-accent, #4d94ff);
+  }
+
+  .title-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.25rem;
+    height: 1.25rem;
+    padding: 0 0.375rem;
+    border-radius: 9999px;
+    background-color: var(--tubus-text-accent, #4d94ff);
+    color: #ffffff;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+}
+
+@keyframes overlayFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+:host-context(.dark) {
+  .overlay-backdrop { background-color: var(--bg-primary, #0f172a); }
+  .overlay-top-bar {
+    background-color: var(--bg-primary, #0f172a);
+    border-bottom-color: var(--border-color, #1e293b);
+  }
+  .overlay-back-btn {
+    color: #e5e7eb;
+    &:hover { background-color: rgba(255, 255, 255, 0.08); }
+  }
+  .overlay-cart-title {
+    color: #ffffff;
+  }
+}

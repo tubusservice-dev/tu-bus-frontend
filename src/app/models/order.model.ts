@@ -32,6 +32,7 @@ export interface OrderItem {
   price: number;
   quantity: number;
   image?: string;
+  isCombo?: boolean;
 }
 
 export interface DispatchDetails {
@@ -71,6 +72,9 @@ export interface PaymentSubmission {
   selectedMethodId?: string;
   referenceNumber?: string;
   sourceBank?: string;
+  /** Nombre del titular de la cuenta emisora (remitente). Obligatorio para
+   *  zelle, opcional para otros tipos. */
+  senderName?: string;
   amount?: number;
   paymentDate?: string;
   proofUrl?: string;
