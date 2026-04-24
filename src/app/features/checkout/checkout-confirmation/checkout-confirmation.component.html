@@ -317,13 +317,3 @@
     </div>
   }
 </div>
-
-<!-- ============ Post-purchase rating modal ============ -->
-<app-rating-modal
-  [isOpen]="showRatingModal()"
-  [orderNumber]="order()?.orderNumber ?? null"
-  [isSubmitting]="isSubmittingRating()"
-  [errorMessage]="ratingSubmitError()"
-  (closed)="onRatingClosed()"
-  (submitted)="onRatingSubmitted($event)"
-/>

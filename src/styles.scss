@@ -8,6 +8,34 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ========================================
+   iOS Safari auto-zoom guard
+   ========================================
+   iOS Safari/WebKit force-zooms the viewport whenever a form control with
+   font-size < 16px receives focus. That zoom desyncs the layout from the
+   viewport width and produces a horizontal scroll on the catalog search.
+   Keeping the viewport meta clean (user-scalable stays allowed for a11y),
+   we kill the trigger at the only place we can: the font-size itself.
+   Applied below the `sm` breakpoint so desktop designs keep their 14px
+   typography where intended. Checkbox/radio/range/color/file are excluded
+   because they do not render editable text and reacting to font-size
+   breaks their native rendering. */
+@media (max-width: 640px) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):not([type='file']),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/* Horizontal overflow guard — defense in depth against stray elements that
+   might otherwise leak past the viewport on mobile. Our layouts already use
+   max-width + mx-auto, so this hides nothing legitimate. */
+html,
+body {
+  overflow-x: hidden;
+}
+
 /* Required field indicators inherit label color */
 .required { color: inherit !important; }
 

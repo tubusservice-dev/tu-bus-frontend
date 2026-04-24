@@ -12,6 +12,7 @@ import {
   DISPATCH_STATUS_LABELS, DISPATCH_STATUS_COLORS, DISPATCH_STATUS_DESCRIPTIONS,
   isShippingOrder, isOilChangeOrder,
 } from '../../../models/order.model';
+import { PAYMENT_TYPES_WITH_FORM, PaymentMethodType } from '../../../models/payment-method.model';
 import { MechanicAvatarComponent } from '../../../shared/components/mechanic-avatar/mechanic-avatar.component';
 import { OrderCommentsComponent } from '../../../shared/components/order-comments/order-comments.component';
 import { RatingModalComponent } from '../../../shared/components/rating-modal/rating-modal.component';
@@ -518,6 +519,13 @@ export class OrderDetailComponent implements OnInit {
   canUploadProof(order: Order): boolean {
     if (!order.paymentSubmission) return false;
     if (order.paymentSubmission.proofUrl) return false;
+
+    // Only payment methods that generate a proof (pago_movil, transferencia)
+    // can be in a "missing proof" state. Card / cash are paid in person and
+    // have no proof by design.
+    const methodType = order.paymentSubmission.methodType as PaymentMethodType;
+    if (!PAYMENT_TYPES_WITH_FORM.includes(methodType)) return false;
+
     const editable: string[] = [OrderStatus.PENDING, OrderStatus.APPROVED];
     return editable.includes(order.status);
   }
