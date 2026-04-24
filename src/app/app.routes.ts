@@ -329,10 +329,15 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/catalog/catalog.component').then((m) => m.CatalogComponent),
       },
+      // Legacy `/carrito` URL — the cart is now an overlay. Landing on this
+      // path redirects to the catalog and pops the cart overlay automatically,
+      // so external links and bookmarks keep working.
       {
         path: 'carrito',
         loadComponent: () =>
-          import('./features/cart/cart.component').then((m) => m.CartComponent),
+          import('./features/cart/cart-redirect/cart-redirect.component').then(
+            (m) => m.CartRedirectComponent,
+          ),
       },
       {
         path: 'checkout/despacho',
@@ -398,7 +403,7 @@ export const routes: Routes = [
           ),
         canActivate: [authGuard],
       },
-      // Product detail is now handled by ProductDetailOverlayComponent (modal)
+      // Product detail is now handled by ProductDetailPageComponent (overlay, no route)
       {
         path: 'perfil',
         loadComponent: () =>

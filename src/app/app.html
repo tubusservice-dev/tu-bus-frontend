@@ -1,6 +1,13 @@
 <router-outlet />
-@if (overlayService.isOpen()) {
-  <app-product-detail-overlay />
+@for (entry of overlayService.stack(); track entry.uid) {
+  @switch (entry.type) {
+    @case ('product') {
+      <app-product-detail-page [productId]="entry.productId" />
+    }
+    @case ('cart') {
+      <app-cart-overlay />
+    }
+  }
 }
 <app-toast-container />
 <app-blocked-account-modal />

@@ -1,34 +1,46 @@
-import { Component, inject, signal, computed, effect, DestroyRef, HostListener } from '@angular/core';
+import { Component, inject, signal, computed, Input, OnInit, DestroyRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ProductDetailOverlayService } from '../../../core/services/product-detail-overlay.service';
+import { OverlayStackService } from '../../../core/services/overlay-stack.service';
 import { ProductService, DetailProduct, DetailRelatedProduct } from '../../../core/services/product.service';
 import { CartService } from '../../../core/services/cart.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { LocationService } from '../../../core/services/location.service';
 import { ExchangeRateService } from '../../../core/services/exchange-rate.service';
-import { ProductCardComponent, ProductCardData } from '../product-card/product-card.component';
-import { CartPopoverComponent } from '../cart-popover/cart-popover.component';
+import { ProductCardComponent, ProductCardData } from '../../../shared/components/product-card/product-card.component';
+import { CartPopoverComponent } from '../../../shared/components/cart-popover/cart-popover.component';
 import { VEHICLE_TYPE_LABELS, VehicleType } from '../../../models/product.model';
 
 const PLACEHOLDER = 'https://placehold.co/400x400/e5e7eb/9ca3af?text=Sin+imagen';
 
+/**
+ * Full-screen product detail view rendered as an overlay on top of any
+ * route. The app shell mounts one instance per entry in the
+ * `OverlayStackService` stack, so opening a related product pushes
+ * a NEW instance on top — the previous one stays mounted underneath with
+ * all its state (scroll position, selected image, quantity) intact.
+ * Going back unmounts only the top instance; no API refetch happens.
+ */
 @Component({
-  selector: 'app-product-detail-overlay',
+  selector: 'app-product-detail-page',
   standalone: true,
   imports: [CommonModule, ProductCardComponent, CartPopoverComponent],
-  templateUrl: './product-detail-overlay.component.html',
-  styleUrl: './product-detail-overlay.component.scss',
+  templateUrl: './product-detail-page.component.html',
+  styleUrl: './product-detail-page.component.scss',
 })
-export class ProductDetailOverlayComponent {
-  protected readonly overlayService = inject(ProductDetailOverlayService);
+export class ProductDetailPageComponent implements OnInit {
+  /** The product id this instance is responsible for. Wired from the app
+   *  shell's `@for` over the overlay stack — never mutates after init, so
+   *  the instance loads its data once in `ngOnInit` and lives unchanged
+   *  until the user pops back past it. */
+  @Input({ required: true }) productId!: string;
+
+  protected readonly overlayService = inject(OverlayStackService);
   private readonly productService = inject(ProductService);
   private readonly cartService = inject(CartService);
   private readonly authService = inject(AuthService);
   private readonly locationService = inject(LocationService);
   protected readonly exchangeRateService = inject(ExchangeRateService);
-  private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
   // Core state
@@ -108,14 +120,10 @@ export class ProductDetailOverlayComponent {
     return this.quantity() <= this.availableStock();
   });
 
-  constructor() {
-    // Load product when overlay opens or productId changes
-    effect(() => {
-      const id = this.overlayService.productId();
-      if (id) {
-        this.loadProductDetail(id);
-      }
-    });
+  ngOnInit(): void {
+    // Load once per instance. Subsequent opens mount new instances; this one
+    // never needs to re-fetch.
+    this.loadProductDetail(this.productId);
   }
 
   @HostListener('document:keydown.escape')
@@ -123,13 +131,18 @@ export class ProductDetailOverlayComponent {
     this.close();
   }
 
+  /** "Volver" action — pops only the top instance of the overlay stack.
+   *  Routes through history.back() so OS/browser back gestures follow the
+   *  same code path. */
   close(): void {
-    this.overlayService.close();
+    this.overlayService.goBack();
   }
 
   goToCart(): void {
-    this.overlayService.close();
-    this.router.navigate(['/carrito']);
+    // Cart is now an overlay of its own — push it on top of this detail.
+    // Back will pop the cart and reveal this product with full state
+    // preserved (scroll, selected image, quantity).
+    this.overlayService.openCart();
   }
 
   // ==================== DATA LOADING (SINGLE REQUEST) ====================
@@ -218,6 +231,24 @@ export class ProductDetailOverlayComponent {
         setTimeout(() => this.showStockError.set(false), 3000);
       }
     }
+  }
+
+  // ==================== RELATED PRODUCTS ====================
+
+  /** Exposed to the template for the mobile mini-card fallback image. */
+  protected readonly PLACEHOLDER = PLACEHOLDER;
+
+  /** True when a related product has no stock. Drives the disabled state of
+   *  the mobile mini-card so the user can't open an unpurchasable detail. */
+  isRelatedOutOfStock(product: ProductCardData): boolean {
+    return product.stock !== undefined && product.stock <= 0;
+  }
+
+  /** Pushes a new overlay on top with the related product. A fresh component
+   *  instance is mounted above; this one stays alive behind with its scroll
+   *  and UI state preserved, ready to be revealed when the user pops back. */
+  openRelated(id: string): void {
+    this.overlayService.openProduct(id);
   }
 
   // ==================== HELPERS ====================

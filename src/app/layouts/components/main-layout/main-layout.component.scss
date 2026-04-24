@@ -6,6 +6,17 @@
 
 .main-content {
   @apply flex-1;
+  // The header is `position: fixed` (see tubus-header/header SCSS); we
+  // reserve its height (h-16 = 4rem) so content isn't hidden beneath it.
+  padding-top: 4rem;
+}
+
+// When the header is hidden (mobile checkout flow), no space needs to be
+// reserved.
+@media (max-width: 639px) {
+  .main-layout:has(.hide-on-checkout-mobile) .main-content {
+    padding-top: 0;
+  }
 }
 
 /* Ocultar header y footer en flujo de checkout solo en móvil */

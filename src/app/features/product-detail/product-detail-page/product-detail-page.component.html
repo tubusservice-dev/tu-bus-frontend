@@ -4,7 +4,7 @@
     <div class="overlay-top-bar-inner">
       <button type="button" class="overlay-back-btn" (click)="close()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
         </svg>
         <span>Volver</span>
       </button>
@@ -209,9 +209,45 @@
       @if (relatedProducts().length > 0) {
         <section class="related-section">
           <h2>Productos relacionados</h2>
+
+          <!-- Desktop/tablet: grilla completa con la card grande del catálogo -->
           <div class="related-grid">
             @for (relatedProduct of relatedProducts(); track relatedProduct.id) {
               <app-product-card [product]="relatedProduct" [showAddToCart]="true" [linkToDetail]="true" />
+            }
+          </div>
+
+          <!-- Mobile: carrusel horizontal con cards compactas. Out-of-stock
+               items are rendered as disabled so users can still see them but
+               can't open the overlay for an unpurchasable product. -->
+          <div class="related-carousel">
+            @for (relatedProduct of relatedProducts(); track relatedProduct.id) {
+              <button
+                type="button"
+                class="related-mini-card"
+                [class.mini-card-disabled]="isRelatedOutOfStock(relatedProduct)"
+                [disabled]="isRelatedOutOfStock(relatedProduct)"
+                (click)="openRelated(relatedProduct.id)"
+              >
+                <div class="mini-card-image">
+                  <img
+                    [src]="relatedProduct.images[0] || PLACEHOLDER"
+                    [alt]="relatedProduct.name"
+                    (error)="onImageError($event)"
+                    loading="lazy"
+                  />
+                  @if (isRelatedOutOfStock(relatedProduct)) {
+                    <div class="mini-card-sold-out"><span>Agotado</span></div>
+                  }
+                </div>
+                <div class="mini-card-info">
+                  @if (getBrandName(relatedProduct.brand)) {
+                    <span class="mini-card-brand">{{ getBrandName(relatedProduct.brand) }}</span>
+                  }
+                  <span class="mini-card-name">{{ relatedProduct.name }}</span>
+                  <span class="mini-card-price">${{ relatedProduct.price | number:'1.2-2' }}</span>
+                </div>
+              </button>
             }
           </div>
         </section>

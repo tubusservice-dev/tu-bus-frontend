@@ -55,7 +55,14 @@ export const appConfig: ApplicationConfig = {
     provideRouter(
       routes,
       withViewTransitions(),
-      withInMemoryScrolling({ scrollPositionRestoration: 'top' })
+      // `disabled`: Angular does NOT touch scroll on any navigation. This
+      // is critical for the overlay flow — `pushState` + popstate with any
+      // other setting races with Angular's scroll-restore and resets the
+      // catalog's scroll position to 0 on back. With disabled, the
+      // OverlayStackService is the sole authority over scroll; forward
+      // navigations scroll to top via a dedicated NavigationStart/End
+      // listener in that service.
+      withInMemoryScrolling({ scrollPositionRestoration: 'disabled' })
     ),
     provideHttpClient(withInterceptors([
       authInterceptor,

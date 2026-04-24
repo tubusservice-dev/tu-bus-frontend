@@ -8,6 +8,13 @@
   overflow-y: auto;
   background-color: var(--bg-primary, #ffffff);
   animation: overlayFadeIn 0.2s ease-out;
+  // Reserve space for the fixed top-bar so content isn't hidden beneath it.
+  padding-top: 4rem;
+  // Prevent scroll-chaining: when the backdrop's scroll hits top/bottom,
+  // the wheel/touch event must not leak to the body underneath. Combined
+  // with no body lock, this keeps the catalog's scroll position pinned
+  // exactly where the user left it — no capture, no restore, no drift.
+  overscroll-behavior: contain;
 
   // Hide scrollbar in every viewport. Touch + wheel scroll keep working
   // natively; the visible bar was only visual clutter.
@@ -19,9 +26,14 @@
   }
 }
 
+// `position: fixed` pins the top-bar to the viewport — same bulletproof
+// pattern we use in the global app header. Sticky suffered sub-pixel jitter
+// + white flashes when content scrolled underneath; fixed avoids both.
 .overlay-top-bar {
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 1010;
   background-color: var(--bg-primary, #ffffff);
   border-bottom: 1px solid var(--border-color, #e5e7eb);
@@ -67,7 +79,7 @@
 // PRODUCT DETAIL LAYOUT
 // ============================================
 .product-detail-container {
-  @apply max-w-7xl mx-auto px-4 pt-6 pb-2 sm:py-8;
+  @apply max-w-7xl mx-auto px-4 pt-6 pb-5 sm:py-8;
 }
 
 // Loading skeleton
@@ -420,6 +432,146 @@
   }
   app-product-card { @apply w-full h-full; }
 }
+
+// ============================================
+// RELATED PRODUCTS — MOBILE CAROUSEL
+// Horizontal scroll-snap strip with compact cards. Desktop keeps the grid
+// above; these two containers are mutually exclusive via @media queries.
+// ============================================
+.related-carousel {
+  display: none; // hidden on desktop/tablet
+}
+
+@media (max-width: 639px) {
+  .related-grid {
+    display: none;
+  }
+
+  .related-carousel {
+    display: flex;
+    gap: 0.75rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding: 0.25rem 0.25rem 0.75rem;
+    margin: 0 -0.25rem; // bleed so first/last cards align with section padding
+
+    // Hide scrollbar for a clean look — scroll still works via swipe/wheel.
+    scrollbar-width: none;
+    &::-webkit-scrollbar { display: none; }
+  }
+
+  .related-mini-card {
+    flex: 0 0 78%; // leave a peek of the next card to hint at swipeability
+    max-width: 19rem;
+    scroll-snap-align: start;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem;
+    border-radius: 0.75rem;
+    border: 1px solid var(--border-color, #e5e7eb);
+    background-color: var(--bg-secondary, #f9fafb);
+    cursor: pointer;
+    text-align: left;
+    transition: transform 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+
+    &:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    &:hover:not(:disabled) {
+      border-color: var(--accent-primary, #001d56);
+    }
+
+    &:disabled,
+    &.mini-card-disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
+  .mini-card-image {
+    position: relative;
+    flex: 0 0 4.5rem;
+    width: 4.5rem;
+    height: 4.5rem;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    background-color: #f3f4f6;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  .mini-card-sold-out {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.55);
+
+    span {
+      font-size: 0.625rem;
+      font-weight: 700;
+      color: #ffffff;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+  }
+
+  .mini-card-info {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    min-width: 0;
+  }
+
+  .mini-card-brand {
+    font-size: 0.625rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--tubus-text-accent, #4d94ff);
+  }
+
+  .mini-card-name {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.25;
+    color: var(--text-primary);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .mini-card-price {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--accent-primary, #001d56);
+    margin-top: 0.125rem;
+  }
+}
+
+// Dark mode overrides for the mobile mini-card
+:host-context(.dark) .related-mini-card {
+  border-color: #374151;
+  background-color: rgba(31, 41, 55, 0.5);
+
+  &:hover:not(:disabled) {
+    border-color: var(--tubus-text-accent, #4d94ff);
+  }
+}
+
+:host-context(.dark) .mini-card-image { background-color: #1f2937; }
+:host-context(.dark) .mini-card-name { color: #ffffff; }
+:host-context(.dark) .mini-card-price { color: var(--tubus-text-accent, #4d94ff); }
 
 // ============================================
 // DARK MODE
