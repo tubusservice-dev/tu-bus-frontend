@@ -683,6 +683,8 @@
 
         <!-- COMMENTS THREAD (admin) -->
         <app-order-comments
+          class="comments-card-host"
+          [class.comments-promoted]="(o.comments?.length ?? 0) > 0"
           [orderId]="o.id"
           [comments]="o.comments || []"
           mode="admin"

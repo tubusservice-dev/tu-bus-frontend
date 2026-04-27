@@ -172,6 +172,14 @@
   @apply flex flex-col gap-4 sm:gap-6;
 }
 
+// When the order has at least one comment, promote the comments thread to
+// the top of its flex column. Uses CSS `order` so the DOM stays untouched
+// and no template duplication is needed.
+.detail-column > .comments-card-host {
+  display: block;
+  &.comments-promoted { order: -1; }
+}
+
 // ============================================
 // CARDS
 // ============================================
