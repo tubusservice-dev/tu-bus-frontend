@@ -18,6 +18,7 @@ import { MechanicAvatarComponent } from '../../../../shared/components/mechanic-
 import { DateInputComponent } from '../../../../shared/components/date-input/date-input.component';
 import { SlotsSuggestionsComponent } from '../slots-suggestions/slots-suggestions.component';
 import { AvailableSlot } from '../../../../models/mechanic-assignment.model';
+import { toWhatsAppDigits } from '../../../../shared/utils/phone.util';
 
 @Component({
   selector: 'app-order-dispatch-modal',
@@ -926,7 +927,8 @@ export class OrderDispatchModalComponent {
 
     const mechanic = assignment.mechanic as any;
     const phone = mechanic?.whatsapp || '';
-    const cleanPhone = phone.replace(/[^0-9]/g, '');
+    const cleanPhone = toWhatsAppDigits(phone);
+    if (!cleanPhone) return '';
     const link = this.progressLink();
     const clientName = order?.dispatchDetails?.recipientName || 'Cliente';
     const address = order?.dispatchDetails?.recipientAddress || '';

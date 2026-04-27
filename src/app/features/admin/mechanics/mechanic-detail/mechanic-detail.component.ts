@@ -6,6 +6,7 @@ import { MechanicAssignmentService } from '../../../../core/services/mechanic-as
 import { Mechanic } from '../../../../models/mechanic.model';
 import { MechanicAssignment, AssignmentStatus } from '../../../../models/mechanic-assignment.model';
 import { MechanicAvatarComponent } from '../../../../shared/components/mechanic-avatar/mechanic-avatar.component';
+import { toWhatsAppDigits } from '../../../../shared/utils/phone.util';
 
 @Component({
   selector: 'app-mechanic-detail',
@@ -167,6 +168,12 @@ export class MechanicDetailComponent implements OnInit {
     return (mechanic.branches || [])
       .map(b => typeof b === 'object' && b ? b.name : '')
       .filter(Boolean) as string[];
+  }
+
+  whatsappLink(): string {
+    const w = this.mechanic()?.whatsapp;
+    const digits = toWhatsAppDigits(w);
+    return digits ? `https://wa.me/${digits}` : '#';
   }
 
   private loadData(id: string): void {

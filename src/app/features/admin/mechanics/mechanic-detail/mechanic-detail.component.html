@@ -26,7 +26,7 @@
             <span class="meta-text">{{ mechanic()!.serviceDurationMinutes }}min</span>
           </div>
           <div class="hero-contact">
-            <a [href]="'https://wa.me/' + mechanic()!.whatsapp" target="_blank" class="contact-link">{{ mechanic()!.whatsapp }}</a>
+            <a [href]="whatsappLink()" target="_blank" class="contact-link">{{ mechanic()!.whatsapp }}</a>
             @if (mechanic()!.email) { <span class="contact-text">{{ mechanic()!.email }}</span> }
           </div>
         </div>

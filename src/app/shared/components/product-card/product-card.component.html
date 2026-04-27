@@ -45,11 +45,17 @@
 
   <!-- Contenido -->
   <div class="card-content">
-    <!-- Header: Marca y Categoría -->
+    <!-- Header: Marca, Linea y Categoria -->
     <div class="card-header">
-      @if (brandName) {
-        <span class="brand-name">{{ brandName }}</span>
-      }
+      <div class="card-header-left">
+        @if (brandName) {
+          <span class="brand-name">{{ brandName }}</span>
+        }
+        @if (lineName) {
+          <span class="line-separator" aria-hidden="true">·</span>
+          <span class="line-name">{{ lineName }}</span>
+        }
+      </div>
       @if (firstCategoryName) {
         <span class="category-name">{{ firstCategoryName }}</span>
       }

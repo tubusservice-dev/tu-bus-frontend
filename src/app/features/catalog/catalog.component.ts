@@ -270,6 +270,7 @@ export class CatalogComponent implements OnInit {
           comparePrice: p.comparePrice ?? null,
           images: p.images,
           brand: p.brand ?? undefined,
+          line: p.line ?? undefined,
           productModel: p.productModel,
           categories: p.category ? [p.category] : [],
           isFeatured: p.isFeatured,

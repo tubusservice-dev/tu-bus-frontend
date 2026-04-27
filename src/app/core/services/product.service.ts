@@ -57,6 +57,7 @@ export interface ProductCardDTO {
   price: number;
   comparePrice?: number;
   brand: { id: string; name: string } | null;
+  line: { id: string; name: string } | null;
   productModel?: string;
   category: { id: string; name: string } | null;
   isFeatured: boolean;

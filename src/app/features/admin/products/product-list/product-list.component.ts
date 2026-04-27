@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, computed, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -44,6 +44,20 @@ export class ProductListComponent implements OnInit {
   protected readonly products = signal<Product[]>([]);
   protected readonly brands = signal<Brand[]>([]);
   protected readonly categories = signal<Category[]>([]);
+
+  // Cascading filter: only categories compatible with the selected vehicleType
+  // (or universal categories tagged with VehicleType.ALL) appear in the dropdown.
+  // Mirrors the public catalog UX so admins don't combine incompatible
+  // vehicleType + category and end up with an empty result set.
+  protected readonly filteredCategories = computed(() => {
+    const selectedVehicleType = this.filters().vehicleType;
+    const allCats = this.categories();
+    if (!selectedVehicleType) return allCats;
+    return allCats.filter(cat =>
+      cat.vehicleTypes?.includes(selectedVehicleType as VehicleType) ||
+      cat.vehicleTypes?.includes(VehicleType.ALL)
+    );
+  });
 
   // Stock cache per product
   protected readonly productStockMap = signal<Map<string, number>>(new Map());
@@ -239,7 +253,24 @@ export class ProductListComponent implements OnInit {
    * Cambiar filtro y aplicar automáticamente
    */
   onFilterChange(key: keyof ProductQueryParams, value: any): void {
-    this.filters.update((f) => ({ ...f, [key]: value || undefined, page: 1 }));
+    this.filters.update((f) => {
+      const updated: ProductQueryParams = { ...f, [key]: value || undefined, page: 1 };
+
+      // Cascading reset: when vehicleType changes, drop the selected category
+      // if it is no longer compatible with the new vehicleType. Universal
+      // categories (vehicleTypes includes VehicleType.ALL) survive any change.
+      if (key === 'vehicleType') {
+        const selectedCat = this.categories().find(c => c.id === f.category);
+        if (selectedCat && value) {
+          const catMatches =
+            selectedCat.vehicleTypes?.includes(value as VehicleType) ||
+            selectedCat.vehicleTypes?.includes(VehicleType.ALL);
+          if (!catMatches) updated.category = '';
+        }
+      }
+
+      return updated;
+    });
     this.loadProducts();
   }
 

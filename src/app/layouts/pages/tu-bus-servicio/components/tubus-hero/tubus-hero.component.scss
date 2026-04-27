@@ -84,6 +84,21 @@
   @apply inline-flex items-center gap-3 px-5 py-3 rounded-xl mb-8;
   background: linear-gradient(135deg, rgba(var(--tubus-primary-rgb), 0.1) 0%, rgba(var(--tubus-primary-rgb), 0.05) 100%);
   border: 1px solid rgba(var(--tubus-primary-rgb), 0.2);
+  // Native button reset — keeps the design consistent when rendered as <button>
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px -8px rgba(var(--tubus-primary-rgb), 0.4);
+    border-color: rgba(var(--tubus-primary-rgb), 0.4);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
 }
 
 .promo-icon {

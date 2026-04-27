@@ -7,8 +7,9 @@ import { BranchService } from '../../../../core/services/branch.service';
 import { UploadService } from '../../../../core/services/upload.service';
 import { ScheduleDay } from '../../../../models/mechanic.model';
 import {
-  NAME_PATTERN, PHONE_VE_PATTERN, EMAIL_PATTERN, MAX_NAME_LENGTH, noNumbersValidator,
+  NAME_PATTERN, EMAIL_PATTERN, MAX_NAME_LENGTH, noNumbersValidator, venezuelanPhoneValidator,
 } from '../../../../shared/validators/form-validators';
+import { toVenezuelanE164 } from '../../../../shared/utils/phone.util';
 import { MechanicAvatarComponent } from '../../../../shared/components/mechanic-avatar/mechanic-avatar.component';
 import { ToastService } from '../../../../shared/services/toast.service';
 
@@ -65,7 +66,7 @@ export class MechanicFormComponent implements OnInit {
 
   protected readonly form: FormGroup = this.fb.group({
     name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(MAX_NAME_LENGTH), Validators.pattern(NAME_PATTERN), noNumbersValidator]],
-    whatsapp: ['', [Validators.required, Validators.pattern(PHONE_VE_PATTERN)]],
+    whatsapp: ['', [Validators.required, venezuelanPhoneValidator]],
     email: ['', [Validators.pattern(EMAIL_PATTERN)]],
     serviceDurationMinutes: [90, [Validators.required, Validators.min(15), Validators.max(720)]],
     schedule: this.fb.array([]),
@@ -252,7 +253,7 @@ export class MechanicFormComponent implements OnInit {
     const val = this.form.value;
     const data = {
       name: val.name,
-      whatsapp: val.whatsapp,
+      whatsapp: toVenezuelanE164(val.whatsapp),
       email: val.email || undefined,
       avatar: this.avatarUrl() || undefined,
       branches: this.selectedBranches().map(b => b.id),

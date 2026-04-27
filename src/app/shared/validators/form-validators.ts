@@ -1,4 +1,5 @@
 import { AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
+import { toVenezuelanE164 } from '../utils/phone.util';
 
 // ==================== REGEX PATTERNS ====================
 
@@ -52,6 +53,16 @@ export function noNumbersValidator(control: AbstractControl): ValidationErrors |
     return { noNumbers: true };
   }
   return null;
+}
+
+/**
+ * Accepts Venezuelan mobile numbers in either local (`04XXXXXXXXX`) or
+ * international (`+58XXXXXXXXXX` / `58XXXXXXXXXX`) format. Empty values are
+ * skipped so `Validators.required` owns emptiness.
+ */
+export function venezuelanPhoneValidator(control: AbstractControl): ValidationErrors | null {
+  if (!control.value) return null;
+  return toVenezuelanE164(control.value) ? null : { venezuelanPhone: true };
 }
 
 /**

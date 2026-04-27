@@ -72,7 +72,7 @@
           (ngModelChange)="onFilterChange('category', $event)"
         >
           <option value="" selected>Todas las categorías</option>
-          @for (cat of categories(); track cat.id) {
+          @for (cat of filteredCategories(); track cat.id) {
             <option [value]="cat.id">{{ cat.name }}</option>
           }
         </select>
@@ -81,7 +81,7 @@
       <!-- Búsqueda -->
       <div class="filter-group search">
         <app-search-input
-          placeholder="Buscar por nombre, modelo..."
+          placeholder="Buscar por nombre, modelo, linea..."
           ariaLabel="Buscar productos"
           [value]="filters().search || ''"
           [loading]="isSearching()"

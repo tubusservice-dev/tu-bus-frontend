@@ -66,8 +66,9 @@
 
             <div class="form-group">
               <label for="whatsapp">WhatsApp <span class="required">*</span></label>
-              <input type="tel" id="whatsapp" formControlName="whatsapp" placeholder="Ej: 584121234567" [class.error]="isInvalid('whatsapp')" maxlength="12" inputmode="tel" />
+              <input type="tel" id="whatsapp" formControlName="whatsapp" placeholder="04121234567 o +584121234567" [class.error]="isInvalid('whatsapp')" maxlength="13" inputmode="tel" />
               @if (hasError('whatsapp', 'required')) { <span class="error-text">El WhatsApp es requerido</span> }
+              @if (hasError('whatsapp', 'venezuelanPhone')) { <span class="error-text">Formato invalido. Use 04121234567 o +584121234567</span> }
             </div>
 
             <div class="form-group">

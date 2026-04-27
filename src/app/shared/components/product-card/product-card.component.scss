@@ -117,13 +117,27 @@
   @apply flex items-center justify-between gap-2 mb-1;
 }
 
+.card-header-left {
+  @apply flex items-center gap-1.5 min-w-0;
+}
+
 .brand-name {
-  @apply text-xs font-bold uppercase tracking-wider;
+  @apply text-xs font-bold uppercase tracking-wider truncate;
   color: var(--tubus-text-accent, #4d94ff);
 }
 
+.line-separator {
+  @apply text-xs font-bold;
+  color: var(--text-tertiary);
+}
+
+.line-name {
+  @apply text-xs font-semibold uppercase tracking-wide truncate;
+  color: var(--text-secondary);
+}
+
 .category-name {
-  @apply text-[10px] font-medium uppercase tracking-wide;
+  @apply text-[10px] font-medium uppercase tracking-wide flex-shrink-0;
   color: var(--text-tertiary);
 }
 
@@ -312,8 +326,13 @@
     color: #4d94ff;
   }
 
+  .line-separator,
   .category-name {
     color: #6b7280;
+  }
+
+  .line-name {
+    color: #9ca3af;
   }
 
   .card-title {
