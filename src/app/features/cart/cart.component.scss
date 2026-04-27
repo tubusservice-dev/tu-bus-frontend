@@ -180,7 +180,7 @@
 }
 
 .card-image {
-  @apply absolute inset-0 w-full h-full object-contain p-4;
+  @apply absolute inset-0 w-full h-full object-contain;
   background-color: var(--bg-tertiary);
 }
 

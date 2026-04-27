@@ -4,6 +4,7 @@ import { CityService } from '../../../core/services/city.service';
 import { LocationService } from '../../../core/services/location.service';
 import { City, Municipality } from '../../../models/city.model';
 import { SearchInputComponent } from '../search-input/search-input.component';
+import { BodyScrollLockService } from '../../services/body-scroll-lock.service';
 
 type ModalStep = 'city' | 'municipality' | 'no-coverage';
 
@@ -17,6 +18,8 @@ type ModalStep = 'city' | 'municipality' | 'no-coverage';
 export class ZoningModalComponent implements OnInit, OnDestroy {
   private readonly cityService = inject(CityService);
   protected readonly locationService = inject(LocationService);
+  private readonly scrollLock = inject(BodyScrollLockService);
+  private hasScrollLock = false;
 
   // ==================== INPUTS / OUTPUTS ====================
 
@@ -57,7 +60,13 @@ export class ZoningModalComponent implements OnInit, OnDestroy {
   constructor() {
     // Lock/unlock body scroll when modal opens/closes
     effect(() => {
-      document.body.style.overflow = this.isOpen() ? 'hidden' : '';
+      if (this.isOpen() && !this.hasScrollLock) {
+        this.scrollLock.lock();
+        this.hasScrollLock = true;
+      } else if (!this.isOpen() && this.hasScrollLock) {
+        this.scrollLock.unlock();
+        this.hasScrollLock = false;
+      }
     });
 
     // Watch for location resolution to close modal or show no-coverage
@@ -82,7 +91,10 @@ export class ZoningModalComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    document.body.style.overflow = '';
+    if (this.hasScrollLock) {
+      this.scrollLock.unlock();
+      this.hasScrollLock = false;
+    }
   }
 
   // ==================== METHODS ====================

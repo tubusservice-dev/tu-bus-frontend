@@ -27,6 +27,7 @@ import { CopyableValueComponent } from '../../../shared/components/copyable-valu
 import { DateInputComponent } from '../../../shared/components/date-input/date-input.component';
 import { ServiceDatePickerComponent } from '../../../shared/components/service-date-picker/service-date-picker.component';
 import { ClipboardService } from '../../../shared/services/clipboard.service';
+import { BodyScrollLockService } from '../../../shared/services/body-scroll-lock.service';
 
 @Component({
   selector: 'app-checkout-summary',
@@ -49,6 +50,7 @@ export class CheckoutSummaryComponent implements OnInit {
   private readonly router = inject(Router);
   protected readonly exchangeRateService = inject(ExchangeRateService);
   private readonly clipboard = inject(ClipboardService);
+  private readonly scrollLock = inject(BodyScrollLockService);
 
   protected readonly todayStr = new Date().toISOString().split('T')[0];
 
@@ -753,7 +755,7 @@ export class CheckoutSummaryComponent implements OnInit {
     const prefilled = this.computePrefilledAmount(group.type);
     this.formAmount.set(prefilled);
     this.showModal.set(true);
-    document.body.style.overflow = 'hidden';
+    this.scrollLock.lock();
   }
 
   /** Returns the pre-filled amount for the current modal's payment type */
@@ -800,7 +802,7 @@ export class CheckoutSummaryComponent implements OnInit {
     this.selectedMethodInModal.set(null);
     this.isSubmittingPayment.set(false);
     this.resetForm();
-    document.body.style.overflow = '';
+    this.scrollLock.unlock();
   }
 
   selectMethodInModal(method: PaymentMethodConfig): void {
@@ -951,10 +953,12 @@ export class CheckoutSummaryComponent implements OnInit {
   onGenerateOrder(): void {
     if (!this.canGenerateOrder()) return;
     this.showConfirmModal.set(true);
+    this.scrollLock.lock();
   }
 
   onCancelOrder(): void {
     this.showConfirmModal.set(false);
+    this.scrollLock.unlock();
   }
 
   onConfirmOrder(): void {
@@ -964,6 +968,7 @@ export class CheckoutSummaryComponent implements OnInit {
     setTimeout(() => {
       this.isProcessingConfirm.set(false);
       this.showConfirmModal.set(false);
+      this.scrollLock.unlock();
       this.isGenerating.set(true);
       this.errorMessage.set(null);
       this.executeOrder();

@@ -1,5 +1,6 @@
-import { Component, effect, input, output, signal, OnDestroy } from '@angular/core';
+import { Component, effect, inject, input, output, signal, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { BodyScrollLockService } from '../../services/body-scroll-lock.service';
 
 @Component({
   selector: 'app-rating-modal',
@@ -24,9 +25,18 @@ export class RatingModalComponent implements OnDestroy {
   protected readonly maxCommentLength = 500;
   protected readonly stars = [1, 2, 3, 4, 5];
 
+  private readonly scrollLock = inject(BodyScrollLockService);
+  private hasScrollLock = false;
+
   constructor() {
     effect(() => {
-      document.body.style.overflow = this.isOpen() ? 'hidden' : '';
+      if (this.isOpen() && !this.hasScrollLock) {
+        this.scrollLock.lock();
+        this.hasScrollLock = true;
+      } else if (!this.isOpen() && this.hasScrollLock) {
+        this.scrollLock.unlock();
+        this.hasScrollLock = false;
+      }
     });
 
     effect(() => {
@@ -37,7 +47,10 @@ export class RatingModalComponent implements OnDestroy {
   }
 
   ngOnDestroy(): void {
-    document.body.style.overflow = '';
+    if (this.hasScrollLock) {
+      this.scrollLock.unlock();
+      this.hasScrollLock = false;
+    }
   }
 
   protected setRating(value: number): void {

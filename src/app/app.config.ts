@@ -1,12 +1,13 @@
 import {
   ApplicationConfig,
+  ErrorHandler,
   provideBrowserGlobalErrorListeners,
   provideZoneChangeDetection,
   APP_INITIALIZER,
   LOCALE_ID,
   inject,
 } from '@angular/core';
-import { provideRouter, withViewTransitions, withInMemoryScrolling } from '@angular/router';
+import { provideRouter, withViewTransitions, withInMemoryScrolling, withNavigationErrorHandler } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { registerLocaleData } from '@angular/common';
 import localeEs from '@angular/common/locales/es';
@@ -14,6 +15,11 @@ import { routes } from './app.routes';
 import { authInterceptor } from './core/interceptors';
 import { AuthService, SettingsService } from './core/services';
 import { ExchangeRateService } from './core/services/exchange-rate.service';
+import {
+  ChunkLoadErrorHandler,
+  isChunkLoadError,
+  reloadOnceForStaleBuild,
+} from './core/error-handlers/chunk-load-error.handler';
 
 // Register Spanish locale so the `date` pipe can format with 'es'
 registerLocaleData(localeEs, 'es');
@@ -62,11 +68,19 @@ export const appConfig: ApplicationConfig = {
       // OverlayStackService is the sole authority over scroll; forward
       // navigations scroll to top via a dedicated NavigationStart/End
       // listener in that service.
-      withInMemoryScrolling({ scrollPositionRestoration: 'disabled' })
+      withInMemoryScrolling({ scrollPositionRestoration: 'disabled' }),
+      // Recover from stale-build errors after a deploy: when a lazy-loaded
+      // route fails because its chunk no longer exists on the server, force
+      // a single reload so the browser picks up the new index.html and
+      // refreshed chunk references.
+      withNavigationErrorHandler((error) => {
+        if (isChunkLoadError(error)) reloadOnceForStaleBuild();
+      })
     ),
     provideHttpClient(withInterceptors([
       authInterceptor,
     ])),
+    { provide: ErrorHandler, useClass: ChunkLoadErrorHandler },
     {
       provide: APP_INITIALIZER,
       useFactory: initializeAuth,

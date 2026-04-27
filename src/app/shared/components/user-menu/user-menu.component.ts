@@ -4,6 +4,7 @@ import { AuthService } from '../../../core/services';
 import { ThemeService } from '../../../core/services/theme.service';
 import { UserNotificationService } from '../../../core/services/user-notification.service';
 import { ClickOutsideDirective } from '../../directives/click-outside.directive';
+import { BodyScrollLockService } from '../../services/body-scroll-lock.service';
 
 @Component({
   selector: 'app-user-menu',
@@ -16,6 +17,7 @@ export class UserMenuComponent {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   protected readonly themeService = inject(ThemeService);
+  private readonly scrollLock = inject(BodyScrollLockService);
 
   protected readonly user = this.authService.currentUser;
   protected readonly userName = this.authService.userFullName;
@@ -39,17 +41,17 @@ export class UserMenuComponent {
   requestLogout(): void {
     this.closeMenu();
     this.showLogoutModal.set(true);
-    document.body.style.overflow = 'hidden';
+    this.scrollLock.lock();
   }
 
   cancelLogout(): void {
     this.showLogoutModal.set(false);
-    document.body.style.overflow = '';
+    this.scrollLock.unlock();
   }
 
   confirmLogout(): void {
     this.showLogoutModal.set(false);
-    document.body.style.overflow = '';
+    this.scrollLock.unlock();
     this.authService.logout();
   }
 
