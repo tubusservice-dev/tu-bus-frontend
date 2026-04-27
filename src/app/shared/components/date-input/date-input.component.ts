@@ -3,6 +3,7 @@ import {
   Component,
   computed,
   forwardRef,
+  inject,
   input,
   output,
   signal,
@@ -16,6 +17,7 @@ import {
   parseFlexibleDate,
   isWithinBounds,
 } from './utils/date-format.util';
+import { BodyScrollLockService } from '../../services/body-scroll-lock.service';
 
 /**
  * Shared single-date input with a centered-modal calendar picker.
@@ -98,6 +100,8 @@ export class DateInputComponent implements ControlValueAccessor {
 
   private onChange: (value: string) => void = () => {};
   private onTouched: () => void = () => {};
+
+  private readonly scrollLock = inject(BodyScrollLockService);
 
   // ========== Lifecycle ==========
 
@@ -193,14 +197,14 @@ export class DateInputComponent implements ControlValueAccessor {
     if (this.resolvedDisabled()) return;
     // Lock body scroll while the modal is open to prevent background scroll
     if (typeof document !== 'undefined') {
-      document.body.style.overflow = 'hidden';
+      this.scrollLock.lock();
     }
     this.isOpen.set(true);
   }
 
   protected closePanel(): void {
     if (typeof document !== 'undefined') {
-      document.body.style.overflow = '';
+      this.scrollLock.unlock();
     }
     this.isOpen.set(false);
     this.onTouched();

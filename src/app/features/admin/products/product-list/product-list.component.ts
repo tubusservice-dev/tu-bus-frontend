@@ -18,6 +18,7 @@ import {
 } from '../../../../models';
 import { ImageCarouselComponent } from '../../../../shared/components/image-carousel/image-carousel.component';
 import { SearchInputComponent } from '../../../../shared/components/search-input/search-input.component';
+import { BodyScrollLockService } from '../../../../shared/services/body-scroll-lock.service';
 
 @Component({
   selector: 'app-product-list',
@@ -34,6 +35,7 @@ export class ProductListComponent implements OnInit {
   private readonly branchProductService = inject(BranchProductService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly scrollLock = inject(BodyScrollLockService);
 
   /** True while a search is being processed */
   protected readonly isSearching = signal(false);
@@ -366,7 +368,7 @@ export class ProductListComponent implements OnInit {
   openDetails(product: Product): void {
     this.selectedProduct.set(product);
     this.selectedImageIndex.set(0);
-    document.body.style.overflow = 'hidden';
+    this.scrollLock.lock();
   }
 
   /**
@@ -375,7 +377,7 @@ export class ProductListComponent implements OnInit {
   closeDetails(): void {
     this.selectedProduct.set(null);
     this.selectedImageIndex.set(0);
-    document.body.style.overflow = '';
+    this.scrollLock.unlock();
   }
 
   /**

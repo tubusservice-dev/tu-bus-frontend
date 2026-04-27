@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, effect, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ReviewService } from '../../../../core/services/review.service';
@@ -8,6 +8,7 @@ import {
   ReviewAdminSummary,
   ReviewUserPopulated,
 } from '../../../../models/review.model';
+import { BodyScrollLockService } from '../../../../shared/services/body-scroll-lock.service';
 
 type RatingFilter = 'all' | 1 | 2 | 3 | 4 | 5;
 type ResponseFilter = 'all' | 'with' | 'without';
@@ -19,8 +20,10 @@ type ResponseFilter = 'all' | 'with' | 'without';
   templateUrl: './review-list.component.html',
   styleUrl: './review-list.component.scss',
 })
-export class AdminReviewListComponent implements OnInit {
+export class AdminReviewListComponent implements OnInit, OnDestroy {
   private readonly reviewService = inject(ReviewService);
+  private readonly scrollLock = inject(BodyScrollLockService);
+  private hasScrollLock = false;
 
   // ==================== LIST STATE ====================
   protected readonly reviews = signal<Review[]>([]);
@@ -55,13 +58,26 @@ export class AdminReviewListComponent implements OnInit {
 
   constructor() {
     effect(() => {
-      document.body.style.overflow = this.showDetailModal() ? 'hidden' : '';
+      if (this.showDetailModal() && !this.hasScrollLock) {
+        this.scrollLock.lock();
+        this.hasScrollLock = true;
+      } else if (!this.showDetailModal() && this.hasScrollLock) {
+        this.scrollLock.unlock();
+        this.hasScrollLock = false;
+      }
     });
   }
 
   ngOnInit(): void {
     this.loadSummary();
     this.loadReviews();
+  }
+
+  ngOnDestroy(): void {
+    if (this.hasScrollLock) {
+      this.scrollLock.unlock();
+      this.hasScrollLock = false;
+    }
   }
 
   // ==================== LOAD ====================
