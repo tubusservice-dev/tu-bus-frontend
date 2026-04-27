@@ -67,6 +67,21 @@
 
   <!-- ==================== CONTENIDO ==================== -->
   @else if (order(); as o) {
+    <!-- Mobile-only: promote comments above all sections when the order has
+         at least one comment, so the user sees the conversation immediately
+         without scrolling. Hidden on desktop because the original instance
+         in the right column already serves that layout. -->
+    @if (o.comments && o.comments.length > 0) {
+      <div class="comments-mobile-top lg:hidden mb-4">
+        <app-order-comments
+          [orderId]="o.id"
+          [comments]="o.comments"
+          mode="client"
+          (commentsUpdated)="onCommentsUpdated($event)"
+        />
+      </div>
+    }
+
     <div class="detail-grid">
 
       <!-- ===== COLUMNA IZQUIERDA ===== -->
@@ -283,12 +298,16 @@
         }
 
         <!-- ===== SECCIÓN: COMENTARIOS (cliente) ===== -->
-        <app-order-comments
-          [orderId]="o.id"
-          [comments]="o.comments || []"
-          mode="client"
-          (commentsUpdated)="onCommentsUpdated($event)"
-        />
+        <!-- Wrapper hides this instance on mobile when the top instance is
+             already rendering above the grid. Desktop always shows it here. -->
+        <div [class.hidden]="(o.comments?.length ?? 0) > 0" class="lg:!block">
+          <app-order-comments
+            [orderId]="o.id"
+            [comments]="o.comments || []"
+            mode="client"
+            (commentsUpdated)="onCommentsUpdated($event)"
+          />
+        </div>
 
         <!-- ===== SECCIÓN 3: DATOS DEL PAGO ===== -->
         <section class="detail-card">
