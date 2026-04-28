@@ -16,11 +16,9 @@ RUN npm run build:prod
 # ---------- Stage 2: Runtime ----------
 FROM nginx:1.27-alpine AS runtime
 
-# Drop default Nginx site
+# Replace default Nginx site with our SPA config (static port 8080)
 RUN rm -f /etc/nginx/conf.d/default.conf
-
-# Nginx Alpine auto-processes templates with envsubst at startup
-COPY nginx.conf /etc/nginx/templates/default.conf.template
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Static assets produced by @angular/build:application
 COPY --from=builder /app/dist/tubus-express/browser /usr/share/nginx/html
