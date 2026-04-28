@@ -31,6 +31,11 @@ export class SettingsComponent implements OnInit {
   private readonly uploadService = inject(UploadService);
   protected readonly exchangeRateService = inject(ExchangeRateService);
 
+  // Current site location — used in inline help text so prod admins see
+  // their real domain instead of "localhost:4200".
+  protected readonly currentHost = window.location.host;
+  protected readonly currentOrigin = window.location.origin;
+
   // Estado
   protected readonly isLoading = signal(true);
   protected readonly settings = signal<Settings | null>(null);
