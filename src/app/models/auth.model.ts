@@ -26,8 +26,59 @@ export interface AuthResponse {
   message: string;
   data: {
     user: User;
-    token: string;
+    token?: string;
+    /** Set to true when EMAIL_VERIFICATION_REQUIRED is on AND the user just registered. */
+    requiresVerification?: boolean;
   };
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Forgot / Reset password
+// ──────────────────────────────────────────────────────────────────────────
+
+export interface ForgotPasswordResponse {
+  success: boolean;
+  message?: string;
+  data: {
+    /** false → email is not registered (frontend shows "register?" modal). */
+    exists: boolean;
+  };
+}
+
+export interface VerifyResetTokenResponse {
+  success: boolean;
+  data: {
+    valid: boolean;
+    reason?: 'expired' | 'used' | 'invalid';
+  };
+}
+
+export interface ResetPasswordResponse {
+  success: boolean;
+  message?: string;
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Email verification
+// ──────────────────────────────────────────────────────────────────────────
+
+export interface VerifyEmailResponse {
+  success: boolean;
+  message?: string;
+}
+
+export interface ResendVerificationResponse {
+  success: boolean;
+  message?: string;
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Email-uniqueness check (async validator)
+// ──────────────────────────────────────────────────────────────────────────
+
+export interface CheckEmailResponse {
+  success: boolean;
+  data: { exists: boolean };
 }
 
 export interface ApiResponse<T = unknown> {

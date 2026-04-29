@@ -1,0 +1,60 @@
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.modal-overlay {
+  @apply fixed inset-0 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm;
+  z-index: 1100;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-container {
+  @apply w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden;
+  animation: slideUp 0.3s ease-out;
+}
+
+.modal-header {
+  @apply flex items-center justify-between p-6 pb-2;
+}
+
+.modal-title { @apply text-xl font-bold text-gray-900 dark:text-white; }
+
+.close-btn {
+  @apply p-2 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-300
+    hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors;
+  svg { @apply w-5 h-5; }
+}
+
+.modal-content { @apply px-6 pb-6 pt-2 text-center; }
+
+.info-icon {
+  @apply mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4;
+  @apply bg-blue-100 dark:bg-blue-900/30;
+  svg { @apply w-10 h-10 text-blue-600 dark:text-blue-400; }
+}
+
+.message {
+  @apply text-gray-700 dark:text-gray-300 mb-2 leading-relaxed;
+}
+
+.cta {
+  @apply text-sm text-gray-600 dark:text-gray-400 mb-6;
+}
+
+.actions {
+  @apply flex gap-3;
+}
+
+.btn-primary {
+  @apply flex-1 py-2.5 px-4 rounded-lg text-white font-medium transition-colors;
+  background-color: var(--accent-primary, #001d56);
+  &:hover { background-color: var(--accent-hover, #001234); }
+}
+
+.btn-secondary {
+  @apply flex-1 py-2.5 px-4 rounded-lg font-medium transition-colors
+    bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200
+    hover:bg-gray-200 dark:hover:bg-gray-600;
+}

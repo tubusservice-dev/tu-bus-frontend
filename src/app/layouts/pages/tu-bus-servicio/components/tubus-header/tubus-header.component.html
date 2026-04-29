@@ -114,5 +114,46 @@
 
 <!-- Auth Modal -->
 @if (isAuthModalOpen()) {
-  <app-auth-modal (closeModal)="closeAuthModal()" />
+  <app-auth-modal
+    [initialMode]="authModalInitialMode()"
+    [prefillEmail]="authModalPrefillEmail()"
+    (closeModal)="closeAuthModal()"
+    (verificationPending)="onVerificationPending($event)"
+    (forgotPasswordRequested)="onForgotPasswordRequested()"
+  />
+}
+
+<!-- Modal: Olvidé contraseña -->
+@if (showForgotPasswordModal()) {
+  <app-forgot-password-modal
+    (closeModal)="closeForgotPasswordModal()"
+    (emailSent)="onForgotPasswordSent($event)"
+    (emailNotFound)="onForgotPasswordEmailNotFound($event)"
+  />
+}
+
+<!-- Modal: Email no encontrado -->
+@if (showEmailNotFoundModal()) {
+  <app-email-not-found-modal
+    [email]="emailContext()"
+    (closeModal)="closeEmailNotFoundModal()"
+    (goToRegister)="onGoToRegister($event)"
+  />
+}
+
+<!-- Modal: Correo enviado -->
+@if (showEmailSentModal()) {
+  <app-email-sent-modal
+    [email]="emailContext()"
+    (closeModal)="closeEmailSentModal()"
+  />
+}
+
+<!-- Modal: Verificación pendiente (post-registro) -->
+@if (showVerifyPendingModal()) {
+  <app-verify-email-pending-modal
+    [email]="emailContext()"
+    [firstName]="firstNameContext()"
+    (closeModal)="closeVerifyPendingModal()"
+  />
 }

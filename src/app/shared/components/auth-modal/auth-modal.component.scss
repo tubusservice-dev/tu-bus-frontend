@@ -108,6 +108,24 @@
   animation: spin 0.8s linear infinite;
 }
 
+.forgot-link-row {
+  @apply mt-3 text-center;
+}
+
+.resend-row {
+  @apply mt-2 text-center;
+  .resend-feedback {
+    @apply mt-2 text-xs text-gray-600 dark:text-gray-400;
+  }
+}
+
+.link-btn {
+  @apply inline-block bg-transparent border-0 cursor-pointer p-0 text-sm
+    text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white
+    underline transition-colors;
+  &:disabled { @apply opacity-60 cursor-not-allowed no-underline; }
+}
+
 // ========== Stepper ==========
 .stepper-indicator {
   @apply flex items-center justify-center mb-5;

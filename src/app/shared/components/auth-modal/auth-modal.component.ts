@@ -1,4 +1,4 @@
-import { Component, signal, output, inject, OnInit, OnDestroy } from '@angular/core';
+import { Component, signal, output, input, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
@@ -6,6 +6,7 @@ import { AuthService } from '../../../core/services';
 import { RegisterRequest } from '../../../models/auth.model';
 import { DateInputComponent } from '../date-input/date-input.component';
 import { minAgeValidator } from '../../validators/form-validators';
+import { emailUniqueValidator } from '../../validators/email-unique.validator';
 
 /** Minimum age (years) required to create an account. */
 const MIN_REGISTRATION_AGE = 18;
@@ -24,7 +25,15 @@ export class AuthModalComponent implements OnInit, OnDestroy {
   private readonly authService = inject(AuthService);
   private docTypeSub: Subscription | null = null;
 
+  /** Optional: parent can request the modal to open in register mode with prefilled email. */
+  readonly initialMode = input<AuthMode>('login');
+  readonly prefillEmail = input<string>('');
+
   readonly closeModal = output<void>();
+  /** Emitted after a successful registration that requires verification. */
+  readonly verificationPending = output<{ email: string; firstName: string }>();
+  /** Emitted when the user clicks "¿Olvidaste tu contraseña?" — parent opens forgot modal. */
+  readonly forgotPasswordRequested = output<void>();
 
   /**
    * Latest ISO `YYYY-MM-DD` a user may pick as birth date.
@@ -67,7 +76,14 @@ export class AuthModalComponent implements OnInit, OnDestroy {
   protected readonly step1Form: FormGroup = this.fb.group({
     firstName: ['', [Validators.required, Validators.minLength(2)]],
     lastName: ['', [Validators.required, Validators.minLength(2)]],
-    email: ['', [Validators.required, Validators.email]],
+    email: [
+      '',
+      {
+        validators: [Validators.required, Validators.email],
+        asyncValidators: [emailUniqueValidator(this.authService)],
+        updateOn: 'blur',
+      },
+    ],
     password: ['', [Validators.required, Validators.minLength(6)]],
     confirmPassword: ['', [Validators.required]],
   });
@@ -82,6 +98,16 @@ export class AuthModalComponent implements OnInit, OnDestroy {
   });
 
   ngOnInit(): void {
+    // Apply initial mode + prefill if the parent requested register-with-email
+    if (this.initialMode() === 'register') {
+      this.mode.set('register');
+    }
+    const prefill = this.prefillEmail();
+    if (prefill) {
+      this.step1Form.patchValue({ email: prefill });
+      this.loginForm.patchValue({ email: prefill });
+    }
+
     if (this.sessionExpired()) {
       setTimeout(() => this.authService.clearSessionExpired(), 5000);
     }
@@ -171,6 +197,11 @@ export class AuthModalComponent implements OnInit, OnDestroy {
 
   // ========== Submit ==========
 
+  // Tracks the unverified email so the user can resend the verification mail
+  protected readonly unverifiedEmail = signal<string | null>(null);
+  protected readonly resendingVerification = signal(false);
+  protected readonly resendFeedback = signal<string | null>(null);
+
   onLogin(): void {
     if (this.loginForm.invalid) {
       this.loginForm.markAllAsTouched();
@@ -179,6 +210,8 @@ export class AuthModalComponent implements OnInit, OnDestroy {
 
     this.isLoading.set(true);
     this.errorMessage.set(null);
+    this.unverifiedEmail.set(null);
+    this.resendFeedback.set(null);
 
     this.authService.login(this.loginForm.value).subscribe({
       next: () => {
@@ -187,6 +220,17 @@ export class AuthModalComponent implements OnInit, OnDestroy {
       },
       error: (error) => {
         this.isLoading.set(false);
+
+        // EMAIL_NOT_VERIFIED → render inline message + "Reenviar correo" CTA
+        if (error.error?.code === 'EMAIL_NOT_VERIFIED') {
+          const email = error.error?.details?.email || this.loginForm.value.email;
+          this.unverifiedEmail.set(email);
+          this.errorMessage.set(
+            'Debes verificar tu correo electrónico antes de iniciar sesión.'
+          );
+          return;
+        }
+
         // When the account is blocked/suspended/deleted, raise the global
         // modal and close this form — the inline error is insufficient.
         if (this.authService.triggerAccountBlocked(error)) {
@@ -196,6 +240,33 @@ export class AuthModalComponent implements OnInit, OnDestroy {
         this.errorMessage.set(error.error?.message || 'Error al iniciar sesión. Intenta de nuevo.');
       },
     });
+  }
+
+  /** Re-sends the verification email when login was blocked by EMAIL_NOT_VERIFIED. */
+  onResendVerificationFromLogin(): void {
+    const email = this.unverifiedEmail();
+    if (!email) return;
+
+    this.resendingVerification.set(true);
+    this.resendFeedback.set(null);
+
+    this.authService.resendVerification(email).subscribe({
+      next: () => {
+        this.resendingVerification.set(false);
+        this.resendFeedback.set('Correo reenviado. Revisa tu bandeja de entrada.');
+      },
+      error: (err) => {
+        this.resendingVerification.set(false);
+        this.resendFeedback.set(
+          err.error?.message || 'No pudimos reenviar el correo. Intenta más tarde.'
+        );
+      },
+    });
+  }
+
+  /** Triggered by the "¿Olvidaste tu contraseña?" link in login mode. */
+  onForgotPasswordClick(): void {
+    this.forgotPasswordRequested.emit();
   }
 
   onRegister(): void {
@@ -228,10 +299,20 @@ export class AuthModalComponent implements OnInit, OnDestroy {
     this.authService.register(payload).subscribe({
       next: (response) => {
         this.isLoading.set(false);
-        // Show the in-modal success screen; user stays authenticated (handleAuthSuccess
-        // already ran inside AuthService.register via tap). The modal stays open
-        // until they press "Continuar" — parent never navigates.
-        this.registeredFirstName.set(response?.data?.user?.firstName || '');
+        const firstName = response?.data?.user?.firstName || '';
+        const email = response?.data?.user?.email || payload.email;
+
+        // Verification-pending path: backend did NOT return a token,
+        // user is NOT authenticated. Delegate to parent to show the
+        // verify-email-pending modal.
+        if (response?.data?.requiresVerification) {
+          this.verificationPending.emit({ email, firstName });
+          return;
+        }
+
+        // Legacy path (auto-login already happened in the service): show
+        // the in-modal success screen.
+        this.registeredFirstName.set(firstName);
         this.registrationSuccess.set(true);
       },
       error: (error) => {
@@ -240,6 +321,8 @@ export class AuthModalComponent implements OnInit, OnDestroy {
         if (body?.errors?.length) {
           const details = body.errors.map((e: { message: string }) => e.message).join('. ');
           this.errorMessage.set(details);
+        } else if (body?.code === 'EMAIL_ALREADY_REGISTERED') {
+          this.errorMessage.set('Este correo ya está registrado. Intenta iniciar sesión.');
         } else {
           this.errorMessage.set(body?.message || 'Error al registrarse. Intenta de nuevo.');
         }
@@ -291,6 +374,9 @@ export class AuthModalComponent implements OnInit, OnDestroy {
     }
     if (control.errors['minAge']) {
       return `Debes tener al menos ${control.errors['minAge'].requiredAge} años para registrarte`;
+    }
+    if (control.errors['emailTaken']) {
+      return 'Este correo ya está registrado';
     }
 
     return 'Campo inválido';
