@@ -11,6 +11,10 @@ import {
   FuelType,
   VehicleType,
 } from '../../models/product.model';
+import {
+  AdminProductByBranchListResponse,
+  AdminProductByBranchQuery,
+} from '../../models/admin-product-by-branch.model';
 
 export interface ShowcaseCategory {
   name: string;
@@ -325,5 +329,24 @@ export class ProductService {
     return this.http.patch<ProductResponse>(`${this.adminUrl}/${id}/stock`, {
       quantity,
     });
+  }
+
+  /**
+   * Listado optimizado para la vista de tabla del admin con filtro por sucursal.
+   * Una sola query agregada en backend (sin N+1 sobre BranchProducts).
+   */
+  getAllByBranch(
+    params: AdminProductByBranchQuery
+  ): Observable<AdminProductByBranchListResponse> {
+    let httpParams = new HttpParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        httpParams = httpParams.set(key, value.toString());
+      }
+    });
+    return this.http.get<AdminProductByBranchListResponse>(
+      `${this.adminUrl}/by-branch`,
+      { params: httpParams }
+    );
   }
 }

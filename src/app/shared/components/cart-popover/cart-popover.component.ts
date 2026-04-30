@@ -4,6 +4,7 @@ import { CurrencyPipe } from '@angular/common';
 import { CartService, CartItem } from '../../../core/services/cart.service';
 import { ExchangeRateService } from '../../../core/services/exchange-rate.service';
 import { OverlayStackService } from '../../../core/services/overlay-stack.service';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-cart-popover',
@@ -17,6 +18,7 @@ export class CartPopoverComponent {
   private readonly router = inject(Router);
   protected readonly exchangeRateService = inject(ExchangeRateService);
   private readonly overlayService = inject(OverlayStackService);
+  private readonly authService = inject(AuthService);
 
   /** Controla si el popover está abierto */
   protected readonly isOpen = signal(false);
@@ -31,11 +33,23 @@ export class CartPopoverComponent {
   @Input() mobileNavigatesToCart = true;
 
   togglePopover(): void {
+    if (!this.requireAuth()) return;
     if (this.mobileNavigatesToCart && this.isMobileViewport()) {
       this.goToCart();
       return;
     }
     this.isOpen.update((value) => !value);
+  }
+
+  /**
+   * Guards every entry point that would expose cart data. Unauthenticated
+   * users see the auth modal instead of the popover or overlay.
+   * @returns true when the caller may proceed.
+   */
+  private requireAuth(): boolean {
+    if (this.authService.isAuthenticated()) return true;
+    this.authService.openAuthModal('login');
+    return false;
   }
 
   private isMobileViewport(): boolean {
@@ -49,6 +63,7 @@ export class CartPopoverComponent {
 
   /** Abre el carrito como overlay sobre la vista actual. */
   goToCart(): void {
+    if (!this.requireAuth()) return;
     this.overlayService.openCart();
     this.closePopover();
   }
@@ -59,6 +74,7 @@ export class CartPopoverComponent {
   }
 
   onContinue(): void {
+    if (!this.requireAuth()) return;
     this.overlayService.openCart();
     this.closePopover();
   }

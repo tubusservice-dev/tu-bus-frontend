@@ -16,6 +16,7 @@ import {
   KebabMenuAction,
 } from '../../../../shared/components/kebab-menu/kebab-menu.component';
 import { UserAvatarComponent } from '../../../../shared/components/user-avatar/user-avatar.component';
+import { DateInputComponent } from '../../../../shared/components/date-input/date-input.component';
 
 type StatusFilter = 'all' | UserStatus;
 
@@ -38,6 +39,7 @@ interface StatusModal {
     SearchInputComponent,
     KebabMenuComponent,
     UserAvatarComponent,
+    DateInputComponent,
   ],
   templateUrl: './user-list.component.html',
   styleUrl: './user-list.component.scss',
@@ -71,6 +73,9 @@ export class UserListComponent implements OnInit {
   protected readonly modalSuspendedUntil = signal('');
   protected readonly modalError = signal<string | null>(null);
   protected readonly modalBusy = signal(false);
+
+  /** Today as ISO YYYY-MM-DD in local timezone. Used as min for the suspend-until picker. */
+  protected readonly todayIso = this.computeTodayIso();
 
   protected readonly statusChips: { key: StatusFilter; label: string }[] = [
     { key: 'all', label: 'Todos' },
@@ -285,7 +290,7 @@ export class UserListComponent implements OnInit {
       status: modal.target,
       ...(reason ? { reason } : {}),
       ...(modal.allowsDuration && this.modalSuspendedUntil()
-        ? { suspendedUntil: new Date(this.modalSuspendedUntil()).toISOString() }
+        ? { suspendedUntil: this.toEndOfDayLocalIso(this.modalSuspendedUntil()) }
         : {}),
     };
 
@@ -312,6 +317,27 @@ export class UserListComponent implements OnInit {
   closeDeleteModal(): void {
     if (this.modalBusy()) return;
     this.userToDelete.set(null);
+  }
+
+  /**
+   * Converts an ISO date (`YYYY-MM-DD`) into an ISO timestamp at the end of
+   * that day in the browser's local timezone. The picker only emits the date
+   * portion; suspending "until 31/05/2026" must reach 23:59:59 local — not
+   * midnight UTC, which would silently shift to the previous day in negative
+   * UTC offsets like Venezuela's.
+   */
+  private toEndOfDayLocalIso(iso: string): string {
+    const [year, month, day] = iso.split('-').map(Number);
+    return new Date(year, month - 1, day, 23, 59, 59, 999).toISOString();
+  }
+
+  /** Returns today's date as `YYYY-MM-DD` in the local timezone. */
+  private computeTodayIso(): string {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
   }
 
   confirmDelete(): void {

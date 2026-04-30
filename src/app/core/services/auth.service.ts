@@ -95,12 +95,28 @@ export class AuthService {
   private readonly authModalOpenSignal = signal(false);
   readonly authModalOpen = this.authModalOpenSignal.asReadonly();
 
-  openAuthModal(): void {
+  /**
+   * Initial state for the global auth modal. Owned by the service so any
+   * component can request a specific open mode (login vs register, with an
+   * optional email prefill) without holding local copies of these signals.
+   * The modal itself is mounted at the application root — see app.html.
+   */
+  private readonly authModalInitialModeSignal = signal<'login' | 'register'>('login');
+  readonly authModalInitialMode = this.authModalInitialModeSignal.asReadonly();
+
+  private readonly authModalPrefillEmailSignal = signal<string>('');
+  readonly authModalPrefillEmail = this.authModalPrefillEmailSignal.asReadonly();
+
+  openAuthModal(mode: 'login' | 'register' = 'login', prefillEmail = ''): void {
+    this.authModalInitialModeSignal.set(mode);
+    this.authModalPrefillEmailSignal.set(prefillEmail);
     this.authModalOpenSignal.set(true);
   }
 
   closeAuthModal(): void {
     this.authModalOpenSignal.set(false);
+    this.authModalInitialModeSignal.set('login');
+    this.authModalPrefillEmailSignal.set('');
   }
 
   /** Usuario actual (solo lectura) */

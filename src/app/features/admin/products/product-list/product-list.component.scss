@@ -57,6 +57,10 @@
   @apply bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700;
 }
 
+.filters-search {
+  @apply mb-3;
+}
+
 .filters-grid {
   @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3;
 }
@@ -349,13 +353,21 @@
     @apply divide-y divide-gray-200 dark:divide-gray-700;
 
     tr {
-      @apply hover:bg-gray-50 dark:hover:bg-gray-700/30;
+      @apply hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors;
+
+      &.table-row-clickable {
+        @apply cursor-pointer;
+      }
     }
 
     td {
       @apply px-4 py-3 text-sm text-gray-700 dark:text-gray-300;
     }
   }
+}
+
+.empty-table-cell {
+  @apply text-center text-gray-500 dark:text-gray-400 py-8 italic;
 }
 
 .table-product {
