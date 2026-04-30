@@ -13,7 +13,6 @@ import {
   OrderStatus,
   ServiceDateTier,
 } from '../../../../models/order.model';
-import { environment } from '../../../../../environments/environment';
 import { MechanicAvatarComponent } from '../../../../shared/components/mechanic-avatar/mechanic-avatar.component';
 import { DateInputComponent } from '../../../../shared/components/date-input/date-input.component';
 import { SlotsSuggestionsComponent } from '../slots-suggestions/slots-suggestions.component';
@@ -837,7 +836,7 @@ export class OrderDispatchModalComponent {
     }).subscribe({
       next: (res) => {
         this.currentAssignment.set(res.data);
-        const clientUrl = environment.clientUrl;
+        const clientUrl = window.location.origin;
         this.progressLink.set(`${clientUrl}/mechanic/progress/${res.data.accessToken}`);
         this.isAssigning.set(false);
         this.assigned.emit(order);
@@ -1045,7 +1044,7 @@ export class OrderDispatchModalComponent {
           const active = res.data.find(a => !['cancelled', 'expired'].includes(a.status));
           if (active) {
             this.currentAssignment.set(active);
-            const clientUrl = environment.clientUrl;
+            const clientUrl = window.location.origin;
             this.progressLink.set(`${clientUrl}/mechanic/progress/${active.accessToken}`);
           }
           this.isLoadingAssignment.set(false);

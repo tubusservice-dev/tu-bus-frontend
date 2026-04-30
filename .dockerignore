@@ -1,0 +1,37 @@
+# VCS
+.git
+.gitignore
+.gitattributes
+
+# Dependencies
+node_modules
+
+# Build artifacts
+dist
+tmp
+out-tsc
+.angular
+coverage
+
+# IDE / OS
+.idea
+.vscode
+.history
+.DS_Store
+Thumbs.db
+
+# Firebase (legacy hosting config not needed for Railway)
+.firebase
+firebase-debug.log
+.firebaserc
+firebase.json
+
+# Logs
+*.log
+npm-debug.log
+yarn-error.log
+
+# Misc
+README.md
+*.md
+.editorconfig

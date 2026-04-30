@@ -10,6 +10,12 @@ import {
   RegisterRequest,
   AuthResponse,
   OAuthProvider,
+  ForgotPasswordResponse,
+  VerifyResetTokenResponse,
+  ResetPasswordResponse,
+  VerifyEmailResponse,
+  ResendVerificationResponse,
+  CheckEmailResponse,
 } from '../../models';
 
 // Keys separadas para cliente y admin — nunca se pisan entre sí
@@ -158,13 +164,74 @@ export class AuthService {
   }
 
   /**
-   * Registra un nuevo usuario (cliente)
+   * Registra un nuevo usuario (cliente).
+   *
+   * Si el backend devuelve `requiresVerification: true`, NO se hace auto-login —
+   * el componente debe mostrar el modal de verificación pendiente.
    */
   register(data: RegisterRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/register`, data).pipe(
-      tap((response) => this.handleAuthSuccess(response)),
+      tap((response) => {
+        // Only auto-login when no verification is pending
+        if (!response.data?.requiresVerification && response.data?.token) {
+          this.handleAuthSuccess(response);
+        }
+      }),
       catchError((error) => this.handleAuthError(error))
     );
+  }
+
+  // ─── Forgot / reset password ────────────────────────────────────
+
+  forgotPassword(email: string): Observable<ForgotPasswordResponse> {
+    return this.http.post<ForgotPasswordResponse>(`${this.apiUrl}/forgot-password`, { email });
+  }
+
+  verifyResetToken(token: string): Observable<VerifyResetTokenResponse> {
+    return this.http.get<VerifyResetTokenResponse>(
+      `${this.apiUrl}/reset-password/verify`,
+      { params: { token } }
+    );
+  }
+
+  resetPassword(token: string, newPassword: string): Observable<ResetPasswordResponse> {
+    return this.http.post<ResetPasswordResponse>(
+      `${this.apiUrl}/reset-password`,
+      { token, newPassword }
+    );
+  }
+
+  // ─── Email verification ─────────────────────────────────────────
+
+  verifyEmail(token: string): Observable<VerifyEmailResponse> {
+    return this.http.post<VerifyEmailResponse>(`${this.apiUrl}/verify-email`, { token });
+  }
+
+  resendVerification(email: string): Observable<ResendVerificationResponse> {
+    return this.http.post<ResendVerificationResponse>(
+      `${this.apiUrl}/resend-verification`,
+      { email }
+    );
+  }
+
+  // ─── Async email uniqueness ─────────────────────────────────────
+
+  checkEmail(email: string): Observable<CheckEmailResponse> {
+    return this.http.post<CheckEmailResponse>(`${this.apiUrl}/check-email`, { email });
+  }
+
+  // ─── Forgot-password modal control (for cross-component triggers) ───
+
+  private readonly forgotPasswordModalOpenSignal = signal(false);
+  readonly forgotPasswordModalOpen = this.forgotPasswordModalOpenSignal.asReadonly();
+
+  openForgotPasswordModal(): void {
+    this.closeAuthModal();
+    this.forgotPasswordModalOpenSignal.set(true);
+  }
+
+  closeForgotPasswordModal(): void {
+    this.forgotPasswordModalOpenSignal.set(false);
   }
 
   /**
@@ -294,7 +361,7 @@ export class AuthService {
    * Maneja la respuesta exitosa de autenticación (login/register de cliente)
    */
   private handleAuthSuccess(response: AuthResponse): void {
-    if (response.success && response.data) {
+    if (response.success && response.data && response.data.token) {
       localStorage.setItem(CLIENT_TOKEN_KEY, response.data.token);
       localStorage.setItem(CLIENT_USER_KEY, JSON.stringify(response.data.user));
       this.currentUserSignal.set(response.data.user);

@@ -955,10 +955,10 @@
                 <div class="push-unblock-box">
                   <strong>Las notificaciones están bloqueadas. Para habilitarlas:</strong>
                   <ol>
-                    <li>En Chrome, haz clic en el icono <b>ⓘ</b> (círculo con "i") o <b>"Ver información del sitio"</b> a la izquierda de la URL (<code>localhost:4200</code>).</li>
+                    <li>En Chrome, haz clic en el icono <b>ⓘ</b> (círculo con "i") o <b>"Ver información del sitio"</b> a la izquierda de la URL (<code>{{ currentHost }}</code>).</li>
                     <li>Busca <b>"Notificaciones"</b> en el menú desplegable y cambia de <i>"Bloquear"</i> a <i>"Permitir"</i>.</li>
                     <li>O abre una nueva pestaña y pega esta URL: <code>chrome://settings/content/notifications</code></li>
-                    <li>En la sección <b>"No se permite enviar notificaciones"</b> busca <code>http://localhost:4200</code>, haz clic en los tres puntos (⋮) y selecciona <b>"Permitir"</b> o <b>"Eliminar"</b>.</li>
+                    <li>En la sección <b>"No se permite enviar notificaciones"</b> busca <code>{{ currentOrigin }}</code>, haz clic en los tres puntos (⋮) y selecciona <b>"Permitir"</b> o <b>"Eliminar"</b>.</li>
                     <li>Recarga esta página con <b>Ctrl + Shift + R</b> y vuelve a hacer clic en <b>"Probar notificación"</b>.</li>
                   </ol>
                 </div>

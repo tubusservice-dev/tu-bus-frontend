@@ -1,0 +1,38 @@
+<div class="page">
+  <div class="card">
+
+    @if (phase() === 'verifying') {
+      <div class="state">
+        <div class="spinner-large"></div>
+        <p class="state-text">Verificando tu correo...</p>
+      </div>
+    }
+
+    @if (phase() === 'success') {
+      <div class="state">
+        <div class="icon-success">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+          </svg>
+        </div>
+        <h1 class="title">¡Correo verificado!</h1>
+        <p class="state-text">Tu cuenta está activa. Ahora puedes iniciar sesión.</p>
+        <button type="button" class="btn-primary" (click)="goToLogin()">Iniciar sesión</button>
+      </div>
+    }
+
+    @if (phase() === 'invalid') {
+      <div class="state">
+        <div class="icon-error">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+          </svg>
+        </div>
+        <h1 class="title">No pudimos verificar tu correo</h1>
+        <p class="state-text">{{ errorMessage() }}</p>
+        <button type="button" class="btn-primary" (click)="goToHome()">Volver al inicio</button>
+      </div>
+    }
+
+  </div>
+</div>

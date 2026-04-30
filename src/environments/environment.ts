@@ -9,7 +9,6 @@ export const environment = {
   // === URL del Backend ===
   // Backend directo (standalone, sin gateway)
   apiUrl: 'http://localhost:3003/api',
-  clientUrl: 'http://localhost:4200',
 
   appName: 'TuBus Express',
   version: '1.0.0',

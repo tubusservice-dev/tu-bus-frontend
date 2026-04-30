@@ -102,6 +102,32 @@
               Iniciar Sesión
             }
           </button>
+
+          <div class="forgot-link-row">
+            <button type="button" class="link-btn" (click)="onForgotPasswordClick()">
+              ¿Olvidaste tu contraseña?
+            </button>
+          </div>
+
+          @if (unverifiedEmail()) {
+            <div class="resend-row">
+              <button
+                type="button"
+                class="link-btn"
+                [disabled]="resendingVerification()"
+                (click)="onResendVerificationFromLogin()"
+              >
+                @if (resendingVerification()) {
+                  Reenviando...
+                } @else {
+                  Reenviar correo de verificación
+                }
+              </button>
+              @if (resendFeedback()) {
+                <p class="resend-feedback">{{ resendFeedback() }}</p>
+              }
+            </div>
+          }
         </form>
       }
 

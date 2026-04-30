@@ -444,6 +444,22 @@ export const routes: Routes = [
         (m) => m.AuthCallbackComponent
       ),
   },
+  // Restablecer contraseña (link enviado por correo)
+  {
+    path: 'reset-password',
+    loadComponent: () =>
+      import('./features/reset-password/reset-password.component').then(
+        (m) => m.ResetPasswordComponent
+      ),
+  },
+  // Verificación de correo (link enviado por correo)
+  {
+    path: 'verify-email',
+    loadComponent: () =>
+      import('./features/verify-email/verify-email.component').then(
+        (m) => m.VerifyEmailComponent
+      ),
+  },
   {
     path: '**',
     redirectTo: '',
