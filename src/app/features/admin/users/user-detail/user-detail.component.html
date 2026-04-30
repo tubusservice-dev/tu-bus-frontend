@@ -20,7 +20,12 @@
       </a>
 
       <div class="header-main">
-        <img [src]="avatarUrl()" [alt]="displayName()" class="header-avatar" />
+        <app-user-avatar
+          [name]="displayName()"
+          [src]="u.avatar"
+          [size]="96"
+          [ring]="true"
+        />
         <div class="header-info">
           <div class="header-row">
             <h1 class="header-name">{{ displayName() }}</h1>
@@ -229,20 +234,62 @@
             </table>
           </div>
 
-          @if (ordersPages() > 1) {
-            <div class="pagination">
-              <span class="pagination-info">
-                Página {{ ordersPage() }} de {{ ordersPages() }}
-              </span>
-              <div class="pagination-buttons">
-                <button class="btn-page" [disabled]="ordersPage() === 1" (click)="goToOrdersPage(ordersPage() - 1)">‹</button>
-                @for (p of ordersPageNumbers(); track p) {
-                  <button class="btn-page" [class.active]="p === ordersPage()" (click)="goToOrdersPage(p)">{{ p }}</button>
+          <div class="pagination-wrapper">
+            @if (ordersPages() > 1) {
+              <nav class="pagination">
+                <button
+                  class="page-btn"
+                  [disabled]="ordersPage() === 1"
+                  (click)="goToOrdersPage(ordersPage() - 1)"
+                  aria-label="Página anterior"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+                  </svg>
+                </button>
+
+                @for (p of getOrdersVisiblePages(); track $index) {
+                  @if (p === '...') {
+                    <span class="page-ellipsis">...</span>
+                  } @else {
+                    <button
+                      class="page-btn"
+                      [class.active]="p === ordersPage()"
+                      (click)="goToOrdersPage(+p)"
+                    >
+                      {{ p }}
+                    </button>
+                  }
                 }
-                <button class="btn-page" [disabled]="ordersPage() === ordersPages()" (click)="goToOrdersPage(ordersPage() + 1)">›</button>
+
+                <button
+                  class="page-btn"
+                  [disabled]="ordersPage() === ordersPages()"
+                  (click)="goToOrdersPage(ordersPage() + 1)"
+                  aria-label="Página siguiente"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                  </svg>
+                </button>
+              </nav>
+            }
+
+            @if (paginationConfig().allowUserCustomization) {
+              <div class="limit-selector">
+                <label for="ordersLimitSelect">Mostrar:</label>
+                <select
+                  id="ordersLimitSelect"
+                  [ngModel]="ordersLimit()"
+                  (ngModelChange)="onOrdersLimitChange($event)"
+                >
+                  @for (option of paginationOptions; track option) {
+                    <option [ngValue]="option">{{ option }}</option>
+                  }
+                </select>
               </div>
-            </div>
-          }
+            }
+          </div>
         }
       </section>
     }

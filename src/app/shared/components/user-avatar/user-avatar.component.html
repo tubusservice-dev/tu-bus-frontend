@@ -1,0 +1,26 @@
+<div
+  class="avatar"
+  [class.ring]="ring()"
+  [style.width.px]="size()"
+  [style.height.px]="size()"
+>
+  @if (showImage()) {
+    <img
+      [src]="src()"
+      [alt]="name()"
+      class="avatar-image"
+      (error)="onImageError()"
+      loading="lazy"
+      decoding="async"
+    />
+  } @else {
+    <div
+      class="avatar-fallback"
+      [style.background-color]="bgColor()"
+      [style.font-size.px]="fontSize()"
+      [attr.aria-label]="name()"
+    >
+      {{ initials() }}
+    </div>
+  }
+</div>
