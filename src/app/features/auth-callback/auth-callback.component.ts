@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AccountBlockedCode, AuthService } from '../../core/services/auth.service';
+import { ToastService } from '../../shared/services/toast.service';
 
 const BLOCK_CODES: ReadonlySet<string> = new Set<string>([
   'ACCOUNT_BLOCKED',
@@ -42,6 +43,7 @@ export class AuthCallbackComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
+  private readonly toastService = inject(ToastService);
 
   error: string | null = null;
 
@@ -70,6 +72,11 @@ export class AuthCallbackComponent implements OnInit {
       // Cargar perfil desde el servidor y redirigir a la página donde estaba
       this.authService.loadUserProfile().subscribe({
         next: () => {
+          const firstName = this.authService.currentUser()?.firstName;
+          const message = firstName
+            ? `¡Bienvenido de vuelta, ${firstName}!`
+            : '¡Inicio de sesión exitoso!';
+          this.toastService.success(message);
           const returnUrl = localStorage.getItem('oauth_return_url') || '/';
           localStorage.removeItem('oauth_return_url');
           this.router.navigateByUrl(returnUrl);

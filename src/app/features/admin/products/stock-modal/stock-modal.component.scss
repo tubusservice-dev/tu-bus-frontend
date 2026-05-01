@@ -10,63 +10,69 @@
   padding: 1rem;
 }
 
+// Compact, single-section container — no internal borders or footer bg.
 .stock-modal {
-  @apply bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden;
+  @apply bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full flex flex-col overflow-hidden;
+  max-width: 240px;
+
+  @media (min-width: 640px) {
+    max-width: 260px;
+  }
 }
 
+// ─── Header (solid brand accent) ──────────────────────────────────
 .stock-modal-header {
-  @apply flex items-start justify-between gap-3 p-5 border-b border-gray-200 dark:border-gray-700;
+  @apply px-3.5 py-2.5;
+  background-color: var(--accent-primary);
 }
 
 .stock-modal-title-block {
-  @apply flex flex-col gap-1 min-w-0;
+  @apply flex flex-col min-w-0;
 }
 
 .stock-modal-title {
-  @apply text-lg font-semibold text-gray-900 dark:text-white truncate;
+  @apply text-sm font-semibold truncate leading-tight text-white;
 }
 
 .stock-modal-branch {
-  @apply text-xs font-medium uppercase tracking-wide;
-  color: var(--accent-primary);
+  @apply text-xs mt-0.5 truncate;
+  color: rgba(255, 255, 255, 0.75);
 
   &.muted {
-    @apply text-gray-500 dark:text-gray-400;
-    color: inherit;
+    @apply italic;
   }
 }
 
-.stock-modal-close {
-  @apply p-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
-
-  svg {
-    @apply w-5 h-5;
-  }
-}
-
+// ─── Body (single padding zone, no card-in-card) ──────────────────
 .stock-modal-body {
-  @apply px-5 py-6 space-y-4;
+  @apply px-3.5 pt-3 pb-2 space-y-2.5;
 }
 
+// Step 1 — flat stock display (no card)
 .stock-current {
-  @apply flex flex-col items-center gap-1 py-4 bg-gray-50 dark:bg-gray-700/40 rounded-xl;
+  @apply flex flex-col items-center text-center py-2;
 }
 
 .stock-current-label {
-  @apply text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider;
+  @apply text-xs text-gray-500 dark:text-gray-400;
 }
 
 .stock-current-value {
-  @apply text-4xl font-bold text-gray-900 dark:text-white;
+  @apply text-3xl font-bold text-gray-900 dark:text-white leading-none mt-1;
 }
 
+// Step 2 — input
 .stock-input-label {
-  @apply block text-sm font-medium text-gray-700 dark:text-gray-300;
+  @apply block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5;
 }
 
 .stock-input {
-  @apply w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-base text-gray-900 dark:text-white;
+  @apply px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm text-center text-gray-900 dark:text-white;
   @apply focus:outline-none focus:ring-2 focus:border-transparent;
+  display: block;
+  width: 50%;
+  margin-left: auto;
+  margin-right: auto;
 
   &:focus {
     --tw-ring-color: var(--accent-primary);
@@ -74,51 +80,59 @@
 }
 
 .stock-hint {
-  @apply text-xs text-gray-500 dark:text-gray-400 mt-1;
+  @apply text-xs text-gray-500 dark:text-gray-400;
 }
 
-.stock-confirm-title {
-  @apply text-base font-semibold text-gray-900 dark:text-white;
+// Step 3 — confirm (receipt-style summary)
+.stock-confirm-intro {
+  @apply text-xs text-gray-500 dark:text-gray-400;
 }
 
-.stock-confirm-message {
-  @apply text-sm text-gray-600 dark:text-gray-300;
-
-  strong {
-    @apply text-gray-900 dark:text-white font-semibold;
-  }
+.stock-receipt {
+  @apply flex flex-col;
 }
 
-.stock-confirm-summary {
-  @apply rounded-xl border border-gray-200 dark:border-gray-700 divide-y divide-gray-200 dark:divide-gray-700;
-}
+.stock-receipt-row {
+  @apply flex items-center justify-between py-1.5;
 
-.stock-confirm-row {
-  @apply flex items-center justify-between px-4 py-3 text-sm text-gray-600 dark:text-gray-300;
-
-  strong {
-    @apply text-gray-900 dark:text-white font-bold text-base;
+  .label {
+    @apply text-xs text-gray-500 dark:text-gray-400;
   }
 
-  &.highlight {
-    @apply bg-gray-50 dark:bg-gray-700/40;
+  .value {
+    @apply text-sm font-semibold text-gray-700 dark:text-gray-200 tabular-nums;
 
-    strong {
+    &.positive {
+      color: var(--accent-primary);
+    }
+  }
+
+  // Final row: divider above + emphasized value
+  &.total {
+    @apply mt-1 pt-2 border-t border-gray-200 dark:border-gray-700;
+
+    .label {
+      @apply text-gray-700 dark:text-gray-300 font-medium;
+    }
+
+    .value {
+      @apply text-base font-bold;
       color: var(--accent-primary);
     }
   }
 }
 
 .stock-error {
-  @apply text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2;
+  @apply text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-md px-2.5 py-1.5;
 }
 
+// ─── Footer (no border, no bg, fused with body) ───────────────────
 .stock-modal-footer {
-  @apply flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/30;
+  @apply flex items-center justify-end gap-2 px-3.5 pb-3.5 pt-1;
 }
 
 .btn-primary {
-  @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed;
+  @apply inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 text-white text-sm font-medium rounded-md transition-colors disabled:opacity-60 disabled:cursor-not-allowed;
   background-color: var(--accent-primary);
 
   &:hover:not(:disabled) {
@@ -127,9 +141,9 @@
 }
 
 .btn-secondary {
-  @apply px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+  @apply px-3.5 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
 }
 
 .btn-spinner {
-  @apply inline-block w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin;
+  @apply inline-block w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin;
 }

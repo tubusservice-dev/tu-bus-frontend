@@ -21,7 +21,25 @@ import {
   isInStoreOilChange,
   getAvailableDispatchStatuses,
   getOptionsMenuStatuses,
+  ServiceDateState,
+  getServiceDateState,
 } from '../../../../models/order.model';
+
+/** Admin-facing copy for the service-date card. Operational tone, not coloquial. */
+const ADMIN_SERVICE_DATE_BADGE: Record<ServiceDateState, { label: string; cls: string }> = {
+  pending:     { label: 'Agendado',    cls: 'badge-amber' },
+  confirmed:   { label: 'Confirmado',  cls: 'badge-emerald' },
+  rescheduled: { label: 'Reprogramado', cls: 'badge-blue' },
+};
+
+const ADMIN_SERVICE_DATE_MESSAGE: Record<ServiceDateState, string> = {
+  pending:
+    'Fecha solicitada por el cliente, a la espera de confirmar disponibilidad. Para asignar un mecánico y confirmar la cita usa el botón «Asignar/Mecánico Asignado» en el encabezado.',
+  confirmed:
+    'La cita fue confirmada y el mecánico ya fue asignado en la fecha solicitada por el cliente.',
+  rescheduled:
+    'La cita fue reprogramada porque no había disponibilidad en la fecha originalmente solicitada por el cliente. Se asignó la opción más cercana disponible.',
+};
 import { PAYMENT_METHOD_TYPE_LABELS, PaymentMethodType } from '../../../../models/payment-method.model';
 import { MechanicAssignment, ProgressStep } from '../../../../models/mechanic-assignment.model';
 import { OrderDispatchModalComponent } from '../order-dispatch-modal/order-dispatch-modal.component';
@@ -166,24 +184,46 @@ export class AdminOrderDetailComponent implements OnInit {
 
   /**
    * Long-form date in Spanish (e.g. "miércoles, 22 de abril de 2026") for the
-   * requested service date. UTC-anchored to avoid off-by-one on ISO dates.
+   * service date currently driving the card — the confirmed `scheduledDate`
+   * when an assignment exists, otherwise the date originally requested by the
+   * client. UTC-anchored to avoid off-by-one on ISO dates.
    */
   protected readonly requestedDateLabel = computed<string>(() => {
-    const raw = this.order()?.requestedServiceDate;
+    const o = this.order();
+    if (!o) return '';
+    const a = o.mechanicAssignment as { scheduledDate?: string } | string | undefined;
+    const raw = (a && typeof a === 'object' && a.scheduledDate)
+      ? a.scheduledDate
+      : o.requestedServiceDate;
     if (!raw) return '';
     try {
-      const d = new Date(raw);
+      const [y, m, d] = raw.slice(0, 10).split('-').map(Number);
+      const date = new Date(Date.UTC(y, (m || 1) - 1, d || 1));
       return new Intl.DateTimeFormat('es-VE', {
         weekday: 'long',
         day: 'numeric',
         month: 'long',
         year: 'numeric',
         timeZone: 'UTC',
-      }).format(d);
+      }).format(date);
     } catch {
       return String(raw);
     }
   });
+
+  /** Lifecycle state of the service date — drives header badge and body copy. */
+  protected readonly serviceDateState = computed<ServiceDateState>(() => {
+    const o = this.order();
+    return o ? getServiceDateState(o) : 'pending';
+  });
+
+  protected readonly serviceDateBadge = computed(
+    () => ADMIN_SERVICE_DATE_BADGE[this.serviceDateState()]
+  );
+
+  protected readonly serviceDateMessage = computed(
+    () => ADMIN_SERVICE_DATE_MESSAGE[this.serviceDateState()]
+  );
 
   /**
    * Narrative description per dispatch type — gives the admin an at-a-glance

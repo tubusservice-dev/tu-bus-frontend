@@ -43,28 +43,44 @@
   @apply bg-gray-50 dark:bg-gray-900/50 rounded-xl p-6 mb-8;
 }
 
-.order-number-display {
-  @apply flex flex-col items-center mb-4 pb-4;
+// Header of the .order-info card. Stacked on mobile, two columns on desktop
+// so the status sits next to the order number rather than below the date.
+.order-info-header {
+  @apply flex flex-col items-start gap-4 mb-4 pb-4;
+  @apply sm:flex-row sm:items-start sm:justify-between sm:gap-6;
   @apply border-b border-gray-200 dark:border-gray-700;
+}
+
+.order-number-display {
+  @apply flex flex-col items-start;
 
   .label { @apply text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide; }
   .value { @apply text-xl font-bold text-gray-900 dark:text-white font-mono mt-1; }
 }
 
+// Status placement is breakpoint-specific: visible top-right on desktop,
+// inline next to the date on mobile. Both instances also carry the .detail
+// class — selectors are doubled below so the visibility rules outweigh the
+// `display: flex` baked into `.detail`.
+.detail.order-status-desktop { @apply hidden sm:flex sm:items-end; }
+.detail.order-status-mobile  { @apply sm:hidden; }
+
 .order-details-grid {
-  @apply grid grid-cols-2 sm:grid-cols-3 gap-4;
+  @apply grid grid-cols-2 gap-4;
+
+  // When the mobile status cell is hidden on desktop the first cell (date)
+  // would shrink to half-width with empty space beside it — span it across
+  // both columns instead so the layout reads cleanly.
+  > .detail:first-child {
+    @apply sm:col-span-2;
+  }
 }
 
 .detail {
-  @apply flex flex-col items-center;
+  @apply flex flex-col items-start text-left;
 
-  .detail-label { @apply text-xs text-gray-500 dark:text-gray-400; }
-  .detail-value { @apply text-sm font-semibold text-gray-900 dark:text-white mt-0.5; }
-}
-
-.status-badge {
-  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs;
-  @apply bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300;
+  .detail-label { @apply text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide; }
+  .detail-value { @apply text-sm font-semibold text-gray-900 dark:text-white mt-1; }
 }
 
 .capitalize { text-transform: capitalize; }
@@ -195,15 +211,17 @@
 }
 
 // ========== Info grid (dispatch, payment, billing) ==========
+// Two columns at every breakpoint — short fields sit side-by-side. Long
+// fields (addresses, multiline notes) opt into full width via .info-item-wide.
 .info-grid {
-  @apply grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 sm:p-5;
+  @apply grid grid-cols-2 gap-3 p-4 sm:p-5;
 }
 
 .info-item {
   @apply flex flex-col gap-0.5 min-w-0;
 
   &.info-item-wide {
-    @apply sm:col-span-2;
+    @apply col-span-2;
   }
 
   dt {
@@ -353,11 +371,6 @@
   .detail {
     .detail-label { color: #9ca3af; }
     .detail-value { color: #ffffff; }
-  }
-
-  .status-badge {
-    background-color: rgba(234, 179, 8, 0.15);
-    color: #fbbf24;
   }
 
   .btn-secondary {

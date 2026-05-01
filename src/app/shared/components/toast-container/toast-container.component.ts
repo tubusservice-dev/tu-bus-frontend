@@ -59,7 +59,7 @@ import { ToastService } from '../../services/toast.service';
   styles: [`
     :host {
       position: fixed;
-      top: 1rem;
+      bottom: 1rem;
       right: 1rem;
       z-index: 9999;
       pointer-events: none;
@@ -67,7 +67,9 @@ import { ToastService } from '../../services/toast.service';
 
     .toast-stack {
       display: flex;
-      flex-direction: column;
+      // Newest toast sits closest to the bottom anchor; older ones
+      // stack upward so the focal point stays on the most recent message.
+      flex-direction: column-reverse;
       gap: 0.625rem;
       max-width: min(22rem, calc(100vw - 2rem));
     }

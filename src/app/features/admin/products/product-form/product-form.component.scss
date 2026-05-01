@@ -128,6 +128,39 @@
   textarea {
     @apply resize-none;
   }
+
+  // ─── Branch stock numeric input ─────────────────────────────────
+  // Compact override for the inline numeric stock input inside the
+  // "Sucursales y Stock" section. Nested under .form-group so its
+  // specificity (0,2,1) beats the generic `.form-group input` rule
+  // above (0,1,1) — that rule was forcing w-full and px-4 onto it.
+  // Also hides the native number spinners that wasted horizontal
+  // space inside the field.
+  // Branch-active toggle wrapper. Beats the generic `.form-group label`
+  // rule above (display:block) by class specificity (0,2,1) > (0,1,1),
+  // so the switch and the state label render on the same baseline.
+  label.branch-toggle {
+    @apply relative inline-flex items-center gap-2 cursor-pointer flex-shrink-0;
+    @apply m-0 p-0;
+  }
+
+  .stock-num-input {
+    @apply w-16 min-w-0 px-1.5 py-1.5 text-center text-sm rounded-md;
+    @apply bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-500;
+    @apply text-gray-900 dark:text-white;
+    @apply focus:outline-none focus:ring-2 focus:border-transparent transition-colors;
+
+    &:focus { --tw-ring-color: var(--accent-primary); }
+
+    appearance: textfield;
+    -moz-appearance: textfield;
+
+    &::-webkit-outer-spin-button,
+    &::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+  }
 }
 
 .required {
@@ -589,4 +622,41 @@
 // Help text con advertencia
 .help-text.warning {
   @apply text-amber-500 dark:text-amber-400;
+}
+
+// ─── Inline branch-active toggle ──────────────────────────────────
+// Mirrors the .toggle-switch pattern used in branch-form so the visual
+// language stays consistent across admin forms. Used inline between the
+// branch name and the stock input.
+.toggle-label {
+  @apply inline-flex items-center cursor-pointer;
+}
+
+.toggle-input {
+  @apply sr-only;
+}
+
+.toggle-switch {
+  @apply relative w-10 h-5 bg-gray-300 dark:bg-gray-600 rounded-full transition-colors flex-shrink-0;
+
+  &::after {
+    content: '';
+    @apply absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform;
+  }
+}
+
+.toggle-input:checked + .toggle-switch {
+  @apply bg-emerald-500;
+
+  &::after { @apply translate-x-5; }
+}
+
+.toggle-switch-sm {
+  @apply w-8 h-4;
+
+  &::after { @apply w-3 h-3; }
+}
+
+.toggle-input:checked + .toggle-switch-sm::after {
+  @apply translate-x-4;
 }

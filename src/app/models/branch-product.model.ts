@@ -21,6 +21,8 @@ export interface CreateBranchProductBatchRequest {
   assignments: Array<{
     branchId: string;
     stock: number;
+    /** Optional initial active flag. Defaults to `true` server-side. */
+    isActive?: boolean;
   }>;
 }
 

@@ -52,30 +52,16 @@ const MAX_CLIENT_COMMENTS_PER_ORDER = 5;
       }
 
       <div class="comments-form">
-        @if (mode() === 'client') {
-          @if (hasReachedClientLimit()) {
-            <div class="comments-limit-notice comments-limit-reached" role="status">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008Zm-9-4.5a9 9 0 1 1 18 0 9 9 0 0 1-18 0Z" />
-              </svg>
-              <span>
-                Has alcanzado el límite de {{ maxClientComments }} comentarios para esta orden.
-                Espera la respuesta de un agente para continuar la conversación.
-              </span>
-            </div>
-          } @else {
-            <div class="comments-limit-notice comments-limit-info" role="status">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
-              </svg>
-              <span>
-                Puedes enviar
-                <strong>{{ clientCommentsRemaining() }}</strong>
-                {{ clientCommentsRemaining() === 1 ? 'comentario más' : 'comentarios más' }}
-                en esta orden ({{ clientCommentsCount() }}/{{ maxClientComments }} utilizados).
-              </span>
-            </div>
-          }
+        @if (mode() === 'client' && hasReachedClientLimit()) {
+          <div class="comments-limit-notice comments-limit-reached" role="status">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008Zm-9-4.5a9 9 0 1 1 18 0 9 9 0 0 1-18 0Z" />
+            </svg>
+            <span>
+              Has alcanzado el límite de {{ maxClientComments }} comentarios para esta orden.
+              Espera la respuesta de un agente para continuar la conversación.
+            </span>
+          </div>
         }
         <textarea
           class="comments-textarea"

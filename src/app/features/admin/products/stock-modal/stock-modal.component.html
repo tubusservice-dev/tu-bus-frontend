@@ -5,22 +5,11 @@
       <div class="stock-modal-title-block">
         <h3 class="stock-modal-title">{{ productName }}</h3>
         @if (branchName) {
-          <span class="stock-modal-branch">Sucursal: {{ branchName }}</span>
+          <span class="stock-modal-branch">{{ branchName }}</span>
         } @else {
-          <span class="stock-modal-branch muted">Vista general (todas las sucursales)</span>
+          <span class="stock-modal-branch muted">Vista general</span>
         }
       </div>
-      <button
-        type="button"
-        class="stock-modal-close"
-        (click)="close()"
-        [disabled]="isSubmitting()"
-        aria-label="Cerrar"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-        </svg>
-      </button>
     </div>
 
     <!-- Step 1: ver stock -->
@@ -68,12 +57,10 @@
           [value]="quantityInput()"
           (beforeinput)="onBeforeInput($event)"
           (input)="onQuantityInput($event)"
-          [placeholder]="'Entre ' + minStock + ' y ' + maxStock"
+          [placeholder]="minStock + '–' + maxStock"
           class="stock-input"
         />
-        <p class="stock-hint">
-          Solo enteros entre {{ minStock }} y {{ maxStock }}.
-        </p>
+        <p class="stock-hint">Solo enteros entre {{ minStock }} y {{ maxStock }}.</p>
       </div>
       <div class="stock-modal-footer">
         <button type="button" class="btn-secondary" (click)="close()">
@@ -93,19 +80,19 @@
     <!-- Step 3: confirmacion -->
     @if (step() === 'confirm') {
       <div class="stock-modal-body">
-        <h4 class="stock-confirm-title">¿Confirmar adición de stock?</h4>
-        <p class="stock-confirm-message">
-          Vas a agregar <strong>{{ parsedQuantity() }} unidades</strong> a la sucursal
-          <strong>{{ branchName }}</strong>.
-        </p>
-        <div class="stock-confirm-summary">
-          <div class="stock-confirm-row">
-            <span>Stock actual</span>
-            <strong>{{ currentStock }}</strong>
+        <p class="stock-confirm-intro">Confirma el cambio:</p>
+        <div class="stock-receipt">
+          <div class="stock-receipt-row">
+            <span class="label">Stock actual</span>
+            <span class="value">{{ currentStock }}</span>
           </div>
-          <div class="stock-confirm-row highlight">
-            <span>Nuevo stock</span>
-            <strong>{{ newStockPreview() }}</strong>
+          <div class="stock-receipt-row">
+            <span class="label">Cantidad</span>
+            <span class="value positive">+{{ parsedQuantity() }}</span>
+          </div>
+          <div class="stock-receipt-row total">
+            <span class="label">Stock nuevo</span>
+            <span class="value">{{ newStockPreview() }}</span>
           </div>
         </div>
         @if (errorMessage()) {
@@ -129,7 +116,7 @@
         >
           @if (isSubmitting()) {
             <span class="btn-spinner"></span>
-            Agregando...
+            Agregando
           } @else {
             Sí, agregar
           }

@@ -11,7 +11,24 @@ import {
   ORDER_STATUS_LABELS, ORDER_STATUS_COLORS, ORDER_STATUS_DESCRIPTIONS,
   DISPATCH_STATUS_LABELS, DISPATCH_STATUS_COLORS, DISPATCH_STATUS_DESCRIPTIONS,
   isShippingOrder, isOilChangeOrder,
+  ServiceDateState, getServiceDateState, getServiceDateIso,
 } from '../../../models/order.model';
+
+/** Client-facing copy for the service-date card. Keyed by lifecycle state. */
+const CLIENT_SERVICE_DATE_BADGE: Record<ServiceDateState, { label: string; cls: string }> = {
+  pending:     { label: 'Por confirmar', cls: 'badge-amber' },
+  confirmed:   { label: 'Confirmada',     cls: 'badge-emerald' },
+  rescheduled: { label: 'Reprogramada',   cls: 'badge-blue' },
+};
+
+const CLIENT_SERVICE_DATE_MESSAGE: Record<ServiceDateState, string> = {
+  pending:
+    'Fecha solicitada por el cliente a la espera de la confirmación por parte del equipo de soporte. Ten en cuenta que la fecha puede ser reprogramada si en la fecha solicitada no contamos con disponibilidad.',
+  confirmed:
+    'Tu servicio ha sido confirmado para esta fecha. Nuestro equipo está listo para brindarte la mejor atención.',
+  rescheduled:
+    'Tu servicio fue agendado para esta nueva fecha. En la fecha solicitada originalmente no contábamos con disponibilidad. Nuestro equipo está listo para brindarte la mejor atención.',
+};
 import { PAYMENT_TYPES_WITH_FORM, PaymentMethodType } from '../../../models/payment-method.model';
 import { MechanicAvatarComponent } from '../../../shared/components/mechanic-avatar/mechanic-avatar.component';
 import { OrderCommentsComponent } from '../../../shared/components/order-comments/order-comments.component';
@@ -128,7 +145,7 @@ export class OrderDetailComponent implements OnInit {
     const eventEntries = (o.serviceEvents || []).map(ev => {
       if (ev.type === 'date_rescheduled') {
         const newDate = ev.metadata?.newDate
-          ? this.formatRescheduleDate(ev.metadata.newDate)
+          ? this.formatLongDate(ev.metadata.newDate)
           : '';
         return {
           kind: 'event' as const,
@@ -155,9 +172,9 @@ export class OrderDetailComponent implements OnInit {
   });
 
   /** Format an ISO date (YYYY-MM-DD) as a long Spanish label, UTC-anchored. */
-  private formatRescheduleDate(iso: string): string {
+  private formatLongDate(iso: string): string {
     try {
-      const [y, m, d] = iso.split('-').map(Number);
+      const [y, m, d] = iso.slice(0, 10).split('-').map(Number);
       const date = new Date(Date.UTC(y, (m || 1) - 1, d || 1));
       return new Intl.DateTimeFormat('es-VE', {
         weekday: 'long',
@@ -170,6 +187,37 @@ export class OrderDetailComponent implements OnInit {
       return iso;
     }
   }
+
+  // ============================================
+  // FECHA DEL SERVICIO (oil-change orders)
+  // ============================================
+
+  /** True when the order has a requested service date — gates card visibility. */
+  protected readonly hasRequestedServiceDate = computed(
+    () => !!this.order()?.requestedServiceDate
+  );
+
+  /** Lifecycle state derived from the populated mechanicAssignment. */
+  protected readonly serviceDateState = computed<ServiceDateState>(() => {
+    const o = this.order();
+    return o ? getServiceDateState(o) : 'pending';
+  });
+
+  /** Long-form Spanish label for the date currently driving the card. */
+  protected readonly serviceDateLabel = computed<string>(() => {
+    const o = this.order();
+    if (!o) return '';
+    const iso = getServiceDateIso(o);
+    return iso ? this.formatLongDate(iso) : '';
+  });
+
+  protected readonly serviceDateBadge = computed(
+    () => CLIENT_SERVICE_DATE_BADGE[this.serviceDateState()]
+  );
+
+  protected readonly serviceDateMessage = computed(
+    () => CLIENT_SERVICE_DATE_MESSAGE[this.serviceDateState()]
+  );
 
   // ============================================
   // CICLO DE VIDA

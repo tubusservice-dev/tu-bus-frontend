@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../../core/services';
+import { ToastService } from '../../../shared/services/toast.service';
 import { environment } from '../../../../environments/environment';
 
 @Component({
@@ -17,6 +18,7 @@ export class AdminLoginComponent {
   private readonly fb = inject(FormBuilder);
   private readonly http = inject(HttpClient);
   private readonly authService = inject(AuthService);
+  private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
 
   /** Formulario de login */
@@ -51,6 +53,11 @@ export class AdminLoginComponent {
         if (response.success && response.data) {
           // Usar AuthService para guardar token y usuario (evitar manipular localStorage directamente)
           this.authService.handleAdminLogin(response.data.token, response.data.user);
+          const firstName = response.data.user?.firstName;
+          const message = firstName
+            ? `¡Bienvenido de vuelta, ${firstName}!`
+            : '¡Inicio de sesión exitoso!';
+          this.toastService.success(message);
           // Navegar al dashboard de admin
           this.router.navigate(['/admin']);
         }

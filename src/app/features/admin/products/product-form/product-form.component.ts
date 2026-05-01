@@ -111,7 +111,7 @@ export class ProductFormComponent implements OnInit {
   // Branch-Product assignment
   protected readonly availableBranches = signal<Branch[]>([]);
   protected readonly existingBranchProducts = signal<BranchProduct[]>([]);
-  protected readonly newBranchProducts = signal<Array<{ branch: Branch; stock: number }>>([]);
+  protected readonly newBranchProducts = signal<Array<{ branch: Branch; stock: number; isActive: boolean }>>([]);
   protected readonly deletedBranchProductIds = signal<string[]>([]);
   protected readonly branchSearchTerm = signal('');
   protected readonly showBranchDropdown = signal(false);
@@ -570,12 +570,33 @@ export class ProductFormComponent implements OnInit {
   }
 
   /**
-   * Add a branch with stock 0
+   * Add a branch with stock 0. New assignments default to `isActive: true`
+   * to mirror the backend model default and the user's expectation that
+   * a freshly-attached branch goes live immediately.
    */
   addBranch(branch: Branch): void {
-    this.newBranchProducts.update(list => [...list, { branch, stock: 0 }]);
+    this.newBranchProducts.update(list => [...list, { branch, stock: 0, isActive: true }]);
     this.branchSearchTerm.set('');
     // Keep dropdown open so the user can select multiple branches consecutively
+  }
+
+  /**
+   * Toggle isActive on an existing BranchProduct (local state only — persists
+   * on form submit).
+   */
+  toggleExistingActive(bpId: string, value: boolean): void {
+    this.existingBranchProducts.update(list =>
+      list.map(bp => bp.id === bpId ? { ...bp, isActive: value } : bp)
+    );
+  }
+
+  /**
+   * Toggle isActive on a not-yet-saved BranchProduct (local state only).
+   */
+  toggleNewActive(index: number, value: boolean): void {
+    this.newBranchProducts.update(list =>
+      list.map((item, i) => i === index ? { ...item, isActive: value } : item)
+    );
   }
 
   /**
@@ -592,23 +613,39 @@ export class ProductFormComponent implements OnInit {
     this.newBranchProducts.update(list => list.filter((_, i) => i !== index));
   }
 
+  /** Hard cap on per-branch stock to prevent overflow / accidental fat-fingers. */
+  private static readonly MAX_STOCK = 99999;
+
   /**
-   * Update stock on an existing BranchProduct (local state)
+   * Update stock on an existing BranchProduct (local state). Clamps to
+   * [0, MAX_STOCK] and rewrites the DOM input value so the user can never
+   * see a number above the cap, even if they paste or type past `max`.
    */
   updateExistingStock(bpId: string, event: Event): void {
-    const value = parseInt((event.target as HTMLInputElement).value) || 0;
+    const target = event.target as HTMLInputElement;
+    const raw = parseInt(target.value) || 0;
+    const clamped = Math.max(0, Math.min(ProductFormComponent.MAX_STOCK, raw));
+    if (raw !== clamped && target.value !== '') {
+      target.value = String(clamped);
+    }
     this.existingBranchProducts.update(list =>
-      list.map(bp => bp.id === bpId ? { ...bp, stock: Math.max(0, value) } : bp)
+      list.map(bp => bp.id === bpId ? { ...bp, stock: clamped } : bp)
     );
   }
 
   /**
-   * Update stock on a new branch product (local state)
+   * Update stock on a new branch product (local state). Same clamp as the
+   * existing-row handler.
    */
   updateNewStock(index: number, event: Event): void {
-    const value = parseInt((event.target as HTMLInputElement).value) || 0;
+    const target = event.target as HTMLInputElement;
+    const raw = parseInt(target.value) || 0;
+    const clamped = Math.max(0, Math.min(ProductFormComponent.MAX_STOCK, raw));
+    if (raw !== clamped && target.value !== '') {
+      target.value = String(clamped);
+    }
     this.newBranchProducts.update(list =>
-      list.map((item, i) => i === index ? { ...item, stock: Math.max(0, value) } : item)
+      list.map((item, i) => i === index ? { ...item, stock: clamped } : item)
     );
   }
 
@@ -630,7 +667,10 @@ export class ProductFormComponent implements OnInit {
 
     const updates = this.existingBranchProducts()
       .filter(bp => !this.deletedBranchProductIds().includes(bp.id))
-      .map(bp => this.branchProductService.update(bp.id, { stock: bp.stock }));
+      .map(bp => this.branchProductService.update(bp.id, {
+        stock: bp.stock,
+        isActive: bp.isActive,
+      }));
 
     const newAssignments = this.newBranchProducts();
 
@@ -669,6 +709,7 @@ export class ProductFormComponent implements OnInit {
       assignments: this.newBranchProducts().map(nbp => ({
         branchId: nbp.branch.id,
         stock: nbp.stock,
+        isActive: nbp.isActive,
       })),
     };
     this.branchProductService.createBatch(data).subscribe({

@@ -297,20 +297,35 @@
                     <!-- Existing -->
                     @for (bp of existingBranchProducts(); track bp.id) {
                       @if (!deletedBranchProductIds().includes(bp.id)) {
-                        <div class="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-700/40 border border-gray-200 dark:border-gray-600 rounded-lg">
-                          <div class="flex items-center gap-2.5 flex-1 min-w-0">
+                        <div class="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-700/40 border border-gray-200 dark:border-gray-600 rounded-lg transition-opacity"
+                             [class.opacity-60]="!bp.isActive">
+                          <!-- Left: branch name -->
+                          <div class="flex items-center gap-2.5 min-w-0 flex-shrink">
                             <svg class="w-4 h-4 text-gray-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                               <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                               <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
                             </svg>
                             <span class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ getBranchName(bp) }}</span>
                           </div>
+                          <!-- Middle: active toggle + state label -->
+                          <label class="branch-toggle"
+                                 [title]="bp.isActive ? 'Producto disponible en esta sucursal' : 'Producto pausado en esta sucursal'">
+                            <input type="checkbox" class="sr-only peer"
+                                   [checked]="bp.isActive"
+                                   (change)="toggleExistingActive(bp.id, $any($event.target).checked)" />
+                            <div class="w-10 h-5 bg-gray-300 dark:bg-gray-600 rounded-full peer-checked:bg-emerald-500 transition-colors relative after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:w-4 after:h-4 after:bg-white after:rounded-full after:transition-transform peer-checked:after:translate-x-5"></div>
+                            <span class="text-xs font-medium select-none whitespace-nowrap"
+                                  [ngClass]="bp.isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-400'">
+                              {{ bp.isActive ? 'Disponible' : 'Pausado' }}
+                            </span>
+                          </label>
+                          <!-- Right: stock controls -->
                           <div class="flex items-center gap-3 flex-shrink-0">
                             <input
-                              type="number" min="0"
+                              type="number" min="0" max="99999"
                               [value]="bp.stock"
                               (input)="updateExistingStock(bp.id, $event)"
-                              class="w-20 text-center py-1.5 px-2 border border-gray-300 dark:border-gray-500 rounded-md text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                              class="stock-num-input"
                             />
                             @if (bp.stock > 0) {
                               <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">Ok</span>
@@ -328,8 +343,10 @@
                     }
                     <!-- New -->
                     @for (nbp of newBranchProducts(); track $index) {
-                      <div class="flex items-center justify-between px-4 py-3 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800/30 rounded-lg">
-                        <div class="flex items-center gap-2.5 flex-1 min-w-0">
+                      <div class="flex items-center justify-between px-4 py-3 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800/30 rounded-lg transition-opacity"
+                           [class.opacity-60]="!nbp.isActive">
+                        <!-- Left: branch name + Nueva badge -->
+                        <div class="flex items-center gap-2.5 min-w-0 flex-shrink">
                           <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
@@ -337,12 +354,25 @@
                           <span class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ nbp.branch.name }}</span>
                           <span class="text-[10px] px-1.5 py-0.5 bg-emerald-200 dark:bg-emerald-800 text-emerald-800 dark:text-emerald-200 rounded-full font-medium">Nueva</span>
                         </div>
+                        <!-- Middle: active toggle + state label -->
+                        <label class="branch-toggle"
+                               [title]="nbp.isActive ? 'Producto disponible en esta sucursal' : 'Producto pausado en esta sucursal'">
+                          <input type="checkbox" class="sr-only peer"
+                                 [checked]="nbp.isActive"
+                                 (change)="toggleNewActive($index, $any($event.target).checked)" />
+                          <div class="w-10 h-5 bg-gray-300 dark:bg-gray-600 rounded-full peer-checked:bg-emerald-500 transition-colors relative after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:w-4 after:h-4 after:bg-white after:rounded-full after:transition-transform peer-checked:after:translate-x-5"></div>
+                          <span class="text-xs font-medium select-none whitespace-nowrap"
+                                [ngClass]="nbp.isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-400'">
+                            {{ nbp.isActive ? 'Disponible' : 'Pausado' }}
+                          </span>
+                        </label>
+                        <!-- Right: stock controls -->
                         <div class="flex items-center gap-3 flex-shrink-0">
                           <input
-                            type="number" min="0"
+                            type="number" min="0" max="99999"
                             [value]="nbp.stock"
                             (input)="updateNewStock($index, $event)"
-                            class="w-20 text-center py-1.5 px-2 border border-gray-300 dark:border-gray-500 rounded-md text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                            class="stock-num-input"
                           />
                           @if (nbp.stock > 0) {
                             <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">Ok</span>
