@@ -136,31 +136,8 @@
   // above (0,1,1) — that rule was forcing w-full and px-4 onto it.
   // Also hides the native number spinners that wasted horizontal
   // space inside the field.
-  // Branch-active toggle wrapper. Beats the generic `.form-group label`
-  // rule above (display:block) by class specificity (0,2,1) > (0,1,1),
-  // so the switch and the state label render on the same baseline.
-  label.branch-toggle {
-    @apply relative inline-flex items-center gap-2 cursor-pointer flex-shrink-0;
-    @apply m-0 p-0;
-  }
-
-  .stock-num-input {
-    @apply w-16 min-w-0 px-1.5 py-1.5 text-center text-sm rounded-md;
-    @apply bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-500;
-    @apply text-gray-900 dark:text-white;
-    @apply focus:outline-none focus:ring-2 focus:border-transparent transition-colors;
-
-    &:focus { --tw-ring-color: var(--accent-primary); }
-
-    appearance: textfield;
-    -moz-appearance: textfield;
-
-    &::-webkit-outer-spin-button,
-    &::-webkit-inner-spin-button {
-      -webkit-appearance: none;
-      margin: 0;
-    }
-  }
+  // Branch toggle and stock input are now provided by the embedded
+  // <app-branch-stock-manager> component, with their own scoped styles.
 }
 
 .required {

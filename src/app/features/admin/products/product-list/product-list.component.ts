@@ -23,6 +23,7 @@ import { ImageCarouselComponent } from '../../../../shared/components/image-caro
 import { SearchInputComponent } from '../../../../shared/components/search-input/search-input.component';
 import { BodyScrollLockService } from '../../../../shared/services/body-scroll-lock.service';
 import { StockModalComponent } from '../stock-modal/stock-modal.component';
+import { BranchStockModalComponent } from '../branch-stock-modal/branch-stock-modal.component';
 import {
   IMAGE_PLACEHOLDER_DATA_URL,
   onImageError,
@@ -48,6 +49,7 @@ interface StockModalState {
     ImageCarouselComponent,
     SearchInputComponent,
     StockModalComponent,
+    BranchStockModalComponent,
   ],
   templateUrl: './product-list.component.html',
   styleUrl: './product-list.component.scss',
@@ -131,9 +133,15 @@ export class ProductListComponent implements OnInit {
   protected readonly productToDelete = signal<Product | null>(null);
   protected readonly isDeleting = signal(false);
 
-  // Modal de detalles (vista cards)
+  // Modal de detalles (vista cards) — viewer-only
   protected readonly selectedProduct = signal<Product | null>(null);
   protected readonly selectedImageIndex = signal(0);
+
+  // ─── Standalone Branch+Stock modal trigger state ─────────────────
+  // When set, the <app-branch-stock-modal> at the end of the template
+  // renders for that product. Setter is `openBranchStockModal(product)`,
+  // wired to whatever entry point the admin chooses (TBD).
+  protected readonly branchStockModalProduct = signal<{ id: string; name: string } | null>(null);
 
   // Vista (cards o table)
   protected readonly viewMode = signal<'cards' | 'table'>('cards');
@@ -467,6 +475,49 @@ export class ProductListComponent implements OnInit {
     this.selectedProduct.set(null);
     this.selectedImageIndex.set(0);
     this.scrollLock.unlock();
+  }
+
+  // ==================== Standalone branch-stock modal ====================
+
+  /**
+   * Open the standalone branch-stock modal for a product. The trigger
+   * (button, link, etc.) is pluggable — invoke from wherever the admin
+   * needs quick access to a product's per-branch inventory.
+   */
+  openBranchStockModal(product: Product): void {
+    this.branchStockModalProduct.set({ id: product.id, name: product.name });
+  }
+
+  closeBranchStockModal(): void {
+    this.branchStockModalProduct.set(null);
+  }
+
+  /**
+   * Triggered when the standalone modal reports a successful save.
+   * Refresh the cached stock for that product so the cards grid shows
+   * the new total without a full reload.
+   */
+  onBranchStockSaved(): void {
+    const ctx = this.branchStockModalProduct();
+    if (!ctx) return;
+    this.refreshStockForProduct(ctx.id);
+  }
+
+  /** Re-fetch BranchProducts for a single product and update the cache map. */
+  private refreshStockForProduct(productId: string): void {
+    this.branchProductService.getByProduct(productId).subscribe({
+      next: (response) => {
+        const total = response.data
+          .filter((bp) => bp.isActive)
+          .reduce((sum, bp) => sum + bp.stock, 0);
+        this.productStockMap.update((map) => {
+          const next = new Map(map);
+          next.set(productId, total);
+          return next;
+        });
+      },
+      error: () => {},
+    });
   }
 
   selectImage(index: number): void {
