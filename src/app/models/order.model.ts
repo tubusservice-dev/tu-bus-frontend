@@ -324,3 +324,47 @@ export function isInStoreOilChange(order: Order): boolean {
 export function needsDispatchTracking(order: Order): boolean {
   return isShippingOrder(order) && order.status === OrderStatus.APPROVED;
 }
+
+// ==================== SERVICE DATE STATE ====================
+
+/**
+ * Lifecycle state of the requested service date for an oil-change order.
+ * Single source of truth — both client and admin views derive their copy
+ * and badge label from this enum so the rules stay aligned.
+ */
+export type ServiceDateState = 'pending' | 'confirmed' | 'rescheduled';
+
+/**
+ * Resolve the state of the service date.
+ *
+ * Reschedule detection relies on `serviceEvents` rather than on comparing
+ * `requestedServiceDate` against `mechanicAssignment.scheduledDate`: the
+ * backend overwrites `requestedServiceDate` with the new value when a
+ * reschedule happens, so post-reschedule both fields match and a date
+ * comparison would mislabel the order as plainly "confirmed". The append-only
+ * `date_rescheduled` event is the durable signal.
+ */
+export function getServiceDateState(order: Order): ServiceDateState {
+  if (!order.requestedServiceDate) return 'pending';
+
+  const hasReschedule = (order.serviceEvents || []).some(
+    (ev) => ev.type === 'date_rescheduled'
+  );
+  if (hasReschedule) return 'rescheduled';
+
+  const a = order.mechanicAssignment as { scheduledDate?: string } | string | undefined;
+  if (!a || typeof a !== 'object' || !a.scheduledDate) return 'pending';
+
+  return 'confirmed';
+}
+
+/**
+ * Returns the date that should be shown to the user — the confirmed
+ * `scheduledDate` when an assignment exists, otherwise the originally
+ * requested date. Returns `null` when neither is available.
+ */
+export function getServiceDateIso(order: Order): string | null {
+  const a = order.mechanicAssignment as { scheduledDate?: string } | string | undefined;
+  if (a && typeof a === 'object' && a.scheduledDate) return a.scheduledDate;
+  return order.requestedServiceDate || null;
+}

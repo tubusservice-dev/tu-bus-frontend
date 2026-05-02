@@ -7,6 +7,7 @@ import { RegisterRequest } from '../../../models/auth.model';
 import { DateInputComponent } from '../date-input/date-input.component';
 import { minAgeValidator } from '../../validators/form-validators';
 import { emailUniqueValidator } from '../../validators/email-unique.validator';
+import { ToastService } from '../../services/toast.service';
 
 /** Minimum age (years) required to create an account. */
 const MIN_REGISTRATION_AGE = 18;
@@ -23,6 +24,7 @@ type AuthMode = 'login' | 'register';
 export class AuthModalComponent implements OnInit, OnDestroy {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
+  private readonly toastService = inject(ToastService);
   private docTypeSub: Subscription | null = null;
 
   /** Optional: parent can request the modal to open in register mode with prefilled email. */
@@ -216,6 +218,11 @@ export class AuthModalComponent implements OnInit, OnDestroy {
     this.authService.login(this.loginForm.value).subscribe({
       next: () => {
         this.isLoading.set(false);
+        const firstName = this.authService.currentUser()?.firstName;
+        const message = firstName
+          ? `¡Bienvenido de vuelta, ${firstName}!`
+          : '¡Inicio de sesión exitoso!';
+        this.toastService.success(message);
         this.closeModal.emit();
       },
       error: (error) => {

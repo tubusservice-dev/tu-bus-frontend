@@ -1,0 +1,56 @@
+<div class="bsm-overlay" (click)="onOverlayClick()">
+  <div class="bsm-container" (click)="$event.stopPropagation()">
+    <!-- Header -->
+    <div class="bsm-header">
+      <div class="bsm-header-text">
+        <span class="bsm-eyebrow">Sucursales y Stock</span>
+        <h3 class="bsm-title">{{ productName }}</h3>
+      </div>
+      <button type="button" class="bsm-close" (click)="requestClose()" aria-label="Cerrar">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div class="bsm-body">
+      <app-branch-stock-manager
+        [productId]="productId"
+        [availableBranches]="availableBranches"
+        [ownSaveButton]="true"
+        (dirtyChange)="onDirty($event)"
+        (saved)="onSaved()"
+      >
+        <button manager-secondary type="button" class="bsm-cancel-btn" (click)="requestClose()">
+          Cancelar
+        </button>
+      </app-branch-stock-manager>
+    </div>
+
+    <!-- Discard confirmation -->
+    @if (showDiscardConfirm()) {
+      <div class="bsm-discard-overlay" (click)="cancelDiscard()">
+        <div class="bsm-discard-content" (click)="$event.stopPropagation()">
+          <div class="bsm-discard-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+            </svg>
+          </div>
+          <h4 class="bsm-discard-title">¿Descartar cambios?</h4>
+          <p class="bsm-discard-message">
+            Tienes cambios sin guardar. Si cierras ahora se perderán.
+          </p>
+          <div class="bsm-discard-actions">
+            <button type="button" class="bsm-discard-btn-keep" (click)="cancelDiscard()">
+              Seguir editando
+            </button>
+            <button type="button" class="bsm-discard-btn-confirm" (click)="confirmDiscard()">
+              Descartar
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+</div>

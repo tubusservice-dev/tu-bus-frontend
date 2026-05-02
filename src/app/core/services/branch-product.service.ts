@@ -7,6 +7,7 @@ import {
   BranchProductResponse,
   CreateBranchProductBatchRequest,
   UpdateBranchProductRequest,
+  BatchUpdateStockRequest,
 } from '../../models/branch-product.model';
 
 /**
@@ -77,6 +78,15 @@ export class BranchProductService {
    */
   updateStock(id: string, quantity: number): Observable<BranchProductResponse> {
     return this.http.patch<BranchProductResponse>(`${this.adminUrl}/${id}/stock`, { quantity });
+  }
+
+  /**
+   * Bulk-update absolute stock values for many BranchProducts in a single
+   * request. Used by the admin product-grid bulk editor (one save click
+   * persists every edited row of the current page).
+   */
+  batchUpdateStock(data: BatchUpdateStockRequest): Observable<BranchProductListResponse> {
+    return this.http.put<BranchProductListResponse>(`${this.adminUrl}/batch-stock`, data);
   }
 
   /**

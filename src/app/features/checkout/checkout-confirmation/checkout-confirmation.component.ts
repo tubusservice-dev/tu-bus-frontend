@@ -9,12 +9,11 @@ import {
   DispatchType,
   isOilChangeOrder,
 } from '../../../models/order.model';
-import { CopyableValueComponent } from '../../../shared/components/copyable-value/copyable-value.component';
 
 @Component({
   selector: 'app-checkout-confirmation',
   standalone: true,
-  imports: [CommonModule, CurrencyPipe, DatePipe, CopyableValueComponent],
+  imports: [CommonModule, CurrencyPipe, DatePipe],
   templateUrl: './checkout-confirmation.component.html',
   styleUrl: './checkout-confirmation.component.scss',
 })
@@ -60,6 +59,28 @@ export class CheckoutConfirmationComponent implements OnInit {
   protected readonly hasBillingAddress = computed(() => {
     const ba = this.order()?.billingAddress;
     return !!(ba && (ba.fullName || ba.address));
+  });
+
+  /**
+   * Long-form Spanish label for the requested service date (UTC-anchored to
+   * avoid off-by-one on ISO `YYYY-MM-DD` strings). Empty when not applicable.
+   */
+  protected readonly requestedDateLabel = computed<string>(() => {
+    const raw = this.order()?.requestedServiceDate;
+    if (!raw) return '';
+    try {
+      const [y, m, d] = raw.slice(0, 10).split('-').map(Number);
+      const date = new Date(Date.UTC(y, (m || 1) - 1, d || 1));
+      return new Intl.DateTimeFormat('es-VE', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        timeZone: 'UTC',
+      }).format(date);
+    } catch {
+      return raw;
+    }
   });
 
   /**

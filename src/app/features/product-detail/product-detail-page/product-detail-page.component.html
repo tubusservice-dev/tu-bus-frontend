@@ -15,8 +15,8 @@
 
   <!-- Product detail content (same layout as product-detail page) -->
   <div class="product-detail-container">
-    <!-- Loading State -->
-    @if (isLoading()) {
+    <!-- Loading State (Phase 1 only — gallery + info skeleton) -->
+    @if (isLoadingProduct()) {
       <div class="loading-container">
         <div class="loading-grid">
           <div class="skeleton-gallery">
@@ -36,22 +36,22 @@
       </div>
     }
 
-    <!-- Error State -->
-    @if (error()) {
+    <!-- Error State (Phase 1 failure — product never loaded) -->
+    @if (productError()) {
       <div class="error-container">
         <div class="error-icon">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
           </svg>
         </div>
-        <h2>{{ error() }}</h2>
+        <h2>{{ productError() }}</h2>
         <p>El producto que buscas no existe o ha sido eliminado.</p>
         <button class="btn-primary" (click)="close()">Volver</button>
       </div>
     }
 
     <!-- Product Content -->
-    @if (!isLoading() && !error() && product(); as prod) {
+    @if (!isLoadingProduct() && !productError() && product(); as prod) {
       <div class="product-grid">
         <!-- Gallery -->
         <div class="gallery-section">
@@ -114,9 +114,15 @@
             </div>
           </div>
 
-          <!-- Stock -->
+          <!-- Stock (Phase 2). While Phase 2 is in flight render a neutral
+               placeholder so the layout doesn't shift when the value lands. -->
           <div class="stock-info">
-            @if (isOutOfStock()) {
+            @if (isLoadingStock()) {
+              <span class="in-stock stock-loading">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                Verificando inventario...
+              </span>
+            } @else if (isOutOfStock()) {
               <span class="out-of-stock-text">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" /></svg>
                 Agotado

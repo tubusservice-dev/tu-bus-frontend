@@ -1,0 +1,127 @@
+<div class="stock-modal-overlay" (click)="onOverlayClick()">
+  <div class="stock-modal" (click)="$event.stopPropagation()">
+    <!-- Header -->
+    <div class="stock-modal-header">
+      <div class="stock-modal-title-block">
+        <h3 class="stock-modal-title">{{ productName }}</h3>
+        @if (branchName) {
+          <span class="stock-modal-branch">{{ branchName }}</span>
+        } @else {
+          <span class="stock-modal-branch muted">Vista general</span>
+        }
+      </div>
+    </div>
+
+    <!-- Step 1: ver stock -->
+    @if (step() === 'view') {
+      <div class="stock-modal-body">
+        <div class="stock-current">
+          <span class="stock-current-label">Stock actual</span>
+          <span class="stock-current-value">{{ currentStock }}</span>
+        </div>
+
+        @if (!canEdit()) {
+          <p class="stock-hint">
+            Selecciona una sucursal en el filtro para agregar stock.
+          </p>
+        }
+      </div>
+      <div class="stock-modal-footer">
+        <button type="button" class="btn-secondary" (click)="close()">
+          Cerrar
+        </button>
+        <button
+          type="button"
+          class="btn-primary"
+          (click)="goToInput()"
+          [disabled]="!canEdit()"
+          [attr.title]="!canEdit() ? 'Selecciona una sucursal para agregar stock' : null"
+        >
+          Agregar stock
+        </button>
+      </div>
+    }
+
+    <!-- Step 2: input cantidad -->
+    @if (step() === 'input') {
+      <div class="stock-modal-body">
+        <label for="stock-quantity" class="stock-input-label">
+          Cantidad a agregar
+        </label>
+        <input
+          id="stock-quantity"
+          type="text"
+          inputmode="numeric"
+          pattern="[0-9]*"
+          autocomplete="off"
+          [value]="quantityInput()"
+          (beforeinput)="onBeforeInput($event)"
+          (input)="onQuantityInput($event)"
+          [placeholder]="minStock + '–' + maxStock"
+          class="stock-input"
+        />
+        <p class="stock-hint">Solo enteros entre {{ minStock }} y {{ maxStock }}.</p>
+      </div>
+      <div class="stock-modal-footer">
+        <button type="button" class="btn-secondary" (click)="close()">
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="btn-primary"
+          (click)="goToConfirm()"
+          [disabled]="!isQuantityValid()"
+        >
+          Continuar
+        </button>
+      </div>
+    }
+
+    <!-- Step 3: confirmacion -->
+    @if (step() === 'confirm') {
+      <div class="stock-modal-body">
+        <p class="stock-confirm-intro">Confirma el cambio:</p>
+        <div class="stock-receipt">
+          <div class="stock-receipt-row">
+            <span class="label">Stock actual</span>
+            <span class="value">{{ currentStock }}</span>
+          </div>
+          <div class="stock-receipt-row">
+            <span class="label">Cantidad</span>
+            <span class="value positive">+{{ parsedQuantity() }}</span>
+          </div>
+          <div class="stock-receipt-row total">
+            <span class="label">Stock nuevo</span>
+            <span class="value">{{ newStockPreview() }}</span>
+          </div>
+        </div>
+        @if (errorMessage()) {
+          <p class="stock-error">{{ errorMessage() }}</p>
+        }
+      </div>
+      <div class="stock-modal-footer">
+        <button
+          type="button"
+          class="btn-secondary"
+          (click)="backToInput()"
+          [disabled]="isSubmitting()"
+        >
+          Volver
+        </button>
+        <button
+          type="button"
+          class="btn-primary"
+          (click)="confirmAdd()"
+          [disabled]="isSubmitting()"
+        >
+          @if (isSubmitting()) {
+            <span class="btn-spinner"></span>
+            Agregando
+          } @else {
+            Sí, agregar
+          }
+        </button>
+      </div>
+    }
+  </div>
+</div>

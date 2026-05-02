@@ -1,0 +1,212 @@
+:host {
+  display: block;
+}
+
+// ───── Header ─────────────────────────────────────────────────
+.branch-manager-header {
+  @apply flex items-center justify-between mb-2;
+}
+
+.branch-manager-title {
+  @apply text-sm font-semibold text-gray-900 dark:text-white;
+}
+
+.branch-manager-dirty-tag {
+  @apply inline-flex px-2 py-0.5 text-[10px] font-medium rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400;
+}
+
+// ───── Branch search ──────────────────────────────────────────
+.branch-search-input {
+  @apply w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg;
+  @apply text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500;
+  @apply focus:outline-none focus:ring-2 focus:border-transparent transition-colors;
+
+  &:focus { --tw-ring-color: var(--accent-primary); }
+}
+
+.branch-search-icon {
+  @apply absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400;
+}
+
+.branch-dropdown {
+  @apply absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto;
+}
+
+.branch-dropdown-item {
+  @apply w-full px-4 py-2.5 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors first:rounded-t-lg last:rounded-b-lg;
+}
+
+.branch-dropdown-name {
+  @apply block text-sm font-medium text-gray-900 dark:text-white;
+}
+
+.branch-dropdown-address {
+  @apply block text-xs text-gray-400;
+}
+
+// ───── Loading / empty ────────────────────────────────────────
+.branch-loading {
+  @apply flex items-center justify-center gap-2 py-6 text-sm text-gray-500 dark:text-gray-400;
+}
+
+.branch-spinner {
+  @apply w-5 h-5 border-2 border-gray-200 dark:border-gray-700 rounded-full animate-spin;
+  border-top-color: var(--accent-primary);
+
+  &.branch-spinner-inline {
+    @apply w-4 h-4;
+    border-width: 2px;
+    border-top-color: white;
+    border-color: rgba(255, 255, 255, 0.4);
+  }
+}
+
+.branch-empty {
+  @apply flex flex-col items-center justify-center py-8 border-2 border-dashed border-gray-200 dark:border-gray-600 rounded-lg;
+
+  svg {
+    @apply w-8 h-8 text-gray-300 dark:text-gray-600 mb-2;
+  }
+
+  p {
+    @apply text-sm text-gray-400 dark:text-gray-500;
+  }
+}
+
+// ───── Rows ───────────────────────────────────────────────────
+.branch-rows {
+  @apply space-y-2;
+}
+
+.branch-row {
+  @apply flex items-center justify-between gap-4 px-4 py-2.5 border rounded-lg transition-opacity;
+  min-height: 52px;
+}
+
+.branch-row-existing {
+  @apply bg-gray-50 dark:bg-gray-700/40 border-gray-200 dark:border-gray-600;
+}
+
+.branch-row-new {
+  @apply bg-emerald-50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800/30;
+}
+
+.branch-row-left {
+  @apply flex items-center gap-2.5 min-w-0 flex-1;
+}
+
+.branch-row-icon {
+  @apply w-4 h-4 text-gray-400 flex-shrink-0;
+
+  &.branch-row-icon-new {
+    @apply text-emerald-500;
+  }
+}
+
+.branch-row-name {
+  @apply text-sm font-medium text-gray-900 dark:text-white truncate;
+}
+
+.branch-row-new-badge {
+  @apply text-[10px] px-1.5 py-0.5 bg-emerald-200 dark:bg-emerald-800 text-emerald-800 dark:text-emerald-200 rounded-full font-medium;
+}
+
+.branch-row-right {
+  @apply flex items-center gap-3 flex-shrink-0;
+}
+
+.branch-row-trash {
+  @apply p-1 text-gray-400 hover:text-red-500 transition-colors;
+
+  svg {
+    @apply w-4 h-4;
+  }
+}
+
+// ───── Toggle (active / paused) ───────────────────────────────
+.branch-toggle {
+  @apply relative inline-flex items-center gap-2 cursor-pointer flex-shrink-0;
+}
+
+.branch-toggle-track {
+  @apply w-10 h-5 bg-gray-300 dark:bg-gray-600 rounded-full transition-colors relative;
+
+  &::after {
+    content: '';
+    @apply absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform;
+  }
+}
+
+// :checked sibling lit by Tailwind's `peer` utility on the input
+.peer:checked ~ .branch-toggle-track {
+  @apply bg-emerald-500;
+
+  &::after { @apply translate-x-5; }
+}
+
+.branch-toggle-label {
+  @apply text-xs font-medium select-none whitespace-nowrap;
+}
+
+// ───── Stock numeric input (compact, no spinners) ─────────────
+.stock-num-input {
+  @apply w-16 min-w-0 px-1.5 py-1.5 text-center text-sm rounded-md;
+  @apply bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-500;
+  @apply text-gray-900 dark:text-white;
+  @apply focus:outline-none focus:ring-2 focus:border-transparent transition-colors;
+
+  &:focus { --tw-ring-color: var(--accent-primary); }
+
+  appearance: textfield;
+  -moz-appearance: textfield;
+
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+}
+
+// ───── Stock badges ───────────────────────────────────────────
+.stock-badge {
+  @apply inline-flex px-2 py-0.5 text-xs font-medium rounded-full;
+}
+
+.stock-badge-ok {
+  @apply bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400;
+}
+
+.stock-badge-empty {
+  @apply bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400;
+}
+
+// ───── Footer summary ─────────────────────────────────────────
+.branch-manager-summary {
+  @apply flex items-center justify-between mt-3 text-xs text-gray-500 dark:text-gray-400;
+
+  strong {
+    @apply text-sm text-gray-900 dark:text-white;
+  }
+}
+
+.branch-manager-warning {
+  @apply text-red-600 dark:text-red-400 font-medium;
+}
+
+// ───── Standalone save button (+ optional projected secondary) ─
+.branch-manager-save {
+  @apply mt-4 flex justify-end items-center gap-2;
+}
+
+.branch-manager-save-btn {
+  @apply inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors;
+  background-color: var(--accent-primary);
+
+  &:hover:not(:disabled) {
+    background-color: var(--accent-hover);
+  }
+
+  &:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+}

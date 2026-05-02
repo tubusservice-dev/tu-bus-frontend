@@ -55,12 +55,20 @@ export const routes: Routes = [
                 (m) => m.AdminFormComponent
               ),
           },
-          // Usuarios — deshabilitado temporalmente hasta completar el módulo.
-          // Cualquier intento de acceso por URL directa redirige al dashboard.
+          // Usuarios
           {
             path: 'users',
-            redirectTo: '',
-            pathMatch: 'prefix',
+            loadComponent: () =>
+              import('./features/admin/users/user-list/user-list.component').then(
+                (m) => m.UserListComponent
+              ),
+          },
+          {
+            path: 'users/:id',
+            loadComponent: () =>
+              import('./features/admin/users/user-detail/user-detail.component').then(
+                (m) => m.UserDetailComponent
+              ),
           },
           // Productos
           {

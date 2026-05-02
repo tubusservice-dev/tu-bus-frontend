@@ -1,0 +1,149 @@
+.stock-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+  padding: 1rem;
+}
+
+// Compact, single-section container — no internal borders or footer bg.
+.stock-modal {
+  @apply bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full flex flex-col overflow-hidden;
+  max-width: 240px;
+
+  @media (min-width: 640px) {
+    max-width: 260px;
+  }
+}
+
+// ─── Header (solid brand accent) ──────────────────────────────────
+.stock-modal-header {
+  @apply px-3.5 py-2.5;
+  background-color: var(--accent-primary);
+}
+
+.stock-modal-title-block {
+  @apply flex flex-col min-w-0;
+}
+
+.stock-modal-title {
+  @apply text-sm font-semibold truncate leading-tight text-white;
+}
+
+.stock-modal-branch {
+  @apply text-xs mt-0.5 truncate;
+  color: rgba(255, 255, 255, 0.75);
+
+  &.muted {
+    @apply italic;
+  }
+}
+
+// ─── Body (single padding zone, no card-in-card) ──────────────────
+.stock-modal-body {
+  @apply px-3.5 pt-3 pb-2 space-y-2.5;
+}
+
+// Step 1 — flat stock display (no card)
+.stock-current {
+  @apply flex flex-col items-center text-center py-2;
+}
+
+.stock-current-label {
+  @apply text-xs text-gray-500 dark:text-gray-400;
+}
+
+.stock-current-value {
+  @apply text-3xl font-bold text-gray-900 dark:text-white leading-none mt-1;
+}
+
+// Step 2 — input
+.stock-input-label {
+  @apply block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5;
+}
+
+.stock-input {
+  @apply px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm text-center text-gray-900 dark:text-white;
+  @apply focus:outline-none focus:ring-2 focus:border-transparent;
+  display: block;
+  width: 50%;
+  margin-left: auto;
+  margin-right: auto;
+
+  &:focus {
+    --tw-ring-color: var(--accent-primary);
+  }
+}
+
+.stock-hint {
+  @apply text-xs text-gray-500 dark:text-gray-400;
+}
+
+// Step 3 — confirm (receipt-style summary)
+.stock-confirm-intro {
+  @apply text-xs text-gray-500 dark:text-gray-400;
+}
+
+.stock-receipt {
+  @apply flex flex-col;
+}
+
+.stock-receipt-row {
+  @apply flex items-center justify-between py-1.5;
+
+  .label {
+    @apply text-xs text-gray-500 dark:text-gray-400;
+  }
+
+  .value {
+    @apply text-sm font-semibold text-gray-700 dark:text-gray-200 tabular-nums;
+
+    &.positive {
+      color: var(--accent-primary);
+    }
+  }
+
+  // Final row: divider above + emphasized value
+  &.total {
+    @apply mt-1 pt-2 border-t border-gray-200 dark:border-gray-700;
+
+    .label {
+      @apply text-gray-700 dark:text-gray-300 font-medium;
+    }
+
+    .value {
+      @apply text-base font-bold;
+      color: var(--accent-primary);
+    }
+  }
+}
+
+.stock-error {
+  @apply text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-md px-2.5 py-1.5;
+}
+
+// ─── Footer (no border, no bg, fused with body) ───────────────────
+.stock-modal-footer {
+  @apply flex items-center justify-end gap-2 px-3.5 pb-3.5 pt-1;
+}
+
+.btn-primary {
+  @apply inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 text-white text-sm font-medium rounded-md transition-colors disabled:opacity-60 disabled:cursor-not-allowed;
+  background-color: var(--accent-primary);
+
+  &:hover:not(:disabled) {
+    background-color: var(--accent-hover);
+  }
+}
+
+.btn-secondary {
+  @apply px-3.5 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.btn-spinner {
+  @apply inline-block w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin;
+}

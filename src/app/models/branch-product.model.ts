@@ -21,12 +21,25 @@ export interface CreateBranchProductBatchRequest {
   assignments: Array<{
     branchId: string;
     stock: number;
+    /** Optional initial active flag. Defaults to `true` server-side. */
+    isActive?: boolean;
   }>;
 }
 
 export interface UpdateBranchProductRequest {
   stock?: number;
   isActive?: boolean;
+}
+
+/**
+ * Body of `PUT /api/branch-products/admin/batch-stock`.
+ * Each entry is an absolute new stock value (not a delta).
+ */
+export interface BatchUpdateStockRequest {
+  updates: Array<{
+    id: string;
+    stock: number;
+  }>;
 }
 
 export interface BranchProductResponse {

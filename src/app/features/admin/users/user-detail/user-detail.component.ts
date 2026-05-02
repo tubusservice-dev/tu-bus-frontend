@@ -7,9 +7,13 @@ import {
   AdminUserStatsResponse,
   UpdateUserStatusRequest,
 } from '../../../../core/services/admin-user.service';
+import { SettingsService } from '../../../../core/services/settings.service';
 import { AdminUser, UserRole, UserStatus } from '../../../../models';
+import { PAGINATION_OPTIONS } from '../../../../models/settings.model';
 import { Order, OrderStatus } from '../../../../models/order.model';
 import { Vehicle } from '../../../../models/vehicle.model';
+import { UserAvatarComponent } from '../../../../shared/components/user-avatar/user-avatar.component';
+import { DateInputComponent } from '../../../../shared/components/date-input/date-input.component';
 
 type TabKey = 'info' | 'orders' | 'vehicles' | 'audit';
 
@@ -25,7 +29,7 @@ interface StatusModal {
 @Component({
   selector: 'app-user-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, UserAvatarComponent, DateInputComponent],
   templateUrl: './user-detail.component.html',
   styleUrl: './user-detail.component.scss',
 })
@@ -33,6 +37,7 @@ export class UserDetailComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly adminUserService = inject(AdminUserService);
+  private readonly settingsService = inject(SettingsService);
 
   protected readonly user = signal<AdminUser | null>(null);
   protected readonly stats = signal<AdminUserStatsResponse['data'] | null>(null);
@@ -56,13 +61,22 @@ export class UserDetailComponent implements OnInit {
   protected readonly ordersPage = signal(1);
   protected readonly ordersPages = signal(1);
   protected readonly ordersTotal = signal(0);
+  protected readonly ordersLimit = signal(
+    this.settingsService.paginationConfig().adminLimit || 10
+  );
   protected readonly ordersStatusFilter = signal<'all' | OrderStatus>('all');
+
+  protected readonly paginationConfig = this.settingsService.paginationConfig;
+  protected readonly paginationOptions = PAGINATION_OPTIONS;
 
   protected readonly statusModal = signal<StatusModal | null>(null);
   protected readonly modalReason = signal('');
   protected readonly modalSuspendedUntil = signal('');
   protected readonly modalError = signal<string | null>(null);
   protected readonly modalBusy = signal(false);
+
+  /** Today as ISO YYYY-MM-DD in local timezone. Used as min for the suspend-until picker. */
+  protected readonly todayIso = this.computeTodayIso();
 
   protected readonly orderStatusChips: { key: 'all' | OrderStatus; label: string }[] = [
     { key: 'all', label: 'Todas' },
@@ -80,13 +94,6 @@ export class UserDetailComponent implements OnInit {
     return full || u.email || u.username || 'Usuario';
   });
 
-  protected readonly avatarUrl = computed(() => {
-    const u = this.user();
-    if (!u) return '';
-    if (u.avatar) return u.avatar;
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(this.displayName())}&background=001d56&color=fff&size=160`;
-  });
-
   protected readonly fullAddress = computed(() => {
     const u = this.user();
     if (!u) return '';
@@ -100,15 +107,22 @@ export class UserDetailComponent implements OnInit {
     return parts.join(' · ');
   });
 
-  protected readonly ordersPageNumbers = computed(() => {
+  /** Visible order pages with ellipsis: matches catalog UX. */
+  getOrdersVisiblePages(): (number | '...')[] {
     const total = this.ordersPages();
     const current = this.ordersPage();
-    const out: number[] = [];
-    const start = Math.max(1, current - 2);
-    const end = Math.min(total, current + 2);
+    if (total <= 7) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    const out: (number | '...')[] = [1];
+    if (current > 3) out.push('...');
+    const start = Math.max(2, current - 1);
+    const end = Math.min(total - 1, current + 1);
     for (let i = start; i <= end; i++) out.push(i);
+    if (current < total - 2) out.push('...');
+    out.push(total);
     return out;
-  });
+  }
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
@@ -158,7 +172,7 @@ export class UserDetailComponent implements OnInit {
     this.isLoadingOrders.set(true);
     this.ordersError.set(null);
     const status = this.ordersStatusFilter() === 'all' ? undefined : this.ordersStatusFilter();
-    this.adminUserService.getOrders(u.id, this.ordersPage(), 10, status).subscribe({
+    this.adminUserService.getOrders(u.id, this.ordersPage(), this.ordersLimit(), status).subscribe({
       next: (res) => {
         this.orders.set(res.data);
         this.ordersTotal.set(res.pagination.total);
@@ -217,6 +231,12 @@ export class UserDetailComponent implements OnInit {
   goToOrdersPage(page: number): void {
     if (page < 1 || page > this.ordersPages() || page === this.ordersPage()) return;
     this.ordersPage.set(page);
+    this.loadOrdersIfNeeded(true);
+  }
+
+  onOrdersLimitChange(newLimit: number): void {
+    this.ordersLimit.set(Number(newLimit));
+    this.ordersPage.set(1);
     this.loadOrdersIfNeeded(true);
   }
 
@@ -289,7 +309,7 @@ export class UserDetailComponent implements OnInit {
       status: modal.target,
       ...(reason ? { reason } : {}),
       ...(modal.allowsDuration && this.modalSuspendedUntil()
-        ? { suspendedUntil: new Date(this.modalSuspendedUntil()).toISOString() }
+        ? { suspendedUntil: this.toEndOfDayLocalIso(this.modalSuspendedUntil()) }
         : {}),
     };
 
@@ -305,6 +325,27 @@ export class UserDetailComponent implements OnInit {
         this.modalError.set(err?.error?.message || 'No se pudo actualizar el estado');
       },
     });
+  }
+
+  /**
+   * Converts an ISO date (`YYYY-MM-DD`) into an ISO timestamp at the end of
+   * that day in the browser's local timezone. The picker only emits the date
+   * portion; suspending "until 31/05/2026" must reach 23:59:59 local — not
+   * midnight UTC, which would silently shift to the previous day in negative
+   * UTC offsets like Venezuela's.
+   */
+  private toEndOfDayLocalIso(iso: string): string {
+    const [year, month, day] = iso.split('-').map(Number);
+    return new Date(year, month - 1, day, 23, 59, 59, 999).toISOString();
+  }
+
+  /** Returns today's date as `YYYY-MM-DD` in the local timezone. */
+  private computeTodayIso(): string {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
   }
 
   // Helpers de presentación

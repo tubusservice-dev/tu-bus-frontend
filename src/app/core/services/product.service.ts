@@ -11,6 +11,10 @@ import {
   FuelType,
   VehicleType,
 } from '../../models/product.model';
+import {
+  AdminProductByBranchListResponse,
+  AdminProductByBranchQuery,
+} from '../../models/admin-product-by-branch.model';
 
 export interface ShowcaseCategory {
   name: string;
@@ -117,7 +121,8 @@ export interface DetailProduct {
   comparePrice?: number;
   sku: string;
   line: { name: string } | null;
-  categories: { name: string }[];
+  /** Categories include _id so the client can request related products. */
+  categories: { _id?: string; name: string; vehicleTypes?: string[] }[];
   brand: { name: string } | null;
   productModel: string;
   freeOilChangeService: boolean;
@@ -141,6 +146,7 @@ export interface DetailRelatedProduct {
   brand: { name: string } | null;
   productModel: string;
   stock: number;
+  freeOilChangeService?: boolean;
 }
 
 export interface ProductDetailResponse {
@@ -150,6 +156,22 @@ export interface ProductDetailResponse {
     stock: DetailStock;
     related: DetailRelatedProduct[];
   };
+}
+
+// Phased detail responses
+export interface ProductInfoResponse {
+  success: boolean;
+  data: DetailProduct;
+}
+
+export interface ProductStockResponse {
+  success: boolean;
+  data: DetailStock;
+}
+
+export interface ProductRelatedResponse {
+  success: boolean;
+  data: DetailRelatedProduct[];
 }
 
 export interface ProductQueryParams {
@@ -190,7 +212,8 @@ export class ProductService {
   private readonly adminUrl = `${environment.apiUrl}/admin/products`;
 
   /**
-   * Composite endpoint: product + stock + related in one request
+   * Composite endpoint: product + stock + related in one request.
+   * @deprecated Use getInfo + getStock + getRelated for the detail overlay.
    */
   getDetail(id: string, branchIds?: string): Observable<ProductDetailResponse> {
     let httpParams = new HttpParams();
@@ -198,6 +221,41 @@ export class ProductService {
       httpParams = httpParams.set('branchIds', branchIds);
     }
     return this.http.get<ProductDetailResponse>(`${this.publicUrl}/${id}/detail`, { params: httpParams });
+  }
+
+  // ==================== Phased detail endpoints ====================
+
+  /** Phase 1 — product info only (no stock, no related). */
+  getInfo(id: string): Observable<ProductInfoResponse> {
+    return this.http.get<ProductInfoResponse>(`${this.publicUrl}/${id}/info`);
+  }
+
+  /** Phase 2 — aggregated stock across the user's selected branches. */
+  getStock(id: string, branchIds?: string): Observable<ProductStockResponse> {
+    let httpParams = new HttpParams();
+    if (branchIds) {
+      httpParams = httpParams.set('branchIds', branchIds);
+    }
+    return this.http.get<ProductStockResponse>(`${this.publicUrl}/${id}/stock`, { params: httpParams });
+  }
+
+  /**
+   * Phase 3 — related products by category. The category id comes from the
+   * Phase 1 response so the server doesn't need to refetch the product.
+   */
+  getRelated(
+    id: string,
+    categoryId: string,
+    branchIds?: string,
+    limit = 4
+  ): Observable<ProductRelatedResponse> {
+    let httpParams = new HttpParams()
+      .set('categoryId', categoryId)
+      .set('limit', limit.toString());
+    if (branchIds) {
+      httpParams = httpParams.set('branchIds', branchIds);
+    }
+    return this.http.get<ProductRelatedResponse>(`${this.publicUrl}/${id}/related`, { params: httpParams });
   }
 
   /**
@@ -325,5 +383,24 @@ export class ProductService {
     return this.http.patch<ProductResponse>(`${this.adminUrl}/${id}/stock`, {
       quantity,
     });
+  }
+
+  /**
+   * Listado optimizado para la vista de tabla del admin con filtro por sucursal.
+   * Una sola query agregada en backend (sin N+1 sobre BranchProducts).
+   */
+  getAllByBranch(
+    params: AdminProductByBranchQuery
+  ): Observable<AdminProductByBranchListResponse> {
+    let httpParams = new HttpParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        httpParams = httpParams.set(key, value.toString());
+      }
+    });
+    return this.http.get<AdminProductByBranchListResponse>(
+      `${this.adminUrl}/by-branch`,
+      { params: httpParams }
+    );
   }
 }

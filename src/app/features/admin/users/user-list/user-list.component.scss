@@ -26,32 +26,20 @@
   @apply flex-1 min-w-0;
 }
 
-.selectors {
-  @apply flex flex-wrap gap-3;
-}
-
-.selector {
-  @apply flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400;
-
-  select {
-    @apply min-w-[9rem] px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white;
-    @apply focus:outline-none focus:ring-2 focus:border-transparent;
-    &:focus { --tw-ring-color: var(--accent-primary); }
-  }
-}
-
 .status-chips {
   @apply flex flex-wrap gap-2;
 }
 
 .chip {
-  @apply px-3 py-1.5 text-sm rounded-full border transition-colors;
+  @apply px-4 py-2 text-sm font-medium rounded-full border transition-all;
   @apply border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800;
-  @apply hover:bg-gray-50 dark:hover:bg-gray-700/60;
+  @apply hover:bg-gray-50 dark:hover:bg-gray-700/60 hover:shadow-sm;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 
   &.active {
-    @apply text-white border-transparent;
+    @apply text-white border-transparent font-semibold;
     background-color: var(--accent-primary);
+    box-shadow: 0 4px 10px rgba(0, 29, 86, 0.25);
   }
 }
 
@@ -60,7 +48,8 @@
   @apply flex flex-col items-center justify-center py-16 text-gray-500 dark:text-gray-400;
 
   .spinner {
-    @apply w-10 h-10 border-4 border-gray-200 dark:border-gray-700 border-t-blue-600 rounded-full animate-spin mb-4;
+    @apply w-10 h-10 border-4 border-gray-200 dark:border-gray-700 rounded-full animate-spin mb-4;
+    border-top-color: var(--accent-primary);
   }
 }
 
@@ -84,70 +73,80 @@
   }
 }
 
-// Tabla
-.table-container {
-  @apply bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden overflow-x-auto;
+// Cards
+.users-grid {
+  @apply flex flex-col gap-3;
 }
 
-.data-table {
-  @apply w-full text-sm;
+.user-card {
+  @apply flex items-center gap-4 p-4 sm:p-5 rounded-2xl border bg-white dark:bg-gray-800 cursor-pointer outline-none;
+  @apply border-gray-200 dark:border-gray-700;
+  @apply transition-all duration-200;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 
-  thead {
-    @apply bg-gray-50 dark:bg-gray-700/50;
+  &:hover {
+    @apply border-gray-300 dark:border-gray-600;
+    box-shadow:
+      0 8px 24px rgba(0, 29, 86, 0.08),
+      0 2px 4px rgba(0, 0, 0, 0.04);
+    transform: translateY(-1px);
   }
 
-  th {
-    @apply text-left font-semibold text-gray-600 dark:text-gray-300 px-4 py-3 whitespace-nowrap;
-    &.num { @apply text-right; }
-    &.actions-head { @apply text-right; }
+  &:focus-visible {
+    box-shadow:
+      0 0 0 3px rgba(0, 29, 86, 0.18),
+      0 4px 12px rgba(0, 29, 86, 0.08);
   }
 
-  tbody tr {
-    @apply border-t border-gray-100 dark:border-gray-700 cursor-pointer transition-colors;
-    @apply hover:bg-gray-50 dark:hover:bg-gray-700/40;
-
-    &.blocked-row {
-      @apply opacity-75;
-    }
-  }
-
-  td {
-    @apply px-4 py-3 text-gray-800 dark:text-gray-200 align-middle;
-    &.num { @apply text-right; }
+  &.is-blocked {
+    @apply opacity-70;
   }
 }
 
-.user-cell {
-  @apply flex items-center gap-3;
+.card-body {
+  @apply flex-1 min-w-0 flex flex-col gap-2;
+}
 
-  .avatar {
-    @apply w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-700;
+.card-head {
+  @apply flex items-start justify-between gap-3;
+}
+
+.card-identity {
+  @apply min-w-0 flex flex-col;
+}
+
+.card-name {
+  @apply text-base font-semibold text-gray-900 dark:text-white truncate;
+}
+
+.card-email {
+  @apply text-sm text-gray-500 dark:text-gray-400 truncate;
+}
+
+.card-meta {
+  @apply flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-gray-600 dark:text-gray-300;
+}
+
+.meta-item {
+  @apply inline-flex items-center gap-1.5;
+
+  svg {
+    @apply w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0;
   }
 
-  .user-text {
-    @apply flex flex-col;
-
-    .user-name {
-      @apply font-medium text-gray-900 dark:text-white;
-    }
-
-    .user-sub {
-      @apply text-xs text-gray-500 dark:text-gray-400;
-    }
+  &.meta-date {
+    @apply text-gray-500 dark:text-gray-400;
   }
 }
 
-.contact-cell {
-  @apply flex flex-col text-sm;
-  .muted { @apply text-gray-400 dark:text-gray-500 text-xs; }
+.card-actions {
+  @apply flex-shrink-0 self-start;
 }
 
-.muted {
-  @apply text-gray-400 dark:text-gray-500;
-}
-
+// Status badges
 .status-badge {
-  @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium;
+  @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 
   &.badge-green { @apply bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300; }
   &.badge-yellow { @apply bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300; }
@@ -155,31 +154,74 @@
   &.badge-gray { @apply bg-gray-200 text-gray-600 dark:bg-gray-600/30 dark:text-gray-300; }
 }
 
-.actions-cell {
-  @apply text-right;
+.muted {
+  @apply text-gray-400 dark:text-gray-500;
 }
 
-// Paginación
+// Paginación (mismo patrón que catálogo cliente)
+.pagination-wrapper {
+  @apply flex flex-col sm:flex-row items-center justify-center gap-4 mt-8;
+}
+
 .pagination {
-  @apply flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-4 px-2;
+  @apply flex items-center justify-center gap-2;
 }
 
-.pagination-info {
-  @apply text-sm text-gray-500 dark:text-gray-400;
-}
+.page-btn {
+  @apply w-10 h-10 flex items-center justify-center rounded-lg text-sm font-medium transition-colors;
+  @apply text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800;
+  @apply disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent;
 
-.pagination-buttons {
-  @apply flex items-center gap-1;
-}
-
-.btn-page {
-  @apply inline-flex items-center justify-center w-9 h-9 text-sm rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 transition-colors;
-  @apply hover:bg-gray-50 dark:hover:bg-gray-700/60;
-  @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  svg {
+    @apply w-5 h-5;
+  }
 
   &.active {
-    @apply text-white border-transparent;
+    @apply text-white;
     background-color: var(--accent-primary);
+    &:hover { background-color: var(--accent-hover, rgb(0, 20, 60)); }
+  }
+}
+
+.page-ellipsis {
+  @apply w-10 h-10 flex items-center justify-center text-sm text-gray-400 dark:text-gray-500;
+}
+
+.limit-selector {
+  @apply flex items-center gap-2;
+
+  label {
+    @apply text-sm;
+    color: var(--text-secondary, #6b7280);
+  }
+
+  select {
+    @apply px-3 py-1.5 rounded-lg text-sm cursor-pointer appearance-none;
+    background-color: var(--bg-primary, #ffffff);
+    border: 1px solid var(--border-color, #e5e7eb);
+    color: var(--text-primary, #111827);
+    padding-right: 40px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='2' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='m19.5 8.25-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 18px;
+
+    &:focus {
+      outline: none;
+      border-color: var(--accent-primary);
+    }
+  }
+}
+
+:host-context(.dark) {
+  .limit-selector {
+    label { color: #9ca3af; }
+
+    select {
+      background-color: #1f2937;
+      border-color: #374151;
+      color: #f9fafb;
+    }
   }
 }
 
@@ -189,7 +231,7 @@
   &:hover { background-color: var(--accent-hover, rgb(0, 20, 60)); }
 }
 
-// Modal
+// Modal (sin cambios funcionales)
 .modal-overlay {
   @apply fixed inset-0 z-50 flex items-center justify-center p-4;
   background-color: rgba(0, 0, 0, 0.5);

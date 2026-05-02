@@ -8,7 +8,7 @@
     [class.fit-cover]="imageFit === 'cover'"
     [class.fit-contain]="imageFit === 'contain'"
   >
-    <img [src]="currentImage()" [alt]="'Imagen ' + (currentIndex() + 1)" loading="lazy" />
+    <img [src]="currentImage()" [alt]="'Imagen ' + (currentIndex() + 1)" loading="lazy" (error)="handleImageError($event)" />
   </div>
 
   <!-- Flechas de navegación -->

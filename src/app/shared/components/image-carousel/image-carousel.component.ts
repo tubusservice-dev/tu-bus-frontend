@@ -6,6 +6,10 @@ import {
   effect,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import {
+  IMAGE_PLACEHOLDER_DATA_URL,
+  onImageError,
+} from '../../utils/image-placeholder.util';
 
 @Component({
   selector: 'app-image-carousel',
@@ -28,7 +32,10 @@ export class ImageCarouselComponent {
   @Input() height = '300px';
 
   /** Imagen placeholder si no hay imágenes */
-  @Input() placeholder = 'https://placehold.co/400x300/e5e7eb/9ca3af?text=Sin+imagen';
+  @Input() placeholder: string = IMAGE_PLACEHOLDER_DATA_URL;
+
+  /** Bound to (error) on the <img> for runtime fallback. */
+  protected readonly handleImageError = onImageError;
 
   /** Modo de ajuste de imagen: 'cover' recorta para llenar, 'contain' muestra completa */
   @Input() imageFit: 'cover' | 'contain' = 'contain';

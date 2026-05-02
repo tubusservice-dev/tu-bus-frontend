@@ -7,16 +7,18 @@ import {
   AdminUserFilters,
   UpdateUserStatusRequest,
 } from '../../../../core/services/admin-user.service';
-import { AdminUser, UserRole, UserStatus } from '../../../../models';
+import { SettingsService } from '../../../../core/services/settings.service';
+import { AdminUser, UserStatus } from '../../../../models';
+import { PAGINATION_OPTIONS } from '../../../../models/settings.model';
 import { SearchInputComponent } from '../../../../shared/components/search-input/search-input.component';
 import {
   KebabMenuComponent,
   KebabMenuAction,
 } from '../../../../shared/components/kebab-menu/kebab-menu.component';
+import { UserAvatarComponent } from '../../../../shared/components/user-avatar/user-avatar.component';
+import { DateInputComponent } from '../../../../shared/components/date-input/date-input.component';
 
 type StatusFilter = 'all' | UserStatus;
-type VerifiedFilter = 'all' | 'yes' | 'no';
-type OAuthFilter = 'all' | 'yes' | 'no';
 
 interface StatusModal {
   user: AdminUser;
@@ -31,12 +33,20 @@ interface StatusModal {
 @Component({
   selector: 'app-user-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, SearchInputComponent, KebabMenuComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    SearchInputComponent,
+    KebabMenuComponent,
+    UserAvatarComponent,
+    DateInputComponent,
+  ],
   templateUrl: './user-list.component.html',
   styleUrl: './user-list.component.scss',
 })
 export class UserListComponent implements OnInit {
   private readonly adminUserService = inject(AdminUserService);
+  private readonly settingsService = inject(SettingsService);
   private readonly router = inject(Router);
 
   protected readonly users = signal<AdminUser[]>([]);
@@ -45,14 +55,16 @@ export class UserListComponent implements OnInit {
 
   protected readonly searchTerm = signal('');
   protected readonly statusFilter = signal<StatusFilter>('all');
-  protected readonly roleFilter = signal<'all' | UserRole>('all');
-  protected readonly verifiedFilter = signal<VerifiedFilter>('all');
-  protected readonly oauthFilter = signal<OAuthFilter>('all');
 
   protected readonly page = signal(1);
-  protected readonly limit = signal(10);
+  protected readonly limit = signal(
+    this.settingsService.paginationConfig().adminLimit || 20
+  );
   protected readonly total = signal(0);
   protected readonly pages = signal(1);
+
+  protected readonly paginationConfig = this.settingsService.paginationConfig;
+  protected readonly paginationOptions = PAGINATION_OPTIONS;
 
   protected readonly processingId = signal<string | null>(null);
   protected readonly statusModal = signal<StatusModal | null>(null);
@@ -62,6 +74,9 @@ export class UserListComponent implements OnInit {
   protected readonly modalError = signal<string | null>(null);
   protected readonly modalBusy = signal(false);
 
+  /** Today as ISO YYYY-MM-DD in local timezone. Used as min for the suspend-until picker. */
+  protected readonly todayIso = this.computeTodayIso();
+
   protected readonly statusChips: { key: StatusFilter; label: string }[] = [
     { key: 'all', label: 'Todos' },
     { key: UserStatus.ACTIVE, label: 'Activos' },
@@ -69,16 +84,6 @@ export class UserListComponent implements OnInit {
     { key: UserStatus.BLOCKED, label: 'Bloqueados' },
     { key: UserStatus.DELETED, label: 'Eliminados' },
   ];
-
-  protected readonly pageNumbers = computed(() => {
-    const total = this.pages();
-    const current = this.page();
-    const out: number[] = [];
-    const start = Math.max(1, current - 2);
-    const end = Math.min(total, current + 2);
-    for (let i = start; i <= end; i++) out.push(i);
-    return out;
-  });
 
   ngOnInit(): void {
     this.load();
@@ -93,9 +98,6 @@ export class UserListComponent implements OnInit {
       limit: this.limit(),
       search: this.searchTerm() || undefined,
       status: this.statusFilter() === 'all' ? undefined : (this.statusFilter() as UserStatus),
-      role: this.roleFilter() === 'all' ? undefined : (this.roleFilter() as UserRole),
-      isVerified: this.verifiedFilter() === 'all' ? undefined : this.verifiedFilter() === 'yes',
-      hasOAuth: this.oauthFilter() === 'all' ? undefined : this.oauthFilter() === 'yes',
     };
 
     this.adminUserService.getAll(filters).subscribe({
@@ -124,28 +126,33 @@ export class UserListComponent implements OnInit {
     this.load();
   }
 
-  setRole(role: 'all' | UserRole): void {
-    this.roleFilter.set(role);
-    this.page.set(1);
-    this.load();
-  }
-
-  setVerified(value: VerifiedFilter): void {
-    this.verifiedFilter.set(value);
-    this.page.set(1);
-    this.load();
-  }
-
-  setOAuth(value: OAuthFilter): void {
-    this.oauthFilter.set(value);
-    this.page.set(1);
-    this.load();
-  }
-
   goToPage(page: number): void {
     if (page < 1 || page > this.pages() || page === this.page()) return;
     this.page.set(page);
     this.load();
+  }
+
+  onLimitChange(newLimit: number): void {
+    this.limit.set(Number(newLimit));
+    this.page.set(1);
+    this.load();
+  }
+
+  /** Visible page numbers with ellipsis: matches catalog UX. */
+  getVisiblePages(): (number | '...')[] {
+    const total = this.pages();
+    const current = this.page();
+    if (total <= 7) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    const out: (number | '...')[] = [1];
+    if (current > 3) out.push('...');
+    const start = Math.max(2, current - 1);
+    const end = Math.min(total - 1, current + 1);
+    for (let i = start; i <= end; i++) out.push(i);
+    if (current < total - 2) out.push('...');
+    out.push(total);
+    return out;
   }
 
   navigateToDetail(user: AdminUser): void {
@@ -155,12 +162,6 @@ export class UserListComponent implements OnInit {
   fullName(user: AdminUser): string {
     const full = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
     return full || user.email || user.username || 'Sin nombre';
-  }
-
-  avatarUrl(user: AdminUser): string {
-    if (user.avatar) return user.avatar;
-    const name = encodeURIComponent(this.fullName(user));
-    return `https://ui-avatars.com/api/?name=${name}&background=001d56&color=fff&size=64`;
   }
 
   statusLabel(status: UserStatus): string {
@@ -181,15 +182,6 @@ export class UserListComponent implements OnInit {
       [UserStatus.DELETED]: 'badge-gray',
     };
     return map[status] || 'badge-gray';
-  }
-
-  roleLabel(role: UserRole): string {
-    const map: Record<UserRole, string> = {
-      [UserRole.CUSTOMER]: 'Cliente',
-      [UserRole.SELLER]: 'Vendedor',
-      [UserRole.ADMIN]: 'Admin',
-    };
-    return map[role] || role;
   }
 
   actionsFor(user: AdminUser): KebabMenuAction[] {
@@ -298,7 +290,7 @@ export class UserListComponent implements OnInit {
       status: modal.target,
       ...(reason ? { reason } : {}),
       ...(modal.allowsDuration && this.modalSuspendedUntil()
-        ? { suspendedUntil: new Date(this.modalSuspendedUntil()).toISOString() }
+        ? { suspendedUntil: this.toEndOfDayLocalIso(this.modalSuspendedUntil()) }
         : {}),
     };
 
@@ -325,6 +317,27 @@ export class UserListComponent implements OnInit {
   closeDeleteModal(): void {
     if (this.modalBusy()) return;
     this.userToDelete.set(null);
+  }
+
+  /**
+   * Converts an ISO date (`YYYY-MM-DD`) into an ISO timestamp at the end of
+   * that day in the browser's local timezone. The picker only emits the date
+   * portion; suspending "until 31/05/2026" must reach 23:59:59 local — not
+   * midnight UTC, which would silently shift to the previous day in negative
+   * UTC offsets like Venezuela's.
+   */
+  private toEndOfDayLocalIso(iso: string): string {
+    const [year, month, day] = iso.split('-').map(Number);
+    return new Date(year, month - 1, day, 23, 59, 59, 999).toISOString();
+  }
+
+  /** Returns today's date as `YYYY-MM-DD` in the local timezone. */
+  private computeTodayIso(): string {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
   }
 
   confirmDelete(): void {

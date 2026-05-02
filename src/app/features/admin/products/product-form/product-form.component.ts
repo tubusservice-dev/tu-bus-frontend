@@ -1,17 +1,14 @@
-import { Component, inject, signal, OnInit, computed, ElementRef, HostListener } from '@angular/core';
+import { Component, inject, signal, OnInit, computed, ElementRef, HostListener, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { Location } from '@angular/common';
-import { FormBuilder, FormGroup, FormArray, ReactiveFormsModule, Validators } from '@angular/forms';
-import { forkJoin } from 'rxjs';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ProductService } from '../../../../core/services/product.service';
 import { LineService } from '../../../../core/services/line.service';
 import { CategoryService } from '../../../../core/services/category.service';
 import { BrandService } from '../../../../core/services/brand.service';
 import { UploadService } from '../../../../core/services/upload.service';
-import { BranchProductService } from '../../../../core/services/branch-product.service';
 import { BranchService } from '../../../../core/services/branch.service';
-import { BranchProduct } from '../../../../models/branch-product.model';
 import { Branch } from '../../../../models/branch.model';
 import {
   Line,
@@ -24,11 +21,13 @@ import {
   SearchableOption,
 } from '../../../../shared/components/searchable-select/searchable-select.component';
 import { ToastService } from '../../../../shared/services/toast.service';
+import { BranchStockManagerComponent } from '../branch-stock-manager/branch-stock-manager.component';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-product-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ImageCarouselComponent, SearchableSelectComponent],
+  imports: [CommonModule, ReactiveFormsModule, ImageCarouselComponent, SearchableSelectComponent, BranchStockManagerComponent],
   templateUrl: './product-form.component.html',
   styleUrl: './product-form.component.scss',
 })
@@ -43,7 +42,6 @@ export class ProductFormComponent implements OnInit {
   private readonly brandService = inject(BrandService);
   private readonly uploadService = inject(UploadService);
   private readonly elementRef = inject(ElementRef);
-  private readonly branchProductService = inject(BranchProductService);
   private readonly branchService = inject(BranchService);
   private readonly toastService = inject(ToastService);
 
@@ -108,49 +106,12 @@ export class ProductFormComponent implements OnInit {
     if (brand) this.selectedBrand.set(brand);
   }
 
-  // Branch-Product assignment
+  // Available branches — handed to the embedded BranchStockManager.
   protected readonly availableBranches = signal<Branch[]>([]);
-  protected readonly existingBranchProducts = signal<BranchProduct[]>([]);
-  protected readonly newBranchProducts = signal<Array<{ branch: Branch; stock: number }>>([]);
-  protected readonly deletedBranchProductIds = signal<string[]>([]);
-  protected readonly branchSearchTerm = signal('');
-  protected readonly showBranchDropdown = signal(false);
 
-  protected readonly filteredBranches = computed(() => {
-    const search = this.branchSearchTerm().toLowerCase().trim();
-    const assignedIds = new Set([
-      ...this.existingBranchProducts()
-        .filter(bp => !this.deletedBranchProductIds().includes(bp.id))
-        .map(bp => typeof bp.branch === 'string' ? bp.branch : (bp.branch as Branch).id),
-      ...this.newBranchProducts().map(nbp => nbp.branch.id),
-    ]);
-    let filtered = this.availableBranches().filter(b => b.isActive && !assignedIds.has(b.id));
-    if (search) {
-      filtered = filtered.filter(b => b.name.toLowerCase().includes(search));
-    }
-    return filtered;
-  });
-
-  protected readonly totalStock = computed(() => {
-    const existingStock = this.existingBranchProducts()
-      .filter(bp => !this.deletedBranchProductIds().includes(bp.id))
-      .reduce((sum, bp) => sum + bp.stock, 0);
-    const newStock = this.newBranchProducts().reduce((sum, nbp) => sum + nbp.stock, 0);
-    return existingStock + newStock;
-  });
-
-  protected readonly outOfStockCount = computed(() => {
-    const existingOos = this.existingBranchProducts()
-      .filter(bp => !this.deletedBranchProductIds().includes(bp.id) && bp.stock === 0).length;
-    const newOos = this.newBranchProducts().filter(nbp => nbp.stock === 0).length;
-    return existingOos + newOos;
-  });
-
-  protected readonly activeBranchCount = computed(() => {
-    return this.existingBranchProducts()
-      .filter(bp => !this.deletedBranchProductIds().includes(bp.id)).length
-      + this.newBranchProducts().length;
-  });
+  // Reference to the embedded manager so we can trigger save() after the
+  // product is created/updated and the productId is known.
+  @ViewChild('branchManager') branchManager?: BranchStockManagerComponent;
 
   // Sección activa (simplificado a 3 secciones)
   protected readonly activeSection = signal<'basic' | 'vehicle' | 'images'>('basic');
@@ -340,12 +301,8 @@ export class ProductFormComponent implements OnInit {
         }
 
         this.isLoading.set(false);
-
-        // Load BranchProducts for this product
-        this.branchProductService.getByProduct(id).subscribe({
-          next: (response) => this.existingBranchProducts.set(response.data),
-          error: () => {},
-        });
+        // BranchProducts are loaded by the embedded <app-branch-stock-manager>
+        // via its `productId` input — no need to fetch them here.
       },
       error: (error) => {
         this.errorMessage.set(error.error?.message || 'Error al cargar producto');
@@ -441,8 +398,28 @@ export class ProductFormComponent implements OnInit {
 
     request$.subscribe({
       next: (response) => {
-        const productId = response.data.id || this.productId()!;
-        this.saveBranchProducts(productId);
+        const newProductId = response.data.id || this.productId()!;
+        // Sync productId so the manager can persist new assignments under
+        // the freshly-created backend id.
+        if (!this.isEditMode()) {
+          this.productId.set(newProductId);
+        }
+        // Delegate branch persistence to the embedded manager. If the
+        // ViewChild isn't ready (defensive), still finish so the user
+        // doesn't get stuck on an infinite spinner.
+        const manager = this.branchManager;
+        if (!manager) {
+          this.finishProductSave();
+          return;
+        }
+        manager.save(newProductId).subscribe({
+          next: () => this.finishProductSave(),
+          error: (err: any) => {
+            this.isSubmitting.set(false);
+            this.errorMessage.set(err?.error?.message || 'Error al guardar sucursales');
+            this.toastService.error('Error al guardar sucursales');
+          },
+        });
       },
       error: (error) => {
         const msg = error.error?.message || 'Error al guardar producto';
@@ -528,7 +505,8 @@ export class ProductFormComponent implements OnInit {
   }
 
   /**
-   * Cerrar dropdown al hacer clic fuera
+   * Cerrar dropdown al hacer clic fuera. Branch dropdown is now self-contained
+   * inside <app-branch-stock-manager>; only categories handled here.
    */
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: Event): void {
@@ -537,144 +515,7 @@ export class ProductFormComponent implements OnInit {
     if (categorySelector && !categorySelector.contains(target)) {
       this.showCategoryDropdown.set(false);
     }
-    const branchSelector = this.elementRef.nativeElement.querySelector('.branch-selector');
-    if (branchSelector && !branchSelector.contains(target)) {
-      this.showBranchDropdown.set(false);
-    }
-    // Brand dropdown is now encapsulated inside <app-searchable-select>, which
-    // handles click-outside internally.
+    // Brand dropdown is encapsulated inside <app-searchable-select>.
+    // Branch dropdown lives inside <app-branch-stock-manager>.
   }
-
-  // ==================== SUCURSALES / BRANCH-PRODUCT ====================
-
-  /**
-   * Filter branch search input
-   */
-  onBranchSearch(event: Event): void {
-    this.branchSearchTerm.set((event.target as HTMLInputElement).value);
-    this.showBranchDropdown.set(true);
-  }
-
-  /**
-   * Open branch dropdown
-   */
-  openBranchDropdown(): void {
-    this.showBranchDropdown.set(true);
-  }
-
-  /**
-   * Close branch dropdown with delay for click registration
-   */
-  closeBranchDropdown(): void {
-    setTimeout(() => this.showBranchDropdown.set(false), 200);
-  }
-
-  /**
-   * Add a branch with stock 0
-   */
-  addBranch(branch: Branch): void {
-    this.newBranchProducts.update(list => [...list, { branch, stock: 0 }]);
-    this.branchSearchTerm.set('');
-    // Keep dropdown open so the user can select multiple branches consecutively
-  }
-
-  /**
-   * Mark an existing BranchProduct for deletion
-   */
-  removeExistingBranchProduct(bpId: string): void {
-    this.deletedBranchProductIds.update(ids => [...ids, bpId]);
-  }
-
-  /**
-   * Remove a newly added branch product
-   */
-  removeNewBranchProduct(index: number): void {
-    this.newBranchProducts.update(list => list.filter((_, i) => i !== index));
-  }
-
-  /**
-   * Update stock on an existing BranchProduct (local state)
-   */
-  updateExistingStock(bpId: string, event: Event): void {
-    const value = parseInt((event.target as HTMLInputElement).value) || 0;
-    this.existingBranchProducts.update(list =>
-      list.map(bp => bp.id === bpId ? { ...bp, stock: Math.max(0, value) } : bp)
-    );
-  }
-
-  /**
-   * Update stock on a new branch product (local state)
-   */
-  updateNewStock(index: number, event: Event): void {
-    const value = parseInt((event.target as HTMLInputElement).value) || 0;
-    this.newBranchProducts.update(list =>
-      list.map((item, i) => i === index ? { ...item, stock: Math.max(0, value) } : item)
-    );
-  }
-
-  /**
-   * Get branch name from a BranchProduct (populated or string ID)
-   */
-  getBranchName(bp: BranchProduct): string {
-    if (typeof bp.branch === 'string') return bp.branch;
-    return (bp.branch as Branch)?.name || '';
-  }
-
-  /**
-   * Persist BranchProduct changes (deletions, updates, new assignments)
-   */
-  private saveBranchProducts(productId: string): void {
-    const deletions = this.deletedBranchProductIds().map(id =>
-      this.branchProductService.delete(id)
-    );
-
-    const updates = this.existingBranchProducts()
-      .filter(bp => !this.deletedBranchProductIds().includes(bp.id))
-      .map(bp => this.branchProductService.update(bp.id, { stock: bp.stock }));
-
-    const newAssignments = this.newBranchProducts();
-
-    const operations = [...deletions, ...updates];
-
-    if (operations.length > 0) {
-      forkJoin(operations).subscribe({
-        next: () => {
-          if (newAssignments.length > 0) {
-            this.createNewBranchProducts(productId);
-          } else {
-            this.finishProductSave();
-          }
-        },
-        error: () => {
-          if (newAssignments.length > 0) {
-            this.createNewBranchProducts(productId);
-          } else {
-            this.finishProductSave();
-          }
-        },
-      });
-    } else if (newAssignments.length > 0) {
-      this.createNewBranchProducts(productId);
-    } else {
-      this.finishProductSave();
-    }
-  }
-
-  /**
-   * Batch-create new BranchProduct assignments
-   */
-  private createNewBranchProducts(productId: string): void {
-    const data = {
-      productId,
-      assignments: this.newBranchProducts().map(nbp => ({
-        branchId: nbp.branch.id,
-        stock: nbp.stock,
-      })),
-    };
-    this.branchProductService.createBatch(data).subscribe({
-      next: () => this.finishProductSave(),
-      error: () => this.finishProductSave(),
-    });
-  }
-
 }

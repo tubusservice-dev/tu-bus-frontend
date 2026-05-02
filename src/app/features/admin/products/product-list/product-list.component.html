@@ -11,7 +11,7 @@
         <button
           type="button"
           [class.active]="viewMode() === 'cards'"
-          (click)="viewMode.set('cards')"
+          (click)="setViewMode('cards')"
         >
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
@@ -20,7 +20,7 @@
         <button
           type="button"
           [class.active]="viewMode() === 'table'"
-          (click)="viewMode.set('table')"
+          (click)="setViewMode('table')"
         >
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 0 1 0 3.75H5.625a1.875 1.875 0 0 1 0-3.75Z" />
@@ -38,7 +38,35 @@
 
   <!-- Filtros -->
   <div class="filters-section">
+    <!-- Búsqueda (siempre arriba) -->
+    <div class="filters-search">
+      <app-search-input
+        placeholder="Buscar por nombre, modelo, linea..."
+        ariaLabel="Buscar productos"
+        [value]="filters().search || ''"
+        [loading]="isSearching()"
+        (valueInput)="onSearchTyping($event)"
+        (searchChanged)="onSearchCommit($event)"
+      />
+    </div>
+
     <div class="filters-grid">
+      <!-- Sucursal (solo vista tabla) -->
+      @if (viewMode() === 'table') {
+        <div class="filter-group">
+          <select
+            [ngModel]="branchFilter()"
+            (ngModelChange)="onBranchFilterChange($event)"
+          >
+            <option value="all">Todas las sucursales</option>
+            @for (branch of branches(); track branch.id) {
+              <option [value]="branch.id">{{ branch.name }}</option>
+            }
+            <option value="none">Sin sucursal asignada</option>
+          </select>
+        </div>
+      }
+
       <!-- Tipo de vehículo -->
       <div class="filter-group">
         <select
@@ -76,18 +104,6 @@
             <option [value]="cat.id">{{ cat.name }}</option>
           }
         </select>
-      </div>
-
-      <!-- Búsqueda -->
-      <div class="filter-group search">
-        <app-search-input
-          placeholder="Buscar por nombre, modelo, linea..."
-          ariaLabel="Buscar productos"
-          [value]="filters().search || ''"
-          [loading]="isSearching()"
-          (valueInput)="onSearchTyping($event)"
-          (searchChanged)="onSearchCommit($event)"
-        />
       </div>
     </div>
 
@@ -217,12 +233,20 @@
                     }
                     <span class="price-current">${{ product.price | number:'1.2-2' }}</span>
                   </div>
-                  <div class="product-stock" [class.low]="isLowStock(product)" [class.out]="getTotalStock(product) === 0">
+                  <button
+                    type="button"
+                    class="product-stock"
+                    [class.low]="isLowStock(product)"
+                    [class.out]="getTotalStock(product) === 0"
+                    (click)="$event.stopPropagation(); openBranchStockModal(product)"
+                    title="Gestionar sucursales y stock"
+                    aria-label="Gestionar sucursales y stock"
+                  >
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z" />
                     </svg>
                     <span>{{ getTotalStock(product) }}</span>
-                  </div>
+                  </button>
                 </div>
 
                 <!-- Acciones -->
@@ -245,7 +269,7 @@
         }
       </div>
     } @else {
-      <!-- Vista de tabla -->
+      <!-- Vista de tabla (con stock por sucursal) -->
       <div class="table-container">
         <table class="data-table">
           <thead>
@@ -254,71 +278,99 @@
               <th>Marca/Modelo</th>
               <th>Categoría</th>
               <th>Precio</th>
-              <th>Stock</th>
+              <th>{{ stockColumnLabel() }}</th>
               <th>Estado</th>
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
-            @for (product of products(); track product.id) {
-              <tr>
+            @for (row of tableRows(); track row.id) {
+              <tr
+                [class.table-row-clickable]="branchFilter() === 'none'"
+                [class.row-dirty]="isRowDirty(row.id)"
+                (click)="onTableRowClick(row)"
+              >
                 <td>
                   <div class="table-product">
-                    <img [src]="product.images[0] || 'https://via.placeholder.com/60'" [alt]="product.name" />
+                    <img
+                      [src]="row.images[0] || imagePlaceholder"
+                      [alt]="row.name"
+                      (error)="handleImageError($event)"
+                    />
                     <div>
-                      <span class="table-product-name">{{ product.name }}</span>
-                      <span class="table-product-sku">SKU: {{ product.sku }}</span>
+                      <span class="table-product-name">{{ row.name }}</span>
+                      <span class="table-product-sku">SKU: {{ row.sku }}</span>
                     </div>
                   </div>
                 </td>
                 <td>
                   <div class="table-brand">
-                    <span>{{ getBrandName(product.brand) }}</span>
-                    <span class="text-sm text-gray-500">{{ product.productModel }}</span>
+                    <span>{{ getBrandName(row.brand) }}</span>
+                    <span class="text-sm text-gray-500">{{ row.productModel }}</span>
                   </div>
                 </td>
                 <td>
                   <div class="flex flex-wrap gap-1">
-                    @if (getVehicleTypeLabel(product); as vehicleLabel) {
+                    @if (getVehicleTypeLabel(row); as vehicleLabel) {
                       <span class="inline-flex px-1.5 py-0.5 text-xs font-medium rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">{{ vehicleLabel }}</span>
                     }
-                    @if (product.categories && product.categories.length > 0) {
-                      @for (cat of product.categories.slice(0, 1); track $index) {
+                    @if (row.categories && row.categories.length > 0) {
+                      @for (cat of row.categories.slice(0, 1); track $index) {
                         <span>{{ getCategoryName(cat) }}</span>
                       }
-                      @if (product.categories.length > 1) {
-                        <span class="text-gray-400"> +{{ product.categories.length - 1 }}</span>
+                      @if (row.categories.length > 1) {
+                        <span class="text-gray-400"> +{{ row.categories.length - 1 }}</span>
                       }
                     }
-                    @if (!getVehicleTypeLabel(product) && (!product.categories || product.categories.length === 0)) {
+                    @if (!getVehicleTypeLabel(row) && (!row.categories || row.categories.length === 0)) {
                       <span class="text-gray-400">-</span>
                     }
                   </div>
                 </td>
-                <td class="font-semibold">${{ product.price | number:'1.2-2' }}</td>
-                <td>
-                  <span [class.text-red-500]="getTotalStock(product) === 0" [class.text-yellow-500]="isLowStock(product)">
-                    {{ getTotalStock(product) }}
-                  </span>
+                <td class="font-semibold">${{ row.price | number:'1.2-2' }}</td>
+                <td (click)="$event.stopPropagation()">
+                  @if (isStockEditable()) {
+                    <input
+                      type="number"
+                      class="stock-edit-input"
+                      [class.dirty]="isRowDirty(row.id)"
+                      [value]="getStockValue(row.id)"
+                      (beforeinput)="onStockBeforeInput($event)"
+                      (input)="onStockInputChange(row.id, $event)"
+                      min="0"
+                      max="99999"
+                      inputmode="numeric"
+                    />
+                  } @else {
+                    <span [class.text-red-500]="row.branchStock === 0" [class.text-yellow-500]="isLowStockRow(row)">
+                      {{ row.branchStock }}
+                    </span>
+                  }
                 </td>
                 <td>
-                  <span class="status-badge" [class.active]="product.isActive" [class.inactive]="!product.isActive">
-                    {{ product.isActive ? 'Activo' : 'Inactivo' }}
+                  <span class="status-badge" [class.active]="row.isActive" [class.inactive]="!row.isActive">
+                    {{ row.isActive ? 'Activo' : 'Inactivo' }}
                   </span>
                 </td>
-                <td>
+                <td (click)="$event.stopPropagation()">
                   <div class="table-actions">
-                    <a [routerLink]="['/admin/products/edit', product.id]" class="btn-action edit">
+                    <a [routerLink]="['/admin/products/edit', row.id]" class="btn-action edit">
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
                       </svg>
                     </a>
-                    <button type="button" class="btn-action delete" (click)="confirmDelete(product)">
+                    <button type="button" class="btn-action delete" (click)="confirmDelete(row)">
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
                       </svg>
                     </button>
                   </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="7" class="empty-table-cell">
+                  No hay productos para mostrar con los filtros actuales.
                 </td>
               </tr>
             }
@@ -327,23 +379,62 @@
       </div>
     }
 
-    <!-- Paginación -->
-    @if (totalPages() > 1) {
-      <div class="pagination">
-        <button class="pagination-btn" [disabled]="currentPage() === 1" (click)="goToPage(currentPage() - 1)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
-        </button>
-        @for (p of visiblePages; track $index) {
-          @if (p === '...') {
-            <span class="pagination-ellipsis">...</span>
-          } @else {
-            <button class="pagination-btn" [class.active]="p === currentPage()" (click)="goToPage(+p)">{{ p }}</button>
+    <!-- Footer: paginación + bulk-save bar (solo en modo editable) -->
+    @if (totalPages() > 1 || (viewMode() === 'table' && isStockEditable())) {
+      <div class="table-footer">
+        <!-- Spacer izquierdo (mantiene el paginador centrado) -->
+        <div class="table-footer-slot"></div>
+
+        <!-- Paginación (centro) -->
+        <div class="table-footer-slot table-footer-center">
+          @if (totalPages() > 1) {
+            <div class="pagination">
+              <button class="pagination-btn" [disabled]="currentPage() === 1" (click)="goToPage(currentPage() - 1)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
+              </button>
+              @for (p of visiblePages; track $index) {
+                @if (p === '...') {
+                  <span class="pagination-ellipsis">...</span>
+                } @else {
+                  <button class="pagination-btn" [class.active]="p === currentPage()" (click)="goToPage(+p)">{{ p }}</button>
+                }
+              }
+              <button class="pagination-btn" [disabled]="currentPage() === totalPages()" (click)="goToPage(currentPage() + 1)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
+              </button>
+              <span class="pagination-info">{{ totalProducts() }} productos</span>
+            </div>
           }
-        }
-        <button class="pagination-btn" [disabled]="currentPage() === totalPages()" (click)="goToPage(currentPage() + 1)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
-        </button>
-        <span class="pagination-info">{{ totalProducts() }} productos</span>
+        </div>
+
+        <!-- Bulk save bar (derecha) -->
+        <div class="table-footer-slot table-footer-right">
+          @if (viewMode() === 'table' && isStockEditable()) {
+            <div class="bulk-save-bar">
+              @if (hasPendingChanges()) {
+                <span class="bulk-dirty-count">
+                  {{ dirtyCount() }} cambio{{ dirtyCount() === 1 ? '' : 's' }} pendiente{{ dirtyCount() === 1 ? '' : 's' }}
+                </span>
+                <button type="button" class="bulk-btn-discard" (click)="discardStockChanges()" [disabled]="isSavingBulk()">
+                  Descartar
+                </button>
+              }
+              <button
+                type="button"
+                class="bulk-btn-save"
+                [disabled]="!hasPendingChanges() || isSavingBulk()"
+                (click)="requestBulkSave()"
+              >
+                @if (isSavingBulk()) {
+                  <span class="bulk-btn-spinner"></span>
+                  Guardando...
+                } @else {
+                  Guardar cambios
+                }
+              </button>
+            </div>
+          }
+        </div>
       </div>
     }
   }
@@ -377,7 +468,22 @@
     </div>
   }
 
-  <!-- Modal de detalles del producto (estilo cliente) -->
+  <!-- Modal de stock por sucursal (vista tabla) -->
+  @if (stockModalState(); as state) {
+    <app-stock-modal
+      [productName]="state.productName"
+      [branchName]="state.branchName"
+      [currentStock]="state.currentStock"
+      [branchProductId]="state.branchProductId"
+      (closed)="closeStockModal()"
+      (stockUpdated)="onStockUpdated($event)"
+    />
+  }
+
+  <!-- Modal de detalles del producto (vista cards) — viewer-only.
+       La edición de sucursales/stock vive en su propio modal separado
+       (<app-branch-stock-modal>) montado al final, invocable desde
+       cualquier disparador que el admin defina. -->
   @if (selectedProduct(); as product) {
     <div class="detail-modal-overlay" (click)="closeDetails()">
       <div class="detail-modal-container" (click)="$event.stopPropagation()">
@@ -390,7 +496,6 @@
 
         <!-- Contenido principal -->
         <div class="detail-modal-content">
-          <!-- Grid principal -->
           <div class="detail-grid">
             <!-- Galería de imágenes -->
             <div class="detail-gallery">
@@ -405,13 +510,8 @@
                   </div>
                 }
                 @if (product.images && product.images.length > 0) {
-                  <img
-                    [src]="getSelectedImage()"
-                    [alt]="product.name"
-                    class="main-img"
-                  />
+                  <img [src]="getSelectedImage()" [alt]="product.name" class="main-img" />
 
-                  <!-- Flechas de navegación -->
                   @if (product.images.length > 1) {
                     <button class="detail-nav-arrow prev" (click)="prevImage()">
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
@@ -586,6 +686,77 @@
               }
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Branch + Stock standalone modal — invocable desde cualquier
+       disparador. Hoy queda montado pero sin trigger; el binding del
+       botón se conectará cuando se decida la ubicación. -->
+  @if (branchStockModalProduct(); as ctx) {
+    <app-branch-stock-modal
+      [productId]="ctx.id"
+      [productName]="ctx.name"
+      [availableBranches]="branches()"
+      (closed)="closeBranchStockModal()"
+      (saved)="onBranchStockSaved()"
+    />
+  }
+
+  <!-- Bulk save: confirmation modal -->
+  @if (showBulkSaveConfirm()) {
+    <div class="modal-overlay" (click)="cancelBulkSave()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-icon modal-icon-info">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+          </svg>
+        </div>
+        <h3 class="modal-title">Confirmar cambios de stock</h3>
+        <p class="modal-message">
+          Vas a actualizar el stock de
+          <strong>{{ dirtyCount() }} producto{{ dirtyCount() === 1 ? '' : 's' }}</strong>
+          en esta sucursal. ¿Continuar?
+        </p>
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" (click)="cancelBulkSave()" [disabled]="isSavingBulk()">
+            Cancelar
+          </button>
+          <button type="button" class="btn-save-confirm" (click)="confirmBulkSave()" [disabled]="isSavingBulk()">
+            @if (isSavingBulk()) {
+              <span class="bulk-btn-spinner"></span>
+              Guardando...
+            } @else {
+              Sí, guardar
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Discard pending edits when navigating / changing filter -->
+  @if (pendingDiscardAction() !== null) {
+    <div class="modal-overlay" (click)="cancelDiscard()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+          </svg>
+        </div>
+        <h3 class="modal-title">¿Descartar cambios?</h3>
+        <p class="modal-message">
+          Tienes <strong>{{ dirtyCount() }} cambio{{ dirtyCount() === 1 ? '' : 's' }}</strong> sin guardar.
+          Si continúas se perderán.
+        </p>
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" (click)="cancelDiscard()">
+            Seguir editando
+          </button>
+          <button type="button" class="btn-discard-confirm" (click)="confirmDiscardAndProceed()">
+            Descartar cambios
+          </button>
         </div>
       </div>
     </div>
