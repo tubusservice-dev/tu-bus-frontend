@@ -43,9 +43,20 @@ export class ProductDetailPageComponent implements OnInit {
   protected readonly exchangeRateService = inject(ExchangeRateService);
   private readonly destroyRef = inject(DestroyRef);
 
-  // Core state
-  protected readonly isLoading = signal(true);
-  protected readonly error = signal<string | null>(null);
+  // ============================================================
+  // Granular loading / error state — one flag per phase so the UI can
+  // render progressively. Phase 1 (info) gates the whole product view;
+  // Phase 2 (stock) only gates the stock label and the add-to-cart CTA;
+  // Phase 3 (related) only gates the related-products section.
+  // ============================================================
+  protected readonly isLoadingProduct = signal(true);
+  protected readonly isLoadingStock = signal(false);
+  protected readonly isLoadingRelated = signal(false);
+
+  protected readonly productError = signal<string | null>(null);
+  protected readonly stockError = signal<string | null>(null);
+  protected readonly relatedError = signal<string | null>(null);
+
   protected readonly product = signal<DetailProduct | null>(null);
 
   // Image gallery
@@ -88,6 +99,9 @@ export class ProductDetailPageComponent implements OnInit {
   });
 
   protected readonly isOutOfStock = computed(() => {
+    // While Phase 2 is in flight we don't know yet — treat as "not out of stock"
+    // so the UI doesn't briefly flash an incorrect "Agotado" label.
+    if (this.isLoadingStock()) return false;
     const stock = this.productStock();
     if (stock === null) return false;
     return stock <= 0;
@@ -115,6 +129,9 @@ export class ProductDetailPageComponent implements OnInit {
   protected readonly canRemove = computed(() => this.quantity() > 1);
   protected readonly canAddToCart = computed(() => {
     this.cartService.items();
+    // Stock not yet resolved — keep the CTA disabled to avoid mismatched
+    // adds (e.g. user clicks before Phase 2 lands and we don't know the cap).
+    if (this.isLoadingStock()) return false;
     const stock = this.productStock();
     if (stock === null || stock <= 0) return false;
     return this.quantity() <= this.availableStock();
@@ -145,34 +162,109 @@ export class ProductDetailPageComponent implements OnInit {
     this.overlayService.openCart();
   }
 
-  // ==================== DATA LOADING (SINGLE REQUEST) ====================
+  // ==================== DATA LOADING (3-PHASE PROGRESSIVE) ====================
+  // Phase 1 (info) and Phase 2 (stock) fire in parallel — neither depends on
+  // the other. Phase 3 (related) is gated on Phase 1 because it needs the
+  // first category id from the product info response. Each phase owns its
+  // loading flag, error flag, and target signals; a failure in one phase
+  // never blocks the others.
 
   private loadProductDetail(id: string): void {
-    this.isLoading.set(true);
-    this.error.set(null);
+    this.resetState();
+
+    const branchIdsList = this.locationService.branchIds();
+    const branchIdsParam = branchIdsList.length > 0 ? branchIdsList.join(',') : undefined;
+
+    // Fire Phase 1 and Phase 2 in parallel.
+    this.loadPhase1Info(id, branchIdsParam);
+    this.loadPhase2Stock(id, branchIdsParam);
+  }
+
+  /** Reset every per-load signal so a remount (or future re-load) starts clean. */
+  private resetState(): void {
+    this.isLoadingProduct.set(true);
+    this.isLoadingStock.set(false);
+    this.isLoadingRelated.set(false);
+    this.productError.set(null);
+    this.stockError.set(null);
+    this.relatedError.set(null);
+    this.product.set(null);
     this.productStock.set(null);
+    this.bestBranchName.set(null);
+    this.relatedProducts.set([]);
     this.selectedImageIndex.set(0);
     this.quantity.set(1);
+  }
 
-    const branchIds = this.locationService.branchIds();
-    const branchIdsParam = branchIds.length > 0 ? branchIds.join(',') : undefined;
-
-    this.productService.getDetail(id, branchIdsParam)
+  /** Phase 1 — product info. On success, triggers Phase 3. */
+  private loadPhase1Info(id: string, branchIdsParam: string | undefined): void {
+    this.productService.getInfo(id)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (response) => {
-          const { product, stock, related } = response.data;
+        next: ({ data }) => {
+          this.product.set(data);
+          this.isLoadingProduct.set(false);
 
-          this.product.set(product);
-          this.productStock.set(stock.total);
-          this.bestBranchName.set(stock.branchName);
-          this.relatedProducts.set(related.map(r => this.mapToCardData(r)));
-
-          this.isLoading.set(false);
+          // Chain Phase 3 only after Phase 1 succeeds — Phase 3 needs the
+          // first category id which only arrives with the product info.
+          const firstCatId = data.categories?.[0]?._id;
+          if (firstCatId) {
+            this.loadPhase3Related(id, firstCatId, branchIdsParam);
+          }
         },
         error: () => {
-          this.error.set('No se pudo cargar el producto');
-          this.isLoading.set(false);
+          this.productError.set('No se pudo cargar el producto');
+          this.isLoadingProduct.set(false);
+        },
+      });
+  }
+
+  /** Phase 2 — aggregated stock. Independent of Phase 1. */
+  private loadPhase2Stock(id: string, branchIdsParam: string | undefined): void {
+    if (!branchIdsParam) {
+      // No branches selected — there is nothing to query and the legacy
+      // contract was to return zero. Keep that behavior.
+      this.productStock.set(0);
+      this.bestBranchName.set(null);
+      return;
+    }
+
+    this.isLoadingStock.set(true);
+    this.productService.getStock(id, branchIdsParam)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: ({ data }) => {
+          this.productStock.set(data.total);
+          this.bestBranchName.set(data.branchName);
+          this.isLoadingStock.set(false);
+        },
+        error: () => {
+          this.stockError.set('No se pudo verificar el inventario');
+          this.productStock.set(0);
+          this.bestBranchName.set(null);
+          this.isLoadingStock.set(false);
+        },
+      });
+  }
+
+  /** Phase 3 — related products. Triggered by Phase 1 success. */
+  private loadPhase3Related(
+    productId: string,
+    categoryId: string,
+    branchIdsParam: string | undefined
+  ): void {
+    this.isLoadingRelated.set(true);
+    this.productService.getRelated(productId, categoryId, branchIdsParam, 4)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: ({ data }) => {
+          this.relatedProducts.set(data.map((r) => this.mapToCardData(r)));
+          this.isLoadingRelated.set(false);
+        },
+        error: () => {
+          this.relatedError.set('No se pudieron cargar productos relacionados');
+          this.relatedProducts.set([]);
+          this.isLoadingRelated.set(false);
         },
       });
   }
@@ -188,7 +280,7 @@ export class ProductDetailPageComponent implements OnInit {
       stock: product.stock ?? 0,
       brand: product.brand as any,
       productModel: product.productModel,
-      freeOilChangeService: (product as any).freeOilChangeService || false,
+      freeOilChangeService: product.freeOilChangeService || false,
     };
   }
 

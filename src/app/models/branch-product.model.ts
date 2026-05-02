@@ -31,6 +31,17 @@ export interface UpdateBranchProductRequest {
   isActive?: boolean;
 }
 
+/**
+ * Body of `PUT /api/branch-products/admin/batch-stock`.
+ * Each entry is an absolute new stock value (not a delta).
+ */
+export interface BatchUpdateStockRequest {
+  updates: Array<{
+    id: string;
+    stock: number;
+  }>;
+}
+
 export interface BranchProductResponse {
   success: boolean;
   data: BranchProduct;

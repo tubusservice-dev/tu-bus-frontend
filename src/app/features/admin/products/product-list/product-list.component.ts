@@ -28,6 +28,7 @@ import {
   IMAGE_PLACEHOLDER_DATA_URL,
   onImageError,
 } from '../../../../shared/utils/image-placeholder.util';
+import { ToastService } from '../../../../shared/services/toast.service';
 
 type BranchScope = 'all' | 'none' | string;
 
@@ -64,6 +65,7 @@ export class ProductListComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly scrollLock = inject(BodyScrollLockService);
+  private readonly toastService = inject(ToastService);
 
   /** True while a search is being processed */
   protected readonly isSearching = signal(false);
@@ -143,6 +145,54 @@ export class ProductListComponent implements OnInit {
   // wired to whatever entry point the admin chooses (TBD).
   protected readonly branchStockModalProduct = signal<{ id: string; name: string } | null>(null);
 
+  // ─── Bulk stock editor state (vista tabla, sucursal específica) ────
+  // Hard cap mirrored from the per-row spec. Anything bigger than this is
+  // almost certainly a fat-finger; the input itself also enforces the cap.
+  private static readonly MAX_STOCK = 99999;
+
+  /** Snapshot of stock values from the last successful load. Compared
+   *  against `stockEdits` to compute dirty state. Rebuilt every time
+   *  `loadTableProducts()` returns. */
+  private readonly stockBaseline = signal<Map<string, number>>(new Map());
+
+  /** Pending edits keyed by row.id. An entry exists only when the input
+   *  differs from the baseline; reverting back removes the entry. */
+  protected readonly stockEdits = signal<Map<string, number>>(new Map());
+
+  /** True while the batch save HTTP is in flight. Disables the buttons. */
+  protected readonly isSavingBulk = signal(false);
+
+  /** True while the save-confirmation modal is open. */
+  protected readonly showBulkSaveConfirm = signal(false);
+
+  /**
+   * Discard-confirmation dialog. When non-null, the user attempted an
+   * action that would lose pending edits (page change, filter change,
+   * view switch); the stored callback runs once they confirm to discard.
+   */
+  protected readonly pendingDiscardAction = signal<(() => void) | null>(null);
+
+  /** Stock edits exist only when filter is a specific branch id. */
+  protected readonly isStockEditable = computed(() => {
+    const f = this.branchFilter();
+    return f !== 'all' && f !== 'none';
+  });
+
+  /** Row IDs whose pending edit differs from baseline. */
+  protected readonly dirtyRowIds = computed(() => {
+    const edits = this.stockEdits();
+    const baseline = this.stockBaseline();
+    const dirty: string[] = [];
+    edits.forEach((value, id) => {
+      const original = baseline.get(id);
+      if (original !== undefined && original !== value) dirty.push(id);
+    });
+    return dirty;
+  });
+
+  protected readonly hasPendingChanges = computed(() => this.dirtyRowIds().length > 0);
+  protected readonly dirtyCount = computed(() => this.dirtyRowIds().length);
+
   // Vista (cards o table)
   protected readonly viewMode = signal<'cards' | 'table'>('cards');
 
@@ -181,9 +231,11 @@ export class ProductListComponent implements OnInit {
 
   /** Fired after debounce — triggers the HTTP request */
   onSearchCommit(value: string): void {
-    this.filters.update((f) => ({ ...f, search: value || undefined, page: 1 }));
-    this.currentPage.set(1);
-    this.loadActiveView();
+    this.guardOrProceed(() => {
+      this.filters.update((f) => ({ ...f, search: value || undefined, page: 1 }));
+      this.currentPage.set(1);
+      this.loadActiveView();
+    });
   }
 
   loadBrands(): void {
@@ -256,6 +308,14 @@ export class ProductListComponent implements OnInit {
           this.currentPage.set(response.pagination.page);
           this.isLoading.set(false);
           this.isSearching.set(false);
+
+          // Rebuild bulk-editor baseline from the fresh page. Any prior
+          // pending edits (which shouldn't exist after a guarded load) are
+          // dropped to avoid mixing state across pages.
+          this.stockBaseline.set(
+            new Map(response.data.map((r) => [r.id, r.branchStock]))
+          );
+          this.stockEdits.set(new Map());
         },
         error: (error) => {
           this.errorMessage.set(
@@ -278,36 +338,44 @@ export class ProductListComponent implements OnInit {
 
   setViewMode(mode: 'cards' | 'table'): void {
     if (this.viewMode() === mode) return;
-    this.viewMode.set(mode);
-    this.filters.update((f) => ({ ...f, page: 1 }));
-    this.currentPage.set(1);
-    this.loadActiveView();
+    this.guardOrProceed(() => {
+      this.viewMode.set(mode);
+      this.filters.update((f) => ({ ...f, page: 1 }));
+      this.currentPage.set(1);
+      this.loadActiveView();
+    });
   }
 
   applyFilters(): void {
-    this.filters.update((f) => ({ ...f, page: 1 }));
-    this.loadActiveView();
+    this.guardOrProceed(() => {
+      this.filters.update((f) => ({ ...f, page: 1 }));
+      this.loadActiveView();
+    });
   }
 
   clearFilters(): void {
-    this.filters.set({
-      page: 1,
-      limit: this.adminLimit,
-      sortBy: 'createdAt',
-      sortOrder: 'desc',
-      vehicleType: undefined,
-      brand: '',
-      category: '',
+    this.guardOrProceed(() => {
+      this.filters.set({
+        page: 1,
+        limit: this.adminLimit,
+        sortBy: 'createdAt',
+        sortOrder: 'desc',
+        vehicleType: undefined,
+        brand: '',
+        category: '',
+      });
+      this.branchFilter.set('all');
+      this.loadActiveView();
     });
-    this.branchFilter.set('all');
-    this.loadActiveView();
   }
 
   goToPage(page: number): void {
     if (page < 1 || page > this.totalPages()) return;
-    this.filters.update((f) => ({ ...f, page }));
-    this.syncPageToUrl(page);
-    this.loadActiveView();
+    this.guardOrProceed(() => {
+      this.filters.update((f) => ({ ...f, page }));
+      this.syncPageToUrl(page);
+      this.loadActiveView();
+    });
   }
 
   private syncPageToUrl(page: number): void {
@@ -341,31 +409,35 @@ export class ProductListComponent implements OnInit {
   }
 
   onFilterChange(key: keyof ProductQueryParams, value: any): void {
-    this.filters.update((f) => {
-      const updated: ProductQueryParams = { ...f, [key]: value || undefined, page: 1 };
+    this.guardOrProceed(() => {
+      this.filters.update((f) => {
+        const updated: ProductQueryParams = { ...f, [key]: value || undefined, page: 1 };
 
-      if (key === 'vehicleType') {
-        const selectedCat = this.categories().find(c => c.id === f.category);
-        if (selectedCat && value) {
-          const catMatches =
-            selectedCat.vehicleTypes?.includes(value as VehicleType) ||
-            selectedCat.vehicleTypes?.includes(VehicleType.ALL);
-          if (!catMatches) updated.category = '';
+        if (key === 'vehicleType') {
+          const selectedCat = this.categories().find(c => c.id === f.category);
+          if (selectedCat && value) {
+            const catMatches =
+              selectedCat.vehicleTypes?.includes(value as VehicleType) ||
+              selectedCat.vehicleTypes?.includes(VehicleType.ALL);
+            if (!catMatches) updated.category = '';
+          }
         }
-      }
 
-      return updated;
+        return updated;
+      });
+      this.currentPage.set(1);
+      this.loadActiveView();
     });
-    this.currentPage.set(1);
-    this.loadActiveView();
   }
 
   /** Branch filter (table view only). */
   onBranchFilterChange(value: string): void {
-    this.branchFilter.set((value || 'all') as BranchScope);
-    this.filters.update((f) => ({ ...f, page: 1 }));
-    this.currentPage.set(1);
-    this.loadTableProducts();
+    this.guardOrProceed(() => {
+      this.branchFilter.set((value || 'all') as BranchScope);
+      this.filters.update((f) => ({ ...f, page: 1 }));
+      this.currentPage.set(1);
+      this.loadTableProducts();
+    });
   }
 
   // ==================== Eliminar ====================
@@ -555,30 +627,18 @@ export class ProductListComponent implements OnInit {
     return Math.round(((product.comparePrice - product.price) / product.comparePrice) * 100);
   }
 
-  // ==================== Vista tabla — modal de stock ====================
+  // ==================== Vista tabla — interacciones ====================
 
-  /** Click on a table row decides between modal, navigation, or no-op. */
+  /**
+   * Row click:
+   *  - filter='none'  → navigate to full edit page (no inline edit possible).
+   *  - otherwise      → no-op. Stock editing happens inline on the input;
+   *                     the action column has the explicit edit/delete icons.
+   */
   onTableRowClick(row: AdminProductByBranchRow): void {
-    const scope = this.branchFilter();
-
-    if (scope === 'none') {
+    if (this.branchFilter() === 'none') {
       this.router.navigate(['/admin/products/edit', row.id]);
-      return;
     }
-
-    const branchName =
-      scope === 'all'
-        ? null
-        : this.branches().find(b => b.id === scope)?.name || row.branchName || null;
-
-    this.stockModalState.set({
-      productName: row.name,
-      branchName,
-      currentStock: row.branchStock,
-      branchProductId: row.branchProductId || null,
-      rowId: row.id,
-    });
-    this.scrollLock.lock();
   }
 
   closeStockModal(): void {
@@ -596,5 +656,148 @@ export class ProductListComponent implements OnInit {
       );
     }
     this.closeStockModal();
+  }
+
+  // ==================== Bulk stock editor ====================
+
+  /** Current value to render in the input — the pending edit if any,
+   *  otherwise the row's loaded stock. */
+  getStockValue(rowId: string): number {
+    const edit = this.stockEdits().get(rowId);
+    if (edit !== undefined) return edit;
+    return this.stockBaseline().get(rowId) ?? 0;
+  }
+
+  isRowDirty(rowId: string): boolean {
+    return this.dirtyRowIds().includes(rowId);
+  }
+
+  /**
+   * Block non-digit input at the source. Allows deletion / IME / paste
+   * to fall through so the (input) sanitizer can strip what leaks.
+   */
+  onStockBeforeInput(event: Event): void {
+    const ev = event as InputEvent;
+    if (ev.data == null) return;
+    if (!/^\d+$/.test(ev.data)) ev.preventDefault();
+  }
+
+  /**
+   * Sanitize the input's value, clamp to [0, MAX_STOCK], and update the
+   * `stockEdits` map. If the new value matches the baseline, drop the
+   * entry — we only track real diffs so the dirty count stays honest.
+   */
+  onStockInputChange(rowId: string, event: Event): void {
+    const target = event.target as HTMLInputElement;
+    const raw = parseInt(target.value, 10);
+    const safeRaw = Number.isNaN(raw) ? 0 : raw;
+    const clamped = Math.max(
+      0,
+      Math.min(ProductListComponent.MAX_STOCK, safeRaw)
+    );
+    if (target.value !== String(clamped) && target.value !== '') {
+      target.value = String(clamped);
+    }
+
+    const baseline = this.stockBaseline().get(rowId);
+    this.stockEdits.update((map) => {
+      const next = new Map(map);
+      if (baseline !== undefined && baseline === clamped) {
+        next.delete(rowId);
+      } else {
+        next.set(rowId, clamped);
+      }
+      return next;
+    });
+  }
+
+  /**
+   * Drop all pending edits without saving. The inputs snap back to the
+   * baseline values rendered by `getStockValue`.
+   */
+  discardStockChanges(): void {
+    this.stockEdits.set(new Map());
+  }
+
+  /**
+   * Guard for navigation/filter actions: if there are pending edits,
+   * stash the action and surface the discard-confirmation modal. The
+   * action runs only after the user confirms; otherwise nothing happens.
+   */
+  private guardOrProceed(action: () => void): void {
+    if (this.hasPendingChanges()) {
+      this.pendingDiscardAction.set(action);
+      return;
+    }
+    action();
+  }
+
+  /** Confirm discard — drop edits and run the stashed action. */
+  confirmDiscardAndProceed(): void {
+    const action = this.pendingDiscardAction();
+    this.stockEdits.set(new Map());
+    this.pendingDiscardAction.set(null);
+    if (action) action();
+  }
+
+  /** Cancel discard — keep the modal closed, edits intact. */
+  cancelDiscard(): void {
+    this.pendingDiscardAction.set(null);
+  }
+
+  /** Click "Guardar cambios" — show the save-confirmation modal. */
+  requestBulkSave(): void {
+    if (!this.hasPendingChanges() || this.isSavingBulk()) return;
+    this.showBulkSaveConfirm.set(true);
+  }
+
+  cancelBulkSave(): void {
+    if (this.isSavingBulk()) return;
+    this.showBulkSaveConfirm.set(false);
+  }
+
+  /**
+   * Confirmed save: ship the batch to the backend, refresh the *same*
+   * page on success (preserves admin context — the user stays on
+   * page 3 if they were on page 3), toast, and clear pending edits.
+   */
+  confirmBulkSave(): void {
+    if (this.isSavingBulk() || !this.hasPendingChanges()) return;
+
+    // Build the payload from the dirty rows. Each row has `branchProductId`
+    // because we only allow editing when filter is a specific branch.
+    const updates: Array<{ id: string; stock: number }> = [];
+    const rowsById = new Map(this.tableRows().map((r) => [r.id, r]));
+    for (const rowId of this.dirtyRowIds()) {
+      const row = rowsById.get(rowId);
+      const newStock = this.stockEdits().get(rowId);
+      if (!row || !row.branchProductId || newStock === undefined) continue;
+      updates.push({ id: row.branchProductId, stock: newStock });
+    }
+
+    if (updates.length === 0) {
+      this.showBulkSaveConfirm.set(false);
+      return;
+    }
+
+    this.isSavingBulk.set(true);
+    this.branchProductService.batchUpdateStock({ updates }).subscribe({
+      next: () => {
+        this.isSavingBulk.set(false);
+        this.showBulkSaveConfirm.set(false);
+        this.toastService.success(
+          `${updates.length} producto${updates.length === 1 ? '' : 's'} actualizado${updates.length === 1 ? '' : 's'}`
+        );
+        // Re-fetch the SAME page. loadTableProducts uses filters().page —
+        // we never reset it here, so admin stays where they were.
+        this.loadTableProducts();
+      },
+      error: (err) => {
+        this.isSavingBulk.set(false);
+        this.toastService.error(
+          err?.error?.message || 'Error al guardar los cambios de stock'
+        );
+      },
+    });
   }
 }

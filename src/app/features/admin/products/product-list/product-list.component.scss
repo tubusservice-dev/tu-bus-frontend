@@ -456,9 +456,113 @@
   }
 }
 
+// ───── Table footer (pagination + bulk-save) ───────────────────
+// 3-column grid keeps the pagination centered when the bulk-save bar
+// is visible on the right; the empty left slot mirrors the right's
+// width so the center stays optically centered.
+.table-footer {
+  @apply mt-6 grid grid-cols-1 gap-3 items-center;
+
+  @media (min-width: 768px) {
+    grid-template-columns: 1fr auto 1fr;
+  }
+}
+
+.table-footer-slot {
+  @apply flex items-center;
+}
+
+.table-footer-center {
+  @apply justify-self-center;
+}
+
+.table-footer-right {
+  @apply justify-self-end;
+}
+
+// ───── Bulk save bar ───────────────────────────────────────────
+.bulk-save-bar {
+  @apply flex items-center gap-3;
+}
+
+.bulk-dirty-count {
+  @apply text-xs font-medium text-amber-700 dark:text-amber-400;
+}
+
+.bulk-btn-discard {
+  @apply px-3.5 py-2 text-sm font-semibold text-white rounded-lg transition-colors;
+  @apply bg-red-600 hover:bg-red-700;
+  @apply disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.bulk-btn-save {
+  @apply inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-lg transition-colors;
+  background-color: var(--accent-primary);
+
+  &:hover:not(:disabled) {
+    background-color: var(--accent-hover);
+  }
+
+  &:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+}
+
+.bulk-btn-spinner {
+  @apply inline-block w-4 h-4 border-2 rounded-full animate-spin;
+  border-color: rgba(255, 255, 255, 0.4);
+  border-top-color: white;
+}
+
+// ───── Inline stock input (table view) ─────────────────────────
+.stock-edit-input {
+  @apply w-20 min-w-0 px-2 py-1 text-center text-sm rounded-md;
+  @apply bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-500;
+  @apply text-gray-900 dark:text-white;
+  @apply focus:outline-none focus:ring-2 focus:border-transparent transition-colors;
+
+  &:focus {
+    --tw-ring-color: var(--accent-primary);
+  }
+
+  appearance: textfield;
+  -moz-appearance: textfield;
+
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  &.dirty {
+    @apply border-amber-500 dark:border-amber-400;
+    background-color: rgba(245, 158, 11, 0.05);
+  }
+}
+
+// ───── Dirty row highlight ──────────────────────────────────────
+// Sutil border-left + tinte de fondo para identificar las filas
+// con cambios pendientes de un vistazo.
+.data-table tbody tr.row-dirty {
+  background-color: rgba(245, 158, 11, 0.06);
+  box-shadow: inset 3px 0 0 0 rgb(245, 158, 11);
+
+  &:hover {
+    background-color: rgba(245, 158, 11, 0.1);
+  }
+}
+
+:host-context(.dark) .data-table tbody tr.row-dirty {
+  background-color: rgba(245, 158, 11, 0.1);
+
+  &:hover {
+    background-color: rgba(245, 158, 11, 0.15);
+  }
+}
+
 // Paginación
 .pagination {
-  @apply flex items-center justify-center gap-1 mt-6;
+  @apply flex items-center justify-center gap-1;
 }
 
 .pagination-btn {
@@ -496,6 +600,16 @@
   svg {
     @apply w-6 h-6 text-red-600 dark:text-red-400;
   }
+
+  // Info variant — used for the bulk-save confirmation modal where the
+  // intent is informational (not destructive).
+  &.modal-icon-info {
+    background-color: rgba(var(--accent-rgb, 0, 70, 173), 0.1);
+
+    svg {
+      color: var(--accent-primary);
+    }
+  }
 }
 
 .modal-title {
@@ -519,6 +633,23 @@
 }
 
 .btn-delete-confirm {
+  @apply px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50;
+}
+
+// Primary save action in confirmation modals. Uses project accent
+// (the same azul that lives in primary buttons across the admin).
+.btn-save-confirm {
+  @apply inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+  background-color: var(--accent-primary);
+
+  &:hover:not(:disabled) {
+    background-color: var(--accent-hover);
+  }
+}
+
+// Destructive secondary action — "Descartar cambios" in red so it
+// matches the proyecto convention for irreversible actions.
+.btn-discard-confirm {
   @apply px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50;
 }
 

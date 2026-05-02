@@ -285,7 +285,11 @@
           </thead>
           <tbody>
             @for (row of tableRows(); track row.id) {
-              <tr class="table-row-clickable" (click)="onTableRowClick(row)">
+              <tr
+                [class.table-row-clickable]="branchFilter() === 'none'"
+                [class.row-dirty]="isRowDirty(row.id)"
+                (click)="onTableRowClick(row)"
+              >
                 <td>
                   <div class="table-product">
                     <img
@@ -324,10 +328,24 @@
                   </div>
                 </td>
                 <td class="font-semibold">${{ row.price | number:'1.2-2' }}</td>
-                <td>
-                  <span [class.text-red-500]="row.branchStock === 0" [class.text-yellow-500]="isLowStockRow(row)">
-                    {{ row.branchStock }}
-                  </span>
+                <td (click)="$event.stopPropagation()">
+                  @if (isStockEditable()) {
+                    <input
+                      type="number"
+                      class="stock-edit-input"
+                      [class.dirty]="isRowDirty(row.id)"
+                      [value]="getStockValue(row.id)"
+                      (beforeinput)="onStockBeforeInput($event)"
+                      (input)="onStockInputChange(row.id, $event)"
+                      min="0"
+                      max="99999"
+                      inputmode="numeric"
+                    />
+                  } @else {
+                    <span [class.text-red-500]="row.branchStock === 0" [class.text-yellow-500]="isLowStockRow(row)">
+                      {{ row.branchStock }}
+                    </span>
+                  }
                 </td>
                 <td>
                   <span class="status-badge" [class.active]="row.isActive" [class.inactive]="!row.isActive">
@@ -361,23 +379,62 @@
       </div>
     }
 
-    <!-- Paginación -->
-    @if (totalPages() > 1) {
-      <div class="pagination">
-        <button class="pagination-btn" [disabled]="currentPage() === 1" (click)="goToPage(currentPage() - 1)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
-        </button>
-        @for (p of visiblePages; track $index) {
-          @if (p === '...') {
-            <span class="pagination-ellipsis">...</span>
-          } @else {
-            <button class="pagination-btn" [class.active]="p === currentPage()" (click)="goToPage(+p)">{{ p }}</button>
+    <!-- Footer: paginación + bulk-save bar (solo en modo editable) -->
+    @if (totalPages() > 1 || (viewMode() === 'table' && isStockEditable())) {
+      <div class="table-footer">
+        <!-- Spacer izquierdo (mantiene el paginador centrado) -->
+        <div class="table-footer-slot"></div>
+
+        <!-- Paginación (centro) -->
+        <div class="table-footer-slot table-footer-center">
+          @if (totalPages() > 1) {
+            <div class="pagination">
+              <button class="pagination-btn" [disabled]="currentPage() === 1" (click)="goToPage(currentPage() - 1)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
+              </button>
+              @for (p of visiblePages; track $index) {
+                @if (p === '...') {
+                  <span class="pagination-ellipsis">...</span>
+                } @else {
+                  <button class="pagination-btn" [class.active]="p === currentPage()" (click)="goToPage(+p)">{{ p }}</button>
+                }
+              }
+              <button class="pagination-btn" [disabled]="currentPage() === totalPages()" (click)="goToPage(currentPage() + 1)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
+              </button>
+              <span class="pagination-info">{{ totalProducts() }} productos</span>
+            </div>
           }
-        }
-        <button class="pagination-btn" [disabled]="currentPage() === totalPages()" (click)="goToPage(currentPage() + 1)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
-        </button>
-        <span class="pagination-info">{{ totalProducts() }} productos</span>
+        </div>
+
+        <!-- Bulk save bar (derecha) -->
+        <div class="table-footer-slot table-footer-right">
+          @if (viewMode() === 'table' && isStockEditable()) {
+            <div class="bulk-save-bar">
+              @if (hasPendingChanges()) {
+                <span class="bulk-dirty-count">
+                  {{ dirtyCount() }} cambio{{ dirtyCount() === 1 ? '' : 's' }} pendiente{{ dirtyCount() === 1 ? '' : 's' }}
+                </span>
+                <button type="button" class="bulk-btn-discard" (click)="discardStockChanges()" [disabled]="isSavingBulk()">
+                  Descartar
+                </button>
+              }
+              <button
+                type="button"
+                class="bulk-btn-save"
+                [disabled]="!hasPendingChanges() || isSavingBulk()"
+                (click)="requestBulkSave()"
+              >
+                @if (isSavingBulk()) {
+                  <span class="bulk-btn-spinner"></span>
+                  Guardando...
+                } @else {
+                  Guardar cambios
+                }
+              </button>
+            </div>
+          }
+        </div>
       </div>
     }
   }
@@ -645,5 +702,63 @@
       (closed)="closeBranchStockModal()"
       (saved)="onBranchStockSaved()"
     />
+  }
+
+  <!-- Bulk save: confirmation modal -->
+  @if (showBulkSaveConfirm()) {
+    <div class="modal-overlay" (click)="cancelBulkSave()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-icon modal-icon-info">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+          </svg>
+        </div>
+        <h3 class="modal-title">Confirmar cambios de stock</h3>
+        <p class="modal-message">
+          Vas a actualizar el stock de
+          <strong>{{ dirtyCount() }} producto{{ dirtyCount() === 1 ? '' : 's' }}</strong>
+          en esta sucursal. ¿Continuar?
+        </p>
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" (click)="cancelBulkSave()" [disabled]="isSavingBulk()">
+            Cancelar
+          </button>
+          <button type="button" class="btn-save-confirm" (click)="confirmBulkSave()" [disabled]="isSavingBulk()">
+            @if (isSavingBulk()) {
+              <span class="bulk-btn-spinner"></span>
+              Guardando...
+            } @else {
+              Sí, guardar
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Discard pending edits when navigating / changing filter -->
+  @if (pendingDiscardAction() !== null) {
+    <div class="modal-overlay" (click)="cancelDiscard()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+          </svg>
+        </div>
+        <h3 class="modal-title">¿Descartar cambios?</h3>
+        <p class="modal-message">
+          Tienes <strong>{{ dirtyCount() }} cambio{{ dirtyCount() === 1 ? '' : 's' }}</strong> sin guardar.
+          Si continúas se perderán.
+        </p>
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" (click)="cancelDiscard()">
+            Seguir editando
+          </button>
+          <button type="button" class="btn-discard-confirm" (click)="confirmDiscardAndProceed()">
+            Descartar cambios
+          </button>
+        </div>
+      </div>
+    </div>
   }
 </div>
