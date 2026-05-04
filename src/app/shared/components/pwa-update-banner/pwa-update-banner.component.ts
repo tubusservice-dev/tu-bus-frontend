@@ -4,10 +4,11 @@ import { PwaService } from '../../../core/services/pwa.service';
 /**
  * PwaUpdateBannerComponent
  *
- * Sticky bottom banner that appears when a new Service Worker version
- * has activated and the user is still on the old in-memory bundle.
- * Provides an "Actualizar" action that reloads to pick up the new
- * assets, plus a dismiss option for users who want to defer.
+ * Sticky bottom banner that appears ONLY inside the installed app
+ * (display-mode: standalone) when a new Service Worker version has
+ * activated. In a regular browser tab the user can simply refresh —
+ * the banner adds noise there. Inside the installed app there is no
+ * URL bar, so the actionable refresh affordance is necessary.
  *
  * Mounted at the application root (app.html) so it's always reachable
  * regardless of the current route or open overlay.
@@ -18,7 +19,7 @@ import { PwaService } from '../../../core/services/pwa.service';
   imports: [],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    @if (pwa.updateReady() && !dismissed()) {
+    @if (pwa.updateReady() && pwa.isInstalled() && !dismissed()) {
       <div class="pwa-update-banner" role="status" aria-live="polite">
         <div class="pwa-update-content">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
