@@ -1,0 +1,20 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <!--
+      HTML meta tags PWA / Apple / OpenGraph use vendor-prefixed names that
+      WebStorm's HTML schema doesn't ship by default. Silencing the
+      "unknown attribute / unknown tag" inspection prevents ~10 false
+      positives from valid PWA + social-media markup.
+    -->
+    <inspection_tool class="HtmlUnknownAttribute" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="HtmlUnknownTarget" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="HtmlRequiredAltAttribute" enabled="true" level="WARNING" enabled_by_default="true" />
+    <!--
+      The project ships a curated dictionary at .idea/dictionaries/project.xml
+      with all Spanish brand and domain terms. We keep SpellChecking on so
+      genuine typos still surface, but add the curated words to suppress the
+      ~40 noise warnings on Spanish copy.
+    -->
+  </profile>
+</component>

@@ -19,15 +19,16 @@
 
 Add-Type -AssemblyName System.Drawing
 
-$ErrorActionPreference = 'Stop'
+$ErrorActionPreference   = 'Stop'
+$InformationPreference   = 'Continue'
 
 $root         = Split-Path -Parent $PSScriptRoot
 $sourcePath   = Join-Path $root 'public\autobus.png'
 $iconsDir     = Join-Path $root 'public\icons'
 $splashDir    = Join-Path $root 'public\splash'
-$brandColor   = [System.Drawing.ColorTranslator]::FromHtml('#001D56')
-$splashBgHex  = '#FFFFFF'
-$splashBg     = [System.Drawing.ColorTranslator]::FromHtml($splashBgHex)
+# White splash background keeps the logo readable on both light/dark
+# iOS status bars. Brand blue would clash with the dark status bar text.
+$splashBg     = [System.Drawing.ColorTranslator]::FromHtml('#FFFFFF')
 
 if (-not (Test-Path $sourcePath)) {
     Write-Error "Source image not found: $sourcePath"
@@ -63,7 +64,7 @@ function New-SquareIcon {
         }
         $bmp.Save($OutputPath, [System.Drawing.Imaging.ImageFormat]::Png)
         $bmp.Dispose()
-        Write-Host "  icon $Size x $Size -> $OutputPath"
+        Write-Information "  icon $Size x $Size -> $OutputPath"
     } finally {
         $src.Dispose()
     }
@@ -106,7 +107,7 @@ function New-Splash {
         }
         $bmp.Save($OutputPath, [System.Drawing.Imaging.ImageFormat]::Png)
         $bmp.Dispose()
-        Write-Host "  splash $Width x $Height -> $OutputPath"
+        Write-Information "  splash $Width x $Height -> $OutputPath"
     } finally {
         $src.Dispose()
     }
@@ -188,21 +189,21 @@ function New-MultiSizeFavicon {
         $stream.Dispose()
     }
 
-    Write-Host "  favicon ($($Sizes -join '/')) -> $OutputPath"
+    Write-Information "  favicon ($($Sizes -join '/')) -> $OutputPath"
 }
 
 # ----------------------------------------------------------------------------
 # Generate favicon.ico
 # ----------------------------------------------------------------------------
-Write-Host ''
-Write-Host 'Generating favicon.ico...'
+Write-Information ''
+Write-Information 'Generating favicon.ico...'
 New-MultiSizeFavicon -OutputPath (Join-Path $root 'public\favicon.ico')
 
 # ----------------------------------------------------------------------------
 # Generate icons
 # ----------------------------------------------------------------------------
-Write-Host ''
-Write-Host 'Generating PWA icons...'
+Write-Information ''
+Write-Information 'Generating PWA icons...'
 $iconSizes = @(72, 96, 128, 144, 152, 180, 192, 384, 512)
 foreach ($size in $iconSizes) {
     New-SquareIcon -Size $size -OutputPath (Join-Path $iconsDir "icon-$size.png")
@@ -211,8 +212,8 @@ foreach ($size in $iconSizes) {
 # ----------------------------------------------------------------------------
 # Generate iOS splash screens (portrait orientation, common iPhone sizes)
 # ----------------------------------------------------------------------------
-Write-Host ''
-Write-Host 'Generating iOS splash screens...'
+Write-Information ''
+Write-Information 'Generating iOS splash screens...'
 $splashSizes = @(
     @{ W =  640; H = 1136 },  # iPhone SE 1st gen / 5 / 5s
     @{ W =  750; H = 1334 },  # iPhone SE 2nd-3rd gen / 6 / 7 / 8
@@ -228,5 +229,5 @@ foreach ($s in $splashSizes) {
     New-Splash -Width $w -Height $h -OutputPath (Join-Path $splashDir "splash-${w}x${h}.png")
 }
 
-Write-Host ''
-Write-Host 'PWA assets generated successfully.'
+Write-Information ''
+Write-Information 'PWA assets generated successfully.'
