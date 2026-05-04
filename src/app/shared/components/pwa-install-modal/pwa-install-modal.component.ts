@@ -6,7 +6,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { PwaService } from '../../../core/services/pwa.service';
+import { PwaService } from '@core/services/pwa.service';
 
 /** Delay before the modal animates in — avoids being aggressive on first load. */
 const SHOW_DELAY_MS = 2500;
@@ -209,7 +209,7 @@ const SHOW_DELAY_MS = 2500;
         font-size: 1.25rem;
         font-weight: 700;
         text-align: center;
-        font-family: var(--font-heading);
+        font-family: var(--font-heading), 'Poppins', system-ui, sans-serif;
       }
 
       .pwa-modal-text {

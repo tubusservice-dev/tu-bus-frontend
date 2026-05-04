@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { PwaService } from '../../../core/services/pwa.service';
+import { PwaService } from '@core/services/pwa.service';
 
 /**
  * PwaUpdateBannerComponent
