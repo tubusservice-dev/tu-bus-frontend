@@ -11,10 +11,8 @@
 npm-debug.log
 yarn-error.log
 
-# IDEs and editors — ignore everything except shared team config
-.idea/*
-!.idea/dictionaries/
-!.idea/inspectionProfiles/
+# IDEs and editors
+.idea/
 .project
 .classpath
 .c9/

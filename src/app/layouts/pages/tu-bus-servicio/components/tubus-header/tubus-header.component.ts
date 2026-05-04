@@ -1,15 +1,15 @@
 import { Component, signal, inject, OnInit, OnDestroy, effect } from '@angular/core';
 import { Router, RouterLink, NavigationEnd } from '@angular/router';
 import { Subscription, filter } from 'rxjs';
-import { ThemeToggleComponent } from '../../../../../shared/components/theme-toggle/theme-toggle.component';
-import { UserMenuComponent } from '../../../../../shared/components/user-menu/user-menu.component';
-import { CartPopoverComponent } from '../../../../../shared/components/cart-popover/cart-popover.component';
-import { ZoningModalComponent } from '../../../../../shared/components/zoning-modal/zoning-modal.component';
-import { UserNotificationsBellComponent } from '../../../../../shared/components/user-notifications-bell/user-notifications-bell.component';
-import { PwaInstallButtonComponent } from '../../../../../shared/components/pwa-install-button/pwa-install-button.component';
-import { AuthService } from '../../../../../core/services';
-import { LocationService } from '../../../../../core/services/location.service';
-import { CartService } from '../../../../../core/services/cart.service';
+import { ThemeToggleComponent } from '@shared/components/theme-toggle/theme-toggle.component';
+import { UserMenuComponent } from '@shared/components/user-menu/user-menu.component';
+import { CartPopoverComponent } from '@shared/components/cart-popover/cart-popover.component';
+import { ZoningModalComponent } from '@shared/components/zoning-modal/zoning-modal.component';
+import { UserNotificationsBellComponent } from '@shared/components/user-notifications-bell/user-notifications-bell.component';
+import { PwaInstallButtonComponent } from '@shared/components/pwa-install-button/pwa-install-button.component';
+import { AuthService } from '@core/services';
+import { LocationService } from '@core/services/location.service';
+import { CartService } from '@core/services/cart.service';
 
 @Component({
   selector: 'app-tubus-header',

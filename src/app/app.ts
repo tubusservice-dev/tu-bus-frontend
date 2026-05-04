@@ -1,18 +1,18 @@
 import { Component, inject, signal, effect } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { OverlayStackService } from './core/services/overlay-stack.service';
-import { AuthService } from './core/services/auth.service';
-import { ProductDetailPageComponent } from './features/product-detail/product-detail-page/product-detail-page.component';
-import { CartOverlayComponent } from './features/cart/cart-overlay/cart-overlay.component';
-import { ToastContainerComponent } from './shared/components/toast-container/toast-container.component';
-import { BlockedAccountModalComponent } from './shared/components/blocked-account-modal/blocked-account-modal.component';
-import { PwaUpdateBannerComponent } from './shared/components/pwa-update-banner/pwa-update-banner.component';
-import { PwaInstallModalComponent } from './shared/components/pwa-install-modal/pwa-install-modal.component';
-import { AuthModalComponent } from './shared/components/auth-modal/auth-modal.component';
-import { ForgotPasswordModalComponent } from './shared/components/forgot-password-modal/forgot-password-modal.component';
-import { EmailNotFoundModalComponent } from './shared/components/email-not-found-modal/email-not-found-modal.component';
-import { EmailSentModalComponent } from './shared/components/email-sent-modal/email-sent-modal.component';
-import { VerifyEmailPendingModalComponent } from './shared/components/verify-email-pending-modal/verify-email-pending-modal.component';
+import { OverlayStackService } from '@core/services/overlay-stack.service';
+import { AuthService } from '@core/services/auth.service';
+import { ProductDetailPageComponent } from '@features/product-detail/product-detail-page/product-detail-page.component';
+import { CartOverlayComponent } from '@features/cart/cart-overlay/cart-overlay.component';
+import { ToastContainerComponent } from '@shared/components/toast-container/toast-container.component';
+import { BlockedAccountModalComponent } from '@shared/components/blocked-account-modal/blocked-account-modal.component';
+import { PwaUpdateBannerComponent } from '@shared/components/pwa-update-banner/pwa-update-banner.component';
+import { PwaInstallModalComponent } from '@shared/components/pwa-install-modal/pwa-install-modal.component';
+import { AuthModalComponent } from '@shared/components/auth-modal/auth-modal.component';
+import { ForgotPasswordModalComponent } from '@shared/components/forgot-password-modal/forgot-password-modal.component';
+import { EmailNotFoundModalComponent } from '@shared/components/email-not-found-modal/email-not-found-modal.component';
+import { EmailSentModalComponent } from '@shared/components/email-sent-modal/email-sent-modal.component';
+import { VerifyEmailPendingModalComponent } from '@shared/components/verify-email-pending-modal/verify-email-pending-modal.component';
 
 @Component({
   selector: 'app-root',

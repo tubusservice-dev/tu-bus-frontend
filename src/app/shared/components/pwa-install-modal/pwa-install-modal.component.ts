@@ -6,7 +6,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { PwaService } from '../../../core/services/pwa.service';
+import { PwaService } from '@core/services/pwa.service';
 
 /** Delay before the modal animates in — avoids being aggressive on first load. */
 const SHOW_DELAY_MS = 2500;
