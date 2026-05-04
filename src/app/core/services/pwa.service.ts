@@ -173,8 +173,9 @@ export class PwaService {
   private detectStandaloneMode(): void {
     // iOS Safari uses navigator.standalone; everyone else uses the media
     // query. Either match means we're already inside the installed app.
-    const iosStandalone =
-      (window.navigator as unknown as { standalone?: boolean }).standalone === true;
+    const iosStandalone = Boolean(
+      (window.navigator as unknown as { standalone?: boolean }).standalone,
+    );
     const matchStandalone = window.matchMedia('(display-mode: standalone)').matches;
     this._isInstalled.set(iosStandalone || matchStandalone);
   }

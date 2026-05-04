@@ -209,7 +209,7 @@ const SHOW_DELAY_MS = 2500;
         font-size: 1.25rem;
         font-weight: 700;
         text-align: center;
-        font-family: var(--font-heading);
+        font-family: var(--font-heading), 'Poppins', system-ui, sans-serif;
       }
 
       .pwa-modal-text {
