@@ -7,6 +7,7 @@ import { CartOverlayComponent } from './features/cart/cart-overlay/cart-overlay.
 import { ToastContainerComponent } from './shared/components/toast-container/toast-container.component';
 import { BlockedAccountModalComponent } from './shared/components/blocked-account-modal/blocked-account-modal.component';
 import { PwaUpdateBannerComponent } from './shared/components/pwa-update-banner/pwa-update-banner.component';
+import { PwaInstallModalComponent } from './shared/components/pwa-install-modal/pwa-install-modal.component';
 import { AuthModalComponent } from './shared/components/auth-modal/auth-modal.component';
 import { ForgotPasswordModalComponent } from './shared/components/forgot-password-modal/forgot-password-modal.component';
 import { EmailNotFoundModalComponent } from './shared/components/email-not-found-modal/email-not-found-modal.component';
@@ -27,6 +28,7 @@ import { VerifyEmailPendingModalComponent } from './shared/components/verify-ema
     EmailSentModalComponent,
     VerifyEmailPendingModalComponent,
     PwaUpdateBannerComponent,
+    PwaInstallModalComponent,
   ],
   templateUrl: './app.html',
   styleUrl: './app.scss',

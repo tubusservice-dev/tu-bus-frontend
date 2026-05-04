@@ -18,4 +18,5 @@ export * from './date-input/date-input.component';
 export * from './kebab-menu/kebab-menu.component';
 export * from './blocked-account-modal/blocked-account-modal.component';
 export * from './pwa-install-button/pwa-install-button.component';
+export * from './pwa-install-modal/pwa-install-modal.component';
 export * from './pwa-update-banner/pwa-update-banner.component';
