@@ -12,6 +12,7 @@
 #   public/autobus.png       - Source logo (square, ideally 1024x1024+)
 #
 # Outputs:
+#   public/favicon.ico                                          - Multi-res favicon (16/32/48)
 #   public/icons/icon-{72,96,128,144,152,180,192,384,512}.png   - PWA icons
 #   public/splash/splash-{WxH}.png                              - iOS splashes
 # ============================================================================
@@ -110,6 +111,92 @@ function New-Splash {
         $src.Dispose()
     }
 }
+
+# ----------------------------------------------------------------------------
+# Helper: Build a multi-resolution favicon.ico from the source PNG.
+# The ICO format embeds several PNG-encoded bitmaps so the OS / browser
+# picks the optimal size for each surface (tab 16x16, taskbar 32x32,
+# tile 48x48). Modern ICO files with PNG payloads are supported by all
+# browsers since IE11 / Edge / Chrome / Firefox / Safari.
+# ----------------------------------------------------------------------------
+function New-MultiSizeFavicon {
+    param(
+        [string]$OutputPath,
+        [int[]]$Sizes = @(16, 32, 48)
+    )
+
+    $src = [System.Drawing.Image]::FromFile($sourcePath)
+    $pngBlobs = @()
+
+    try {
+        foreach ($size in $Sizes) {
+            $bmp = New-Object System.Drawing.Bitmap $size, $size
+            $bmp.SetResolution(96, 96)
+            $g = [System.Drawing.Graphics]::FromImage($bmp)
+            try {
+                $g.InterpolationMode  = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+                $g.SmoothingMode      = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
+                $g.PixelOffsetMode    = [System.Drawing.Drawing2D.PixelOffsetMode]::HighQuality
+                $g.CompositingQuality = [System.Drawing.Drawing2D.CompositingQuality]::HighQuality
+                $g.Clear([System.Drawing.Color]::Transparent)
+                $g.DrawImage($src, 0, 0, $size, $size)
+            } finally {
+                $g.Dispose()
+            }
+
+            $ms = New-Object System.IO.MemoryStream
+            $bmp.Save($ms, [System.Drawing.Imaging.ImageFormat]::Png)
+            $pngBlobs += @{ Size = $size; Bytes = $ms.ToArray() }
+            $bmp.Dispose()
+            $ms.Dispose()
+        }
+    } finally {
+        $src.Dispose()
+    }
+
+    $stream = [System.IO.File]::Open($OutputPath, [System.IO.FileMode]::Create)
+    $writer = New-Object System.IO.BinaryWriter $stream
+    try {
+        # ICONDIR header (6 bytes)
+        $writer.Write([UInt16]0)                  # reserved
+        $writer.Write([UInt16]1)                  # type = icon (not cursor)
+        $writer.Write([UInt16]$pngBlobs.Count)    # number of images
+
+        # First image data starts after the directory entries
+        $offset = 6 + ($pngBlobs.Count * 16)
+
+        # ICONDIRENTRY blocks (16 bytes each)
+        foreach ($blob in $pngBlobs) {
+            $dim = [Byte]([Math]::Min($blob.Size, 255))   # 0 means 256
+            $writer.Write($dim)                            # width
+            $writer.Write($dim)                            # height
+            $writer.Write([Byte]0)                         # palette count (0 = no palette)
+            $writer.Write([Byte]0)                         # reserved
+            $writer.Write([UInt16]1)                       # color planes
+            $writer.Write([UInt16]32)                      # bits per pixel
+            $writer.Write([UInt32]$blob.Bytes.Length)      # data size
+            $writer.Write([UInt32]$offset)                 # data offset
+            $offset += $blob.Bytes.Length
+        }
+
+        # Image payloads (PNG-encoded)
+        foreach ($blob in $pngBlobs) {
+            $writer.Write($blob.Bytes)
+        }
+    } finally {
+        $writer.Dispose()
+        $stream.Dispose()
+    }
+
+    Write-Host "  favicon ($($Sizes -join '/')) -> $OutputPath"
+}
+
+# ----------------------------------------------------------------------------
+# Generate favicon.ico
+# ----------------------------------------------------------------------------
+Write-Host ''
+Write-Host 'Generating favicon.ico...'
+New-MultiSizeFavicon -OutputPath (Join-Path $root 'public\favicon.ico')
 
 # ----------------------------------------------------------------------------
 # Generate icons

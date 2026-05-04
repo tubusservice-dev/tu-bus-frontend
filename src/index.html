@@ -10,9 +10,16 @@
   <meta name="author" content="TuBus Express">
   <meta name="theme-color" content="#001D56">
 
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <!-- Canonical URL -->
+  <link rel="canonical" href="https://tubusexpress.com/">
+
+  <!-- Favicon (PNG declared with explicit sizes wins on modern browsers;
+       .ico kept as compatibility fallback for legacy clients) -->
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="96x96" href="icons/icon-96.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-72.png">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="shortcut icon" href="favicon.ico">
 
   <!-- PWA Manifest -->
   <link rel="manifest" href="manifest.webmanifest">
@@ -41,11 +48,26 @@
   <meta name="msapplication-TileColor" content="#001D56">
   <meta name="msapplication-TileImage" content="icons/icon-144.png">
 
-  <!-- Open Graph -->
-  <meta property="og:title" content="TuBus Express">
-  <meta property="og:description" content="Repuestos automotrices, cambios de aceite a domicilio y servicios mecánicos en Venezuela.">
-  <meta property="og:image" content="icons/icon-512.png">
+  <!-- Open Graph (URLs MUST be absolute — social scrapers reject relative paths) -->
   <meta property="og:type" content="website">
+  <meta property="og:site_name" content="TuBus Express">
+  <meta property="og:title" content="TuBus Express - Repuestos y servicios automotrices">
+  <meta property="og:description" content="Repuestos automotrices, cambios de aceite a domicilio y servicios mecánicos en Venezuela.">
+  <meta property="og:url" content="https://tubusexpress.com/">
+  <meta property="og:image" content="https://tubusexpress.com/icons/icon-512.png">
+  <meta property="og:image:secure_url" content="https://tubusexpress.com/icons/icon-512.png">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="512">
+  <meta property="og:image:height" content="512">
+  <meta property="og:image:alt" content="Logo de TuBus Express">
+  <meta property="og:locale" content="es_VE">
+
+  <!-- Twitter Card (summary works best for square logo icons) -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="TuBus Express">
+  <meta name="twitter:description" content="Repuestos automotrices, cambios de aceite a domicilio y servicios mecánicos en Venezuela.">
+  <meta name="twitter:image" content="https://tubusexpress.com/icons/icon-512.png">
+  <meta name="twitter:image:alt" content="Logo de TuBus Express">
 
   <!-- Google Fonts: Inter y Poppins -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
