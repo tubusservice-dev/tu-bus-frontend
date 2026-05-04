@@ -24,3 +24,4 @@ export * from './mechanic.service';
 export * from './payment-method.service';
 export * from './location.service';
 export * from './overlay-stack.service';
+export * from './pwa.service';
