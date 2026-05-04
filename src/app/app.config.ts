@@ -15,6 +15,7 @@ import { routes } from './app.routes';
 import { authInterceptor } from './core/interceptors';
 import { AuthService, SettingsService } from './core/services';
 import { ExchangeRateService } from './core/services/exchange-rate.service';
+import { PwaService } from './core/services/pwa.service';
 import {
   ChunkLoadErrorHandler,
   isChunkLoadError,
@@ -54,6 +55,15 @@ function initializeSettings(): () => void {
   };
 }
 
+/**
+ * Wires up the PWA lifecycle listeners (install prompt, app installed,
+ * service-worker update). Non-blocking — only attaches event listeners.
+ */
+function initializePwa(): () => void {
+  const pwaService = inject(PwaService);
+  return () => pwaService.init();
+}
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
@@ -89,6 +99,11 @@ export const appConfig: ApplicationConfig = {
     {
       provide: APP_INITIALIZER,
       useFactory: initializeSettings,
+      multi: true,
+    },
+    {
+      provide: APP_INITIALIZER,
+      useFactory: initializePwa,
       multi: true,
     },
     { provide: LOCALE_ID, useValue: 'es' },

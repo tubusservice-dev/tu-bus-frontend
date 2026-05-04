@@ -5,6 +5,7 @@ import { ThemeToggleComponent } from '../../../shared/components/theme-toggle/th
 import { UserMenuComponent } from '../../../shared/components/user-menu/user-menu.component';
 import { CartPopoverComponent } from '../../../shared/components/cart-popover/cart-popover.component';
 import { UserNotificationsBellComponent } from '../../../shared/components/user-notifications-bell/user-notifications-bell.component';
+import { PwaInstallButtonComponent } from '../../../shared/components/pwa-install-button/pwa-install-button.component';
 import { AuthService } from '../../../core/services';
 import { environment } from '../../../../environments/environment';
 
@@ -17,6 +18,7 @@ import { environment } from '../../../../environments/environment';
     UserMenuComponent,
     CartPopoverComponent,
     UserNotificationsBellComponent,
+    PwaInstallButtonComponent,
   ],
   templateUrl: './header.component.html',
   styleUrl: './header.component.scss',
