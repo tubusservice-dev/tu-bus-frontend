@@ -11,6 +11,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DateInputComponent } from '../date-input/date-input.component';
 import type { RequestedServiceDate, ServiceDateTier } from '../../../features/checkout/services/checkout.service';
+import { businessIsoOffset, formatBusinessDate } from '../../utils/business-date.util';
 
 /**
  * Three-way service date chooser for the home oil change flow.
@@ -39,9 +40,9 @@ export class ServiceDatePickerComponent {
   protected readonly tier = signal<ServiceDateTier | null>(null);
   protected readonly scheduledDate = signal<string>('');
 
-  protected readonly todayIso = this.buildIsoOffset(0);
-  protected readonly tomorrowIso = this.buildIsoOffset(1);
-  protected readonly minScheduledIso = this.buildIsoOffset(2);
+  protected readonly todayIso = businessIsoOffset(0);
+  protected readonly tomorrowIso = businessIsoOffset(1);
+  protected readonly minScheduledIso = businessIsoOffset(2);
 
   protected readonly todayLabel = this.formatHumanDate(this.todayIso);
   protected readonly tomorrowLabel = this.formatHumanDate(this.tomorrowIso);
@@ -93,21 +94,8 @@ export class ServiceDatePickerComponent {
     this.changed.emit(value);
   }
 
-  private buildIsoOffset(days: number): string {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    d.setDate(d.getDate() + days);
-    const y = d.getFullYear();
-    const m = `${d.getMonth() + 1}`.padStart(2, '0');
-    const day = `${d.getDate()}`.padStart(2, '0');
-    return `${y}-${m}-${day}`;
-  }
-
   private formatHumanDate(iso: string): string {
-    const [y, m, d] = iso.split('-').map(Number);
-    if (!y || !m || !d) return '';
-    const date = new Date(y, m - 1, d);
-    return date.toLocaleDateString('es-VE', {
+    return formatBusinessDate(iso, {
       weekday: 'short',
       day: 'numeric',
       month: 'short',

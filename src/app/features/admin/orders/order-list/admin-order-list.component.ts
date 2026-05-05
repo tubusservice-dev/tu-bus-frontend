@@ -15,6 +15,7 @@ import {
   DISPATCH_STATUS_COLORS,
 } from '../../../../models/order.model';
 import { SearchInputComponent } from '../../../../shared/components/search-input/search-input.component';
+import { formatBusinessDate } from '@shared/utils/business-date.util';
 
 @Component({
   selector: 'app-admin-order-list',
@@ -188,8 +189,7 @@ export class AdminOrderListComponent implements OnInit {
     };
     const entry = tierMap[order.requestedServiceTier];
     if (!entry) return null;
-    const d = new Date(order.requestedServiceDate);
-    const dateLabel = d.toLocaleDateString('es-VE', {
+    const dateLabel = formatBusinessDate(order.requestedServiceDate, {
       weekday: 'short',
       day: '2-digit',
       month: 'short',

@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { OrderService } from '../../../core/services/order.service';
 import { MechanicAssignment, ProgressStep } from '../../../models/mechanic-assignment.model';
 import { MechanicAvatarComponent } from '../../../shared/components/mechanic-avatar/mechanic-avatar.component';
+import { formatBusinessDate } from '@shared/utils/business-date.util';
 
 type StepKey = 'asignado' | 'en_camino' | 'en_proceso' | 'completado';
 
@@ -167,8 +168,12 @@ export class ServiceTrackingComponent implements OnInit {
   protected readonly scheduledDateFormatted = computed(() => {
     const a = this.assignment();
     if (!a || !a.scheduledDate) return '—';
-    const date = new Date(a.scheduledDate);
-    return date.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    return formatBusinessDate(a.scheduledDate, {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
   });
 
   protected readonly timeRangeFormatted = computed(() => {

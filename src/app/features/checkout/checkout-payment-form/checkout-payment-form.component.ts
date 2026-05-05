@@ -7,6 +7,7 @@ import { CreatePaymentRequest, PaymentMethod } from '@models/payment.model';
 import { DateInputComponent } from '@shared/components/date-input/date-input.component';
 import { HeaderShellComponent } from '@shared/components/header-shell/header-shell.component';
 import { scrollToFirstFormError } from '@shared/validators/form-validators';
+import { businessTodayIso } from '@shared/utils/business-date.util';
 
 @Component({
   selector: 'app-checkout-payment-form',
@@ -148,7 +149,7 @@ export class CheckoutPaymentFormComponent implements OnInit {
   private readonly paymentService = inject(PaymentService);
   private readonly uploadService = inject(UploadService);
 
-  protected readonly todayStr = new Date().toISOString().split('T')[0];
+  protected readonly todayStr = businessTodayIso();
   protected readonly isSubmitting = signal(false);
   protected readonly isUploading = signal(false);
   protected readonly errorMessage = signal<string | null>(null);

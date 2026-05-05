@@ -29,6 +29,7 @@ import { ServiceDatePickerComponent } from '@shared/components/service-date-pick
 import { ClipboardService } from '@shared/services/clipboard.service';
 import { BodyScrollLockService } from '@shared/services/body-scroll-lock.service';
 import { CheckoutHeaderComponent } from '../components/checkout-header/checkout-header.component';
+import { businessTodayIso } from '@shared/utils/business-date.util';
 
 @Component({
   selector: 'app-checkout-summary',
@@ -53,7 +54,7 @@ export class CheckoutSummaryComponent implements OnInit {
   private readonly clipboard = inject(ClipboardService);
   private readonly scrollLock = inject(BodyScrollLockService);
 
-  protected readonly todayStr = new Date().toISOString().split('T')[0];
+  protected readonly todayStr = businessTodayIso();
 
   // Transient "Copiado" feedback for the "Copiar todo" action (1.5s).
   protected readonly copiedAll = signal(false);

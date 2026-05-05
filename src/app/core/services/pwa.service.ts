@@ -26,9 +26,16 @@ const INSTALL_DISMISSED_TTL_MS = 7 * 24 * 60 * 60 * 1000;
  *   3. Detect REAL Service Worker updates (not first-installs) so the
  *      update banner only appears when there's actually a new version.
  *
+ * Device gating:
+ *   By product decision the install UX is shown only on mobile phones
+ *   and tablets. Desktops/laptops never see the modal nor the header
+ *   button. SW registration is also skipped on desktop in main.ts, so
+ *   `beforeinstallprompt` should not fire there — but we still guard
+ *   here defensively in case the SW becomes available another way.
+ *
  * Modal vs Button visibility (mutually exclusive):
  *   - Modal:  shown on first eligible visit (installable, not installed,
- *             not dismissed). Proactive UX.
+ *             touch device, not dismissed). Proactive UX.
  *   - Button: shown only after the modal has been dismissed (this
  *             session or persistently). Acts as a recovery affordance.
  */
@@ -46,6 +53,13 @@ export class PwaService {
    */
   private wasControlledOnLoad = false;
 
+  /**
+   * True on touch-first devices (mobile / tablet). Computed once on
+   * `init()` because device class doesn't change mid-session in
+   * practice (rotating a phone keeps it `coarse`).
+   */
+  private isMobileOrTablet = false;
+
   private readonly _canInstall = signal(false);
   private readonly _isInstalled = signal(false);
   private readonly _updateReady = signal(false);
@@ -62,6 +76,7 @@ export class PwaService {
 
   /**
    * Modal visibility. True when:
+   *   - The device is a mobile phone or tablet (desktops are excluded)
    *   - The browser fired beforeinstallprompt (installable)
    *   - The app is not already installed
    *   - The user did not dismiss this session
@@ -71,6 +86,7 @@ export class PwaService {
     () =>
       this._canInstall() &&
       !this._isInstalled() &&
+      this.isMobileOrTablet &&
       !this._installModalSessionDismissed() &&
       !this.isPersistentlyDismissed(),
   );
@@ -78,12 +94,13 @@ export class PwaService {
   /**
    * Header button visibility. Mutually exclusive with the modal — only
    * appears once the modal has been dismissed, so installable users
-   * always have a way to install.
+   * (on mobile/tablet) always have a way to install.
    */
   readonly showInstallButton = computed(
     () =>
       this._canInstall() &&
       !this._isInstalled() &&
+      this.isMobileOrTablet &&
       (this._installModalSessionDismissed() || this.isPersistentlyDismissed()),
   );
 
@@ -99,6 +116,7 @@ export class PwaService {
     this.wasControlledOnLoad =
       'serviceWorker' in navigator && !!navigator.serviceWorker.controller;
 
+    this.isMobileOrTablet = this.detectMobileOrTablet();
     this.detectStandaloneMode();
     this.listenForInstallPrompt();
     this.listenForAppInstalled();
@@ -156,6 +174,18 @@ export class PwaService {
   }
 
   // ─── Private ─────────────────────────────────────────────────────
+
+  /**
+   * Returns true on touch-first devices (phones, tablets), false on
+   * desktops/laptops. Uses `pointer: coarse` because it reflects how
+   * the user actually interacts with the device — desktops with
+   * touchscreens still report `pointer: fine` (mouse is primary) and
+   * are correctly excluded.
+   */
+  private detectMobileOrTablet(): boolean {
+    if (typeof window.matchMedia !== 'function') return false;
+    return window.matchMedia('(pointer: coarse)').matches;
+  }
 
   /** Reads the persistent dismissal timestamp and checks if it's still active. */
   private isPersistentlyDismissed(): boolean {
