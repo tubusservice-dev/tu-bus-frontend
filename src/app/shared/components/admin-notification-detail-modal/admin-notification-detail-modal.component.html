@@ -55,7 +55,7 @@
             @if (meta()['scheduledDate']) {
               <div class="notif-detail-row">
                 <span class="nd-label">Fecha programada</span>
-                <span class="nd-value">{{ meta()['scheduledDate'] | date:'dd/MM/yyyy' }}</span>
+                <span class="nd-value">{{ meta()['scheduledDate'] | date:'dd/MM/yyyy':'UTC' }}</span>
               </div>
             }
           </div>

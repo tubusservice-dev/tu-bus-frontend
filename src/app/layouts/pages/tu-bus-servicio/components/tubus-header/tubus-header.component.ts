@@ -7,6 +7,7 @@ import { CartPopoverComponent } from '@shared/components/cart-popover/cart-popov
 import { ZoningModalComponent } from '@shared/components/zoning-modal/zoning-modal.component';
 import { UserNotificationsBellComponent } from '@shared/components/user-notifications-bell/user-notifications-bell.component';
 import { PwaInstallButtonComponent } from '@shared/components/pwa-install-button/pwa-install-button.component';
+import { HeaderShellComponent } from '@shared/components/header-shell/header-shell.component';
 import { AuthService } from '@core/services';
 import { LocationService } from '@core/services/location.service';
 import { CartService } from '@core/services/cart.service';
@@ -22,6 +23,7 @@ import { CartService } from '@core/services/cart.service';
     ZoningModalComponent,
     UserNotificationsBellComponent,
     PwaInstallButtonComponent,
+    HeaderShellComponent,
   ],
   templateUrl: './tubus-header.component.html',
   styleUrl: './tubus-header.component.scss'

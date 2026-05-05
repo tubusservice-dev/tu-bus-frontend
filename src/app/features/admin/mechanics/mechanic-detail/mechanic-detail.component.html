@@ -94,7 +94,7 @@
             @for (a of paginatedAssignments(); track $index) {
               <tr [class.row-expired]="a.status === 'expired'" [class.row-cancelled]="a.status === 'cancelled'" class="row-click" (click)="openDetail(a)">
                 <td class="cell-order">{{ getOrderNumber(a) }}</td>
-                <td class="cell-date">{{ a.scheduledDate | date:'dd/MM/yy' }}</td>
+                <td class="cell-date">{{ a.scheduledDate | date:'dd/MM/yy':'UTC' }}</td>
                 <td class="cell-time">{{ a.startTime }} - {{ a.endTime }}</td>
                 <td><span class="badge" [ngClass]="getStatusClass(a.status)">{{ getStatusLabel(a.status) }}</span></td>
                 <td class="cell-total">${{ getOrderTotal(a) | number:'1.2-2' }}</td>
@@ -140,7 +140,7 @@
               <span class="badge" [ngClass]="getStatusClass(selectedAssignment()!.status)">{{ getStatusLabel(selectedAssignment()!.status) }}</span>
             </div>
             <div class="modal-schedule">
-              {{ selectedAssignment()!.scheduledDate | date:'dd/MM/yyyy' }} &bull; {{ selectedAssignment()!.startTime }} - {{ selectedAssignment()!.endTime }}
+              {{ selectedAssignment()!.scheduledDate | date:'dd/MM/yyyy':'UTC' }} &bull; {{ selectedAssignment()!.startTime }} - {{ selectedAssignment()!.endTime }}
               @if (getOrderTotal(selectedAssignment()!) > 0) {
                 &bull; <strong>${{ getOrderTotal(selectedAssignment()!) | number:'1.2-2' }}</strong>
               }

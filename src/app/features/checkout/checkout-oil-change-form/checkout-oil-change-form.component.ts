@@ -4,24 +4,25 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { CheckoutService, OilChangeServiceInfo } from '../services/checkout.service';
-import { CartService } from '../../../core/services/cart.service';
-import { AuthService } from '../../../core/services/auth.service';
-import { LocationService } from '../../../core/services/location.service';
-import { BranchZoneService } from '../../../core/services/branch-zone.service';
-import { VehicleService } from '../../../core/services/vehicle.service';
-import { ProductService } from '../../../core/services/product.service';
-import { Vehicle } from '../../../models/vehicle.model';
+import { CartService } from '@core/services/cart.service';
+import { AuthService } from '@core/services/auth.service';
+import { LocationService } from '@core/services/location.service';
+import { BranchZoneService } from '@core/services/branch-zone.service';
+import { VehicleService } from '@core/services/vehicle.service';
+import { ProductService } from '@core/services/product.service';
+import { Vehicle } from '@models/vehicle.model';
 import {
   NAME_PATTERN, PHONE_VE_PATTERN, DOCUMENT_NUMBER_PATTERN, EMAIL_PATTERN,
   MAX_FULLNAME_LENGTH, MAX_ADDRESS_LENGTH, MAX_REFERENCE_LENGTH, MAX_NOTES_LENGTH,
   noNumbersValidator, scrollToFirstFormError,
-} from '../../../shared/validators/form-validators';
-import { VehicleFormComponent } from '../../garage/vehicle-form/vehicle-form.component';
+} from '@shared/validators/form-validators';
+import { VehicleFormComponent } from '@features/garage/vehicle-form/vehicle-form.component';
+import { CheckoutHeaderComponent } from '../components/checkout-header/checkout-header.component';
 
 @Component({
   selector: 'app-checkout-oil-change-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, VehicleFormComponent],
+  imports: [CommonModule, ReactiveFormsModule, VehicleFormComponent, CheckoutHeaderComponent],
   templateUrl: './checkout-oil-change-form.component.html',
   styleUrl: './checkout-oil-change-form.component.scss',
 })

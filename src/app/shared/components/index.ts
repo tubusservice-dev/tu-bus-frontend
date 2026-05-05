@@ -20,3 +20,4 @@ export * from './blocked-account-modal/blocked-account-modal.component';
 export * from './pwa-install-button/pwa-install-button.component';
 export * from './pwa-install-modal/pwa-install-modal.component';
 export * from './pwa-update-banner/pwa-update-banner.component';
+export * from './header-shell/header-shell.component';

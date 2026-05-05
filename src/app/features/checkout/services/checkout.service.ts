@@ -1,10 +1,10 @@
 import { Injectable, computed, signal, inject } from '@angular/core';
-import { SettingsService } from '../../../core/services/settings.service';
-import { CartService } from '../../../core/services/cart.service';
-import { LocationService, BranchSummary } from '../../../core/services/location.service';
-import { ShippingAgency } from '../../../models/product.model';
-import { Vehicle } from '../../../models/vehicle.model';
-import { EngineModificationStatus } from '../../../models/order.model';
+import { SettingsService } from '@core/services/settings.service';
+import { CartService } from '@core/services/cart.service';
+import { LocationService, BranchSummary } from '@core/services/location.service';
+import { ShippingAgency } from '@models/product.model';
+import { Vehicle } from '@models/vehicle.model';
+import { EngineModificationStatus } from '@models/order.model';
 
 // ============================================
 // TYPES

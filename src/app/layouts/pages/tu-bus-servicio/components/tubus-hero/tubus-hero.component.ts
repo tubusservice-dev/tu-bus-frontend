@@ -1,14 +1,15 @@
 import { Component, inject, signal, computed, effect, DestroyRef } from '@angular/core';
 import { Router } from '@angular/router';
 import { HERO_CONTENT } from '../../data/mock-data';
-import { SettingsService } from '../../../../../core/services/settings.service';
-import { ReviewService } from '../../../../../core/services/review.service';
-import { FloatingStat } from '../../../../../models/settings.model';
+import { SettingsService } from '@core/services/settings.service';
+import { ReviewService } from '@core/services/review.service';
+import { FloatingStat } from '@models/settings.model';
+import { TubusHeroMobileBannerComponent } from '../tubus-hero-mobile-banner/tubus-hero-mobile-banner.component';
 
 @Component({
   selector: 'app-tubus-hero',
   standalone: true,
-  imports: [],
+  imports: [TubusHeroMobileBannerComponent],
   templateUrl: './tubus-hero.component.html',
   styleUrl: './tubus-hero.component.scss'
 })

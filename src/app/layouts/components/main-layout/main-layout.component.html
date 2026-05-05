@@ -1,9 +1,10 @@
 <div class="main-layout">
-  <!-- Header TuBus (oculto en checkout flow en móvil) -->
-  <app-tubus-header [class.hide-on-checkout-mobile]="isCheckoutFlow()" />
+  <!-- Header TuBus (oculto durante el flujo de checkout en cualquier
+       viewport — cada paso renderiza su propio `app-checkout-header`). -->
+  <app-tubus-header [class.hide-on-checkout]="isCheckoutFlow()" />
 
   <!-- Contenido principal -->
-  <main class="main-content">
+  <main class="main-content" [class.checkout-flow]="isCheckoutFlow()">
     <router-outlet />
   </main>
 

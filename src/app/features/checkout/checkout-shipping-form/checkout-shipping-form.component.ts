@@ -3,19 +3,20 @@ import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { CheckoutService, ShippingRecipientInfo } from '../services/checkout.service';
-import { CartService } from '../../../core/services/cart.service';
-import { AuthService } from '../../../core/services/auth.service';
-import { getStates, getCitiesByState, getMunicipalitiesByState } from '../../../shared/data/venezuela-states';
+import { CartService } from '@core/services/cart.service';
+import { AuthService } from '@core/services/auth.service';
+import { getStates, getCitiesByState, getMunicipalitiesByState } from '@shared/data/venezuela-states';
 import {
   NAME_PATTERN, PHONE_VE_PATTERN, DOCUMENT_NUMBER_PATTERN, EMAIL_PATTERN,
   MAX_FULLNAME_LENGTH, MAX_ADDRESS_LENGTH, MAX_REFERENCE_LENGTH, MAX_NOTES_LENGTH,
-  MAX_PHONE_LENGTH, MAX_DOCUMENT_LENGTH, noNumbersValidator, scrollToFirstFormError,
-} from '../../../shared/validators/form-validators';
+  noNumbersValidator, scrollToFirstFormError,
+} from '@shared/validators/form-validators';
+import { CheckoutHeaderComponent } from '../components/checkout-header/checkout-header.component';
 
 @Component({
   selector: 'app-checkout-shipping-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, CheckoutHeaderComponent],
   templateUrl: './checkout-shipping-form.component.html',
   styleUrl: './checkout-shipping-form.component.scss',
 })
@@ -184,10 +185,6 @@ export class CheckoutShippingFormComponent implements OnInit {
       this.shippingForm.patchValue({ municipalityCode: preselectedMuni });
       this.shippingForm.get('municipalityCode')?.disable();
     }
-  }
-
-  private loadReferenceMunicipalities(_stateCode: string, _cityName: string): void {
-    // Municipalities loaded together with cities in onStateChange
   }
 
   protected readonly hasLockedFields = computed(() => {

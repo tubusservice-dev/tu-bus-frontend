@@ -1,32 +1,10 @@
 // ========== Page layout ==========
 .in-store-form-page {
   @apply min-h-screen;
+  // Reserve space for the fixed `app-header-shell` rendered by
+  // `<app-checkout-header>`.
+  padding-top: var(--app-header-height);
   background-color: var(--bg-secondary);
-}
-
-.form-header {
-  @apply sticky top-0 z-10 flex items-center gap-3 px-4 py-3;
-  background-color: var(--bg-primary);
-  border-bottom: 1px solid var(--border-color);
-}
-
-.back-btn {
-  @apply inline-flex items-center justify-center rounded-lg;
-  width: 36px;
-  height: 36px;
-  background: transparent;
-  border: none;
-  color: var(--text-primary);
-  cursor: pointer;
-
-  svg { width: 20px; height: 20px; }
-
-  &:hover { background-color: var(--bg-secondary); }
-}
-
-.page-title {
-  @apply text-lg font-semibold;
-  color: var(--text-primary);
 }
 
 .form-container {

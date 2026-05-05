@@ -2,7 +2,7 @@ import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { OrderService } from '../../../../core/services/order.service';
+import { OrderService } from '@core/services/order.service';
 import {
   Order,
   OrderStatus,
@@ -13,8 +13,9 @@ import {
   DISPATCH_TYPE_COLORS,
   DISPATCH_STATUS_LABELS,
   DISPATCH_STATUS_COLORS,
-} from '../../../../models/order.model';
-import { SearchInputComponent } from '../../../../shared/components/search-input/search-input.component';
+} from '@models/order.model';
+import { SearchInputComponent } from '@shared/components/search-input/search-input.component';
+import { formatBusinessDate } from '@shared/utils/business-date.util';
 
 @Component({
   selector: 'app-admin-order-list',
@@ -188,8 +189,7 @@ export class AdminOrderListComponent implements OnInit {
     };
     const entry = tierMap[order.requestedServiceTier];
     if (!entry) return null;
-    const d = new Date(order.requestedServiceDate);
-    const dateLabel = d.toLocaleDateString('es-VE', {
+    const dateLabel = formatBusinessDate(order.requestedServiceDate, {
       weekday: 'short',
       day: '2-digit',
       month: 'short',

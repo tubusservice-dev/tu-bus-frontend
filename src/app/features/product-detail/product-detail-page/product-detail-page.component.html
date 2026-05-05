@@ -1,17 +1,15 @@
 <div class="overlay-backdrop">
-  <!-- Top bar with back button + cart -->
-  <div class="overlay-top-bar">
-    <div class="overlay-top-bar-inner">
-      <button type="button" class="overlay-back-btn" (click)="close()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-        </svg>
-        <span>Volver</span>
-      </button>
+  <!-- Top bar with back button + cart — uses the shared `app-header-shell`. -->
+  <app-header-shell variant="overlay">
+    <button type="button" class="overlay-back-btn" (click)="close()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+      </svg>
+      <span>Volver</span>
+    </button>
 
-      <app-cart-popover [mobileNavigatesToCart]="true" />
-    </div>
-  </div>
+    <app-cart-popover [mobileNavigatesToCart]="true" />
+  </app-header-shell>
 
   <!-- Product detail content (same layout as product-detail page) -->
   <div class="product-detail-container">

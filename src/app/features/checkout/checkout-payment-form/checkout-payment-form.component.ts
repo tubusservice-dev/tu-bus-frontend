@@ -1,31 +1,30 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
-import { PaymentService } from '../../../core/services/payment.service';
-import { UploadService } from '../../../core/services/upload.service';
-import { CreatePaymentRequest, PaymentMethod } from '../../../models/payment.model';
-import { DateInputComponent } from '../../../shared/components/date-input/date-input.component';
-import { scrollToFirstFormError } from '../../../shared/validators/form-validators';
+import { PaymentService } from '@core/services/payment.service';
+import { UploadService } from '@core/services/upload.service';
+import { CreatePaymentRequest, PaymentMethod } from '@models/payment.model';
+import { DateInputComponent } from '@shared/components/date-input/date-input.component';
+import { HeaderShellComponent } from '@shared/components/header-shell/header-shell.component';
+import { scrollToFirstFormError } from '@shared/validators/form-validators';
+import { businessTodayIso } from '@shared/utils/business-date.util';
 
 @Component({
   selector: 'app-checkout-payment-form',
   standalone: true,
-  imports: [ReactiveFormsModule, DateInputComponent],
+  imports: [ReactiveFormsModule, DateInputComponent, HeaderShellComponent],
   template: `
     <div class="payment-form-page">
-      <!-- Header -->
-      <div class="page-header">
-        <div class="header-content">
-          <div class="page-title">
-            <h1>Detalles del Pago</h1>
-            <p class="page-subtitle">Ingresa los datos de tu transferencia o pago móvil</p>
-          </div>
-        </div>
-      </div>
+      <!-- Header — uses the shell directly because this step has no back
+           button (post-order flow) and shows a title + subtitle. -->
+      <app-header-shell>
+        <h1 class="page-title">Detalles del Pago</h1>
+      </app-header-shell>
 
       <!-- Contenido -->
       <div class="page-content">
         <div class="form-container">
+          <p class="page-subtitle">Ingresa los datos de tu transferencia o pago móvil</p>
           <form [formGroup]="paymentForm" (ngSubmit)="onSubmit()">
             <!-- Número de referencia -->
             <div class="form-group">
@@ -150,7 +149,7 @@ export class CheckoutPaymentFormComponent implements OnInit {
   private readonly paymentService = inject(PaymentService);
   private readonly uploadService = inject(UploadService);
 
-  protected readonly todayStr = new Date().toISOString().split('T')[0];
+  protected readonly todayStr = businessTodayIso();
   protected readonly isSubmitting = signal(false);
   protected readonly isUploading = signal(false);
   protected readonly errorMessage = signal<string | null>(null);

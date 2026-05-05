@@ -4,16 +4,16 @@ import { CurrencyPipe, CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { CheckoutService, RequestedServiceDate } from '../services/checkout.service';
-import { CartService } from '../../../core/services/cart.service';
-import { OrderService } from '../../../core/services/order.service';
-import { AuthService } from '../../../core/services/auth.service';
-import { LocationService, BranchSummary } from '../../../core/services/location.service';
-import { PaymentMethodService } from '../../../core/services/payment-method.service';
-import { UploadService } from '../../../core/services/upload.service';
-import { BranchProductService } from '../../../core/services/branch-product.service';
-import { ProductService } from '../../../core/services/product.service';
-import { ExchangeRateService } from '../../../core/services/exchange-rate.service';
-import { CreateOrderRequest, PaymentSubmission, EngineModificationStatus } from '../../../models/order.model';
+import { CartService } from '@core/services/cart.service';
+import { OrderService } from '@core/services/order.service';
+import { AuthService } from '@core/services/auth.service';
+import { LocationService, BranchSummary } from '@core/services/location.service';
+import { PaymentMethodService } from '@core/services/payment-method.service';
+import { UploadService } from '@core/services/upload.service';
+import { BranchProductService } from '@core/services/branch-product.service';
+import { ProductService } from '@core/services/product.service';
+import { ExchangeRateService } from '@core/services/exchange-rate.service';
+import { CreateOrderRequest, PaymentSubmission, EngineModificationStatus } from '@models/order.model';
 import {
   PaymentMethodConfig,
   PaymentMethodType,
@@ -22,17 +22,19 @@ import {
   PAYMENT_METHOD_ICON_CLASS,
   PAYMENT_TYPES_WITH_FORM,
   PAYMENT_TYPES_INFO_ONLY,
-} from '../../../models/payment-method.model';
-import { CopyableValueComponent } from '../../../shared/components/copyable-value/copyable-value.component';
-import { DateInputComponent } from '../../../shared/components/date-input/date-input.component';
-import { ServiceDatePickerComponent } from '../../../shared/components/service-date-picker/service-date-picker.component';
-import { ClipboardService } from '../../../shared/services/clipboard.service';
-import { BodyScrollLockService } from '../../../shared/services/body-scroll-lock.service';
+} from '@models/payment-method.model';
+import { CopyableValueComponent } from '@shared/components/copyable-value/copyable-value.component';
+import { DateInputComponent } from '@shared/components/date-input/date-input.component';
+import { ServiceDatePickerComponent } from '@shared/components/service-date-picker/service-date-picker.component';
+import { ClipboardService } from '@shared/services/clipboard.service';
+import { BodyScrollLockService } from '@shared/services/body-scroll-lock.service';
+import { CheckoutHeaderComponent } from '../components/checkout-header/checkout-header.component';
+import { businessTodayIso } from '@shared/utils/business-date.util';
 
 @Component({
   selector: 'app-checkout-summary',
   standalone: true,
-  imports: [CurrencyPipe, CommonModule, ReactiveFormsModule, CopyableValueComponent, DateInputComponent, ServiceDatePickerComponent],
+  imports: [CurrencyPipe, CommonModule, ReactiveFormsModule, CopyableValueComponent, DateInputComponent, ServiceDatePickerComponent, CheckoutHeaderComponent],
   templateUrl: './checkout-summary.component.html',
   styleUrl: './checkout-summary.component.scss',
 })
@@ -52,7 +54,7 @@ export class CheckoutSummaryComponent implements OnInit {
   private readonly clipboard = inject(ClipboardService);
   private readonly scrollLock = inject(BodyScrollLockService);
 
-  protected readonly todayStr = new Date().toISOString().split('T')[0];
+  protected readonly todayStr = businessTodayIso();
 
   // Transient "Copiado" feedback for the "Copiar todo" action (1.5s).
   protected readonly copiedAll = signal(false);
@@ -357,14 +359,16 @@ export class CheckoutSummaryComponent implements OnInit {
   // ========== Can Generate Order ==========
 
   protected readonly canGenerateOrder = computed(() => {
-    if (!this.hasDisclaimerSelection() || !this.paymentSubmitted()) return false;
-    if (this.isBranchMandatory() && !this.checkoutService.hasBranch()) return false;
-    if (this.needsVehicle() && !this.checkoutService.hasVehicle()) return false;
-    if (
-      this.checkoutService.dispatchType() === 'oil_change_service'
-      && !this.checkoutService.hasRequestedServiceDate()
-    ) return false;
-    return true;
+    const hasBranchIfRequired = !this.isBranchMandatory() || this.checkoutService.hasBranch();
+    const hasVehicleIfRequired = !this.needsVehicle() || this.checkoutService.hasVehicle();
+    const hasServiceDateIfOilChange =
+      this.checkoutService.dispatchType() !== 'oil_change_service'
+      || this.checkoutService.hasRequestedServiceDate();
+    return this.hasDisclaimerSelection()
+      && this.paymentSubmitted()
+      && hasBranchIfRequired
+      && hasVehicleIfRequired
+      && hasServiceDateIfOilChange;
   });
 
   protected onServiceDateChange(value: RequestedServiceDate | null): void {
@@ -784,8 +788,7 @@ export class CheckoutSummaryComponent implements OnInit {
     if (g.type === PaymentMethodType.PAGO_MOVIL || g.type === PaymentMethodType.TRANSFERENCIA) {
       return this.exchangeRateService.convertToBs(this.total) !== null;
     }
-    if (g.type === PaymentMethodType.ZELLE) return true;
-    return false;
+    return g.type === PaymentMethodType.ZELLE;
   });
 
   /** Label for the reference-number input. Zelle users copy a confirmation

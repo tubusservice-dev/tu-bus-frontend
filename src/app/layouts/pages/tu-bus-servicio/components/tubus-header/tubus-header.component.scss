@@ -1,44 +1,10 @@
-// The sticky behaviour lives on the host element. Applying it on an inner
-// `.header` breaks because the host wrapper has the header's natural height
-// (~64px) — as soon as that 64px scrolls off-screen the sticky child goes
-// with it. `:host` sticky keeps the bar pinned to the viewport's top edge
-// as long as any ancestor content is still scrolling.
-// `position: fixed` instead of `sticky` because sticky has well-known
-// sub-pixel jitter and repaint-lag quirks in Chromium when the scroll
-// container has `overflow-x: clip` — those quirks manifest as a white
-// flash of the content scrolling underneath. Fixed pulls the host out of
-// flow entirely; the layout shim below reserves space so content isn't
-// hidden beneath it.
-:host {
-  display: block;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 50;
-  background-color: var(--bg-primary);
-}
-
-.header {
-  background-color: var(--bg-primary);
-  border-bottom: 1px solid var(--border-color);
-  transition: background-color var(--transition-normal), border-color var(--transition-normal);
-}
-
-// `:host-context(.dark)` already matches the host when an ancestor has the
-// `.dark` class — concatenating with `:host` is invalid Angular syntax and
-// silently drops the rule.
-:host-context(.dark) {
-  background-color: #1f2937;
-}
+// Chrome (position fixed, height, background, border, max-width container,
+// padding) is owned by `app-header-shell`. This file only styles the content
+// that this component projects into the shell.
 
 .notif-desktop-only {
   display: none;
   @media (min-width: 640px) { display: block; }
-}
-
-.header-container {
-  @apply flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto;
 }
 
 .header-left {
@@ -61,7 +27,7 @@
 
 .logo-link {
   @apply flex items-center gap-2 text-lg font-bold transition-colors duration-200;
-  color: var(--text-primary);
+  color: var(--app-header-text);
   text-decoration: none;
 
   &:hover {
@@ -85,7 +51,7 @@
 
 .logo-text {
   @apply hidden sm:block font-heading font-bold;
-  color: var(--text-primary);
+  color: var(--app-header-text);
 }
 
 .logo-accent {
@@ -94,14 +60,10 @@
 
 .header-divider {
   @apply hidden sm:block w-px h-6 mx-2;
-  background-color: var(--border-color);
+  background-color: var(--app-header-border);
 }
 
 // Zone Selector
-.zone-selector {
-  @apply relative;
-}
-
 .zone-button {
   @apply flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg;
   @apply text-sm font-medium;
@@ -139,146 +101,6 @@
   @apply hidden sm:block text-[10px] font-normal opacity-60;
 }
 
-.chevron-icon {
-  @apply w-3.5 h-3.5 transition-transform duration-200;
-
-  &.rotated {
-    transform: rotate(180deg);
-  }
-}
-
-.zone-dropdown {
-  @apply absolute left-0 top-full mt-2;
-  @apply w-64 rounded-xl shadow-lg overflow-hidden;
-  @apply border;
-  background-color: var(--bg-primary);
-  border-color: var(--border-color);
-  animation: dropdownFadeIn 0.15s ease-out;
-  z-index: 100;
-
-  @media (max-width: 639px) {
-    @apply fixed left-4 right-4 w-auto;
-    top: 72px;
-  }
-}
-
-@keyframes dropdownFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.zone-dropdown-header {
-  @apply flex items-center gap-2 px-4 py-3;
-  @apply text-sm font-semibold;
-  color: var(--text-primary);
-  background-color: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-color);
-}
-
-.back-btn {
-  @apply flex items-center justify-center w-6 h-6 rounded-md;
-  @apply transition-colors duration-150;
-  color: var(--text-secondary);
-
-  &:hover {
-    background-color: var(--bg-tertiary);
-    color: var(--tubus-text-accent);
-  }
-
-  svg {
-    @apply w-4 h-4;
-  }
-}
-
-.zone-dropdown-list {
-  @apply py-1 max-h-64 overflow-y-auto;
-}
-
-.zone-separator {
-  @apply flex items-center gap-3 px-4 py-2 my-1;
-
-  &::before,
-  &::after {
-    content: '';
-    @apply flex-1 h-px;
-    background-color: var(--border-color);
-  }
-
-  span {
-    @apply text-xs font-medium uppercase tracking-wider;
-    color: var(--text-tertiary);
-  }
-}
-
-.zone-option {
-  @apply w-full flex items-center justify-between px-4 py-2.5;
-  @apply text-sm font-medium;
-  @apply transition-colors duration-150;
-  color: var(--text-primary);
-
-  &:hover:not(.unavailable):not(:disabled) {
-    background-color: var(--bg-secondary);
-  }
-
-  &.selected {
-    background-color: rgba(var(--tubus-primary-rgb), 0.15);
-    color: var(--tubus-text-accent);
-  }
-
-  &.unavailable,
-  &:disabled {
-    @apply cursor-not-allowed opacity-60;
-    color: var(--text-tertiary);
-  }
-}
-
-.zone-option-name {
-  @apply flex-1 text-left;
-}
-
-.zone-badge {
-  @apply px-2 py-0.5 text-xs font-medium rounded-full;
-
-  &.unavailable {
-    background-color: var(--bg-tertiary);
-    color: var(--text-tertiary);
-  }
-}
-
-.check-icon {
-  @apply w-4 h-4;
-  color: var(--tubus-text-accent);
-}
-
-.zone-dropdown-footer {
-  @apply px-3 py-2;
-  border-top: 1px solid var(--border-color);
-  background-color: var(--bg-secondary);
-}
-
-.change-zone-btn {
-  @apply w-full flex items-center justify-center gap-2;
-  @apply px-3 py-2 rounded-lg;
-  @apply text-xs font-medium;
-  @apply transition-colors duration-150;
-  color: var(--text-secondary);
-
-  svg {
-    @apply w-4 h-4;
-  }
-
-  &:hover {
-    background-color: var(--bg-tertiary);
-    color: var(--tubus-text-accent);
-  }
-}
-
 // Header Right
 .header-right {
   @apply flex items-center gap-2 sm:gap-3;
@@ -296,7 +118,7 @@
 
   &:focus {
     @apply outline-none ring-2 ring-offset-2;
-    ring-color: var(--tubus-primary);
+    --tw-ring-color: var(--tubus-primary);
   }
 }
 
@@ -387,7 +209,9 @@
   to { opacity: 1; transform: scale(1); }
 }
 
-// Dark mode
+// Dark mode — only the zone-change confirmation modal needs dark overrides;
+// header chrome (background, border, text) is fully driven by `--app-header-*`
+// CSS variables, so no .dark overrides are needed for those.
 :host-context(.dark) {
   .zone-confirm-modal {
     background-color: #1f2937;

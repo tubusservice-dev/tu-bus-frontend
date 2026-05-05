@@ -1,43 +1,9 @@
 .seller-form-page {
   @apply min-h-screen;
+  // Reserve space for the fixed `app-header-shell` rendered by
+  // `<app-checkout-header>`.
+  padding-top: var(--app-header-height);
   background-color: var(--bg-secondary);
-}
-
-// ========== Header ==========
-.page-header {
-  @apply sticky top-0 z-10 shadow-sm;
-  background-color: var(--bg-primary);
-  border-bottom: 1px solid var(--border-color);
-}
-
-.header-content {
-  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex items-center gap-4;
-}
-
-.back-btn {
-  @apply flex items-center gap-2 transition-colors;
-  color: var(--text-secondary);
-
-  &:hover {
-    color: var(--text-primary);
-  }
-
-  svg {
-    @apply w-5 h-5;
-  }
-
-  .back-text {
-    @apply text-sm font-medium;
-  }
-}
-
-.page-title {
-  @apply flex-1;
-
-  h1 {
-    @apply text-xl font-bold;
-    color: var(--text-primary);
-  }
 }
 
 // ========== Content ==========
@@ -192,18 +158,6 @@
 // ============================================
 :host-context(.dark) {
   .seller-form-page { background-color: #111827; }
-
-  .page-header {
-    background-color: #1f2937;
-    border-bottom-color: #374151;
-  }
-
-  .back-btn {
-    color: #9ca3af;
-    &:hover { color: #ffffff; }
-  }
-
-  .page-title h1 { color: #ffffff; }
 
   .info-banner {
     background-color: rgba(34, 197, 94, 0.06);

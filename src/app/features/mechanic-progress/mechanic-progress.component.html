@@ -59,7 +59,7 @@
       />
       <h2 class="mechanic-name-display">{{ mechanicName() }}</h2>
       <p class="schedule-display">
-        {{ assignment()!.scheduledDate | date:'dd/MM/yyyy' }} &bull;
+        {{ assignment()!.scheduledDate | date:'dd/MM/yyyy':'UTC' }} &bull;
         {{ assignment()!.startTime }} - {{ assignment()!.endTime }}
       </p>
     </div>

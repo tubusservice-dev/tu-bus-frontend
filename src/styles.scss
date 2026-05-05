@@ -81,6 +81,13 @@ router-outlet + * {
    Variables CSS - Modo Claro (por defecto)
    ======================================== */
 :root {
+  /* App header chrome — single source of truth for ALL headers (global,
+     overlays, checkout). Updating these values propagates everywhere. */
+  --app-header-height: 56px;
+  --app-header-bg: #ffffff;
+  --app-header-border: #e5e5e5;
+  --app-header-text: #171717;
+
   /* Colores de fondo */
   --bg-primary: #ffffff;
   --bg-secondary: #f5f5f5;
@@ -124,10 +131,25 @@ router-outlet + * {
   --font-heading: 'Poppins', system-ui, sans-serif;
 }
 
+/* Header height — 56px on mobile, 64px from `sm` upward.
+   Defined outside `:root`/`.dark` because both themes share the same
+   responsive height; only the colors differ. */
+@media (min-width: 640px) {
+  :root, .dark {
+    --app-header-height: 64px;
+  }
+}
+
 /* ========================================
    Variables CSS - Modo Oscuro
    ======================================== */
 .dark {
+  /* Header chrome — pure black for max contrast against the near-black
+     surfaces of the rest of the app (#0a0a0a). */
+  --app-header-bg: #000000;
+  --app-header-border: #262626;
+  --app-header-text: #fafafa;
+
   --bg-primary: #0a0a0a;
   --bg-secondary: #171717;
   --bg-tertiary: #262626;
@@ -166,7 +188,7 @@ router-outlet + * {
   }
 
   body {
-    font-family: var(--font-sans);
+    font-family: var(--font-sans), sans-serif;
     background-color: var(--bg-primary);
     color: var(--text-primary);
     transition: background-color var(--transition-normal), color var(--transition-normal);
@@ -188,7 +210,7 @@ router-outlet + * {
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-heading);
+    font-family: var(--font-heading), sans-serif;
     font-weight: 600;
     color: var(--text-primary);
   }

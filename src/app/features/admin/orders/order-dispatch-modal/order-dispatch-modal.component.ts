@@ -1,23 +1,23 @@
 import { Component, inject, signal, computed, input, output, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MechanicAssignmentService } from '../../../../core/services/mechanic-assignment.service';
-import { MechanicService } from '../../../../core/services/mechanic.service';
-import { OrderService } from '../../../../core/services/order.service';
-import { AvailableMechanic, MechanicAssignment } from '../../../../models/mechanic-assignment.model';
-import { Mechanic } from '../../../../models/mechanic.model';
+import { MechanicAssignmentService } from '@core/services/mechanic-assignment.service';
+import { MechanicService } from '@core/services/mechanic.service';
+import { OrderService } from '@core/services/order.service';
+import { AvailableSlot, MechanicAssignment } from '@models/mechanic-assignment.model';
+import { Mechanic } from '@models/mechanic.model';
 import {
   Order,
   ORDER_STATUS_LABELS,
   ORDER_STATUS_COLORS,
   OrderStatus,
   ServiceDateTier,
-} from '../../../../models/order.model';
-import { MechanicAvatarComponent } from '../../../../shared/components/mechanic-avatar/mechanic-avatar.component';
-import { DateInputComponent } from '../../../../shared/components/date-input/date-input.component';
+} from '@models/order.model';
+import { MechanicAvatarComponent } from '@shared/components/mechanic-avatar/mechanic-avatar.component';
+import { DateInputComponent } from '@shared/components/date-input/date-input.component';
 import { SlotsSuggestionsComponent } from '../slots-suggestions/slots-suggestions.component';
-import { AvailableSlot } from '../../../../models/mechanic-assignment.model';
-import { toWhatsAppDigits } from '../../../../shared/utils/phone.util';
+import { toWhatsAppDigits } from '@shared/utils/phone.util';
+import { businessTodayIso, businessIsoOffset, formatBusinessDate } from '@shared/utils/business-date.util';
 
 @Component({
   selector: 'app-order-dispatch-modal',
@@ -53,10 +53,8 @@ import { toWhatsAppDigits } from '../../../../shared/utils/phone.util';
               <span class="spinner-sm"></span>
               <span>Cargando asignación...</span>
             </div>
-          }
-
-          <!-- Already assigned -->
-          @else if (currentAssignment()) {
+          } @else if (currentAssignment()) {
+            <!-- Already assigned -->
             <div class="assigned-section">
               <div class="assigned-header">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-check">
@@ -672,7 +670,7 @@ export class OrderDispatchModalComponent {
   protected selectedMechanicId = '';
   protected readonly selectedDateSignal = signal('');
   protected readonly selectedTimeSignal = signal('');
-  protected readonly todayStr = new Date().toISOString().split('T')[0];
+  protected readonly todayStr = businessTodayIso();
 
   protected get selectedDate(): string { return this.selectedDateSignal(); }
   protected set selectedDate(val: string) { this.selectedDateSignal.set(val); }
@@ -732,11 +730,7 @@ export class OrderDispatchModalComponent {
   }
 
   protected requestedDateLabel(): string {
-    const iso = this.requestedDateIso();
-    if (!iso) return '';
-    const [y, m, d] = iso.split('-').map(Number);
-    const date = new Date(y, m - 1, d);
-    return date.toLocaleDateString('es-VE', {
+    return formatBusinessDate(this.requestedDateIso(), {
       weekday: 'long',
       day: 'numeric',
       month: 'long',
@@ -898,25 +892,17 @@ export class OrderDispatchModalComponent {
 
   /**
    * Format the assignment's scheduled date in long Spanish form, e.g.
-   * "Miércoles, 15 de abril de 2026". Uses the browser's Intl API with UTC
-   * to avoid off-by-one shifts when the date string has no time component.
+   * "Miércoles, 15 de abril de 2026".
    */
   getFormattedScheduledDate(): string {
     const a = this.currentAssignment();
     if (!a?.scheduledDate) return '';
-    try {
-      const d = new Date(a.scheduledDate);
-      const formatter = new Intl.DateTimeFormat('es-VE', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-        timeZone: 'UTC',
-      });
-      return formatter.format(d);
-    } catch {
-      return String(a.scheduledDate);
-    }
+    return formatBusinessDate(a.scheduledDate, {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
   }
 
   getWhatsAppUrl(): string {
@@ -932,7 +918,11 @@ export class OrderDispatchModalComponent {
     const clientName = order?.dispatchDetails?.recipientName || 'Cliente';
     const address = order?.dispatchDetails?.recipientAddress || '';
     const city = order?.dispatchDetails?.recipientCity || '';
-    const scheduledDate = new Date(assignment.scheduledDate).toLocaleDateString('es-VE');
+    const scheduledDate = formatBusinessDate(assignment.scheduledDate, {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
 
     const lines = [
       `*TuBus Express - Servicio de Cambio de Aceite*`,
@@ -982,16 +972,14 @@ export class OrderDispatchModalComponent {
   }
 
   /**
-   * Derives the service tier from a date relative to today.
-   * Today → express, tomorrow → tomorrow, further out → scheduled.
+   * Derives the service tier from a date relative to today, with comparisons
+   * anchored to the business calendar so a late-evening session does not
+   * misclassify "today" or "tomorrow".
    */
   private deriveTierFromDate(iso: string): ServiceDateTier {
     if (!iso) return 'scheduled';
     if (iso === this.todayStr) return 'express';
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowIso = tomorrow.toISOString().split('T')[0];
-    if (iso === tomorrowIso) return 'tomorrow';
+    if (iso === businessIsoOffset(1)) return 'tomorrow';
     return 'scheduled';
   }
 

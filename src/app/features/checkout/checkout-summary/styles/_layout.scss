@@ -3,47 +3,10 @@
 // ============================================
 .summary-page {
   @apply min-h-screen;
+  // Reserve space for the fixed `app-header-shell` rendered by
+  // `<app-checkout-header>`.
+  padding-top: var(--app-header-height);
   background-color: var(--bg-secondary);
-}
-
-// ============================================
-// HEADER
-// ============================================
-.page-header {
-  @apply sticky top-0 z-10;
-  background-color: var(--bg-primary);
-  border-bottom: 1px solid var(--border-color);
-}
-
-.header-content {
-  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4;
-  @apply flex items-center gap-3;
-  justify-content: flex-start !important;
-}
-
-.back-btn {
-  @apply flex items-center gap-1.5 text-sm font-medium transition-colors p-1 -ml-1 rounded-lg;
-  color: var(--text-secondary);
-
-  &:hover {
-    color: var(--accent-primary);
-    background-color: var(--bg-tertiary);
-  }
-
-  svg {
-    @apply w-5 h-5;
-  }
-
-  .back-text {
-    @apply hidden sm:inline;
-  }
-}
-
-.page-title {
-  h1 {
-    @apply text-lg sm:text-xl font-bold text-left;
-    color: var(--text-primary);
-  }
 }
 
 // ============================================

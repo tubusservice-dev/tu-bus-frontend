@@ -1,18 +1,5 @@
 <div class="seller-form-page">
-  <!-- Header -->
-  <div class="page-header">
-    <div class="header-content">
-      <button type="button" class="back-btn" (click)="goBack()">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-        </svg>
-        <span class="back-text sr-only">Volver</span>
-      </button>
-      <div class="page-title">
-        <h1>Datos de Contacto</h1>
-      </div>
-    </div>
-  </div>
+  <app-checkout-header title="Datos de Contacto" (back)="goBack()" />
 
   <!-- Contenido -->
   <div class="page-content">

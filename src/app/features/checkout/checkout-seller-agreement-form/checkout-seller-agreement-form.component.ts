@@ -3,13 +3,14 @@ import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { CheckoutService, SellerAgreementInfo } from '../services/checkout.service';
-import { AuthService } from '../../../core/services/auth.service';
-import { scrollToFirstFormError } from '../../../shared/validators/form-validators';
+import { AuthService } from '@core/services/auth.service';
+import { scrollToFirstFormError } from '@shared/validators/form-validators';
+import { CheckoutHeaderComponent } from '../components/checkout-header/checkout-header.component';
 
 @Component({
   selector: 'app-checkout-seller-agreement-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, CheckoutHeaderComponent],
   templateUrl: './checkout-seller-agreement-form.component.html',
   styleUrl: './checkout-seller-agreement-form.component.scss',
 })

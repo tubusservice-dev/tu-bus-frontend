@@ -1,0 +1,14 @@
+<div class="mobile-banner">
+  <img
+    [src]="layerSrc()[0]"
+    alt="Banner promocional"
+    class="mobile-banner-img carousel-layer"
+    [class.active]="activeLayer() === 0"
+  />
+  <img
+    [src]="layerSrc()[1]"
+    alt="Banner promocional"
+    class="mobile-banner-img carousel-layer"
+    [class.active]="activeLayer() === 1"
+  />
+</div>
