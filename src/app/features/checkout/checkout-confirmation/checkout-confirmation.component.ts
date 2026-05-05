@@ -1,14 +1,14 @@
 import { Component, computed, inject, signal, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
-import { OrderService } from '../../../core/services/order.service';
+import { OrderService } from '@core/services/order.service';
 import {
   Order,
   ORDER_STATUS_LABELS,
   DISPATCH_TYPE_LABELS,
   DispatchType,
   isOilChangeOrder,
-} from '../../../models/order.model';
+} from '@models/order.model';
 
 @Component({
   selector: 'app-checkout-confirmation',

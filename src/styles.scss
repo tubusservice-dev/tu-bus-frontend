@@ -188,7 +188,7 @@ router-outlet + * {
   }
 
   body {
-    font-family: var(--font-sans);
+    font-family: var(--font-sans), sans-serif;
     background-color: var(--bg-primary);
     color: var(--text-primary);
     transition: background-color var(--transition-normal), color var(--transition-normal);
@@ -210,7 +210,7 @@ router-outlet + * {
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-heading);
+    font-family: var(--font-heading), sans-serif;
     font-weight: 600;
     color: var(--text-primary);
   }

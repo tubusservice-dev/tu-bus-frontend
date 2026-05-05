@@ -1,9 +1,9 @@
 import { TestBed } from '@angular/core/testing';
 import { CheckoutService } from './checkout.service';
-import { SettingsService } from '../../../core/services/settings.service';
-import { CartService } from '../../../core/services/cart.service';
-import { LocationService } from '../../../core/services/location.service';
-import { Vehicle } from '../../../models/vehicle.model';
+import { SettingsService } from '@core/services/settings.service';
+import { CartService } from '@core/services/cart.service';
+import { LocationService } from '@core/services/location.service';
+import { Vehicle } from '@models/vehicle.model';
 
 // ============================================
 // MOCKS
@@ -15,6 +15,7 @@ const mockVehicle = (id: string, placa: string): Vehicle => ({
   placa,
   marca: 'Toyota',
   modelo: 'Corolla',
+  vehicleType: 'carro',
   year: 2020,
   kilometraje: 50000,
   engineType: {

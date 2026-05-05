@@ -1,5 +1,5 @@
 import { Component, inject, signal, computed, effect, DestroyRef } from '@angular/core';
-import { SettingsService } from '../../../../../core/services/settings.service';
+import { SettingsService } from '@core/services/settings.service';
 
 @Component({
   selector: 'app-tubus-hero-mobile-banner',

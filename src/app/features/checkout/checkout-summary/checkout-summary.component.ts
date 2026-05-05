@@ -4,16 +4,16 @@ import { CurrencyPipe, CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { CheckoutService, RequestedServiceDate } from '../services/checkout.service';
-import { CartService } from '../../../core/services/cart.service';
-import { OrderService } from '../../../core/services/order.service';
-import { AuthService } from '../../../core/services/auth.service';
-import { LocationService, BranchSummary } from '../../../core/services/location.service';
-import { PaymentMethodService } from '../../../core/services/payment-method.service';
-import { UploadService } from '../../../core/services/upload.service';
-import { BranchProductService } from '../../../core/services/branch-product.service';
-import { ProductService } from '../../../core/services/product.service';
-import { ExchangeRateService } from '../../../core/services/exchange-rate.service';
-import { CreateOrderRequest, PaymentSubmission, EngineModificationStatus } from '../../../models/order.model';
+import { CartService } from '@core/services/cart.service';
+import { OrderService } from '@core/services/order.service';
+import { AuthService } from '@core/services/auth.service';
+import { LocationService, BranchSummary } from '@core/services/location.service';
+import { PaymentMethodService } from '@core/services/payment-method.service';
+import { UploadService } from '@core/services/upload.service';
+import { BranchProductService } from '@core/services/branch-product.service';
+import { ProductService } from '@core/services/product.service';
+import { ExchangeRateService } from '@core/services/exchange-rate.service';
+import { CreateOrderRequest, PaymentSubmission, EngineModificationStatus } from '@models/order.model';
 import {
   PaymentMethodConfig,
   PaymentMethodType,
@@ -22,12 +22,12 @@ import {
   PAYMENT_METHOD_ICON_CLASS,
   PAYMENT_TYPES_WITH_FORM,
   PAYMENT_TYPES_INFO_ONLY,
-} from '../../../models/payment-method.model';
-import { CopyableValueComponent } from '../../../shared/components/copyable-value/copyable-value.component';
-import { DateInputComponent } from '../../../shared/components/date-input/date-input.component';
-import { ServiceDatePickerComponent } from '../../../shared/components/service-date-picker/service-date-picker.component';
-import { ClipboardService } from '../../../shared/services/clipboard.service';
-import { BodyScrollLockService } from '../../../shared/services/body-scroll-lock.service';
+} from '@models/payment-method.model';
+import { CopyableValueComponent } from '@shared/components/copyable-value/copyable-value.component';
+import { DateInputComponent } from '@shared/components/date-input/date-input.component';
+import { ServiceDatePickerComponent } from '@shared/components/service-date-picker/service-date-picker.component';
+import { ClipboardService } from '@shared/services/clipboard.service';
+import { BodyScrollLockService } from '@shared/services/body-scroll-lock.service';
 import { CheckoutHeaderComponent } from '../components/checkout-header/checkout-header.component';
 
 @Component({
@@ -361,10 +361,7 @@ export class CheckoutSummaryComponent implements OnInit {
     if (!this.hasDisclaimerSelection() || !this.paymentSubmitted()) return false;
     if (this.isBranchMandatory() && !this.checkoutService.hasBranch()) return false;
     if (this.needsVehicle() && !this.checkoutService.hasVehicle()) return false;
-    if (
-      this.checkoutService.dispatchType() === 'oil_change_service'
-      && !this.checkoutService.hasRequestedServiceDate()
-    ) return false;
+    if (this.checkoutService.dispatchType() === 'oil_change_service' && !this.checkoutService.hasRequestedServiceDate()) return false;
     return true;
   });
 
@@ -785,8 +782,7 @@ export class CheckoutSummaryComponent implements OnInit {
     if (g.type === PaymentMethodType.PAGO_MOVIL || g.type === PaymentMethodType.TRANSFERENCIA) {
       return this.exchangeRateService.convertToBs(this.total) !== null;
     }
-    if (g.type === PaymentMethodType.ZELLE) return true;
-    return false;
+    return g.type === PaymentMethodType.ZELLE;
   });
 
   /** Label for the reference-number input. Zelle users copy a confirmation

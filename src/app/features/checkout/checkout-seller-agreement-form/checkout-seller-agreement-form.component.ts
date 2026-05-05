@@ -3,8 +3,8 @@ import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { CheckoutService, SellerAgreementInfo } from '../services/checkout.service';
-import { AuthService } from '../../../core/services/auth.service';
-import { scrollToFirstFormError } from '../../../shared/validators/form-validators';
+import { AuthService } from '@core/services/auth.service';
+import { scrollToFirstFormError } from '@shared/validators/form-validators';
 import { CheckoutHeaderComponent } from '../components/checkout-header/checkout-header.component';
 
 @Component({

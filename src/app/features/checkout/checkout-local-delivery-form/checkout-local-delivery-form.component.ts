@@ -4,15 +4,15 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { CheckoutService, LocalDeliveryRecipientInfo } from '../services/checkout.service';
-import { CartService } from '../../../core/services/cart.service';
-import { AuthService } from '../../../core/services/auth.service';
-import { LocationService } from '../../../core/services/location.service';
-import { BranchZoneService } from '../../../core/services/branch-zone.service';
+import { CartService } from '@core/services/cart.service';
+import { AuthService } from '@core/services/auth.service';
+import { LocationService } from '@core/services/location.service';
+import { BranchZoneService } from '@core/services/branch-zone.service';
 import {
   NAME_PATTERN, PHONE_VE_PATTERN, DOCUMENT_NUMBER_PATTERN, EMAIL_PATTERN,
   MAX_FULLNAME_LENGTH, MAX_ADDRESS_LENGTH, MAX_REFERENCE_LENGTH, MAX_NOTES_LENGTH,
   noNumbersValidator, scrollToFirstFormError,
-} from '../../../shared/validators/form-validators';
+} from '@shared/validators/form-validators';
 import { CheckoutHeaderComponent } from '../components/checkout-header/checkout-header.component';
 
 @Component({

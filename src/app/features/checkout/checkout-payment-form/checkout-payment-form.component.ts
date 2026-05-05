@@ -1,12 +1,12 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
-import { PaymentService } from '../../../core/services/payment.service';
-import { UploadService } from '../../../core/services/upload.service';
-import { CreatePaymentRequest, PaymentMethod } from '../../../models/payment.model';
-import { DateInputComponent } from '../../../shared/components/date-input/date-input.component';
-import { HeaderShellComponent } from '../../../shared/components/header-shell/header-shell.component';
-import { scrollToFirstFormError } from '../../../shared/validators/form-validators';
+import { PaymentService } from '@core/services/payment.service';
+import { UploadService } from '@core/services/upload.service';
+import { CreatePaymentRequest, PaymentMethod } from '@models/payment.model';
+import { DateInputComponent } from '@shared/components/date-input/date-input.component';
+import { HeaderShellComponent } from '@shared/components/header-shell/header-shell.component';
+import { scrollToFirstFormError } from '@shared/validators/form-validators';
 
 @Component({
   selector: 'app-checkout-payment-form',

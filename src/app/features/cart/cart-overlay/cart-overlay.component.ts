@@ -1,8 +1,8 @@
 import { Component, inject, computed, HostListener } from '@angular/core';
-import { OverlayStackService } from '../../../core/services/overlay-stack.service';
-import { CartService } from '../../../core/services/cart.service';
+import { OverlayStackService } from '@core/services/overlay-stack.service';
+import { CartService } from '@core/services/cart.service';
 import { CartComponent } from '../cart.component';
-import { HeaderShellComponent } from '../../../shared/components/header-shell/header-shell.component';
+import { HeaderShellComponent } from '@shared/components/header-shell/header-shell.component';
 
 /**
  * Full-screen overlay wrapper around `CartComponent`. Shares the exact chrome

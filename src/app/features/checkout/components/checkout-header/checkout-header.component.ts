@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { HeaderShellComponent } from '../../../../shared/components/header-shell/header-shell.component';
+import { HeaderShellComponent } from '@shared/components/header-shell/header-shell.component';
 
 /**
  * Standardised header for every checkout step — back arrow on the left,

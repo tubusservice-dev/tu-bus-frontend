@@ -1,16 +1,16 @@
 import { Component, inject, signal, computed, Input, OnInit, DestroyRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { OverlayStackService } from '../../../core/services/overlay-stack.service';
-import { ProductService, DetailProduct, DetailRelatedProduct } from '../../../core/services/product.service';
-import { CartService } from '../../../core/services/cart.service';
-import { AuthService } from '../../../core/services/auth.service';
-import { LocationService } from '../../../core/services/location.service';
-import { ExchangeRateService } from '../../../core/services/exchange-rate.service';
-import { ProductCardComponent, ProductCardData } from '../../../shared/components/product-card/product-card.component';
-import { CartPopoverComponent } from '../../../shared/components/cart-popover/cart-popover.component';
-import { HeaderShellComponent } from '../../../shared/components/header-shell/header-shell.component';
-import { VEHICLE_TYPE_LABELS, VehicleType } from '../../../models/product.model';
+import { OverlayStackService } from '@core/services/overlay-stack.service';
+import { ProductService, DetailProduct, DetailRelatedProduct } from '@core/services/product.service';
+import { CartService } from '@core/services/cart.service';
+import { AuthService } from '@core/services/auth.service';
+import { LocationService } from '@core/services/location.service';
+import { ExchangeRateService } from '@core/services/exchange-rate.service';
+import { ProductCardComponent, ProductCardData } from '@shared/components/product-card/product-card.component';
+import { CartPopoverComponent } from '@shared/components/cart-popover/cart-popover.component';
+import { HeaderShellComponent } from '@shared/components/header-shell/header-shell.component';
+import { VEHICLE_TYPE_LABELS, VehicleType } from '@models/product.model';
 
 const PLACEHOLDER = 'https://placehold.co/400x400/e5e7eb/9ca3af?text=Sin+imagen';
 

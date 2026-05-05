@@ -1,7 +1,7 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { CheckoutService, DispatchOption } from '../services/checkout.service';
-import { CartService } from '../../../core/services/cart.service';
+import { CartService } from '@core/services/cart.service';
 import { CheckoutHeaderComponent } from '../components/checkout-header/checkout-header.component';
 
 @Component({

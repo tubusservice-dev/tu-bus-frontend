@@ -1,9 +1,9 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { CheckoutService } from '../services/checkout.service';
-import { CartService } from '../../../core/services/cart.service';
-import { ShippingAgencyService } from '../../../core/services/shipping-agency.service';
-import { ShippingAgency } from '../../../models/product.model';
+import { CartService } from '@core/services/cart.service';
+import { ShippingAgencyService } from '@core/services/shipping-agency.service';
+import { ShippingAgency } from '@models/product.model';
 import { CheckoutHeaderComponent } from '../components/checkout-header/checkout-header.component';
 
 @Component({
