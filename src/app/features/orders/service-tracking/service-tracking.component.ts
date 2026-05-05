@@ -1,9 +1,9 @@
 import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { OrderService } from '../../../core/services/order.service';
-import { MechanicAssignment, ProgressStep } from '../../../models/mechanic-assignment.model';
-import { MechanicAvatarComponent } from '../../../shared/components/mechanic-avatar/mechanic-avatar.component';
+import { OrderService } from '@core/services/order.service';
+import { MechanicAssignment, ProgressStep } from '@models/mechanic-assignment.model';
+import { MechanicAvatarComponent } from '@shared/components/mechanic-avatar/mechanic-avatar.component';
 import { formatBusinessDate } from '@shared/utils/business-date.util';
 
 type StepKey = 'asignado' | 'en_camino' | 'en_proceso' | 'completado';

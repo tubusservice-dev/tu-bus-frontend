@@ -359,11 +359,16 @@ export class CheckoutSummaryComponent implements OnInit {
   // ========== Can Generate Order ==========
 
   protected readonly canGenerateOrder = computed(() => {
-    if (!this.hasDisclaimerSelection() || !this.paymentSubmitted()) return false;
-    if (this.isBranchMandatory() && !this.checkoutService.hasBranch()) return false;
-    if (this.needsVehicle() && !this.checkoutService.hasVehicle()) return false;
-    if (this.checkoutService.dispatchType() === 'oil_change_service' && !this.checkoutService.hasRequestedServiceDate()) return false;
-    return true;
+    const hasBranchIfRequired = !this.isBranchMandatory() || this.checkoutService.hasBranch();
+    const hasVehicleIfRequired = !this.needsVehicle() || this.checkoutService.hasVehicle();
+    const hasServiceDateIfOilChange =
+      this.checkoutService.dispatchType() !== 'oil_change_service'
+      || this.checkoutService.hasRequestedServiceDate();
+    return this.hasDisclaimerSelection()
+      && this.paymentSubmitted()
+      && hasBranchIfRequired
+      && hasVehicleIfRequired
+      && hasServiceDateIfOilChange;
   });
 
   protected onServiceDateChange(value: RequestedServiceDate | null): void {

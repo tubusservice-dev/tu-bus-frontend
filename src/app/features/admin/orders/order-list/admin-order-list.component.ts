@@ -2,7 +2,7 @@ import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { OrderService } from '../../../../core/services/order.service';
+import { OrderService } from '@core/services/order.service';
 import {
   Order,
   OrderStatus,
@@ -13,8 +13,8 @@ import {
   DISPATCH_TYPE_COLORS,
   DISPATCH_STATUS_LABELS,
   DISPATCH_STATUS_COLORS,
-} from '../../../../models/order.model';
-import { SearchInputComponent } from '../../../../shared/components/search-input/search-input.component';
+} from '@models/order.model';
+import { SearchInputComponent } from '@shared/components/search-input/search-input.component';
 import { formatBusinessDate } from '@shared/utils/business-date.util';
 
 @Component({

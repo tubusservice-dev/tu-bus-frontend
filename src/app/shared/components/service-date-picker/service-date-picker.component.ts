@@ -9,9 +9,9 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { DateInputComponent } from '../date-input/date-input.component';
-import type { RequestedServiceDate, ServiceDateTier } from '../../../features/checkout/services/checkout.service';
-import { businessIsoOffset, formatBusinessDate } from '../../utils/business-date.util';
+import { DateInputComponent } from '@shared/components/date-input/date-input.component';
+import type { RequestedServiceDate, ServiceDateTier } from '@features/checkout/services/checkout.service';
+import { businessIsoOffset, formatBusinessDate } from '@shared/utils/business-date.util';
 
 /**
  * Three-way service date chooser for the home oil change flow.

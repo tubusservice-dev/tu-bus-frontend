@@ -1,23 +1,22 @@
 import { Component, inject, signal, computed, input, output, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MechanicAssignmentService } from '../../../../core/services/mechanic-assignment.service';
-import { MechanicService } from '../../../../core/services/mechanic.service';
-import { OrderService } from '../../../../core/services/order.service';
-import { AvailableMechanic, MechanicAssignment } from '../../../../models/mechanic-assignment.model';
-import { Mechanic } from '../../../../models/mechanic.model';
+import { MechanicAssignmentService } from '@core/services/mechanic-assignment.service';
+import { MechanicService } from '@core/services/mechanic.service';
+import { OrderService } from '@core/services/order.service';
+import { AvailableSlot, MechanicAssignment } from '@models/mechanic-assignment.model';
+import { Mechanic } from '@models/mechanic.model';
 import {
   Order,
   ORDER_STATUS_LABELS,
   ORDER_STATUS_COLORS,
   OrderStatus,
   ServiceDateTier,
-} from '../../../../models/order.model';
-import { MechanicAvatarComponent } from '../../../../shared/components/mechanic-avatar/mechanic-avatar.component';
-import { DateInputComponent } from '../../../../shared/components/date-input/date-input.component';
+} from '@models/order.model';
+import { MechanicAvatarComponent } from '@shared/components/mechanic-avatar/mechanic-avatar.component';
+import { DateInputComponent } from '@shared/components/date-input/date-input.component';
 import { SlotsSuggestionsComponent } from '../slots-suggestions/slots-suggestions.component';
-import { AvailableSlot } from '../../../../models/mechanic-assignment.model';
-import { toWhatsAppDigits } from '../../../../shared/utils/phone.util';
+import { toWhatsAppDigits } from '@shared/utils/phone.util';
 import { businessTodayIso, businessIsoOffset, formatBusinessDate } from '@shared/utils/business-date.util';
 
 @Component({
@@ -54,10 +53,8 @@ import { businessTodayIso, businessIsoOffset, formatBusinessDate } from '@shared
               <span class="spinner-sm"></span>
               <span>Cargando asignación...</span>
             </div>
-          }
-
-          <!-- Already assigned -->
-          @else if (currentAssignment()) {
+          } @else if (currentAssignment()) {
+            <!-- Already assigned -->
             <div class="assigned-section">
               <div class="assigned-header">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-check">
