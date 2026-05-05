@@ -1,30 +1,21 @@
 .payment-form-page {
   @apply min-h-screen;
+  // Reserve space for the fixed `app-header-shell`.
+  padding-top: var(--app-header-height);
   background-color: var(--bg-secondary);
 }
 
 // ============================================
 // HEADER
 // ============================================
-.page-header {
-  @apply sticky top-0 z-10;
-  background-color: var(--bg-primary);
-  border-bottom: 1px solid var(--border-color);
-}
-
-.header-content {
-  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4;
-}
-
 .page-title {
-  h1 {
-    @apply text-lg sm:text-xl font-bold;
-    color: var(--text-primary);
-  }
+  @apply text-base sm:text-lg font-semibold truncate;
+  color: var(--app-header-text);
+  margin: 0;
 }
 
 .page-subtitle {
-  @apply text-sm mt-1;
+  @apply text-sm mb-4;
   color: var(--text-secondary);
 }
 
@@ -210,15 +201,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 :host-context(.dark) {
   .payment-form-page {
     background-color: #111827;
-  }
-
-  .page-header {
-    background-color: #1f2937;
-    border-bottom-color: #374151;
-  }
-
-  .page-title h1 {
-    color: #f9fafb;
   }
 
   .page-subtitle {

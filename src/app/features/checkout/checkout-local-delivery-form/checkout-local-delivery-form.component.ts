@@ -13,11 +13,12 @@ import {
   MAX_FULLNAME_LENGTH, MAX_ADDRESS_LENGTH, MAX_REFERENCE_LENGTH, MAX_NOTES_LENGTH,
   noNumbersValidator, scrollToFirstFormError,
 } from '../../../shared/validators/form-validators';
+import { CheckoutHeaderComponent } from '../components/checkout-header/checkout-header.component';
 
 @Component({
   selector: 'app-checkout-local-delivery-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, CheckoutHeaderComponent],
   templateUrl: './checkout-local-delivery-form.component.html',
   styleUrl: './checkout-local-delivery-form.component.scss',
 })

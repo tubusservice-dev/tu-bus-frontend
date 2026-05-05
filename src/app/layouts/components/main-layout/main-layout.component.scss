@@ -6,24 +6,20 @@
 
 .main-content {
   @apply flex-1;
-  // The header is `position: fixed` (see tubus-header/header SCSS); we
-  // reserve its height (h-16 = 4rem) so content isn't hidden beneath it.
-  padding-top: 4rem;
+  // The header is `position: fixed` (see header-shell SCSS); reserve its
+  // height so content isn't hidden beneath it.
+  padding-top: var(--app-header-height);
 }
 
-// When the header is hidden (mobile checkout flow), no space needs to be
-// reserved.
-@media (max-width: 639px) {
-  .main-layout:has(.hide-on-checkout-mobile) .main-content {
-    padding-top: 0;
-  }
+// Inside the checkout flow the global TuBus header is hidden in every
+// viewport — each checkout step renders its own `app-checkout-header`,
+// which already reserves space at the top of its own page wrapper.
+.main-content.checkout-flow {
+  padding-top: 0;
 }
 
-/* Ocultar header y footer en flujo de checkout solo en móvil */
-@media (max-width: 639px) {
-  .hide-on-checkout-mobile {
-    display: none !important;
-  }
+.hide-on-checkout {
+  display: none !important;
 }
 
 // ============================================

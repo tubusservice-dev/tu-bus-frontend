@@ -8,8 +8,8 @@
   overflow-y: auto;
   background-color: var(--bg-primary, #ffffff);
   animation: overlayFadeIn 0.2s ease-out;
-  // Reserve space for the fixed top-bar so content isn't hidden beneath it.
-  padding-top: 4rem;
+  // Reserve space for the fixed `app-header-shell` rendered above.
+  padding-top: var(--app-header-height);
   // Prevent scroll-chaining: when the backdrop's scroll hits top/bottom,
   // the wheel/touch event must not leak to the body underneath. Combined
   // with no body lock, this keeps the catalog's scroll position pinned
@@ -26,48 +26,31 @@
   }
 }
 
-// `position: fixed` pins the top-bar to the viewport — same bulletproof
-// pattern we use in the global app header. Sticky suffered sub-pixel jitter
-// + white flashes when content scrolled underneath; fixed avoids both.
-.overlay-top-bar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 1010;
-  background-color: var(--bg-primary, #ffffff);
-  border-bottom: 1px solid var(--border-color, #e5e7eb);
-}
-
-.overlay-top-bar-inner {
-  max-width: 80rem;
-  margin: 0 auto;
-  padding: 0.75rem 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-
+// Back button styling — chrome (background, height, border) is owned by
+// `app-header-shell`, this only styles the local control.
 .overlay-back-btn {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.5rem 1rem;
+  padding: 0.5rem 0.75rem;
   border-radius: 0.5rem;
   border: none;
   cursor: pointer;
   font-size: 0.875rem;
   font-weight: 500;
-  transition: all 0.15s;
+  transition: background-color 0.15s;
   background-color: transparent;
-  color: var(--text-primary, #1f2937);
+  color: var(--app-header-text);
 
   &:hover {
     background-color: rgba(0, 0, 0, 0.05);
   }
 
   svg { width: 1.25rem; height: 1.25rem; }
+}
+
+:host-context(.dark) .overlay-back-btn:hover {
+  background-color: rgba(255, 255, 255, 0.08);
 }
 
 @keyframes overlayFadeIn {
@@ -601,8 +584,6 @@
 // ============================================
 :host-context(.dark) {
   .overlay-backdrop { background-color: var(--bg-primary, #0f172a); }
-  .overlay-top-bar { background-color: var(--bg-primary, #0f172a); border-bottom-color: var(--border-color, #1e293b); }
-  .overlay-back-btn { color: #e5e7eb; &:hover { background-color: rgba(255, 255, 255, 0.08); } }
 
   .skeleton-gallery .skeleton-main,
   .skeleton-gallery .skeleton-thumb,

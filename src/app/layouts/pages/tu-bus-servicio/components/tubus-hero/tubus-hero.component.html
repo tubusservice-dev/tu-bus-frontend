@@ -1,7 +1,8 @@
-<!-- Banner promocional -->
-<div class="hero-banner">
+<!-- Banner promocional: carrusel en mobile, estatico en tablet/desktop -->
+<app-tubus-hero-mobile-banner class="hero-banner-mobile" />
+
+<div class="hero-banner hero-banner-desktop">
   <picture>
-    <source media="(max-width: 767px)" srcset="assets/img/banner-movil.jpg" />
     <source media="(max-width: 1023px)" srcset="assets/img/banner-tablet.jpg" />
     <img src="assets/img/banner-web.jpg" alt="Banner promocional" class="hero-banner-img" />
   </picture>

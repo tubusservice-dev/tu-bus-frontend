@@ -1,56 +1,54 @@
-<header class="header">
-  <div class="header-container">
-    <!-- Logo (Izquierda) -->
-    <div class="header-left">
-      <!-- Flecha volver (solo en perfil) -->
-      @if (isProfilePage()) {
-        <a routerLink="/" class="back-arrow" title="Volver">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-          </svg>
-        </a>
-      }
-      <a routerLink="/" class="logo-link">
-        <div class="logo-icon">
-          <img src="assets/icons/autobus.png" alt="TuBus Express">
-        </div>
-        <span class="logo-text">{{ appName }}</span>
+<app-header-shell>
+  <!-- Logo (Izquierda) -->
+  <div class="header-left">
+    <!-- Flecha volver (solo en perfil) -->
+    @if (isProfilePage()) {
+      <a routerLink="/" class="back-arrow" title="Volver">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+        </svg>
       </a>
-    </div>
-
-    <!-- Acciones (Derecha) -->
-    <div class="header-right">
-      <!-- Instalar PWA (auto-oculto si ya está instalada o el navegador no soporta) -->
-      <app-pwa-install-button />
-
-      <!-- Botón de cambio de tema -->
-      <app-theme-toggle />
-
-      <!-- Carrito de compras -->
-      <app-cart-popover />
-
-      <!-- Notificaciones (solo si logueado, hidden on mobile — moved to user menu) -->
-      @if (isLoggedIn()) {
-        <div class="notif-desktop-only">
-          <app-user-notifications-bell />
-        </div>
-      }
-
-      <!-- Botón Login o Menú de Usuario -->
-      @if (isLoggedIn()) {
-        <app-user-menu />
-      } @else {
-        <button
-          type="button"
-          class="login-btn"
-          (click)="onLoginClick()"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="login-icon">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
-          </svg>
-          <span class="login-text">Iniciar Sesión</span>
-        </button>
-      }
-    </div>
+    }
+    <a routerLink="/" class="logo-link">
+      <div class="logo-icon">
+        <img src="assets/icons/autobus.png" alt="TuBus Express">
+      </div>
+      <span class="logo-text">{{ appName }}</span>
+    </a>
   </div>
-</header>
+
+  <!-- Acciones (Derecha) -->
+  <div class="header-right">
+    <!-- Instalar PWA (auto-oculto si ya está instalada o el navegador no soporta) -->
+    <app-pwa-install-button />
+
+    <!-- Botón de cambio de tema -->
+    <app-theme-toggle />
+
+    <!-- Carrito de compras -->
+    <app-cart-popover />
+
+    <!-- Notificaciones (solo si logueado, hidden on mobile — moved to user menu) -->
+    @if (isLoggedIn()) {
+      <div class="notif-desktop-only">
+        <app-user-notifications-bell />
+      </div>
+    }
+
+    <!-- Botón Login o Menú de Usuario -->
+    @if (isLoggedIn()) {
+      <app-user-menu />
+    } @else {
+      <button
+        type="button"
+        class="login-btn"
+        (click)="onLoginClick()"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="login-icon">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+        </svg>
+        <span class="login-text">Iniciar Sesión</span>
+      </button>
+    }
+  </div>
+</app-header-shell>

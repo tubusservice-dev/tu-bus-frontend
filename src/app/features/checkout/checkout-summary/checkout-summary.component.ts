@@ -28,11 +28,12 @@ import { DateInputComponent } from '../../../shared/components/date-input/date-i
 import { ServiceDatePickerComponent } from '../../../shared/components/service-date-picker/service-date-picker.component';
 import { ClipboardService } from '../../../shared/services/clipboard.service';
 import { BodyScrollLockService } from '../../../shared/services/body-scroll-lock.service';
+import { CheckoutHeaderComponent } from '../components/checkout-header/checkout-header.component';
 
 @Component({
   selector: 'app-checkout-summary',
   standalone: true,
-  imports: [CurrencyPipe, CommonModule, ReactiveFormsModule, CopyableValueComponent, DateInputComponent, ServiceDatePickerComponent],
+  imports: [CurrencyPipe, CommonModule, ReactiveFormsModule, CopyableValueComponent, DateInputComponent, ServiceDatePickerComponent, CheckoutHeaderComponent],
   templateUrl: './checkout-summary.component.html',
   styleUrl: './checkout-summary.component.scss',
 })

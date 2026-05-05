@@ -6,6 +6,7 @@ import { VehicleService } from '../../../core/services/vehicle.service';
 import { Vehicle } from '../../../models/vehicle.model';
 import { VehicleFormComponent } from '../../garage/vehicle-form/vehicle-form.component';
 import { scrollToFirstFormError } from '../../../shared/validators/form-validators';
+import { CheckoutHeaderComponent } from '../components/checkout-header/checkout-header.component';
 
 /**
  * Vehicle-only picker for the `in_store_oil_change` dispatch type. Mirrors the
@@ -18,7 +19,7 @@ import { scrollToFirstFormError } from '../../../shared/validators/form-validato
 @Component({
   selector: 'app-checkout-in-store-oil-change-form',
   standalone: true,
-  imports: [CommonModule, VehicleFormComponent],
+  imports: [CommonModule, VehicleFormComponent, CheckoutHeaderComponent],
   templateUrl: './checkout-in-store-oil-change-form.component.html',
   styleUrl: './checkout-in-store-oil-change-form.component.scss',
 })

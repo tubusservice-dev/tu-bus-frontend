@@ -1,0 +1,36 @@
+// `:host` is the fixed element. We anchor to the viewport so content
+// scrolls underneath without dragging the chrome along — same rationale
+// as the previous global header (sticky in Chromium produces sub-pixel
+// jitter under `overflow-x: clip` containers).
+:host {
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--app-header-height);
+  background-color: var(--app-header-bg);
+  color: var(--app-header-text);
+  z-index: 50;
+  transition: background-color var(--transition-normal), border-color var(--transition-normal);
+}
+
+// Overlays (cart / product detail) need to sit above the global header
+// AND above their own backdrop. `1010` matches the legacy overlay z-index
+// the previous chrome already used.
+:host([data-variant='overlay']) {
+  z-index: 1010;
+}
+
+.shell-bar {
+  height: 100%;
+  border-bottom: 1px solid var(--app-header-border);
+}
+
+// Single flex row. `justify-between` lets consumers ship 1, 2 or 3
+// children and have them spread naturally — keeps the API minimal (no
+// named slots needed yet).
+.shell-content {
+  @apply flex items-center justify-between gap-2 sm:gap-4
+         max-w-7xl mx-auto h-full px-4 sm:px-6 lg:px-8;
+}

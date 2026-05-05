@@ -1,0 +1,33 @@
+// Local layout only — chrome (background, height, border, padding) is
+// owned by `app-header-shell`.
+.checkout-header-row {
+  @apply flex items-center gap-3 w-full;
+}
+
+.back-btn {
+  @apply flex items-center justify-center rounded-lg transition-colors duration-150;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: none;
+  color: var(--app-header-text);
+
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+:host-context(.dark) .back-btn:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.title {
+  @apply text-base sm:text-lg font-semibold truncate;
+  color: var(--app-header-text);
+  margin: 0;
+}

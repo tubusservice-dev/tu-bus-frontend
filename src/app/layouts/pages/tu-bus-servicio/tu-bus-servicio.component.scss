@@ -5,9 +5,9 @@
 
 .tubus-main {
   @apply flex-1;
-  // The tubus-header is `position: fixed` (h-16 = 4rem); reserve its
-  // height so content (banner included) isn't hidden beneath it.
-  padding-top: 4rem;
+  // The tubus-header is `position: fixed`; reserve its height so content
+  // (banner included) isn't hidden beneath it.
+  padding-top: var(--app-header-height);
 }
 
 .scroll-top-btn {

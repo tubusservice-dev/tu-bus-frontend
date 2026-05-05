@@ -11,11 +11,12 @@ import {
   MAX_FULLNAME_LENGTH, MAX_ADDRESS_LENGTH, MAX_REFERENCE_LENGTH, MAX_NOTES_LENGTH,
   MAX_PHONE_LENGTH, MAX_DOCUMENT_LENGTH, noNumbersValidator, scrollToFirstFormError,
 } from '../../../shared/validators/form-validators';
+import { CheckoutHeaderComponent } from '../components/checkout-header/checkout-header.component';
 
 @Component({
   selector: 'app-checkout-shipping-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, CheckoutHeaderComponent],
   templateUrl: './checkout-shipping-form.component.html',
   styleUrl: './checkout-shipping-form.component.scss',
 })

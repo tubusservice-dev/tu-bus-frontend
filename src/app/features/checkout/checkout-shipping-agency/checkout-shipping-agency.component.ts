@@ -4,11 +4,12 @@ import { CheckoutService } from '../services/checkout.service';
 import { CartService } from '../../../core/services/cart.service';
 import { ShippingAgencyService } from '../../../core/services/shipping-agency.service';
 import { ShippingAgency } from '../../../models/product.model';
+import { CheckoutHeaderComponent } from '../components/checkout-header/checkout-header.component';
 
 @Component({
   selector: 'app-checkout-shipping-agency',
   standalone: true,
-  imports: [],
+  imports: [CheckoutHeaderComponent],
   templateUrl: './checkout-shipping-agency.component.html',
   styleUrl: './checkout-shipping-agency.component.scss',
 })

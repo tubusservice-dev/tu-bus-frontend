@@ -9,6 +9,7 @@ import { LocationService } from '../../../core/services/location.service';
 import { ExchangeRateService } from '../../../core/services/exchange-rate.service';
 import { ProductCardComponent, ProductCardData } from '../../../shared/components/product-card/product-card.component';
 import { CartPopoverComponent } from '../../../shared/components/cart-popover/cart-popover.component';
+import { HeaderShellComponent } from '../../../shared/components/header-shell/header-shell.component';
 import { VEHICLE_TYPE_LABELS, VehicleType } from '../../../models/product.model';
 
 const PLACEHOLDER = 'https://placehold.co/400x400/e5e7eb/9ca3af?text=Sin+imagen';
@@ -24,7 +25,7 @@ const PLACEHOLDER = 'https://placehold.co/400x400/e5e7eb/9ca3af?text=Sin+imagen'
 @Component({
   selector: 'app-product-detail-page',
   standalone: true,
-  imports: [CommonModule, ProductCardComponent, CartPopoverComponent],
+  imports: [CommonModule, ProductCardComponent, CartPopoverComponent, HeaderShellComponent],
   templateUrl: './product-detail-page.component.html',
   styleUrl: './product-detail-page.component.scss',
 })

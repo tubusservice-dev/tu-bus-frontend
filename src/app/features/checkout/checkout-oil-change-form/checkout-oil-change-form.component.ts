@@ -17,11 +17,12 @@ import {
   noNumbersValidator, scrollToFirstFormError,
 } from '../../../shared/validators/form-validators';
 import { VehicleFormComponent } from '../../garage/vehicle-form/vehicle-form.component';
+import { CheckoutHeaderComponent } from '../components/checkout-header/checkout-header.component';
 
 @Component({
   selector: 'app-checkout-oil-change-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, VehicleFormComponent],
+  imports: [CommonModule, ReactiveFormsModule, VehicleFormComponent, CheckoutHeaderComponent],
   templateUrl: './checkout-oil-change-form.component.html',
   styleUrl: './checkout-oil-change-form.component.scss',
 })
