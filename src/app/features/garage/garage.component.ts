@@ -92,7 +92,10 @@ export class GarageComponent implements OnInit {
   onSelectVehicle(vehicle: Vehicle): void {
     this.vehicleService.selectVehicle(vehicle);
     this.router.navigate(['/catalogo'], {
-      queryParams: { fromGarage: true },
+      queryParams: {
+        fromGarage: true,
+        vehicleType: vehicle.vehicleType,
+      },
     });
   }
 

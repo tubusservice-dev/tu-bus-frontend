@@ -81,6 +81,15 @@ export class CheckoutSummaryComponent implements OnInit {
   protected readonly isProcessingConfirm = signal(false);
   protected readonly isSubmittingPayment = signal(false);
 
+  /**
+   * True when at least one combo product is in the cart. The engine/filter
+   * disclaimer is only relevant for combos (which bundle a filter), so the
+   * UI hides it entirely otherwise.
+   */
+  protected readonly cartHasCombo = computed(
+    () => this.cartService.items().some((item) => item.isCombo === true),
+  );
+
   /** True when exactly one disclaimer is selected (XOR). */
   protected readonly hasDisclaimerSelection = computed(
     () => this.originalEngineChecked() !== this.modifiedEngineChecked(),
@@ -174,6 +183,54 @@ export class CheckoutSummaryComponent implements OnInit {
   protected readonly paymentSubmitted = signal(false);
   protected readonly submittedPayment = signal<PaymentSubmission | null>(null);
   protected readonly submittedMethodType = signal<PaymentMethodType | null>(null);
+
+  /**
+   * Modal copy for info-only payment methods (tarjeta / efectivo). The wording
+   * adapts to the current dispatch type so the message stays truthful for each
+   * combination — e.g. for a delivery the customer pays at the door, not at
+   * the store; for an agency we coordinate the charge before dispatch; etc.
+   */
+  protected readonly infoOnlyMessage = computed<string>(() => {
+    const group = this.selectedGroup();
+    if (!group) return '';
+    const dispatch = this.checkoutService.dispatchType();
+
+    if (group.type === PaymentMethodType.TARJETA) {
+      switch (dispatch) {
+        case 'store_pickup':
+        case 'in_store_oil_change':
+          return 'Pagarás con tu tarjeta directamente en la tienda al retirar tu pedido. Aceptamos débito y crédito.';
+        case 'oil_change_service':
+          return 'Nuestro técnico llevará el punto de venta. Pagarás con tu tarjeta cuando finalice el servicio.';
+        case 'local_delivery':
+          return 'Nuestro repartidor llevará el punto de venta. Pagarás con tu tarjeta al recibir tu pedido.';
+        case 'shipping_agency':
+          return 'Te contactaremos para coordinar el pago con tarjeta antes de despachar a la agencia.';
+        case 'seller_agreement':
+        default:
+          return 'Te contactaremos para coordinar el pago con tarjeta.';
+      }
+    }
+
+    if (group.type === PaymentMethodType.EFECTIVO_DIVISAS) {
+      switch (dispatch) {
+        case 'store_pickup':
+        case 'in_store_oil_change':
+          return 'Pagarás en efectivo (USD) directamente en la tienda al retirar tu pedido.';
+        case 'oil_change_service':
+          return 'Pagarás en efectivo (USD) al finalizar el servicio. Te sugerimos tener el monto exacto.';
+        case 'local_delivery':
+          return 'Pagarás en efectivo (USD) al recibir tu pedido. Te sugerimos tener el monto exacto.';
+        case 'shipping_agency':
+          return 'Te contactaremos para coordinar el pago en efectivo (USD) antes de despachar a la agencia.';
+        case 'seller_agreement':
+        default:
+          return 'Te contactaremos para coordinar el pago en efectivo (USD).';
+      }
+    }
+
+    return '';
+  });
 
   // ========== Branch Selection (Pickup & In-Store Only) ==========
 
@@ -364,7 +421,9 @@ export class CheckoutSummaryComponent implements OnInit {
     const hasServiceDateIfOilChange =
       this.checkoutService.dispatchType() !== 'oil_change_service'
       || this.checkoutService.hasRequestedServiceDate();
-    return this.hasDisclaimerSelection()
+    // Disclaimer is only required when the cart contains a combo.
+    const disclaimerOk = !this.cartHasCombo() || this.hasDisclaimerSelection();
+    return disclaimerOk
       && this.paymentSubmitted()
       && hasBranchIfRequired
       && hasVehicleIfRequired

@@ -38,37 +38,58 @@ import { PwaService } from '@core/services/pwa.service';
     `
       :host { display: contents; }
 
+      /* Matches the .cart-btn style so header utility buttons share the
+         same visual language. CTA emphasis is kept via the install icon
+         + tooltip rather than a contrasting background. */
       .pwa-install-btn {
+        position: relative;
         display: inline-flex;
         align-items: center;
         gap: 0.5rem;
-        padding: 0.5rem 0.875rem;
-        border-radius: 0.625rem;
-        background-color: var(--accent-primary);
-        color: #fff;
+        padding: 0.5rem;
+        border-radius: 0.5rem;
+        background-color: var(--bg-tertiary);
+        color: var(--text-primary);
         font-size: 0.875rem;
         font-weight: 600;
         line-height: 1;
         border: none;
         cursor: pointer;
-        transition: background-color var(--transition-fast),
-                    transform var(--transition-fast);
+        transition: background-color 200ms, color 200ms, transform 200ms;
         white-space: nowrap;
       }
 
-      .pwa-install-btn:hover  { background-color: var(--accent-hover); }
+      .pwa-install-btn:hover {
+        background-color: var(--border-color-hover);
+        color: var(--accent-primary);
+      }
+
       .pwa-install-btn:active { transform: scale(0.97); }
 
       .pwa-install-icon {
-        width: 1.125rem;
-        height: 1.125rem;
+        width: 1.25rem;
+        height: 1.25rem;
         flex-shrink: 0;
       }
 
-      /* Hide the label on very small screens to keep the icon-only chip */
+      /* On wider screens expand horizontally to show the label. */
+      @media (min-width: 481px) {
+        .pwa-install-btn { padding: 0.5rem 0.875rem; }
+      }
+
+      /* Hide the label on small screens so it stays a square icon chip. */
       @media (max-width: 480px) {
         .pwa-install-text { display: none; }
-        .pwa-install-btn  { padding: 0.5rem; }
+      }
+
+      /* Dark-mode chrome — mirrors .cart-btn dark overrides. */
+      :host-context(.dark) .pwa-install-btn {
+        background-color: #374151;
+        color: #f3f4f6;
+      }
+      :host-context(.dark) .pwa-install-btn:hover {
+        background-color: #4b5563;
+        color: var(--tubus-text-accent, #4d94ff);
       }
     `,
   ],

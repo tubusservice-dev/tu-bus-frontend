@@ -32,7 +32,14 @@ export class CartComponent {
   }
 
   goToCatalog(): void {
-    this.router.navigate(['/catalogo']);
+    // When the cart is mounted as an overlay on top of /catalogo, a plain
+    // router.navigate is a no-op (same URL). Pop the overlay instead so the
+    // user lands back on the catalog underneath.
+    if (this.overlayService.isOpen()) {
+      this.overlayService.goBack();
+    } else {
+      this.router.navigate(['/catalogo']);
+    }
   }
 
   /** Header back button. When this cart is mounted inside an overlay,

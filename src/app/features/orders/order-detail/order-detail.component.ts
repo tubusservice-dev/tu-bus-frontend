@@ -384,6 +384,15 @@ export class OrderDetailComponent implements OnInit {
     return isOilChangeOrder(order);
   }
 
+  /**
+   * Whether the order contains at least one combo item. Used to decide if the
+   * customer disclaimer section ("Motor sin/con modificaciones") should render
+   * — combos bundle a filter, so the disclaimer only applies to them.
+   */
+  orderHasCombo(order: Order): boolean {
+    return order.items?.some((item) => item.isCombo === true) ?? false;
+  }
+
   getDispatchLabel(type: string): string {
     const labels: Record<string, string> = {
       store_pickup: 'Retiro en Tienda',

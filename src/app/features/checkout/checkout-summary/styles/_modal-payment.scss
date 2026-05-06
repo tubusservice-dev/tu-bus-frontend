@@ -27,6 +27,14 @@
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
 }
 
+// Narrower variant for info-only payment modals (tarjeta, efectivo) — they
+// only show an illustration + total + short message, so the default 32rem
+// width feels overstretched on desktop. Mobile is unaffected because both
+// variants already fall back to the viewport width via `width: 100%`.
+.modal-container-compact {
+  max-width: 26rem;
+}
+
 .modal-header {
   display: flex;
   align-items: center;
@@ -325,6 +333,33 @@
   color: var(--text-secondary);
   font-style: italic;
   padding-top: 0.25rem;
+}
+
+// ============================================
+// MODAL: Info-only Illustration
+// ============================================
+.info-only-illustration {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+
+  .card-illustration {
+    display: block;
+    width: 240px;
+    max-width: 85%;
+    aspect-ratio: 16 / 10;     // forces a real card-shaped box even if a parent
+    height: auto;              // tries to compress the SVG vertically.
+    filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.25));
+    border-radius: 0.65rem;
+  }
+
+  .cash-illustration {
+    width: 160px;
+    height: auto;
+    max-width: 60%;
+    filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.18));
+    border-radius: 0.5rem;
+  }
 }
 
 // ============================================

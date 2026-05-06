@@ -40,7 +40,7 @@
   background: linear-gradient(135deg, var(--tubus-primary) 0%, var(--tubus-primary-dark) 100%);
 
   img {
-    @apply w-full h-full object-contain p-1;
+    @apply w-full h-full object-contain;
   }
 
   svg {
@@ -63,34 +63,33 @@
   background-color: var(--app-header-border);
 }
 
-// Zone Selector
+// Zone Selector — matches the chrome of sibling utility buttons (cart, etc.)
+// On mobile it renders as an icon-only square; on desktop it expands with text.
 .zone-button {
-  @apply flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg;
-  @apply text-sm font-medium;
-  @apply transition-all duration-200;
-  background-color: var(--bg-secondary);
+  @apply flex items-center gap-2 p-2 sm:px-3 sm:py-2 rounded-lg;
+  @apply text-sm font-medium transition-all duration-200;
+  background-color: var(--bg-tertiary);
   color: var(--text-primary);
-  border: 1px solid var(--border-color);
 
   &:hover {
-    background-color: var(--bg-tertiary);
-    border-color: var(--accent-primary);
+    background-color: var(--border-color-hover);
+    color: var(--accent-primary);
   }
 
   &.active {
-    border-color: var(--accent-primary);
-    box-shadow: 0 0 0 1px var(--accent-primary);
+    box-shadow: 0 0 0 2px var(--accent-primary);
   }
 }
 
 .zone-icon {
-  @apply w-4 h-4;
-  color: var(--tubus-text-accent);
+  @apply w-5 h-5;
+  // Color inherited from .zone-button — keeps consistency with cart icon.
 }
 
 .zone-label {
-  @apply block truncate text-xs sm:text-sm font-medium;
-  max-width: 100px;
+  // Mobile: hide the text label and show only the location icon to free
+  // horizontal space. The button itself stays accessible via aria-label.
+  @apply hidden sm:block truncate text-xs sm:text-sm font-medium;
 
   @media (min-width: 640px) {
     max-width: 12rem;
@@ -213,6 +212,18 @@
 // header chrome (background, border, text) is fully driven by `--app-header-*`
 // CSS variables, so no .dark overrides are needed for those.
 :host-context(.dark) {
+  // Match the dark-mode treatment used by the cart button so siblings
+  // share the same background and hover behaviour.
+  .zone-button {
+    background-color: #374151;
+    color: #f3f4f6;
+
+    &:hover {
+      background-color: #4b5563;
+      color: var(--tubus-text-accent, #4d94ff);
+    }
+  }
+
   .zone-confirm-modal {
     background-color: #1f2937;
     border-color: #374151;

@@ -306,6 +306,7 @@ export class ProductDetailPageComponent implements OnInit {
       image: prod.images?.[0] || '', stock: this.productStock() ?? 0,
       freeOilChangeService: prod.freeOilChangeService || false,
       vehicleTypes: prod.vehicleTypes,
+      isCombo: prod.isCombo,
     }, this.quantity());
 
     if (result.success) {

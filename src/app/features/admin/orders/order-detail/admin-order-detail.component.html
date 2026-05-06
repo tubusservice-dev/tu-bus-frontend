@@ -753,6 +753,7 @@
               <span class="info-label">Fecha de creacion</span>
               <span class="info-value">{{ formatDate(o.createdAt) }}</span>
             </div>
+            @if (orderHasCombo(o)) {
             <div class="info-row">
               <span class="info-label">Disclaimer</span>
               <span class="info-value"
@@ -768,6 +769,7 @@
                 }
               </span>
             </div>
+            }
             <div class="info-row" [class.info-row-stacked]="hasLongNotes()">
               <span class="info-label">
                 Notas <span class="info-label-hint">(Privada)</span>
