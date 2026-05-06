@@ -516,7 +516,7 @@
 }
 
 .continue-shopping {
-  @apply flex items-center justify-center gap-2 py-3 mt-2 text-sm font-medium rounded-xl transition-colors;
+  @apply w-full flex items-center justify-center gap-2 py-3 mt-2 text-sm font-medium rounded-xl transition-colors;
   color: var(--text-secondary);
   border: 1px solid var(--border-color);
 
