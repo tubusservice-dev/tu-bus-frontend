@@ -16,6 +16,12 @@ export interface CartItem {
    * match the product. Absent for legacy items — treated as compatible.
    */
   vehicleTypes?: string[];
+  /**
+   * Whether the product is a combo. Drives the engine/filter disclaimer in
+   * the checkout summary — it only renders when at least one cart item is a
+   * combo. Absent for legacy items — treated as non-combo.
+   */
+  isCombo?: boolean;
 }
 
 export interface AddToCartResult {

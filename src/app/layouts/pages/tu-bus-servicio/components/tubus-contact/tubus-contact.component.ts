@@ -1,6 +1,6 @@
 import { Component, inject, computed } from '@angular/core';
 import { SettingsService } from '../../../../../core/services/settings.service';
-import { LocationService } from '../../../../../core/services/location.service';
+import { LocationService, BranchSummary } from '../../../../../core/services/location.service';
 
 const DAY_NAMES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
@@ -16,20 +16,32 @@ export class TubusContactComponent {
   private readonly locationService = inject(LocationService);
 
   protected readonly whatsappConfig = this.settingsService.whatsappConfig;
+  protected readonly customerSupport = this.settingsService.customerSupportConfig;
 
-  private readonly branch = computed(() => this.locationService.branches()[0] ?? null);
+  protected readonly branches = computed(() => this.locationService.branches());
+  protected readonly hasMultipleBranches = computed(() => this.branches().length > 1);
 
-  protected readonly phone = computed(() => this.branch()?.whatsappPhone || '');
-  protected readonly address = computed(() => this.branch()?.address || '');
-  protected readonly branchName = computed(() => this.branch()?.name || '');
-  protected readonly whatsappNumber = computed(() => this.whatsappConfig().phoneNumber);
-  protected readonly whatsappEnabled = computed(() => this.whatsappConfig().isEnabled);
+  // Single-branch quick accessors (only meaningful when branches.length === 1).
+  private readonly firstBranch = computed<BranchSummary | null>(() => this.branches()[0] ?? null);
+  protected readonly phone = computed(() => this.firstBranch()?.whatsappPhone || '');
+  protected readonly address = computed(() => this.firstBranch()?.address || '');
+  protected readonly schedule = computed(() => this.formatSchedule(this.firstBranch()));
 
-  protected readonly schedule = computed(() => {
-    const b = this.branch();
-    if (!b?.schedule?.length) return '';
+  /**
+   * WhatsApp button visibility — driven by the customer-support setting,
+   * with a transitional fallback to the global whatsapp config so the CTA
+   * does not break before the admin configures the new namespace.
+   */
+  protected readonly whatsappEnabled = computed(() => {
+    const cs = this.customerSupport();
+    if (cs.whatsapp.trim().length > 0) return true;
+    return this.whatsappConfig().isEnabled && this.whatsappConfig().phoneNumber.trim().length > 0;
+  });
 
-    const open = b.schedule.filter(d => !d.isClosed);
+  protected formatSchedule(branch: BranchSummary | null): string {
+    if (!branch?.schedule?.length) return '';
+
+    const open = branch.schedule.filter(d => !d.isClosed);
     if (open.length === 0) return '';
 
     // Group consecutive days with same hours
@@ -52,7 +64,7 @@ export class TubusContactComponent {
         return `${dayRange}: ${g.hours}`;
       })
       .join(' | ');
-  });
+  }
 
   private formatTime(time: string): string {
     const [h, m] = time.split(':').map(Number);
@@ -62,20 +74,20 @@ export class TubusContactComponent {
   }
 
   openWhatsApp(): void {
-    // Use branch whatsapp phone, fallback to global config
-    const raw = this.phone() || this.whatsappNumber();
+    // Customer-support number takes priority; fall back to the global setting
+    // so the CTA stays functional during the admin transition window.
+    const raw = this.customerSupport().whatsapp || this.whatsappConfig().phoneNumber;
     if (!raw) return;
-    // Convert 0412-0263111 or 04120263111 → 584120263111
     const digits = raw.replace(/\D/g, '');
     const international = digits.startsWith('0') ? '58' + digits.substring(1) : digits;
     const message = encodeURIComponent('Hola, me interesa información sobre sus servicios de cambio de aceite.');
     window.open(`https://wa.me/${international}?text=${message}`, '_blank');
   }
 
-  callPhone(): void {
-    const phoneNumber = this.phone();
-    if (phoneNumber) {
-      window.open(`tel:${phoneNumber}`, '_self');
+  callPhone(phoneNumber?: string): void {
+    const target = phoneNumber ?? this.phone();
+    if (target) {
+      window.open(`tel:${target}`, '_self');
     }
   }
 }

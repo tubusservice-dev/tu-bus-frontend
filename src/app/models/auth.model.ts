@@ -93,4 +93,4 @@ export interface ValidationError {
   message: string;
 }
 
-export type OAuthProvider = 'google' | 'facebook';
+export type OAuthProvider = 'google';

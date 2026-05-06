@@ -16,6 +16,7 @@ import {
   UpdateDispatchDto,
   ExchangeRateConfig,
   SupportContactConfig,
+  CustomerSupportConfig,
   AdminNotificationsConfig,
   DEFAULT_SETTINGS,
   STORE_COLORS,
@@ -50,6 +51,7 @@ export class SettingsService {
   readonly dispatchConfig = computed(() => this._settings().dispatch);
   readonly exchangeRateConfig = computed(() => this._settings().exchangeRate);
   readonly supportContactConfig = computed(() => this._settings().supportContact);
+  readonly customerSupportConfig = computed(() => this._settings().customerSupport);
   readonly adminNotificationsConfig = computed(() => this._settings().adminNotifications);
 
   /**
@@ -92,6 +94,10 @@ export class SettingsService {
             supportContact: {
               ...DEFAULT_SETTINGS.supportContact,
               ...response.data.supportContact,
+            },
+            customerSupport: {
+              ...DEFAULT_SETTINGS.customerSupport,
+              ...response.data.customerSupport,
             },
             adminNotifications: {
               ...DEFAULT_SETTINGS.adminNotifications,
@@ -268,6 +274,25 @@ export class SettingsService {
             supportContact: {
               ...DEFAULT_SETTINGS.supportContact,
               ...response.data.supportContact,
+            },
+          });
+        }
+      })
+    );
+  }
+
+  /**
+   * Update customer-facing support contact (landing-page WhatsApp CTA).
+   */
+  updateCustomerSupport(data: Partial<CustomerSupportConfig>): Observable<SettingsResponse> {
+    return this.http.put<SettingsResponse>(`${this.adminUrl}/customer-support`, data).pipe(
+      tap((response) => {
+        if (response.data) {
+          this._settings.set({
+            ...this._settings(),
+            customerSupport: {
+              ...DEFAULT_SETTINGS.customerSupport,
+              ...response.data.customerSupport,
             },
           });
         }

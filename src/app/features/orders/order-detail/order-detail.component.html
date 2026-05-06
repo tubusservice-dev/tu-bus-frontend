@@ -242,7 +242,8 @@
           </div>
         </section>
 
-        <!-- ===== SECCIÓN: ACUERDO DEL CLIENTE ===== -->
+        <!-- ===== SECCIÓN: ACUERDO DEL CLIENTE (solo si la orden tiene combos) ===== -->
+        @if (orderHasCombo(o)) {
         <section class="detail-card">
           <h3 class="card-title">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -270,6 +271,7 @@
             }
           </div>
         </section>
+        }
 
       </div>
 

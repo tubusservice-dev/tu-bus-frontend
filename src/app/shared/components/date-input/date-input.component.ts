@@ -5,6 +5,7 @@ import {
   forwardRef,
   inject,
   input,
+  OnDestroy,
   output,
   signal,
 } from '@angular/core';
@@ -59,7 +60,7 @@ import { BodyScrollLockService } from '../../services/body-scroll-lock.service';
     },
   ],
 })
-export class DateInputComponent implements ControlValueAccessor {
+export class DateInputComponent implements ControlValueAccessor, OnDestroy {
   // ========== Inputs ==========
 
   readonly label = input<string>('');
@@ -102,8 +103,33 @@ export class DateInputComponent implements ControlValueAccessor {
   private onTouched: () => void = () => {};
 
   private readonly scrollLock = inject(BodyScrollLockService);
+  /**
+   * Tracks whether this instance currently holds a body scroll lock so the
+   * picker panel doesn't double-acquire and so the lock is released on
+   * teardown when the panel was open.
+   */
+  private hasScrollLock = false;
 
   // ========== Lifecycle ==========
+
+  ngOnDestroy(): void {
+    // If the host (auth modal, profile form, etc.) is destroyed while the
+    // picker panel is still open, release the lock so the page underneath
+    // doesn't end up frozen.
+    this.releaseScrollLock();
+  }
+
+  private acquireScrollLock(): void {
+    if (this.hasScrollLock || typeof document === 'undefined') return;
+    this.scrollLock.lock();
+    this.hasScrollLock = true;
+  }
+
+  private releaseScrollLock(): void {
+    if (!this.hasScrollLock || typeof document === 'undefined') return;
+    this.scrollLock.unlock();
+    this.hasScrollLock = false;
+  }
 
   constructor() {
     // Sync with [value] input (for non-forms usage)
@@ -195,17 +221,12 @@ export class DateInputComponent implements ControlValueAccessor {
 
   protected openPanel(): void {
     if (this.resolvedDisabled()) return;
-    // Lock body scroll while the modal is open to prevent background scroll
-    if (typeof document !== 'undefined') {
-      this.scrollLock.lock();
-    }
+    this.acquireScrollLock();
     this.isOpen.set(true);
   }
 
   protected closePanel(): void {
-    if (typeof document !== 'undefined') {
-      this.scrollLock.unlock();
-    }
+    this.releaseScrollLock();
     this.isOpen.set(false);
     this.onTouched();
   }

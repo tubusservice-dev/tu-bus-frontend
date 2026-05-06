@@ -112,3 +112,171 @@
     box-shadow: 0 10px 20px -10px rgba(0, 0, 0, 0.3);
   }
 }
+
+// ===== Multi-branch variant =====
+// When multiple branches serve the user's zone, the layout switches from a
+// single-branch info column + hero CTA card to a list of clearly-defined
+// branch cards plus a compact CTA pill below them.
+
+.contact-grid-multi {
+  @apply grid grid-cols-1 gap-8;
+  align-items: stretch;
+}
+
+.branches-list {
+  @apply mt-8 grid grid-cols-1 md:grid-cols-2 gap-5;
+}
+
+.branch-card {
+  @apply p-6 rounded-2xl;
+  @apply transition-all duration-200;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+
+  &:hover {
+    transform: translateY(-2px);
+    border-color: var(--tubus-text-accent);
+    box-shadow: 0 8px 24px -10px rgba(var(--tubus-primary-rgb), 0.35);
+  }
+}
+
+.branch-name {
+  @apply text-lg font-bold mb-4 pb-3;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.branch-rows {
+  @apply flex flex-col gap-3;
+}
+
+.branch-row {
+  @apply flex items-start gap-3 text-sm leading-relaxed;
+  color: var(--text-secondary);
+
+  span {
+    @apply pt-0.5;
+  }
+
+  &.branch-row-clickable {
+    @apply cursor-pointer transition-colors;
+
+    &:hover {
+      color: var(--tubus-text-accent);
+
+      .branch-row-icon {
+        background-color: rgba(var(--tubus-primary-rgb), 0.25);
+      }
+    }
+  }
+}
+
+.branch-row-icon {
+  @apply w-9 h-9 flex items-center justify-center rounded-lg flex-shrink-0;
+  @apply transition-colors duration-200;
+  background-color: rgba(var(--tubus-primary-rgb), 0.15);
+  color: var(--tubus-text-accent);
+
+  svg {
+    @apply w-4 h-4;
+  }
+}
+
+// Compact contact card — descriptive WhatsApp CTA shown below the branch
+// list when multiple branches serve the user's zone. Designed to feel
+// "human" (avatar with online dot + supportive copy + arrow CTA) rather
+// than just a button.
+.cta-card-compact {
+  @apply mt-8 flex items-center gap-5;
+  @apply px-5 py-4 rounded-2xl;
+  @apply transition-all duration-200;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+
+  &:hover {
+    border-color: rgba(37, 211, 102, 0.45);
+    box-shadow: 0 10px 24px -10px rgba(18, 140, 126, 0.35);
+  }
+
+  @media (max-width: 639px) {
+    @apply flex-col items-start gap-4;
+  }
+}
+
+.cta-card-avatar {
+  @apply relative flex items-center justify-center flex-shrink-0;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+  color: white;
+  box-shadow: 0 6px 16px -6px rgba(18, 140, 126, 0.55);
+
+  svg {
+    @apply w-7 h-7;
+  }
+}
+
+.cta-card-status {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 9999px;
+  background-color: #22c55e;
+  border: 2px solid var(--bg-primary);
+  box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+  animation: cta-pulse 2s infinite;
+}
+
+@keyframes cta-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55); }
+  70%  { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
+.cta-card-body {
+  @apply flex-1 min-w-0;
+}
+
+.cta-card-title {
+  @apply text-base font-semibold mb-1;
+  color: var(--text-primary);
+}
+
+.cta-card-description {
+  @apply text-sm leading-relaxed;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.cta-card-btn {
+  @apply inline-flex items-center gap-2 flex-shrink-0;
+  @apply px-4 py-2.5 rounded-lg text-sm font-semibold;
+  @apply transition-all duration-200;
+  background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+  color: white;
+  border: none;
+  cursor: pointer;
+
+  svg {
+    @apply w-4 h-4;
+    transition: transform 200ms ease;
+  }
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px -8px rgba(18, 140, 126, 0.55);
+
+    svg {
+      transform: translateX(3px);
+    }
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}

@@ -1,10 +1,10 @@
-import { Component, input } from '@angular/core';
+import { Component, inject, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { environment } from '../../../../environments/environment';
+import { ToastService } from '../../../shared/services/toast.service';
 
 interface SocialLink {
   name: string;
-  href: string;
   icon: string;
 }
 
@@ -16,6 +16,8 @@ interface SocialLink {
   styleUrl: './footer.component.scss'
 })
 export class FooterComponent {
+  private readonly toast = inject(ToastService);
+
   /** En modo minimal solo muestra copyright (checkout mobile) */
   readonly minimal = input(false);
 
@@ -43,11 +45,21 @@ export class FooterComponent {
     { label: 'Contacto', sectionId: 'contacto' },
   ];
 
-  /** Redes sociales */
+  /** Links legales — todos públicos, no requieren sesión. */
+  protected readonly legalLinks = [
+    { label: 'Términos y Condiciones', route: '/legal/terminos' },
+    { label: 'Política de Privacidad', route: '/legal/privacidad' },
+    { label: 'Política de Cookies', route: '/legal/cookies' },
+  ];
+
+  /**
+   * Redes sociales — placeholders por ahora. Click muestra un toast
+   * "Próximamente" hasta que existan las URLs reales (ver `onSocialClick`).
+   */
   protected readonly socialLinks: SocialLink[] = [
-    { name: 'Facebook', href: '#', icon: 'facebook' },
-    { name: 'Instagram', href: '#', icon: 'instagram' },
-    { name: 'Twitter', href: '#', icon: 'twitter' },
+    { name: 'Facebook', icon: 'facebook' },
+    { name: 'Instagram', icon: 'instagram' },
+    { name: 'Twitter', icon: 'twitter' },
   ];
 
   /** Scroll suave a sección (landing mode) */
@@ -56,5 +68,13 @@ export class FooterComponent {
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
     }
+  }
+
+  /**
+   * Toast placeholder for unconfigured social links — replaces the previous
+   * `href="#"` which scrolled the page to the top on click.
+   */
+  protected onSocialClick(): void {
+    this.toast.info('Próximamente');
   }
 }

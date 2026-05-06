@@ -1,8 +1,10 @@
-import { Component, inject, signal, OnInit, computed, HostListener, effect } from '@angular/core';
+import { Component, inject, signal, OnInit, computed, HostListener, effect, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ProductService, ProductCardDTO } from '../../core/services/product.service';
+import { Observable, Subject, of, switchMap, catchError } from 'rxjs';
+import { ProductService, ProductCardDTO, ProductCardListResponse } from '../../core/services/product.service';
 import { BrandService } from '../../core/services/brand.service';
 import { CategoryService } from '../../core/services/category.service';
 import { SettingsService } from '../../core/services/settings.service';
@@ -13,7 +15,6 @@ import { SearchInputComponent } from '../../shared/components/search-input/searc
 import {
   Brand,
   Category,
-  FuelType,
   VehicleType,
   VEHICLE_TYPE_LABELS,
 } from '../../models';
@@ -46,6 +47,15 @@ export class CatalogComponent implements OnInit {
   protected readonly locationService = inject(LocationService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
+
+  /**
+   * Trigger for the catalog request pipeline. Each `next()` cancels the
+   * previous in-flight HTTP request via switchMap — prevents request pile-up
+   * when the user pauses-and-resumes typing in the search input or stacks
+   * filter/page changes faster than the network can answer.
+   */
+  private readonly loadTrigger$ = new Subject<void>();
 
   /** True while a search is in-flight (typed but results not yet rendered) */
   protected readonly isSearching = signal(false);
@@ -151,6 +161,41 @@ export class CatalogComponent implements OnInit {
         this.loadProducts();
       }
     });
+
+    // Reactive pipeline: each loadTrigger$.next() cancels the previous
+    // in-flight request. Without this, rapid search debounces / filter
+    // changes / page jumps stack concurrent HTTP calls that race each
+    // other — last-arrived response wins regardless of user intent.
+    this.loadTrigger$
+      .pipe(
+        switchMap(() => this.executeCatalogRequest$()),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((response) => {
+        if (!response) return;
+        const mapped: ProductCardData[] = response.data.map((p: ProductCardDTO) => ({
+          id: p.id,
+          name: p.name,
+          description: p.description,
+          price: p.price,
+          comparePrice: p.comparePrice ?? null,
+          images: p.images,
+          brand: p.brand ?? undefined,
+          line: p.line ?? undefined,
+          productModel: p.productModel,
+          categories: p.category ? [p.category] : [],
+          isFeatured: p.isFeatured,
+          isCombo: p.isCombo,
+          stock: p.totalStock ?? 0,
+          freeOilChangeService: p.freeOilChangeService,
+          vehicleTypes: p.vehicleTypes,
+        }));
+        this.products.set(mapped);
+        this.totalPages.set(response.pagination?.pages || 1);
+        this.totalProducts.set(response.pagination?.total || 0);
+        this.isLoading.set(false);
+        this.isSearching.set(false);
+      });
   }
 
   ngOnInit(): void {
@@ -203,6 +248,15 @@ export class CatalogComponent implements OnInit {
   }
 
   loadProducts(): void {
+    this.loadTrigger$.next();
+  }
+
+  /**
+   * Builds the catalog request payload from current state and returns the
+   * cancellable Observable. Errors are absorbed so a single failed request
+   * never tears down the outer pipeline (next searches stay alive).
+   */
+  private executeCatalogRequest$(): Observable<ProductCardListResponse | null> {
     this.isLoading.set(true);
     const f = this.filters();
 
@@ -228,68 +282,33 @@ export class CatalogComponent implements OnInit {
     const ids = this.locationService.branchIds();
     const branchIds = ids.length > 0 ? ids.join(',') : undefined;
 
-    // Server-side garage filter — replaces the previous client-side post-filter
-    // that caused pagination/count desync. When the user activates the garage
-    // filter, we ask the backend to restrict products to those whose
-    // compatibleEngines matches the vehicle's engine.
-    let engineDisplacement: string | undefined;
-    let engineFuelType: FuelType | undefined;
-    let engineCylinders: number | undefined;
-    if (this.vehicleFilterActive()) {
-      const vehicle = this.vehicleService.selectedVehicle();
-      if (vehicle?.engineType) {
-        engineDisplacement = vehicle.engineType.displacement || undefined;
-        engineFuelType = (vehicle.engineType.fuelType as FuelType | undefined) || undefined;
-        engineCylinders = vehicle.engineType.cylinders || undefined;
-      }
-    }
-
-    this.productService.getCatalog({
-      page: this.currentPage(),
-      limit: this.currentLimit(),
-      search: f.search || undefined,
-      vehicleType: (f.vehicleType as VehicleType) || undefined,
-      brand: f.brand || undefined,
-      category: f.category || undefined,
-      sortBy,
-      sortOrder,
-      isActive: true,
-      branchIds,
-      comboFirst: f.onlyCombos || undefined,
-      engineDisplacement,
-      engineFuelType,
-      engineCylinders,
-    }).subscribe({
-      next: (response) => {
-        // Map ProductCardDTO → ProductCardData (card expects `stock` field)
-        const mapped: ProductCardData[] = response.data.map((p: ProductCardDTO) => ({
-          id: p.id,
-          name: p.name,
-          description: p.description,
-          price: p.price,
-          comparePrice: p.comparePrice ?? null,
-          images: p.images,
-          brand: p.brand ?? undefined,
-          line: p.line ?? undefined,
-          productModel: p.productModel,
-          categories: p.category ? [p.category] : [],
-          isFeatured: p.isFeatured,
-          isCombo: p.isCombo,
-          stock: p.totalStock ?? 0,
-          freeOilChangeService: p.freeOilChangeService,
-          vehicleTypes: p.vehicleTypes,
-        }));
-        this.products.set(mapped);
-        this.totalPages.set(response.pagination?.pages || 1);
-        this.totalProducts.set(response.pagination?.total || 0);
-        this.isLoading.set(false);
-        this.isSearching.set(false);
-      },
-      error: () => {
-        this.isLoading.set(false);
-        this.isSearching.set(false);
-      },
-    });
+    // Garage→catalog flow filters by vehicleType only. Engine-level matching
+    // (compatibleEngines) is intentionally omitted: it requires admin-side
+    // registration of compatibleEngines that the product form doesn't expose,
+    // and the AND across displacement/fuelType/cylinders was producing empty
+    // results even on legitimate vehicles. The vehicle banner stays as visual
+    // context, but the actual server filter is the vehicleType.
+    return this.productService
+      .getCatalog({
+        page: this.currentPage(),
+        limit: this.currentLimit(),
+        search: f.search || undefined,
+        vehicleType: (f.vehicleType as VehicleType) || undefined,
+        brand: f.brand || undefined,
+        category: f.category || undefined,
+        sortBy,
+        sortOrder,
+        isActive: true,
+        branchIds,
+        comboFirst: f.onlyCombos || undefined,
+      })
+      .pipe(
+        catchError(() => {
+          this.isLoading.set(false);
+          this.isSearching.set(false);
+          return of(null);
+        }),
+      );
   }
 
   /** Fired on every keystroke (pre-debounce) — lights the spinner */
@@ -344,6 +363,11 @@ export class CatalogComponent implements OnInit {
       sortBy: 'createdAt',
       onlyCombos: true,
     });
+    // Drop garage context too: clearing filters dismisses the vehicle banner
+    // and unsets the selected vehicle so the user lands on a fully neutral
+    // catalog state.
+    this.vehicleFilterActive.set(false);
+    this.vehicleService.selectVehicle(null);
     this.currentPage.set(1);
     this.syncPageToUrl();
     this.loadProducts();
@@ -387,18 +411,6 @@ export class CatalogComponent implements OnInit {
   onLimitChange(newLimit: number | string): void {
     this.currentLimit.set(Number(newLimit));
     this.currentPage.set(1);
-    this.loadProducts();
-  }
-
-  /**
-   * Desactiva el filtro de vehículo y limpia la selección. Triggers a reload
-   * because engine filter is now server-side.
-   */
-  clearVehicleFilter(): void {
-    this.vehicleFilterActive.set(false);
-    this.vehicleService.selectVehicle(null);
-    this.currentPage.set(1);
-    this.syncPageToUrl();
     this.loadProducts();
   }
 

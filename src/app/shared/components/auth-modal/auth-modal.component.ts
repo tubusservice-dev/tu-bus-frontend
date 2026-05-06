@@ -153,6 +153,7 @@ export class AuthModalComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.docTypeSub?.unsubscribe();
+    this.oauthFailsafeCleanup?.();
   }
 
   switchMode(newMode: AuthMode): void {
@@ -345,14 +346,45 @@ export class AuthModalComponent implements OnInit, OnDestroy {
   // ========== OAuth ==========
 
   protected readonly isOAuthLoading = signal(false);
+  private oauthFailsafeCleanup: (() => void) | null = null;
 
   loginWithGoogle(): void {
     this.isOAuthLoading.set(true);
+    this.installOAuthFailsafe();
     this.authService.loginWithOAuth('google');
   }
 
-  loginWithFacebook(): void {
-    this.authService.loginWithOAuth('facebook');
+  /**
+   * Resets the OAuth spinner if the user returns to this page without
+   * completing the flow. Two real-world scenarios where the original
+   * page stays alive after clicking the OAuth button:
+   *  - In-app browsers (FB/LinkedIn/IG WebViews) that open Google in a
+   *    Custom Tab instead of navigating the WebView.
+   *  - Back-forward cache restoration after pressing Back from
+   *    accounts.google.com.
+   *
+   * No-op in the happy desktop path: the component is destroyed by the
+   * full-page redirect before any listener can fire.
+   */
+  private installOAuthFailsafe(): void {
+    const onVisibility = (): void => {
+      if (document.visibilityState === 'visible') cleanup();
+    };
+
+    const onPageShow = (event: PageTransitionEvent): void => {
+      if (event.persisted) cleanup();
+    };
+
+    const cleanup = (): void => {
+      this.isOAuthLoading.set(false);
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('pageshow', onPageShow);
+      this.oauthFailsafeCleanup = null;
+    };
+
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('pageshow', onPageShow);
+    this.oauthFailsafeCleanup = cleanup;
   }
 
   // ========== Helpers ==========

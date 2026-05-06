@@ -1,6 +1,6 @@
 import { Component, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Vehicle } from '../../../models/vehicle.model';
+import { Vehicle, VEHICLE_CATEGORY_OPTIONS } from '@models/vehicle.model';
 
 @Component({
   selector: 'app-vehicle-card',
@@ -37,6 +37,11 @@ export class VehicleCardComponent {
       hibrido: 'Híbrido',
     };
     return map[ft] || ft;
+  }
+
+  get vehicleTypeLabel(): string {
+    const vt = this.vehicle().vehicleType;
+    return VEHICLE_CATEGORY_OPTIONS.find((o) => o.value === vt)?.label || '';
   }
 
   get oilTypeLabel(): string {

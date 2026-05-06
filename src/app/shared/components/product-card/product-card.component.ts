@@ -157,6 +157,7 @@ export class ProductCardComponent {
       stock: this.product.stock || 0,
       freeOilChangeService: this.product.freeOilChangeService || false,
       vehicleTypes: this.product.vehicleTypes,
+      isCombo: this.product.isCombo,
     });
 
     if (result.success) {

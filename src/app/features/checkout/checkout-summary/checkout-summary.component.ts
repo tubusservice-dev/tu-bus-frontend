@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, computed } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy, computed } from '@angular/core';
 import { Router } from '@angular/router';
 import { CurrencyPipe, CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -38,7 +38,7 @@ import { businessTodayIso } from '@shared/utils/business-date.util';
   templateUrl: './checkout-summary.component.html',
   styleUrl: './checkout-summary.component.scss',
 })
-export class CheckoutSummaryComponent implements OnInit {
+export class CheckoutSummaryComponent implements OnInit, OnDestroy {
   protected readonly checkoutService = inject(CheckoutService);
   protected readonly cartService = inject(CartService);
   private readonly orderService = inject(OrderService);
@@ -53,6 +53,41 @@ export class CheckoutSummaryComponent implements OnInit {
   protected readonly exchangeRateService = inject(ExchangeRateService);
   private readonly clipboard = inject(ClipboardService);
   private readonly scrollLock = inject(BodyScrollLockService);
+
+  /**
+   * Local counter mirroring how many BodyScrollLock acquisitions this
+   * component currently holds. ngOnDestroy drains it so a back-gesture
+   * with a modal still open never leaves the page underneath frozen.
+   */
+  private heldScrollLocks = 0;
+  /**
+   * Pending setTimeout id for the order-confirmation processing window.
+   * Tracked so it can be cancelled in ngOnDestroy and not fire callbacks
+   * (and HTTP calls) on a destroyed component.
+   */
+  private confirmTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  ngOnDestroy(): void {
+    if (this.confirmTimeoutId !== null) {
+      clearTimeout(this.confirmTimeoutId);
+      this.confirmTimeoutId = null;
+    }
+    while (this.heldScrollLocks > 0) {
+      this.scrollLock.unlock();
+      this.heldScrollLocks--;
+    }
+  }
+
+  private acquireScrollLock(): void {
+    this.scrollLock.lock();
+    this.heldScrollLocks++;
+  }
+
+  private releaseScrollLock(): void {
+    if (this.heldScrollLocks <= 0) return;
+    this.scrollLock.unlock();
+    this.heldScrollLocks--;
+  }
 
   protected readonly todayStr = businessTodayIso();
 
@@ -80,6 +115,15 @@ export class CheckoutSummaryComponent implements OnInit {
   protected readonly showConfirmModal = signal(false);
   protected readonly isProcessingConfirm = signal(false);
   protected readonly isSubmittingPayment = signal(false);
+
+  /**
+   * True when at least one combo product is in the cart. The engine/filter
+   * disclaimer is only relevant for combos (which bundle a filter), so the
+   * UI hides it entirely otherwise.
+   */
+  protected readonly cartHasCombo = computed(
+    () => this.cartService.items().some((item) => item.isCombo === true),
+  );
 
   /** True when exactly one disclaimer is selected (XOR). */
   protected readonly hasDisclaimerSelection = computed(
@@ -174,6 +218,54 @@ export class CheckoutSummaryComponent implements OnInit {
   protected readonly paymentSubmitted = signal(false);
   protected readonly submittedPayment = signal<PaymentSubmission | null>(null);
   protected readonly submittedMethodType = signal<PaymentMethodType | null>(null);
+
+  /**
+   * Modal copy for info-only payment methods (tarjeta / efectivo). The wording
+   * adapts to the current dispatch type so the message stays truthful for each
+   * combination — e.g. for a delivery the customer pays at the door, not at
+   * the store; for an agency we coordinate the charge before dispatch; etc.
+   */
+  protected readonly infoOnlyMessage = computed<string>(() => {
+    const group = this.selectedGroup();
+    if (!group) return '';
+    const dispatch = this.checkoutService.dispatchType();
+
+    if (group.type === PaymentMethodType.TARJETA) {
+      switch (dispatch) {
+        case 'store_pickup':
+        case 'in_store_oil_change':
+          return 'Pagarás con tu tarjeta directamente en la tienda al retirar tu pedido. Aceptamos débito y crédito.';
+        case 'oil_change_service':
+          return 'Nuestro técnico llevará el punto de venta. Pagarás con tu tarjeta cuando finalice el servicio.';
+        case 'local_delivery':
+          return 'Nuestro repartidor llevará el punto de venta. Pagarás con tu tarjeta al recibir tu pedido.';
+        case 'shipping_agency':
+          return 'Te contactaremos para coordinar el pago con tarjeta antes de despachar a la agencia.';
+        case 'seller_agreement':
+        default:
+          return 'Te contactaremos para coordinar el pago con tarjeta.';
+      }
+    }
+
+    if (group.type === PaymentMethodType.EFECTIVO_DIVISAS) {
+      switch (dispatch) {
+        case 'store_pickup':
+        case 'in_store_oil_change':
+          return 'Pagarás en efectivo (USD) directamente en la tienda al retirar tu pedido.';
+        case 'oil_change_service':
+          return 'Pagarás en efectivo (USD) al finalizar el servicio. Te sugerimos tener el monto exacto.';
+        case 'local_delivery':
+          return 'Pagarás en efectivo (USD) al recibir tu pedido. Te sugerimos tener el monto exacto.';
+        case 'shipping_agency':
+          return 'Te contactaremos para coordinar el pago en efectivo (USD) antes de despachar a la agencia.';
+        case 'seller_agreement':
+        default:
+          return 'Te contactaremos para coordinar el pago en efectivo (USD).';
+      }
+    }
+
+    return '';
+  });
 
   // ========== Branch Selection (Pickup & In-Store Only) ==========
 
@@ -364,7 +456,9 @@ export class CheckoutSummaryComponent implements OnInit {
     const hasServiceDateIfOilChange =
       this.checkoutService.dispatchType() !== 'oil_change_service'
       || this.checkoutService.hasRequestedServiceDate();
-    return this.hasDisclaimerSelection()
+    // Disclaimer is only required when the cart contains a combo.
+    const disclaimerOk = !this.cartHasCombo() || this.hasDisclaimerSelection();
+    return disclaimerOk
       && this.paymentSubmitted()
       && hasBranchIfRequired
       && hasVehicleIfRequired
@@ -759,7 +853,7 @@ export class CheckoutSummaryComponent implements OnInit {
     const prefilled = this.computePrefilledAmount(group.type);
     this.formAmount.set(prefilled);
     this.showModal.set(true);
-    this.scrollLock.lock();
+    this.acquireScrollLock();
   }
 
   /** Returns the pre-filled amount for the current modal's payment type */
@@ -805,7 +899,7 @@ export class CheckoutSummaryComponent implements OnInit {
     this.selectedMethodInModal.set(null);
     this.isSubmittingPayment.set(false);
     this.resetForm();
-    this.scrollLock.unlock();
+    this.releaseScrollLock();
   }
 
   selectMethodInModal(method: PaymentMethodConfig): void {
@@ -956,22 +1050,23 @@ export class CheckoutSummaryComponent implements OnInit {
   onGenerateOrder(): void {
     if (!this.canGenerateOrder()) return;
     this.showConfirmModal.set(true);
-    this.scrollLock.lock();
+    this.acquireScrollLock();
   }
 
   onCancelOrder(): void {
     this.showConfirmModal.set(false);
-    this.scrollLock.unlock();
+    this.releaseScrollLock();
   }
 
   onConfirmOrder(): void {
     if (this.isProcessingConfirm()) return;
     this.isProcessingConfirm.set(true);
 
-    setTimeout(() => {
+    this.confirmTimeoutId = setTimeout(() => {
+      this.confirmTimeoutId = null;
       this.isProcessingConfirm.set(false);
       this.showConfirmModal.set(false);
-      this.scrollLock.unlock();
+      this.releaseScrollLock();
       this.isGenerating.set(true);
       this.errorMessage.set(null);
       this.executeOrder();

@@ -13,6 +13,12 @@
 
   <div class="card-body">
     <div class="spec-grid">
+      @if (vehicleTypeLabel) {
+        <div class="spec-item">
+          <span class="spec-label">Tipo</span>
+          <span class="spec-value">{{ vehicleTypeLabel }}</span>
+        </div>
+      }
       @if (vehicle().engineType?.displacement || vehicle().engineType?.cylinders) {
         <div class="spec-item">
           <span class="spec-label">Motor</span>

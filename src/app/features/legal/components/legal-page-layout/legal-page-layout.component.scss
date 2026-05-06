@@ -1,0 +1,148 @@
+// ============================================
+// LEGAL PAGE SHELL
+// ============================================
+// Long-form prose layout — generous line-height, comfortable measure,
+// section spacing tuned for readability rather than density.
+
+:host {
+  display: block;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: calc(100vh - var(--app-header-height, 56px));
+}
+
+.legal-page {
+  @apply max-w-3xl mx-auto px-5 sm:px-6 lg:px-8 py-8 sm:py-12;
+}
+
+// ============================================
+// HERO
+// ============================================
+.legal-hero {
+  @apply mb-8 pb-6;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.legal-back {
+  @apply inline-flex items-center gap-1.5 mb-5 text-sm font-medium;
+  padding: 0.4rem 0.7rem 0.4rem 0.4rem;
+  border-radius: 0.5rem;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
+
+  svg {
+    width: 1rem;
+    height: 1rem;
+    transition: transform 150ms ease;
+  }
+
+  &:hover {
+    color: var(--text-primary);
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+
+    svg {
+      transform: translateX(-2px);
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+  }
+}
+
+.legal-title {
+  @apply text-3xl sm:text-4xl font-bold tracking-tight mb-3;
+  color: var(--text-primary);
+}
+
+.legal-subtitle {
+  @apply text-base sm:text-lg leading-relaxed;
+  color: var(--text-secondary);
+  max-width: 60ch;
+}
+
+.legal-updated {
+  @apply text-xs mt-3;
+  color: var(--text-secondary);
+  opacity: 0.75;
+}
+
+// ============================================
+// CONTENT — projected children
+// ============================================
+.legal-content {
+  @apply space-y-8;
+
+  // Section blocks own their own H2 + paragraphs/lists.
+  ::ng-deep section {
+    @apply space-y-3;
+  }
+
+  ::ng-deep h2 {
+    @apply text-xl sm:text-2xl font-semibold mt-8 mb-2;
+    color: var(--text-primary);
+    scroll-margin-top: calc(var(--app-header-height, 56px) + 1rem);
+  }
+
+  ::ng-deep h3 {
+    @apply text-base sm:text-lg font-semibold mt-4 mb-1;
+    color: var(--text-primary);
+  }
+
+  ::ng-deep p {
+    @apply text-sm sm:text-base leading-relaxed;
+    color: var(--text-secondary);
+  }
+
+  ::ng-deep ul,
+  ::ng-deep ol {
+    @apply pl-5 space-y-2 text-sm sm:text-base leading-relaxed;
+    color: var(--text-secondary);
+  }
+
+  ::ng-deep ul {
+    list-style: disc;
+  }
+
+  ::ng-deep ol {
+    list-style: decimal;
+  }
+
+  ::ng-deep li::marker {
+    color: var(--accent-primary);
+  }
+
+  ::ng-deep strong {
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+
+  ::ng-deep a {
+    color: var(--accent-primary);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    transition: opacity 150ms ease;
+
+    &:hover {
+      opacity: 0.8;
+    }
+  }
+
+  // Highlighted callout — used for "Important" notes inside any section.
+  ::ng-deep .legal-callout {
+    @apply rounded-lg p-4 my-4 text-sm leading-relaxed;
+    background-color: var(--bg-secondary);
+    border-left: 4px solid var(--accent-primary);
+    color: var(--text-primary);
+
+    strong {
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+  }
+}

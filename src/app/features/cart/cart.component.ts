@@ -1,5 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { CurrencyPipe } from '@angular/common';
 import { CartService, CartItem } from '../../core/services/cart.service';
 import { ExchangeRateService } from '../../core/services/exchange-rate.service';
@@ -8,7 +8,7 @@ import { OverlayStackService } from '../../core/services/overlay-stack.service';
 @Component({
   selector: 'app-cart',
   standalone: true,
-  imports: [CurrencyPipe, RouterLink],
+  imports: [CurrencyPipe],
   templateUrl: './cart.component.html',
   styleUrl: './cart.component.scss',
 })
@@ -32,7 +32,14 @@ export class CartComponent {
   }
 
   goToCatalog(): void {
-    this.router.navigate(['/catalogo']);
+    // When the cart is mounted as an overlay on top of /catalogo, a plain
+    // router.navigate is a no-op (same URL). Pop the overlay instead so the
+    // user lands back on the catalog underneath.
+    if (this.overlayService.isOpen()) {
+      this.overlayService.goBack();
+    } else {
+      this.router.navigate(['/catalogo']);
+    }
   }
 
   /** Header back button. When this cart is mounted inside an overlay,

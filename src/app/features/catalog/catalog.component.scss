@@ -35,6 +35,12 @@
 // Layout wrapper for app-search-input inside the header actions
 .search-box {
   @apply flex-1 min-w-[200px] max-w-md;
+
+  // Mobile: claim the entire first row so the search field gets full width.
+  @media (max-width: 639px) {
+    @apply max-w-none min-w-0;
+    flex-basis: 100%;
+  }
 }
 
 .btn-filter {
@@ -48,12 +54,24 @@
   .filter-badge {
     @apply px-1.5 py-0.5 bg-red-600 text-white text-xs font-bold rounded-full min-w-[20px] text-center;
   }
+
+  // Mobile: share row 2 with the sort select, sitting on the right side.
+  // DOM order is filter → sort, so we use `order` to flip the visual order.
+  @media (max-width: 639px) {
+    order: 2;
+  }
 }
 
 .sort-select {
   @apply px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg;
   @apply text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2;
   &:focus { --tw-ring-color: var(--accent-primary); }
+
+  // Mobile: claim the leftover space on row 2, to the left of the filter button.
+  @media (max-width: 639px) {
+    @apply flex-1 min-w-0;
+    order: 1;
+  }
 }
 
 // Panel de filtros
@@ -155,7 +173,7 @@
 
 // Banner de filtro por vehículo
 .vehicle-filter-banner {
-  @apply flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6 px-4 py-3;
+  @apply flex items-center gap-3 mb-6 px-4 py-3;
   @apply bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl;
 
   .banner-content {
@@ -166,14 +184,6 @@
     }
   }
 
-  .banner-close {
-    @apply inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-700 dark:text-blue-300;
-    @apply hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded-lg transition-colors flex-shrink-0;
-
-    svg {
-      @apply w-4 h-4;
-    }
-  }
 }
 
 // Contenido principal
@@ -374,10 +384,6 @@
     border-color: #1e3a5f;
 
     .banner-content { color: #93c5fd; }
-    .banner-close {
-      color: #93c5fd;
-      &:hover { background-color: rgba(59, 130, 246, 0.2); }
-    }
   }
 
   .skeleton-card {

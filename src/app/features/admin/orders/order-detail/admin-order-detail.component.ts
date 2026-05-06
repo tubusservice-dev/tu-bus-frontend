@@ -311,6 +311,15 @@ export class AdminOrderDetailComponent implements OnInit {
     return String(order.user || '-');
   }
 
+  /**
+   * Whether the order contains at least one combo item. Used to decide if the
+   * disclaimer row should render — combos bundle a filter, so the disclaimer
+   * only applies to them.
+   */
+  orderHasCombo(order: Order): boolean {
+    return order.items?.some((item) => item.isCombo === true) ?? false;
+  }
+
   getClientEmail(order: Order): string {
     if (typeof order.user === 'object' && order.user) {
       return order.user.email || '';

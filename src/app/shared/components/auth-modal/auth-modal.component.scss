@@ -192,7 +192,7 @@
   padding-right: 36px;
 }
 
-.divider {
+.auth-divider {
   @apply flex items-center gap-4 my-6;
   &::before, &::after { content: ''; @apply flex-1 h-px bg-gray-200 dark:bg-gray-700; }
   span { @apply text-sm text-gray-500 dark:text-gray-400; }
@@ -241,7 +241,7 @@
 
   .field-error { color: #f87171; }
 
-  .divider {
+  .auth-divider {
     &::before, &::after { background-color: #374151; }
     span { color: #9ca3af; }
   }

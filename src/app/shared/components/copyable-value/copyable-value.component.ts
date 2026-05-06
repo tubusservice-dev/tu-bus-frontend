@@ -39,6 +39,12 @@ export class CopyableValueComponent {
   @Input() monospace = true;
   /** Row layout (label left, value+button right). Set false for stacked layout. */
   @Input() compactRow = true;
+  /**
+   * Show the copy-to-clipboard button. Disable when the value is purely
+   * informational and copying would not help the user (e.g. card-payment
+   * totals — the customer pays in person, not by transfer).
+   */
+  @Input() showCopyButton = true;
 
   private readonly clipboard = inject(ClipboardService);
   protected readonly copied = signal(false);

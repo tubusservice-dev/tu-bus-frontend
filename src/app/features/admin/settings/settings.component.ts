@@ -14,7 +14,7 @@ import {
   getPaymentMethodSummary,
 } from '../../../models/payment-method.model';
 
-type SectionKey = 'heroImages' | 'homeHero' | 'whatsapp' | 'carousels' | 'pagination' | 'dispatchModules' | 'dispatch' | 'paymentMethods' | 'exchangeRate' | 'supportContact' | 'adminNotifications';
+type SectionKey = 'heroImages' | 'homeHero' | 'whatsapp' | 'carousels' | 'pagination' | 'dispatchModules' | 'dispatch' | 'paymentMethods' | 'exchangeRate' | 'supportContact' | 'customerSupport' | 'adminNotifications';
 type PaginationSubKey = 'catalogLimit' | 'adminLimit';
 
 @Component({
@@ -81,6 +81,7 @@ export class SettingsComponent implements OnInit {
     paymentMethods: false,
     exchangeRate: false,
     supportContact: false,
+    customerSupport: false,
     adminNotifications: false,
   });
 
@@ -95,6 +96,7 @@ export class SettingsComponent implements OnInit {
     paymentMethods: false,
     exchangeRate: false,
     supportContact: false,
+    customerSupport: false,
     adminNotifications: false,
   });
 
@@ -109,6 +111,7 @@ export class SettingsComponent implements OnInit {
     paymentMethods: null,
     exchangeRate: null,
     supportContact: null,
+    customerSupport: null,
     adminNotifications: null,
   });
 
@@ -141,6 +144,7 @@ export class SettingsComponent implements OnInit {
   protected dispatchModulesForm!: FormGroup;
   protected dispatchForm!: FormGroup;
   protected supportContactForm!: FormGroup;
+  protected customerSupportForm!: FormGroup;
   protected adminNotificationsForm!: FormGroup;
 
   ngOnInit(): void {
@@ -213,6 +217,13 @@ export class SettingsComponent implements OnInit {
       whatsapp: ['', [Validators.pattern(/^(?:\+?\d{1,3})?[\s-]?\d{10,11}$/), Validators.maxLength(20)]],
     });
 
+    this.customerSupportForm = this.fb.group({
+      firstName: ['', [Validators.required, Validators.maxLength(20)]],
+      lastName: ['', [Validators.required, Validators.maxLength(20)]],
+      phone: ['', [Validators.required, Validators.pattern(/^04\d{2}-?\d{7}$/)]],
+      whatsapp: ['', [Validators.pattern(/^(?:\+?\d{1,3})?[\s-]?\d{10,11}$/), Validators.maxLength(20)]],
+    });
+
     this.adminNotificationsForm = this.fb.group({
       newOrder: [true],
       paymentNote: [true],
@@ -267,6 +278,11 @@ export class SettingsComponent implements OnInit {
         // Support contact
         if (data.supportContact) {
           this.supportContactForm.patchValue(data.supportContact);
+        }
+
+        // Customer support contact
+        if (data.customerSupport) {
+          this.customerSupportForm.patchValue(data.customerSupport);
         }
 
         // Admin notifications preferences
@@ -657,6 +673,29 @@ export class SettingsComponent implements OnInit {
       error: (error) => {
         this.setSaving('supportContact', false);
         this.setError('supportContact', error.error?.message || 'Error al guardar');
+      },
+    });
+  }
+
+  // ========== Contacto de Soporte para el Cliente ==========
+  saveCustomerSupport(): void {
+    if (this.customerSupportForm.invalid) {
+      this.customerSupportForm.markAllAsTouched();
+      return;
+    }
+
+    this.setSaving('customerSupport', true);
+    this.clearMessages('customerSupport');
+
+    this.settingsService.updateCustomerSupport(this.customerSupportForm.value).subscribe({
+      next: () => {
+        this.setSaving('customerSupport', false);
+        this.setSuccess('customerSupport', true);
+        setTimeout(() => this.setSuccess('customerSupport', false), 3000);
+      },
+      error: (error) => {
+        this.setSaving('customerSupport', false);
+        this.setError('customerSupport', error.error?.message || 'Error al guardar');
       },
     });
   }
