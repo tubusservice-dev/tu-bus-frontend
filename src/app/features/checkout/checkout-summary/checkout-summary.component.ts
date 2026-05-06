@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, computed } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy, computed } from '@angular/core';
 import { Router } from '@angular/router';
 import { CurrencyPipe, CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -38,7 +38,7 @@ import { businessTodayIso } from '@shared/utils/business-date.util';
   templateUrl: './checkout-summary.component.html',
   styleUrl: './checkout-summary.component.scss',
 })
-export class CheckoutSummaryComponent implements OnInit {
+export class CheckoutSummaryComponent implements OnInit, OnDestroy {
   protected readonly checkoutService = inject(CheckoutService);
   protected readonly cartService = inject(CartService);
   private readonly orderService = inject(OrderService);
@@ -53,6 +53,41 @@ export class CheckoutSummaryComponent implements OnInit {
   protected readonly exchangeRateService = inject(ExchangeRateService);
   private readonly clipboard = inject(ClipboardService);
   private readonly scrollLock = inject(BodyScrollLockService);
+
+  /**
+   * Local counter mirroring how many BodyScrollLock acquisitions this
+   * component currently holds. ngOnDestroy drains it so a back-gesture
+   * with a modal still open never leaves the page underneath frozen.
+   */
+  private heldScrollLocks = 0;
+  /**
+   * Pending setTimeout id for the order-confirmation processing window.
+   * Tracked so it can be cancelled in ngOnDestroy and not fire callbacks
+   * (and HTTP calls) on a destroyed component.
+   */
+  private confirmTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  ngOnDestroy(): void {
+    if (this.confirmTimeoutId !== null) {
+      clearTimeout(this.confirmTimeoutId);
+      this.confirmTimeoutId = null;
+    }
+    while (this.heldScrollLocks > 0) {
+      this.scrollLock.unlock();
+      this.heldScrollLocks--;
+    }
+  }
+
+  private acquireScrollLock(): void {
+    this.scrollLock.lock();
+    this.heldScrollLocks++;
+  }
+
+  private releaseScrollLock(): void {
+    if (this.heldScrollLocks <= 0) return;
+    this.scrollLock.unlock();
+    this.heldScrollLocks--;
+  }
 
   protected readonly todayStr = businessTodayIso();
 
@@ -818,7 +853,7 @@ export class CheckoutSummaryComponent implements OnInit {
     const prefilled = this.computePrefilledAmount(group.type);
     this.formAmount.set(prefilled);
     this.showModal.set(true);
-    this.scrollLock.lock();
+    this.acquireScrollLock();
   }
 
   /** Returns the pre-filled amount for the current modal's payment type */
@@ -864,7 +899,7 @@ export class CheckoutSummaryComponent implements OnInit {
     this.selectedMethodInModal.set(null);
     this.isSubmittingPayment.set(false);
     this.resetForm();
-    this.scrollLock.unlock();
+    this.releaseScrollLock();
   }
 
   selectMethodInModal(method: PaymentMethodConfig): void {
@@ -1015,22 +1050,23 @@ export class CheckoutSummaryComponent implements OnInit {
   onGenerateOrder(): void {
     if (!this.canGenerateOrder()) return;
     this.showConfirmModal.set(true);
-    this.scrollLock.lock();
+    this.acquireScrollLock();
   }
 
   onCancelOrder(): void {
     this.showConfirmModal.set(false);
-    this.scrollLock.unlock();
+    this.releaseScrollLock();
   }
 
   onConfirmOrder(): void {
     if (this.isProcessingConfirm()) return;
     this.isProcessingConfirm.set(true);
 
-    setTimeout(() => {
+    this.confirmTimeoutId = setTimeout(() => {
+      this.confirmTimeoutId = null;
       this.isProcessingConfirm.set(false);
       this.showConfirmModal.set(false);
-      this.scrollLock.unlock();
+      this.releaseScrollLock();
       this.isGenerating.set(true);
       this.errorMessage.set(null);
       this.executeOrder();

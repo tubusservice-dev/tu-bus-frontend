@@ -1,5 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { CurrencyPipe } from '@angular/common';
 import { CartService, CartItem } from '../../core/services/cart.service';
 import { ExchangeRateService } from '../../core/services/exchange-rate.service';
@@ -8,7 +8,7 @@ import { OverlayStackService } from '../../core/services/overlay-stack.service';
 @Component({
   selector: 'app-cart',
   standalone: true,
-  imports: [CurrencyPipe, RouterLink],
+  imports: [CurrencyPipe],
   templateUrl: './cart.component.html',
   styleUrl: './cart.component.scss',
 })

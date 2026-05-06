@@ -82,6 +82,19 @@ export interface SupportContactConfig {
   whatsapp: string;
 }
 
+/**
+ * Customer-facing support contact (landing-page WhatsApp CTA).
+ * Same shape as SupportContactConfig but a separate namespace so the
+ * customer channel stays decoupled from the mechanic-support channel.
+ */
+export interface CustomerSupportConfig {
+  firstName: string;
+  lastName: string;
+  phone: string;
+  email: string;
+  whatsapp: string;
+}
+
 export interface AdminNotificationsConfig {
   newOrder: boolean;
   paymentNote: boolean;
@@ -102,6 +115,7 @@ export interface Settings {
   dispatch: DispatchConfig;
   exchangeRate: ExchangeRateConfig;
   supportContact: SupportContactConfig;
+  customerSupport: CustomerSupportConfig;
   adminNotifications: AdminNotificationsConfig;
   updatedAt?: string;
 }
@@ -169,6 +183,13 @@ export const DEFAULT_SETTINGS: Settings = {
     useCustomRate: false,
   },
   supportContact: {
+    firstName: '',
+    lastName: '',
+    phone: '',
+    email: '',
+    whatsapp: '',
+  },
+  customerSupport: {
     firstName: '',
     lastName: '',
     phone: '',
