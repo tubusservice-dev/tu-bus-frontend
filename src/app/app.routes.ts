@@ -434,6 +434,31 @@ export const routes: Routes = [
           ),
         canActivate: [authGuard],
       },
+      // Páginas legales — públicas, accesibles sin sesión.
+      {
+        path: 'legal/terminos',
+        loadComponent: () =>
+          import('./features/legal/pages/terms-and-conditions/terms-and-conditions.component').then(
+            (m) => m.TermsAndConditionsComponent
+          ),
+        title: 'Términos y Condiciones · TuBus Express',
+      },
+      {
+        path: 'legal/privacidad',
+        loadComponent: () =>
+          import('./features/legal/pages/privacy-policy/privacy-policy.component').then(
+            (m) => m.PrivacyPolicyComponent
+          ),
+        title: 'Política de Privacidad · TuBus Express',
+      },
+      {
+        path: 'legal/cookies',
+        loadComponent: () =>
+          import('./features/legal/pages/cookies-policy/cookies-policy.component').then(
+            (m) => m.CookiesPolicyComponent
+          ),
+        title: 'Política de Cookies · TuBus Express',
+      },
     ],
   },
   // Pagina publica de progreso del mecanico (sin layout, sin auth)

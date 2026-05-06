@@ -83,9 +83,13 @@
 }
 
 .social-link {
-  @apply w-10 h-10 flex items-center justify-center rounded-lg transition-all duration-200;
+  @apply w-10 h-10 flex items-center justify-center rounded-lg transition-all duration-200 cursor-pointer;
   background-color: var(--bg-tertiary);
   color: var(--text-secondary);
+  // Reset native <button> defaults so the placeholder buttons render
+  // identically to the prior <a> elements.
+  border: none;
+  padding: 0;
 
   &:hover {
     background-color: var(--accent-primary);
