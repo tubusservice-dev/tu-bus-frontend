@@ -83,16 +83,17 @@ export interface SupportContactConfig {
 }
 
 /**
- * Customer-facing support contact (landing-page WhatsApp CTA).
- * Same shape as SupportContactConfig but a separate namespace so the
- * customer channel stays decoupled from the mechanic-support channel.
+ * Customer-facing channels surfaced in the landing page:
+ *  - `whatsapp`  → number behind the "Escríbenos por WhatsApp" CTA card
+ *  - `instagram`, `facebook`, `x` → social links in the footer.
+ * Empty string means "not configured" — the landing falls back to a
+ * "Próximamente" toast for that field.
  */
 export interface CustomerSupportConfig {
-  firstName: string;
-  lastName: string;
-  phone: string;
-  email: string;
   whatsapp: string;
+  instagram: string;
+  facebook: string;
+  x: string;
 }
 
 export interface AdminNotificationsConfig {
@@ -190,11 +191,10 @@ export const DEFAULT_SETTINGS: Settings = {
     whatsapp: '',
   },
   customerSupport: {
-    firstName: '',
-    lastName: '',
-    phone: '',
-    email: '',
     whatsapp: '',
+    instagram: '',
+    facebook: '',
+    x: '',
   },
   adminNotifications: {
     newOrder: true,

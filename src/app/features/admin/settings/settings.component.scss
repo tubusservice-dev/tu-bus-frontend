@@ -409,7 +409,7 @@
 
   &:focus {
     @apply ring-2 ring-offset-0 border-transparent outline-none;
-    ring-color: var(--accent-primary);
+    --tw-ring-color: var(--accent-primary);
   }
 
   &::placeholder {
@@ -674,6 +674,54 @@
 
   .btn-spinner {
     @apply w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin;
+  }
+}
+
+// Outline-danger variant used by the per-field "Eliminar" buttons in the
+// "Atención al Cliente" accordion. Subdued by default so it doesn't compete
+// with the primary "Guardar"; saturates on hover.
+.btn-delete {
+  @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 font-medium rounded-lg transition-colors disabled:opacity-50;
+  background-color: transparent;
+  color: #ef4444;
+  border: 1px solid #ef4444;
+
+  &:hover:not(:disabled) {
+    background-color: #ef4444;
+    color: #ffffff;
+  }
+}
+
+// Per-field row inside the customer-support accordion: input on the left,
+// independent [Guardar] [Eliminar] pair on the right. Stacks on narrow
+// screens so the buttons remain reachable.
+.customer-field {
+  & + .customer-field {
+    @apply mt-5;
+  }
+}
+
+.customer-field-row {
+  @apply flex items-stretch gap-3;
+
+  .form-input {
+    @apply flex-1 min-w-0;
+  }
+
+  @media (max-width: 639px) {
+    @apply flex-col;
+  }
+}
+
+.customer-field-actions {
+  @apply flex items-center gap-2 flex-shrink-0;
+
+  @media (max-width: 639px) {
+    @apply w-full;
+
+    .btn-save, .btn-delete {
+      @apply flex-1;
+    }
   }
 }
 
@@ -1014,8 +1062,8 @@
   @apply rounded-lg;
   border-top-right-radius: 0;
   border-top-left-radius: 0;
-  border-top: none;
   background-color: #e0edff;
+  // Order matters: shorthand `border` first, then `border-top` override.
   border: 1px solid #c5d9f5;
   border-top: none;
 

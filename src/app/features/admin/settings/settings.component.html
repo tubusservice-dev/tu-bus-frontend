@@ -1055,7 +1055,7 @@
         </div>
       </div>
 
-      <!-- ========== SECCIÓN CONTACTO DE SOPORTE PARA EL CLIENTE ========== -->
+      <!-- ========== SECCIÓN CONTACTO PARA ATENCIÓN AL CLIENTE ========== -->
       <div class="accordion-item" [class.expanded]="activeSection() === 'customerSupport'">
         <button class="accordion-header" (click)="toggleSection('customerSupport')" type="button">
           <div class="header-content">
@@ -1064,7 +1064,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 0 1-.825-.242m9.345-8.334a2.126 2.126 0 0 0-.476-.095 48.64 48.64 0 0 0-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0 0 11.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155" />
               </svg>
             </span>
-            <span class="title">Contacto de soporte para el cliente</span>
+            <span class="title">Contacto para atención al Cliente</span>
           </div>
           <span class="chevron" [class.rotated]="activeSection() === 'customerSupport'">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
@@ -1076,60 +1076,113 @@
         <div class="accordion-content" [class.open]="activeSection() === 'customerSupport'">
           <div class="section-form">
             <p class="section-description">
-              Información de contacto que verá el cliente en el botón de WhatsApp del landing page. Independiente de las sucursales.
+              Canales que ve el cliente en el landing: el botón de WhatsApp y los iconos sociales del footer.
+              Cada campo se guarda o elimina de forma independiente. Los campos vacíos muestran un toast de
+              "Próximamente" en el footer.
             </p>
 
-            <form [formGroup]="customerSupportForm" (ngSubmit)="saveCustomerSupport()">
-              <div class="form-grid-2">
-                <div class="form-group">
-                  <label class="form-label">Nombre</label>
-                  <input type="text" formControlName="firstName" class="form-input" placeholder="Nombre" maxlength="20" />
-                  @if (customerSupportForm.get('firstName')?.touched && customerSupportForm.get('firstName')?.invalid) {
-                    <small class="form-error">Requerido (máx. 20 caracteres)</small>
-                  }
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Apellido</label>
-                  <input type="text" formControlName="lastName" class="form-input" placeholder="Apellido" maxlength="20" />
-                  @if (customerSupportForm.get('lastName')?.touched && customerSupportForm.get('lastName')?.invalid) {
-                    <small class="form-error">Requerido (máx. 20 caracteres)</small>
-                  }
-                </div>
-              </div>
+            <form [formGroup]="customerSupportForm">
 
-              <div class="form-grid-2">
-                <div class="form-group">
-                  <label class="form-label">Teléfono</label>
-                  <input type="tel" formControlName="phone" class="form-input" placeholder="0412-1234567" maxlength="12" />
-                  @if (customerSupportForm.get('phone')?.touched && customerSupportForm.get('phone')?.invalid) {
-                    <small class="form-error">Formato: 04XX-XXXXXXX o 04XXXXXXXXXX</small>
-                  }
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Teléfono de WhatsApp</label>
+              <!-- WhatsApp -->
+              <div class="form-group customer-field">
+                <label class="form-label">WhatsApp para atención al cliente</label>
+                <div class="customer-field-row">
                   <input type="tel" formControlName="whatsapp" class="form-input" placeholder="+58412XXXXXXX o 0412-XXXXXXX" maxlength="20" />
-                  @if (customerSupportForm.get('whatsapp')?.touched && customerSupportForm.get('whatsapp')?.invalid) {
-                    <small class="form-error">Formato inválido. Usa +58412XXXXXXX o 0412-XXXXXXX</small>
-                  }
+                  <div class="customer-field-actions">
+                    <button type="button" class="btn-save" [disabled]="customerFieldSaving()['whatsapp'] || customerSupportForm.get('whatsapp')?.invalid" (click)="saveCustomerField('whatsapp')">
+                      @if (customerFieldSaving()['whatsapp']) {
+                        <span class="btn-spinner-small"></span> Guardando...
+                      } @else {
+                        Guardar
+                      }
+                    </button>
+                    <button type="button" class="btn-delete" [disabled]="customerFieldSaving()['whatsapp']" (click)="deleteCustomerField('whatsapp')">
+                      Eliminar
+                    </button>
+                  </div>
                 </div>
+                @if (customerSupportForm.get('whatsapp')?.touched && customerSupportForm.get('whatsapp')?.invalid) {
+                  <small class="form-error">Formato inválido. Usa +58412XXXXXXX o 0412-XXXXXXX</small>
+                }
+                @if (customerFieldSuccess()['whatsapp']) { <span class="save-success-text">Guardado</span> }
+                @if (customerFieldError()['whatsapp']) { <span class="save-error-text">{{ customerFieldError()['whatsapp'] }}</span> }
               </div>
 
-              <div class="form-actions">
-                <button type="submit" class="btn-save" [disabled]="isSaving()['customerSupport'] || customerSupportForm.invalid">
-                  @if (isSaving()['customerSupport']) {
-                    <span class="btn-spinner-small"></span>
-                    Guardando...
-                  } @else {
-                    Guardar
-                  }
-                </button>
-                @if (saveSuccess()['customerSupport']) {
-                  <span class="save-success-text">Guardado correctamente</span>
+              <!-- Instagram -->
+              <div class="form-group customer-field">
+                <label class="form-label">Instagram</label>
+                <div class="customer-field-row">
+                  <input type="url" formControlName="instagram" class="form-input" placeholder="https://www.instagram.com/usuario" maxlength="200" />
+                  <div class="customer-field-actions">
+                    <button type="button" class="btn-save" [disabled]="customerFieldSaving()['instagram'] || customerSupportForm.get('instagram')?.invalid" (click)="saveCustomerField('instagram')">
+                      @if (customerFieldSaving()['instagram']) {
+                        <span class="btn-spinner-small"></span> Guardando...
+                      } @else {
+                        Guardar
+                      }
+                    </button>
+                    <button type="button" class="btn-delete" [disabled]="customerFieldSaving()['instagram']" (click)="deleteCustomerField('instagram')">
+                      Eliminar
+                    </button>
+                  </div>
+                </div>
+                @if (customerSupportForm.get('instagram')?.touched && customerSupportForm.get('instagram')?.invalid) {
+                  <small class="form-error">URL inválida. Debe iniciar con http:// o https://</small>
                 }
-                @if (errorMessage()['customerSupport']) {
-                  <span class="save-error-text">{{ errorMessage()['customerSupport'] }}</span>
-                }
+                @if (customerFieldSuccess()['instagram']) { <span class="save-success-text">Guardado</span> }
+                @if (customerFieldError()['instagram']) { <span class="save-error-text">{{ customerFieldError()['instagram'] }}</span> }
               </div>
+
+              <!-- Facebook -->
+              <div class="form-group customer-field">
+                <label class="form-label">Facebook</label>
+                <div class="customer-field-row">
+                  <input type="url" formControlName="facebook" class="form-input" placeholder="https://www.facebook.com/pagina" maxlength="200" />
+                  <div class="customer-field-actions">
+                    <button type="button" class="btn-save" [disabled]="customerFieldSaving()['facebook'] || customerSupportForm.get('facebook')?.invalid" (click)="saveCustomerField('facebook')">
+                      @if (customerFieldSaving()['facebook']) {
+                        <span class="btn-spinner-small"></span> Guardando...
+                      } @else {
+                        Guardar
+                      }
+                    </button>
+                    <button type="button" class="btn-delete" [disabled]="customerFieldSaving()['facebook']" (click)="deleteCustomerField('facebook')">
+                      Eliminar
+                    </button>
+                  </div>
+                </div>
+                @if (customerSupportForm.get('facebook')?.touched && customerSupportForm.get('facebook')?.invalid) {
+                  <small class="form-error">URL inválida. Debe iniciar con http:// o https://</small>
+                }
+                @if (customerFieldSuccess()['facebook']) { <span class="save-success-text">Guardado</span> }
+                @if (customerFieldError()['facebook']) { <span class="save-error-text">{{ customerFieldError()['facebook'] }}</span> }
+              </div>
+
+              <!-- X -->
+              <div class="form-group customer-field">
+                <label class="form-label">X</label>
+                <div class="customer-field-row">
+                  <input type="url" formControlName="x" class="form-input" placeholder="https://x.com/usuario" maxlength="200" />
+                  <div class="customer-field-actions">
+                    <button type="button" class="btn-save" [disabled]="customerFieldSaving()['x'] || customerSupportForm.get('x')?.invalid" (click)="saveCustomerField('x')">
+                      @if (customerFieldSaving()['x']) {
+                        <span class="btn-spinner-small"></span> Guardando...
+                      } @else {
+                        Guardar
+                      }
+                    </button>
+                    <button type="button" class="btn-delete" [disabled]="customerFieldSaving()['x']" (click)="deleteCustomerField('x')">
+                      Eliminar
+                    </button>
+                  </div>
+                </div>
+                @if (customerSupportForm.get('x')?.touched && customerSupportForm.get('x')?.invalid) {
+                  <small class="form-error">URL inválida. Debe iniciar con http:// o https://</small>
+                }
+                @if (customerFieldSuccess()['x']) { <span class="save-success-text">Guardado</span> }
+                @if (customerFieldError()['x']) { <span class="save-error-text">{{ customerFieldError()['x'] }}</span> }
+              </div>
+
             </form>
           </div>
         </div>
