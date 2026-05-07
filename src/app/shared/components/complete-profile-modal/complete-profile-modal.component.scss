@@ -1,0 +1,127 @@
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+.modal-overlay {
+  @apply fixed inset-0 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm;
+  z-index: 1100;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-container {
+  @apply w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden;
+  animation: slideUp 0.3s ease-out;
+}
+
+.modal-header {
+  @apply flex items-start justify-between gap-4 p-6 pb-2;
+}
+
+.modal-title { @apply text-xl font-bold text-gray-900 dark:text-white; }
+.modal-subtitle { @apply text-sm text-gray-600 dark:text-gray-400 mt-1; }
+
+.close-btn {
+  @apply p-2 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-300
+    hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors;
+  svg { @apply w-5 h-5; }
+}
+
+.modal-content { @apply px-6 pb-6 pt-2; }
+
+.error-alert {
+  @apply flex items-center gap-2 p-3 mb-4 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm;
+}
+
+.form { @apply space-y-4; }
+
+.form-row { @apply grid grid-cols-2 gap-4; }
+.form-row-doc { @apply grid-cols-[1fr_2fr]; }
+
+.form-group { @apply flex flex-col gap-1.5; }
+.form-label { @apply text-sm font-medium text-gray-700 dark:text-gray-200; }
+
+.form-input {
+  @apply w-full py-2.5 px-3 rounded-lg border bg-white dark:bg-gray-900
+    text-gray-900 dark:text-white text-sm
+    border-gray-300 dark:border-gray-600
+    focus:outline-none focus:ring-2 focus:ring-offset-0;
+  --tw-ring-color: var(--accent-primary, #001d56);
+  &.error { @apply border-red-500; }
+}
+
+.form-select {
+  @apply appearance-none cursor-pointer;
+}
+
+.doc-type-selector {
+  @apply relative;
+}
+
+.doc-type-trigger {
+  @apply flex w-full items-center justify-between cursor-pointer text-left;
+
+  &.placeholder {
+    @apply text-gray-400 dark:text-gray-500;
+  }
+
+  .chevron {
+    @apply w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform duration-150;
+
+    &.open {
+      @apply rotate-180;
+    }
+  }
+}
+
+.doc-type-options {
+  @apply absolute z-20 left-0 mt-1 max-h-60 overflow-auto;
+  @apply rounded-lg border bg-white dark:bg-gray-900;
+  @apply border-gray-200 dark:border-gray-700 shadow-lg;
+  @apply list-none p-1;
+
+  // The trigger column is narrow ("Tipo" cell), but the dropdown should
+  // size to the longest option so the labels never wrap.
+  min-width: 12rem;
+}
+
+.doc-type-option {
+  @apply px-3 py-2 rounded-md text-sm cursor-pointer whitespace-nowrap;
+  @apply text-gray-800 dark:text-gray-200;
+  @apply hover:bg-gray-100 dark:hover:bg-gray-700;
+
+  // Selected option: light-mode keeps the dark-blue brand color, dark-mode
+  // uses a lighter blue that survives against the dark dropdown background.
+  &.selected {
+    @apply font-semibold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30;
+  }
+}
+
+.field-error {
+  @apply text-xs text-red-600 dark:text-red-400;
+}
+
+.actions {
+  @apply flex gap-3 pt-2;
+}
+
+.btn-primary {
+  @apply flex-1 py-2.5 px-4 rounded-lg text-white font-medium transition-colors
+    flex items-center justify-center gap-2;
+  background-color: var(--accent-primary, #001d56);
+  &:hover { background-color: var(--accent-hover, #001234); }
+  &:disabled { @apply opacity-60 cursor-not-allowed; }
+}
+
+.btn-secondary {
+  @apply flex-1 py-2.5 px-4 rounded-lg font-medium transition-colors
+    bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200
+    hover:bg-gray-200 dark:hover:bg-gray-600;
+}
+
+.spinner {
+  @apply inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full;
+  animation: spin 0.8s linear infinite;
+}

@@ -1,0 +1,47 @@
+<div class="modal-overlay">
+  <div class="modal-container">
+    <div class="modal-header">
+      <h2 class="modal-title">Verifica para vincular tu cuenta</h2>
+      <button type="button" class="close-btn" (click)="closeModal.emit()" aria-label="Cerrar">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+
+    <div class="modal-content">
+      <div class="success-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 9v.906a2.25 2.25 0 01-1.183 1.981l-6.478 3.488M2.25 9v.906a2.25 2.25 0 001.183 1.981l6.478 3.488m8.839 2.51l-4.66-2.51m0 0l-1.023-.55a2.25 2.25 0 00-2.134 0l-1.022.55m0 0l-4.661 2.51m16.5 1.615a2.25 2.25 0 01-1.632 2.163l-1.32.377a48.121 48.121 0 01-13.255 0l-1.32-.377a2.25 2.25 0 01-1.632-2.163m19.159 0V12.75A2.25 2.25 0 0019.5 10.5h-15A2.25 2.25 0 002.25 12.75v6.443" />
+        </svg>
+      </div>
+
+      <h3 class="title">
+        @if (firstName()) {
+          Casi listo, {{ firstName() }}.
+        } @else {
+          Casi listo.
+        }
+      </h3>
+
+      <p class="message">
+        Te enviamos un correo a
+        @if (email()) {
+          <strong>{{ email() }}</strong>
+        } @else {
+          tu dirección de correo
+        }
+        para vincular tu cuenta de Google con tu nueva contraseña.
+      </p>
+
+      <p class="hint">
+        Revisa tu bandeja de entrada (y la carpeta de spam) y haz click en el enlace
+        para finalizar la vinculación.
+      </p>
+
+      <div class="actions actions-single">
+        <button type="button" class="btn-primary" (click)="closeModal.emit()">Continuar</button>
+      </div>
+    </div>
+  </div>
+</div>

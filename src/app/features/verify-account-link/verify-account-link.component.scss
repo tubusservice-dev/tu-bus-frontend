@@ -1,0 +1,54 @@
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+.page {
+  @apply min-h-screen flex items-center justify-center px-4 py-12 bg-gray-50 dark:bg-gray-900;
+}
+
+.card {
+  @apply w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8;
+}
+
+.state {
+  @apply flex flex-col items-center text-center gap-4 py-4;
+}
+
+.title {
+  @apply text-2xl font-bold text-gray-900 dark:text-white m-0;
+}
+
+.state-text {
+  @apply text-sm text-gray-700 dark:text-gray-300 leading-relaxed max-w-sm;
+}
+
+.spinner-large {
+  @apply w-12 h-12 border-4 rounded-full;
+  border-color: var(--accent-primary, #001d56);
+  border-top-color: transparent;
+  animation: spin 0.8s linear infinite;
+}
+
+.icon-error {
+  @apply w-20 h-20 rounded-full flex items-center justify-center;
+  @apply bg-red-100 dark:bg-red-900/30;
+  svg { @apply w-12 h-12 text-red-600 dark:text-red-400; }
+}
+
+.icon-success {
+  @apply w-20 h-20 rounded-full flex items-center justify-center;
+  @apply bg-green-100 dark:bg-green-900/30;
+  svg { @apply w-12 h-12 text-green-600 dark:text-green-400; }
+}
+
+.actions { @apply flex gap-3 w-full; }
+
+.btn-primary {
+  @apply flex-1 py-2.5 px-4 rounded-lg text-white font-medium transition-colors;
+  background-color: var(--accent-primary, #001d56);
+  &:hover { background-color: var(--accent-hover, #001234); }
+}
+
+.btn-secondary {
+  @apply flex-1 py-2.5 px-4 rounded-lg font-medium transition-colors
+    bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200
+    hover:bg-gray-200 dark:hover:bg-gray-600;
+}

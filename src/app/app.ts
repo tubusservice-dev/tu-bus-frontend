@@ -13,6 +13,7 @@ import { ForgotPasswordModalComponent } from '@shared/components/forgot-password
 import { EmailNotFoundModalComponent } from '@shared/components/email-not-found-modal/email-not-found-modal.component';
 import { EmailSentModalComponent } from '@shared/components/email-sent-modal/email-sent-modal.component';
 import { VerifyEmailPendingModalComponent } from '@shared/components/verify-email-pending-modal/verify-email-pending-modal.component';
+import { AccountLinkPendingModalComponent } from '@shared/components/account-link-pending-modal/account-link-pending-modal.component';
 
 @Component({
   selector: 'app-root',
@@ -27,6 +28,7 @@ import { VerifyEmailPendingModalComponent } from '@shared/components/verify-emai
     EmailNotFoundModalComponent,
     EmailSentModalComponent,
     VerifyEmailPendingModalComponent,
+    AccountLinkPendingModalComponent,
     PwaUpdateBannerComponent,
     PwaInstallModalComponent,
   ],
@@ -38,26 +40,23 @@ export class App {
   protected readonly authService = inject(AuthService);
 
   // Auth modal hosted here so it stacks above any feature overlay (product
-  // detail, cart) which mount with z-index 1000. Previously these modals
-  // lived inside <app-header>, whose fixed z-index 50 created a stacking
-  // context that trapped them behind feature overlays.
+  // detail, cart) which mount with z-index 1000.
   protected readonly isAuthModalOpen = this.authService.authModalOpen;
   protected readonly authModalInitialMode = this.authService.authModalInitialMode;
   protected readonly authModalPrefillEmail = this.authService.authModalPrefillEmail;
 
-  // Secondary auth modals — owned here because they're triggered from the
-  // root-level auth modal and must share the same stacking context.
+  // Secondary auth modals owned at app-root so they share the same stacking
+  // context and survive route changes.
   protected readonly showForgotPasswordModal = signal(false);
   protected readonly showEmailNotFoundModal = signal(false);
   protected readonly showEmailSentModal = signal(false);
   protected readonly showVerifyPendingModal = signal(false);
+  protected readonly showAccountLinkPendingModal = signal(false);
 
-  // Shared context across modals (email / firstName the user just acted on)
   protected readonly emailContext = signal<string>('');
   protected readonly firstNameContext = signal<string>('');
 
   constructor() {
-    // Open the auth modal automatically when the session expires
     effect(() => {
       if (this.authService.sessionExpired()) {
         this.authService.openAuthModal();
@@ -80,6 +79,20 @@ export class App {
 
   closeVerifyPendingModal(): void {
     this.showVerifyPendingModal.set(false);
+    this.emailContext.set('');
+    this.firstNameContext.set('');
+  }
+
+  // Caso 3 — link-account verification email dispatched.
+  onAccountLinkPending(payload: { email: string; firstName: string }): void {
+    this.authService.closeAuthModal();
+    this.emailContext.set(payload.email);
+    this.firstNameContext.set(payload.firstName);
+    this.showAccountLinkPendingModal.set(true);
+  }
+
+  closeAccountLinkPendingModal(): void {
+    this.showAccountLinkPendingModal.set(false);
     this.emailContext.set('');
     this.firstNameContext.set('');
   }
@@ -113,6 +126,13 @@ export class App {
   closeEmailNotFoundModal(): void {
     this.showEmailNotFoundModal.set(false);
     this.emailContext.set('');
+  }
+
+  // Caso 5 — Google-only account: redirect the user to the link-account
+  // form with the email pre-filled.
+  onForgotPasswordAccountLinkRequired(email: string): void {
+    this.showForgotPasswordModal.set(false);
+    this.authService.openAccountLinkModal(email);
   }
 
   onGoToRegister(email: string): void {

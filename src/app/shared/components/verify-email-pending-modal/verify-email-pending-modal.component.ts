@@ -1,6 +1,6 @@
 import { Component, input, output, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AuthService } from '../../../core/services';
+import { AuthService } from '@core/services';
 
 /**
  * Post-registration modal shown when EMAIL_VERIFICATION_REQUIRED is on.

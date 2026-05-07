@@ -7,6 +7,11 @@ export type DocumentType = 'V' | 'E' | 'J' | 'P' | 'G';
 export interface User {
   id: string;
   email?: string;
+  /**
+   * Only populated for admin sessions (Admin model in the backend).
+   * Customer users never carry username — backend dropped that field
+   * during the auth-system v2 migration.
+   */
   username?: string;
   firstName?: string;
   lastName?: string;
@@ -32,6 +37,11 @@ export interface User {
   companyRif?: string;
   role: UserRole;
   isVerified: boolean;
+  /**
+   * True when the user has filled all mandatory personal data. OAuth users
+   * start at false; local registrations always reach true at creation time.
+   */
+  profileCompleted: boolean;
   createdAt: Date;
 }
 

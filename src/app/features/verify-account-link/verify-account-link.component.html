@@ -4,7 +4,7 @@
     @if (phase() === 'verifying') {
       <div class="state">
         <div class="spinner-large"></div>
-        <p class="state-text">Verificando tu correo...</p>
+        <p class="state-text">Vinculando tu cuenta...</p>
       </div>
     }
 
@@ -15,8 +15,10 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
           </svg>
         </div>
-        <h1 class="title">¡Correo verificado!</h1>
-        <p class="state-text">Tu cuenta está activa. Continúa para terminar de configurar tu perfil.</p>
+        <h1 class="title">¡Cuenta vinculada y verificada!</h1>
+        <p class="state-text">
+          Ya puedes iniciar sesión con tu correo y contraseña, o seguir usando Google.
+        </p>
         <button type="button" class="btn-primary" (click)="continueAfterSuccess()">Continuar</button>
       </div>
     }
@@ -28,9 +30,12 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
           </svg>
         </div>
-        <h1 class="title">No pudimos verificar tu correo</h1>
+        <h1 class="title">No pudimos vincular tu cuenta</h1>
         <p class="state-text">{{ errorMessage() }}</p>
-        <button type="button" class="btn-primary" (click)="goToHome()">Volver al inicio</button>
+        <div class="actions">
+          <button type="button" class="btn-secondary" (click)="goToLogin()">Ir a iniciar sesión</button>
+          <button type="button" class="btn-primary" (click)="goToHome()">Volver al inicio</button>
+        </div>
       </div>
     }
 

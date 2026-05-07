@@ -1,7 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { AccountBlockedCode, AuthService } from '../../core/services/auth.service';
-import { ToastService } from '../../shared/services/toast.service';
+import { AccountBlockedCode, AuthService } from '@core/services/auth.service';
+import { ToastService } from '@shared/services/toast.service';
 
 const BLOCK_CODES: ReadonlySet<string> = new Set<string>([
   'ACCOUNT_BLOCKED',
@@ -52,8 +52,7 @@ export class AuthCallbackComponent implements OnInit {
     const errorParam = this.route.snapshot.queryParamMap.get('error');
 
     if (errorParam) {
-      // OAuth account-blocked errors should appear as the global modal instead
-      // of an inline page — consistent UX with the login form flow.
+      // Account-blocked errors raise the global modal instead of an inline page.
       if (BLOCK_CODES.has(errorParam)) {
         this.authService.notifyAccountBlocked(
           errorParam as AccountBlockedCode,
@@ -67,16 +66,27 @@ export class AuthCallbackComponent implements OnInit {
     }
 
     if (token) {
-      // Limpiar sesión anterior y almacenar nuevo token
       this.authService.handleOAuthCallback(token);
-      // Cargar perfil desde el servidor y redirigir a la página donde estaba
       this.authService.loadUserProfile().subscribe({
         next: () => {
-          const firstName = this.authService.currentUser()?.firstName;
+          const user = this.authService.currentUser();
+          const firstName = user?.firstName;
           const message = firstName
             ? `¡Bienvenido de vuelta, ${firstName}!`
             : '¡Inicio de sesión exitoso!';
           this.toastService.success(message);
+
+          // Caso 1 — OAuth users land on the profile page when they still
+          // need to fill the mandatory personal data. Otherwise resume
+          // wherever they were before clicking "Sign in with Google".
+          if (user && user.profileCompleted === false) {
+            localStorage.removeItem('oauth_return_url');
+            this.router.navigate(['/perfil'], {
+              queryParams: { completeProfile: 'true' },
+            });
+            return;
+          }
+
           const returnUrl = localStorage.getItem('oauth_return_url') || '/';
           localStorage.removeItem('oauth_return_url');
           this.router.navigateByUrl(returnUrl);
@@ -104,6 +114,8 @@ export class AuthCallbackComponent implements OnInit {
         return 'Esta cuenta ya no existe.';
       case 'ACCOUNT_NOT_FOUND':
         return 'No se encontró una cuenta asociada.';
+      case 'EMAIL_ALREADY_REGISTERED_LOCAL':
+        return 'Este correo ya tiene una cuenta. Inicia sesión con tu contraseña.';
       default:
         return 'No se pudo iniciar sesión. Por favor, intenta de nuevo.';
     }

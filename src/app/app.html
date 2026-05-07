@@ -17,6 +17,7 @@
     [prefillEmail]="authModalPrefillEmail()"
     (closeModal)="closeAuthModal()"
     (verificationPending)="onVerificationPending($event)"
+    (accountLinkPending)="onAccountLinkPending($event)"
     (forgotPasswordRequested)="onForgotPasswordRequested()"
   />
 }
@@ -27,6 +28,7 @@
     (closeModal)="closeForgotPasswordModal()"
     (emailSent)="onForgotPasswordSent($event)"
     (emailNotFound)="onForgotPasswordEmailNotFound($event)"
+    (accountLinkRequired)="onForgotPasswordAccountLinkRequired($event)"
   />
 }
 
@@ -47,12 +49,21 @@
   />
 }
 
-<!-- Modal: Verificación pendiente (post-registro) -->
+<!-- Modal: Verificación pendiente (post-registro estándar) -->
 @if (showVerifyPendingModal()) {
   <app-verify-email-pending-modal
     [email]="emailContext()"
     [firstName]="firstNameContext()"
     (closeModal)="closeVerifyPendingModal()"
+  />
+}
+
+<!-- Modal: Vinculación pendiente (Caso 3 — Google-only ↔ contraseña) -->
+@if (showAccountLinkPendingModal()) {
+  <app-account-link-pending-modal
+    [email]="emailContext()"
+    [firstName]="firstNameContext()"
+    (closeModal)="closeAccountLinkPendingModal()"
   />
 }
 

@@ -9,6 +9,7 @@ import {
   NotificationResponse,
 } from '../../models/notification.model';
 import { SettingsService } from './settings.service';
+import { browserNotify } from '@shared/utils/browser-notify.util';
 
 @Injectable({
   providedIn: 'root',
@@ -113,8 +114,10 @@ export class AdminNotificationsService {
 
   /**
    * Fire a browser push notification if enabled in settings and permission granted.
+   * Uses `browserNotify` so the call works on mobile Chrome with an active
+   * Service Worker (where `new Notification()` throws TypeError).
    */
-  private triggerBrowserPush(newCount: number): void {
+  private triggerBrowserPush(_newCount: number): void {
     if (!('Notification' in window)) return;
     if (Notification.permission !== 'granted') return;
 
@@ -128,22 +131,16 @@ export class AdminNotificationsService {
         const latest = res.data?.[0];
         if (!latest) return;
 
-        try {
-          const notif = new Notification(latest.title || 'Nueva notificación', {
-            body: latest.message,
-            icon: '/autobus.png',
-            badge: '/autobus.png',
-            tag: `admin-notif-${latest.id}`,
-            requireInteraction: false,
-          });
-
-          notif.onclick = () => {
-            window.focus();
-            notif.close();
-          };
-        } catch {
-          // Silent fail — some browsers may block
-        }
+        // Click target: send the admin to the dashboard. The SW
+        // `notificationclick` handler reads it from `data.url`.
+        browserNotify(latest.title || 'Nueva notificación', {
+          body: latest.message,
+          icon: '/autobus.png',
+          badge: '/autobus.png',
+          tag: `admin-notif-${latest.id}`,
+          requireInteraction: false,
+          data: { url: '/admin' },
+        });
       },
       error: () => {},
     });

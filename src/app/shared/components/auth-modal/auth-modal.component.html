@@ -12,41 +12,18 @@
       </button>
     </div>
 
-    <!-- Tabs (ocultas durante la vista de éxito post-registro) -->
-    @if (!registrationSuccess()) {
-      <div class="tabs">
-        <button type="button" class="tab" [class.active]="mode() === 'login'" (click)="switchMode('login')">
-          Iniciar Sesión
-        </button>
-        <button type="button" class="tab" [class.active]="mode() === 'register'" (click)="switchMode('register')">
-          Registrarse
-        </button>
-      </div>
-    }
+    <!-- Tabs -->
+    <div class="tabs">
+      <button type="button" class="tab" [class.active]="mode() === 'login'" (click)="switchMode('login')">
+        Iniciar Sesión
+      </button>
+      <button type="button" class="tab" [class.active]="mode() !== 'login'" (click)="switchMode('register')">
+        Registrarse
+      </button>
+    </div>
 
     <!-- Contenido del modal -->
     <div class="modal-content">
-      <!-- ========== REGISTRO EXITOSO ========== -->
-      @if (mode() === 'register' && registrationSuccess()) {
-        <div class="success-view">
-          <div class="success-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-            </svg>
-          </div>
-          <h3 class="success-title">¡Registro exitoso!</h3>
-          <p class="success-message">
-            @if (registeredFirstName()) {
-              Bienvenido, {{ registeredFirstName() }}. Tu cuenta fue creada correctamente.
-            } @else {
-              Tu cuenta fue creada correctamente.
-            }
-          </p>
-          <button type="button" class="submit-btn" (click)="continueAfterRegistration()">
-            Continuar
-          </button>
-        </div>
-      }
       <!-- Mensaje de sesión expirada -->
       @if (sessionExpired()) {
         <div class="session-expired-alert">
@@ -131,181 +108,86 @@
         </form>
       }
 
-      <!-- ========== REGISTER (Stepper) ========== -->
-      @if (mode() === 'register' && !registrationSuccess()) {
-        <!-- Step indicator (fixed 2 steps) -->
-        <div class="stepper-indicator">
-          <div class="step-item">
-            <div class="step-circle" [class.active]="currentStep() === 1" [class.completed]="currentStep() > 1">
-              @if (currentStep() > 1) {
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
-              } @else {
-                1
+      <!-- ========== REGISTER (single step) ========== -->
+      @if (effectiveRegisterMode()) {
+        <form [formGroup]="registerForm" (ngSubmit)="onRegister()" class="auth-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Nombre</label>
+              <input type="text" formControlName="firstName" class="form-input" [class.error]="hasError(registerForm, 'firstName')" placeholder="Juan" />
+              @if (hasError(registerForm, 'firstName')) {
+                <span class="field-error">{{ getErrorMessage(registerForm, 'firstName') }}</span>
               }
             </div>
-            <div class="step-line" [class.completed]="currentStep() > 1"></div>
+            <div class="form-group">
+              <label class="form-label">Apellido</label>
+              <input type="text" formControlName="lastName" class="form-input" [class.error]="hasError(registerForm, 'lastName')" placeholder="Pérez" />
+              @if (hasError(registerForm, 'lastName')) {
+                <span class="field-error">{{ getErrorMessage(registerForm, 'lastName') }}</span>
+              }
+            </div>
           </div>
-          <div class="step-item">
-            <div class="step-circle" [class.active]="currentStep() === 2">
-              2
-            </div>
+
+          <div class="form-group">
+            <label class="form-label">Correo Electrónico</label>
+            <input type="email" formControlName="email" class="form-input" [class.error]="hasError(registerForm, 'email')" placeholder="tu@email.com" />
+            @if (hasError(registerForm, 'email')) {
+              <span class="field-error">{{ getErrorMessage(registerForm, 'email') }}</span>
+            }
           </div>
-        </div>
 
-        <div class="auth-form">
-
-          <!-- Step 1: Credentials -->
-          @if (currentStep() === 1) {
-            <div [formGroup]="step1Form">
-              <div class="form-row">
-                <div class="form-group">
-                  <label class="form-label">Nombre</label>
-                  <input type="text" formControlName="firstName" class="form-input" [class.error]="hasError(step1Form, 'firstName')" placeholder="Juan" />
-                  @if (hasError(step1Form, 'firstName')) {
-                    <span class="field-error">{{ getErrorMessage(step1Form, 'firstName') }}</span>
-                  }
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Apellido</label>
-                  <input type="text" formControlName="lastName" class="form-input" [class.error]="hasError(step1Form, 'lastName')" placeholder="Pérez" />
-                  @if (hasError(step1Form, 'lastName')) {
-                    <span class="field-error">{{ getErrorMessage(step1Form, 'lastName') }}</span>
-                  }
-                </div>
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">Correo Electrónico</label>
-                <input type="email" formControlName="email" class="form-input" [class.error]="hasError(step1Form, 'email')" placeholder="tu@email.com" />
-                @if (hasError(step1Form, 'email')) {
-                  <span class="field-error">{{ getErrorMessage(step1Form, 'email') }}</span>
-                }
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">Contraseña</label>
-                <div class="input-password-wrapper">
-                  <input [type]="showRegPassword() ? 'text' : 'password'" formControlName="password" class="form-input" [class.error]="hasError(step1Form, 'password')" placeholder="••••••••" (input)="onRegPasswordInput()" />
-                  <button type="button" class="btn-toggle-pw" (click)="showRegPassword.set(!showRegPassword())">
-                    @if (showRegPassword()) {
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" /></svg>
-                    } @else {
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
-                    }
-                  </button>
-                </div>
-                @if (hasError(step1Form, 'password')) {
-                  <span class="field-error">{{ getErrorMessage(step1Form, 'password') }}</span>
-                }
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">Confirmar Contraseña</label>
-                <div class="input-password-wrapper">
-                  <input [type]="showRegConfirm() ? 'text' : 'password'" formControlName="confirmPassword" class="form-input" [class.error]="hasError(step1Form, 'confirmPassword') || passwordsMismatch()" placeholder="••••••••" (input)="onRegPasswordInput()" />
-                  <button type="button" class="btn-toggle-pw" (click)="showRegConfirm.set(!showRegConfirm())">
-                    @if (showRegConfirm()) {
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" /></svg>
-                    } @else {
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
-                    }
-                  </button>
-                </div>
-                @if (hasError(step1Form, 'confirmPassword')) {
-                  <span class="field-error">{{ getErrorMessage(step1Form, 'confirmPassword') }}</span>
-                }
-                @if (passwordsMismatch() && !hasError(step1Form, 'confirmPassword')) {
-                  <span class="field-error">Las contraseñas no coinciden</span>
-                }
-              </div>
-            </div>
-          }
-
-          <!-- Step 2: Identity & Contact -->
-          @if (currentStep() === 2) {
-            <div [formGroup]="step2Form">
-              <div class="form-row form-row-doc">
-                <div class="form-group">
-                  <label class="form-label">Tipo</label>
-                  <select formControlName="documentType" class="form-input form-select" [class.error]="hasError(step2Form, 'documentType')">
-                    <option value="" disabled>Tipo</option>
-                    <option value="V">V - Venezolano</option>
-                    <option value="E">E - Extranjero</option>
-                    <option value="J">J - Jurídico</option>
-                    <option value="P">P - Pasaporte</option>
-                    <option value="G">G - Gubernamental</option>
-                  </select>
-                  @if (hasError(step2Form, 'documentType')) {
-                    <span class="field-error">{{ getErrorMessage(step2Form, 'documentType') }}</span>
-                  }
-                </div>
-                <div class="form-group">
-                  <label class="form-label">N. Documento</label>
-                  <input type="text" formControlName="documentNumber" class="form-input" [class.error]="hasError(step2Form, 'documentNumber')" [placeholder]="getDocNumberPlaceholder()" />
-                  @if (hasError(step2Form, 'documentNumber')) {
-                    <span class="field-error">{{ getErrorMessage(step2Form, 'documentNumber') }}</span>
-                  }
-                </div>
-              </div>
-
-              @if (step2Form.get('documentType')?.value && step2Form.get('documentType')?.value !== 'J') {
-                <div class="form-group">
-                  <label class="form-label">Fecha de Nacimiento</label>
-                  <app-date-input formControlName="birthDate" [max]="maxBirthDateStr" />
-                  @if (hasError(step2Form, 'birthDate')) {
-                    <span class="field-error">{{ getErrorMessage(step2Form, 'birthDate') }}</span>
-                  }
-                </div>
-              }
-
-              @if (isJuridical()) {
-                <div class="form-group">
-                  <label class="form-label">Razón Social</label>
-                  <input type="text" formControlName="companyName" class="form-input" [class.error]="hasError(step2Form, 'companyName')" placeholder="Nombre de la empresa" />
-                  @if (hasError(step2Form, 'companyName')) {
-                    <span class="field-error">{{ getErrorMessage(step2Form, 'companyName') }}</span>
-                  }
-                </div>
-              }
-
-              <div class="form-group">
-                <label class="form-label">Teléfono</label>
-                <input type="tel" formControlName="phone" class="form-input" [class.error]="hasError(step2Form, 'phone')" placeholder="04121234567" />
-                @if (hasError(step2Form, 'phone')) {
-                  <span class="field-error">{{ getErrorMessage(step2Form, 'phone') }}</span>
-                }
-              </div>
-            </div>
-          }
-
-          <!-- Navigation -->
-          <div class="stepper-nav">
-            @if (currentStep() > 1) {
-              <button type="button" class="back-btn" (click)="prevStep()">Anterior</button>
-            }
-            @if (currentStep() === 1) {
-              <button type="button" class="submit-btn" (click)="nextStep()">Siguiente</button>
-            }
-            @if (currentStep() === 2) {
-              <button type="button" class="submit-btn" [disabled]="isLoading()" (click)="onRegister()">
-                @if (isLoading()) {
-                  <span class="spinner"></span> Registrando...
+          <div class="form-group">
+            <label class="form-label">Contraseña</label>
+            <div class="input-password-wrapper">
+              <input [type]="showRegPassword() ? 'text' : 'password'" formControlName="password" class="form-input" [class.error]="hasError(registerForm, 'password')" placeholder="••••••••" (input)="onRegPasswordInput()" />
+              <button type="button" class="btn-toggle-pw" (click)="showRegPassword.set(!showRegPassword())">
+                @if (showRegPassword()) {
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" /></svg>
                 } @else {
-                  Crear Cuenta
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
                 }
               </button>
+            </div>
+            @if (hasError(registerForm, 'password')) {
+              <span class="field-error">{{ getErrorMessage(registerForm, 'password') }}</span>
             }
           </div>
-        </div>
+
+          <div class="form-group">
+            <label class="form-label">Confirmar Contraseña</label>
+            <div class="input-password-wrapper">
+              <input [type]="showRegConfirm() ? 'text' : 'password'" formControlName="confirmPassword" class="form-input" [class.error]="hasError(registerForm, 'confirmPassword') || passwordsMismatch()" placeholder="••••••••" (input)="onRegPasswordInput()" />
+              <button type="button" class="btn-toggle-pw" (click)="showRegConfirm.set(!showRegConfirm())">
+                @if (showRegConfirm()) {
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" /></svg>
+                } @else {
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
+                }
+              </button>
+            </div>
+            @if (hasError(registerForm, 'confirmPassword')) {
+              <span class="field-error">{{ getErrorMessage(registerForm, 'confirmPassword') }}</span>
+            }
+            @if (passwordsMismatch() && !hasError(registerForm, 'confirmPassword')) {
+              <span class="field-error">Las contraseñas no coinciden</span>
+            }
+          </div>
+
+          <button type="submit" class="submit-btn" [disabled]="isLoading()">
+            @if (isLoading()) {
+              <span class="spinner"></span> Registrando...
+            } @else {
+              Crear Cuenta
+            }
+          </button>
+        </form>
       }
 
-      @if (!registrationSuccess()) {
-      <!-- Separador -->
+      <!-- Separador + Google (oculto en login + register; visible siempre) -->
       <div class="auth-divider">
         <span>o continuar con</span>
       </div>
 
-      <!-- Botones OAuth -->
       <div class="oauth-buttons">
         <button type="button" class="oauth-btn google" (click)="loginWithGoogle()" [disabled]="isOAuthLoading()">
           @if (isOAuthLoading()) {
@@ -322,7 +204,6 @@
           }
         </button>
       </div>
-      }
     </div>
   </div>
 </div>

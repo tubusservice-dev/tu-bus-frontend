@@ -9,6 +9,7 @@ import {
   UserNotificationListResponse,
   UserUnreadCountResponse,
 } from '../../models/user-notification.model';
+import { browserNotify } from '@shared/utils/browser-notify.util';
 
 @Injectable({
   providedIn: 'root',
@@ -145,7 +146,9 @@ export class UserNotificationService {
 
   /**
    * Fire a browser push notification when unreadCount increases.
-   * Unlike admin, the client always receives push if permission is granted (no preference toggle).
+   * Unlike admin, the client always receives push if permission is granted
+   * (no preference toggle). Uses `browserNotify` so it works on mobile
+   * Chrome with an active Service Worker (where `new Notification()` throws).
    */
   private triggerBrowserPush(): void {
     if (!('Notification' in window)) return;
@@ -157,21 +160,15 @@ export class UserNotificationService {
         const latest = res.data?.[0];
         if (!latest) return;
 
-        try {
-          const notif = new Notification(latest.title || 'Nueva notificación', {
-            body: latest.message,
-            icon: '/autobus.png',
-            badge: '/autobus.png',
-            tag: `user-notif-${latest.id}`,
-          });
-
-          notif.onclick = () => {
-            window.focus();
-            notif.close();
-          };
-        } catch {
-          // Silent fail — some browsers may block
-        }
+        // The SW `notificationclick` handler reads `data.url` to know
+        // where to focus / open when the user taps the notification.
+        browserNotify(latest.title || 'Nueva notificación', {
+          body: latest.message,
+          icon: '/autobus.png',
+          badge: '/autobus.png',
+          tag: `user-notif-${latest.id}`,
+          data: { url: '/perfil#notificaciones' },
+        });
       },
       error: () => {},
     });

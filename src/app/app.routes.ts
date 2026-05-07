@@ -493,6 +493,14 @@ export const routes: Routes = [
         (m) => m.VerifyEmailComponent
       ),
   },
+  // Verificación del link de vinculación de cuenta Google ↔ contraseña (Caso 3)
+  {
+    path: 'verify-account-link',
+    loadComponent: () =>
+      import('./features/verify-account-link/verify-account-link.component').then(
+        (m) => m.VerifyAccountLinkComponent
+      ),
+  },
   {
     path: '**',
     redirectTo: '',

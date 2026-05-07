@@ -2,7 +2,7 @@ import { Injectable, signal, computed } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, tap, catchError, throwError } from 'rxjs';
-import { environment } from '../../../environments/environment';
+import { environment } from '@env';
 import {
   User,
   UserRole,
@@ -16,9 +16,11 @@ import {
   VerifyEmailResponse,
   ResendVerificationResponse,
   CheckEmailResponse,
-} from '../../models';
+  LinkAccountRequest,
+  LinkAccountResponse,
+  VerifyAccountLinkResponse,
+} from '@models';
 
-// Keys separadas para cliente y admin — nunca se pisan entre sí
 const CLIENT_TOKEN_KEY = 'auth_token';
 const CLIENT_USER_KEY = 'auth_user';
 const ADMIN_TOKEN_KEY = 'admin_auth_token';
@@ -43,29 +45,25 @@ const BLOCK_CODES: ReadonlySet<AccountBlockedCode> = new Set<AccountBlockedCode>
   'ACCOUNT_NOT_FOUND',
 ]);
 
+export type AuthModalMode = 'login' | 'register' | 'linkAccount';
+
 @Injectable({
   providedIn: 'root',
 })
 export class AuthService {
   private readonly apiUrl = `${environment.apiUrl}/auth`;
 
-  /** Estado del usuario actual */
   private readonly currentUserSignal = signal<User | null>(this.getStoredUser());
 
-  /** Indica si la sesión expiró (para mostrar mensaje) */
   private readonly sessionExpiredSignal = signal(false);
 
-  /** Información estructurada cuando una cuenta no puede usar el sistema. */
   private readonly blockedInfoSignal = signal<AccountBlockedInfo | null>(null);
   readonly blockedInfo = this.blockedInfoSignal.asReadonly();
 
-  /**
-   * Reads an HTTP error and, if its `code` matches a blocked-account status,
-   * raises the global account-blocked modal. Returns true when the modal was
-   * triggered so callers can skip their inline error handling.
-   */
   triggerAccountBlocked(error: HttpErrorResponse | null | undefined): boolean {
-    const body = error?.error as { code?: string; message?: string; details?: { reason?: string } } | undefined;
+    const body = error?.error as
+      | { code?: string; message?: string; details?: { reason?: string } }
+      | undefined;
     const code = body?.code;
     if (!code || !BLOCK_CODES.has(code as AccountBlockedCode)) return false;
 
@@ -77,40 +75,36 @@ export class AuthService {
     return true;
   }
 
-  /** Dismisses the account-blocked modal. */
   clearAccountBlocked(): void {
     this.blockedInfoSignal.set(null);
   }
 
-  /**
-   * Raises the blocked-account modal with an explicit code/message, for
-   * callers that don't have a full HttpErrorResponse — e.g. the OAuth
-   * callback decoding the error from query params.
-   */
   notifyAccountBlocked(code: AccountBlockedCode, message: string, reason?: string): void {
     this.blockedInfoSignal.set({ code, message, reason });
   }
 
-  /** Controla la visibilidad del modal de auth desde cualquier componente */
   private readonly authModalOpenSignal = signal(false);
   readonly authModalOpen = this.authModalOpenSignal.asReadonly();
 
-  /**
-   * Initial state for the global auth modal. Owned by the service so any
-   * component can request a specific open mode (login vs register, with an
-   * optional email prefill) without holding local copies of these signals.
-   * The modal itself is mounted at the application root — see app.html.
-   */
-  private readonly authModalInitialModeSignal = signal<'login' | 'register'>('login');
+  private readonly authModalInitialModeSignal = signal<AuthModalMode>('login');
   readonly authModalInitialMode = this.authModalInitialModeSignal.asReadonly();
 
   private readonly authModalPrefillEmailSignal = signal<string>('');
   readonly authModalPrefillEmail = this.authModalPrefillEmailSignal.asReadonly();
 
-  openAuthModal(mode: 'login' | 'register' = 'login', prefillEmail = ''): void {
+  openAuthModal(mode: AuthModalMode = 'login', prefillEmail = ''): void {
     this.authModalInitialModeSignal.set(mode);
     this.authModalPrefillEmailSignal.set(prefillEmail);
     this.authModalOpenSignal.set(true);
+  }
+
+  /**
+   * Convenience for the forgot-password flow when the email belongs to a
+   * Google-only account: opens the auth modal pre-configured for the
+   * link-account branch.
+   */
+  openAccountLinkModal(prefillEmail: string): void {
+    this.openAuthModal('linkAccount', prefillEmail);
   }
 
   closeAuthModal(): void {
@@ -119,16 +113,12 @@ export class AuthService {
     this.authModalPrefillEmailSignal.set('');
   }
 
-  /** Usuario actual (solo lectura) */
   readonly currentUser = this.currentUserSignal.asReadonly();
 
-  /** Indica si el usuario está autenticado */
   readonly isAuthenticated = computed(() => !!this.currentUserSignal());
 
-  /** Indica si la sesión expiró */
   readonly sessionExpired = this.sessionExpiredSignal.asReadonly();
 
-  /** Nombre completo del usuario */
   readonly userFullName = computed(() => {
     const user = this.currentUserSignal();
     if (!user) return '';
@@ -138,7 +128,6 @@ export class AuthService {
     return user.username || user.email || 'Usuario';
   });
 
-  /** Avatar del usuario */
   readonly userAvatar = computed(() => {
     const user = this.currentUserSignal();
     if (user?.avatar) return user.avatar;
@@ -149,18 +138,14 @@ export class AuthService {
   constructor(
     private readonly http: HttpClient,
     private readonly router: Router
-  ) {
-    // La inicialización de sesión se hace en APP_INITIALIZER
-  }
+  ) {}
 
   // ─── Helpers para detectar contexto ─────────────────────────
 
-  /** Detecta si estamos en rutas /admin (funciona antes de que el Router esté listo) */
   private isAdminContext(): boolean {
     return window.location.pathname.startsWith('/admin');
   }
 
-  /** Retorna las keys de localStorage según el contexto actual */
   private getStorageKeys(): { tokenKey: string; userKey: string } {
     return this.isAdminContext()
       ? { tokenKey: ADMIN_TOKEN_KEY, userKey: ADMIN_USER_KEY }
@@ -169,9 +154,6 @@ export class AuthService {
 
   // ─── Métodos públicos ───────────────────────────────────────
 
-  /**
-   * Inicia sesión con email y contraseña (cliente)
-   */
   login(credentials: LoginRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/login`, credentials).pipe(
       tap((response) => this.handleAuthSuccess(response)),
@@ -180,21 +162,53 @@ export class AuthService {
   }
 
   /**
-   * Registra un nuevo usuario (cliente).
+   * Registers a brand-new user. The backend may respond with one of:
+   *  - JWT token (auto-login when EMAIL_VERIFICATION_REQUIRED=false).
+   *  - `requiresVerification: true` when verification is required.
    *
-   * Si el backend devuelve `requiresVerification: true`, NO se hace auto-login —
-   * el componente debe mostrar el modal de verificación pendiente.
+   * NOTE: Caso 3 (Google-only collision) is handled by `linkAccount` instead.
    */
   register(data: RegisterRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/register`, data).pipe(
       tap((response) => {
-        // Only auto-login when no verification is pending
-        if (!response.data?.requiresVerification && response.data?.token) {
+        if (
+          !response.data?.requiresVerification &&
+          !response.data?.requiresLinkVerification &&
+          response.data?.token
+        ) {
           this.handleAuthSuccess(response);
         }
       }),
       catchError((error) => this.handleAuthError(error))
     );
+  }
+
+  /**
+   * Caso 3 — POST /auth/link-account. The backend detects Google-only
+   * accounts and dispatches the verification email. The response NEVER
+   * contains a JWT — the user must click the email link.
+   */
+  linkAccount(data: LinkAccountRequest): Observable<LinkAccountResponse> {
+    return this.http.post<LinkAccountResponse>(`${this.apiUrl}/link-account`, data);
+  }
+
+  /**
+   * Consumes the account-link token and finalises the linking. On success,
+   * the backend returns a JWT for auto-login.
+   */
+  verifyAccountLink(token: string): Observable<VerifyAccountLinkResponse> {
+    return this.http
+      .post<VerifyAccountLinkResponse>(`${this.apiUrl}/verify-account-link`, { token })
+      .pipe(
+        tap((response) => {
+          if (response.success && response.data?.token) {
+            localStorage.setItem(CLIENT_TOKEN_KEY, response.data.token);
+            localStorage.setItem(CLIENT_USER_KEY, JSON.stringify(response.data.user));
+            this.currentUserSignal.set(response.data.user);
+            this.sessionExpiredSignal.set(false);
+          }
+        })
+      );
   }
 
   // ─── Forgot / reset password ────────────────────────────────────
@@ -220,7 +234,20 @@ export class AuthService {
   // ─── Email verification ─────────────────────────────────────────
 
   verifyEmail(token: string): Observable<VerifyEmailResponse> {
-    return this.http.post<VerifyEmailResponse>(`${this.apiUrl}/verify-email`, { token });
+    return this.http
+      .post<VerifyEmailResponse>(`${this.apiUrl}/verify-email`, { token })
+      .pipe(
+        tap((response) => {
+          // Auto-login when the backend returns credentials: drop the user
+          // straight on /perfil with the "complete profile" modal open.
+          if (response.success && response.data?.token && response.data?.user) {
+            localStorage.setItem(CLIENT_TOKEN_KEY, response.data.token);
+            localStorage.setItem(CLIENT_USER_KEY, JSON.stringify(response.data.user));
+            this.currentUserSignal.set(response.data.user);
+            this.sessionExpiredSignal.set(false);
+          }
+        })
+      );
   }
 
   resendVerification(email: string): Observable<ResendVerificationResponse> {
@@ -236,7 +263,7 @@ export class AuthService {
     return this.http.post<CheckEmailResponse>(`${this.apiUrl}/check-email`, { email });
   }
 
-  // ─── Forgot-password modal control (for cross-component triggers) ───
+  // ─── Forgot-password modal control ─────────────────────────────
 
   private readonly forgotPasswordModalOpenSignal = signal(false);
   readonly forgotPasswordModalOpen = this.forgotPasswordModalOpenSignal.asReadonly();
@@ -250,18 +277,14 @@ export class AuthService {
     this.forgotPasswordModalOpenSignal.set(false);
   }
 
-  /**
-   * Inicia el flujo de OAuth
-   */
   loginWithOAuth(provider: OAuthProvider): void {
-    // Guardar la URL actual para redirigir después del callback
     localStorage.setItem('oauth_return_url', window.location.pathname);
     window.location.href = `${this.apiUrl}/${provider}`;
   }
 
   /**
-   * Maneja el login de admin.
-   * Guarda SOLO en las keys de admin, sin tocar las del cliente.
+   * Saves an admin session in admin-only storage keys, leaving the client
+   * keys untouched.
    */
   handleAdminLogin(token: string, user: User): void {
     localStorage.setItem(ADMIN_TOKEN_KEY, token);
@@ -270,9 +293,6 @@ export class AuthService {
     this.sessionExpiredSignal.set(false);
   }
 
-  /**
-   * Procesa el callback de OAuth (siempre cliente).
-   */
   handleOAuthCallback(token: string): void {
     localStorage.removeItem(CLIENT_USER_KEY);
     this.currentUserSignal.set(null);
@@ -280,22 +300,30 @@ export class AuthService {
   }
 
   /**
-   * Cierra la sesión según el contexto actual (admin o cliente).
+   * Closes the user's session both client- and server-side. Server-side
+   * uses the `tokensInvalidatedAt` mass-invalidation marker so JWTs are
+   * rejected on the next request from any device.
    */
   logout(): void {
+    const isAdmin = this.isAdminContext();
     const { tokenKey, userKey } = this.getStorageKeys();
+
+    // Best-effort server notification — proceed with local cleanup
+    // regardless of network outcome.
+    if (!isAdmin) {
+      this.http.post(`${this.apiUrl}/logout`, {}).subscribe({
+        next: () => {},
+        error: () => {},
+      });
+    }
+
     localStorage.removeItem(tokenKey);
     localStorage.removeItem(userKey);
+    localStorage.removeItem('oauth_return_url');
     this.currentUserSignal.set(null);
-    this.router.navigate(['/']);
+    this.router.navigate(isAdmin ? ['/admin/login'] : ['/']);
   }
 
-  /**
-   * Maneja la expiración de sesión.
-   * Llamado desde el interceptor cuando recibe un 401 o un 403 de cuenta bloqueada.
-   * El mensaje específico de bloqueo vive en blockedInfo — este método solo
-   * se encarga de limpiar la sesión local.
-   */
   handleSessionExpired(): void {
     const { tokenKey, userKey } = this.getStorageKeys();
     localStorage.removeItem(tokenKey);
@@ -304,24 +332,15 @@ export class AuthService {
     this.sessionExpiredSignal.set(true);
   }
 
-  /**
-   * Limpia el flag de sesión expirada
-   */
   clearSessionExpired(): void {
     this.sessionExpiredSignal.set(false);
   }
 
-  /**
-   * Obtiene el token almacenado según el contexto (admin o cliente)
-   */
   getToken(): string | null {
     const { tokenKey } = this.getStorageKeys();
     return localStorage.getItem(tokenKey);
   }
 
-  /**
-   * Actualiza el estado del usuario desde localStorage
-   */
   setUserFromStorage(): void {
     const user = this.getStoredUser();
     if (user) {
@@ -329,17 +348,10 @@ export class AuthService {
     }
   }
 
-  /**
-   * Indica si el token actual es de admin
-   */
   isAdminSession(): boolean {
     return this.isAdminContext();
   }
 
-  /**
-   * Carga el perfil del usuario desde el servidor.
-   * Usa el endpoint correcto según el contexto (admin vs cliente).
-   */
   loadUserProfile(): Observable<{ success: boolean; data: User }> {
     const isAdmin = this.isAdminContext();
 
@@ -373,9 +385,6 @@ export class AuthService {
 
   // ─── Métodos privados ───────────────────────────────────────
 
-  /**
-   * Maneja la respuesta exitosa de autenticación (login/register de cliente)
-   */
   private handleAuthSuccess(response: AuthResponse): void {
     if (response.success && response.data && response.data.token) {
       localStorage.setItem(CLIENT_TOKEN_KEY, response.data.token);
@@ -385,16 +394,10 @@ export class AuthService {
     }
   }
 
-  /**
-   * Maneja errores de autenticación
-   */
   private handleAuthError(error: unknown): Observable<never> {
     return throwError(() => error);
   }
 
-  /**
-   * Obtiene el usuario almacenado según el contexto
-   */
   private getStoredUser(): User | null {
     const { userKey } = this.getStorageKeys();
     const userStr = localStorage.getItem(userKey);
