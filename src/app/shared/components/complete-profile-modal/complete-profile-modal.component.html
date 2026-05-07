@@ -1,0 +1,108 @@
+<div class="modal-overlay" (click)="onBackdropClick($event)">
+  <div class="modal-container">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title">Completa tus datos</h2>
+        <p class="modal-subtitle">Necesitamos algunos datos personales para terminar de configurar tu cuenta.</p>
+      </div>
+      <button type="button" class="close-btn" (click)="closeModal.emit()" aria-label="Cerrar">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+
+    <div class="modal-content">
+      @if (errorMessage()) {
+        <div class="error-alert">
+          <span>{{ errorMessage() }}</span>
+        </div>
+      }
+
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" class="form">
+        <div class="form-row form-row-doc">
+          <div class="form-group">
+            <label class="form-label">Tipo</label>
+            <div class="doc-type-selector">
+              <button
+                type="button"
+                class="form-input doc-type-trigger"
+                [class.error]="hasError('documentType')"
+                [class.placeholder]="!selectedDocumentTypeCode()"
+                (click)="toggleDocTypeDropdown($event)"
+              >
+                <span>{{ selectedDocumentTypeCode() || 'Tipo' }}</span>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="chevron" [class.open]="isDocTypeDropdownOpen()">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                </svg>
+              </button>
+              @if (isDocTypeDropdownOpen()) {
+                <ul class="doc-type-options" role="listbox" (click)="$event.stopPropagation()">
+                  @for (option of documentTypeOptions; track option.code) {
+                    <li
+                      role="option"
+                      class="doc-type-option"
+                      [class.selected]="selectedDocumentTypeCode() === option.code"
+                      (click)="selectDocumentType(option.code, $event)"
+                    >
+                      {{ option.label }}
+                    </li>
+                  }
+                </ul>
+              }
+            </div>
+            @if (hasError('documentType')) {
+              <span class="field-error">{{ getErrorMessage('documentType') }}</span>
+            }
+          </div>
+          <div class="form-group">
+            <label class="form-label">N. Documento</label>
+            <input type="text" formControlName="documentNumber" class="form-input" [class.error]="hasError('documentNumber')" [placeholder]="getDocNumberPlaceholder()" />
+            @if (hasError('documentNumber')) {
+              <span class="field-error">{{ getErrorMessage('documentNumber') }}</span>
+            }
+          </div>
+        </div>
+
+        @if (form.get('documentType')?.value && !isJuridical()) {
+          <div class="form-group">
+            <label class="form-label">Fecha de Nacimiento</label>
+            <app-date-input formControlName="birthDate" [max]="maxBirthDateStr" />
+            @if (hasError('birthDate')) {
+              <span class="field-error">{{ getErrorMessage('birthDate') }}</span>
+            }
+          </div>
+        }
+
+        @if (isJuridical()) {
+          <div class="form-group">
+            <label class="form-label">Razón Social</label>
+            <input type="text" formControlName="companyName" class="form-input" [class.error]="hasError('companyName')" placeholder="Nombre de la empresa" />
+            @if (hasError('companyName')) {
+              <span class="field-error">{{ getErrorMessage('companyName') }}</span>
+            }
+          </div>
+        }
+
+        <div class="form-group">
+          <label class="form-label">Teléfono</label>
+          <input type="tel" formControlName="phone" class="form-input" [class.error]="hasError('phone')" placeholder="04121234567" />
+          @if (hasError('phone')) {
+            <span class="field-error">{{ getErrorMessage('phone') }}</span>
+          }
+        </div>
+
+        <div class="actions">
+          <button type="button" class="btn-secondary" (click)="closeModal.emit()">Más tarde</button>
+          <button type="submit" class="btn-primary" [disabled]="isLoading()">
+            @if (isLoading()) {
+              <span class="spinner"></span> Guardando...
+            } @else {
+              Guardar
+            }
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

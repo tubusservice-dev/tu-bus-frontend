@@ -48,3 +48,47 @@ self.addEventListener('message', (event) => {
     self.skipWaiting();
   }
 });
+
+/**
+ * Notification click — focus an existing app tab if any, else open one.
+ * The target URL travels in `notification.data.url` (set by `browserNotify`
+ * on the page side). Required because mobile Chrome routes notifications
+ * shown via `registration.showNotification()` through this handler — the
+ * page-side `onclick` callback is unavailable in that path.
+ */
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  const targetUrl =
+    (event.notification.data && event.notification.data.url) || '/';
+
+  event.waitUntil(
+    (async () => {
+      const allClients = await self.clients.matchAll({
+        type: 'window',
+        includeUncontrolled: true,
+      });
+
+      // Reuse the first focusable tab on this origin.
+      for (const client of allClients) {
+        if ('focus' in client) {
+          await client.focus();
+          if ('navigate' in client) {
+            try {
+              await client.navigate(targetUrl);
+            } catch {
+              // navigate() may reject across navigations the browser
+              // considers cross-origin; the focused tab is enough.
+            }
+          }
+          return;
+        }
+      }
+
+      // No open tab — pop a new one.
+      if (self.clients.openWindow) {
+        await self.clients.openWindow(targetUrl);
+      }
+    })(),
+  );
+});

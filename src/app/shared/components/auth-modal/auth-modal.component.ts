@@ -1,23 +1,17 @@
-import { Component, signal, output, input, inject, OnInit, OnDestroy } from '@angular/core';
+import { Component, signal, output, input, inject, OnInit, OnDestroy, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { Subscription } from 'rxjs';
-import { AuthService } from '../../../core/services';
-import { RegisterRequest } from '../../../models/auth.model';
-import { DateInputComponent } from '../date-input/date-input.component';
-import { minAgeValidator } from '../../validators/form-validators';
-import { emailUniqueValidator } from '../../validators/email-unique.validator';
-import { ToastService } from '../../services/toast.service';
-
-/** Minimum age (years) required to create an account. */
-const MIN_REGISTRATION_AGE = 18;
-
-type AuthMode = 'login' | 'register';
+import { Subscription, firstValueFrom, of } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
+import { AuthService, AuthModalMode } from '@core/services';
+import { CheckEmailResponse, RegisterRequest } from '@models';
+import { ToastService } from '@shared/services/toast.service';
 
 @Component({
   selector: 'app-auth-modal',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, DateInputComponent],
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './auth-modal.component.html',
   styleUrl: './auth-modal.component.scss',
 })
@@ -25,182 +19,129 @@ export class AuthModalComponent implements OnInit, OnDestroy {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly toastService = inject(ToastService);
-  private docTypeSub: Subscription | null = null;
+  private readonly router = inject(Router);
+  private emailCheckSub: Subscription | null = null;
 
-  /** Optional: parent can request the modal to open in register mode with prefilled email. */
-  readonly initialMode = input<AuthMode>('login');
+  /**
+   * Tracks whether the email currently typed in the register form belongs
+   * to a Google-only account. Drives the submit branching: register vs
+   * link-account. The user is NOT informed visually — the flow looks the
+   * same from their side, just routes to a different endpoint.
+   */
+  protected readonly emailIsOAuthOnly = signal(false);
+
+  readonly initialMode = input<AuthModalMode>('login');
   readonly prefillEmail = input<string>('');
 
   readonly closeModal = output<void>();
   /** Emitted after a successful registration that requires verification. */
   readonly verificationPending = output<{ email: string; firstName: string }>();
-  /** Emitted when the user clicks "¿Olvidaste tu contraseña?" — parent opens forgot modal. */
+  /** Emitted after a successful link-account that requires verification. */
+  readonly accountLinkPending = output<{ email: string; firstName: string }>();
+  /** Emitted when the user clicks "¿Olvidaste tu contraseña?". */
   readonly forgotPasswordRequested = output<void>();
 
-  /**
-   * Latest ISO `YYYY-MM-DD` a user may pick as birth date.
-   * Equals today minus `MIN_REGISTRATION_AGE` years — enforces the age gate at
-   * the calendar level so underage dates are visually unreachable.
-   */
-  protected readonly maxBirthDateStr = (() => {
-    const d = new Date();
-    d.setFullYear(d.getFullYear() - MIN_REGISTRATION_AGE);
-    return d.toISOString().split('T')[0];
-  })();
-
-  protected readonly mode = signal<AuthMode>('login');
+  protected readonly mode = signal<AuthModalMode>('login');
   protected readonly isLoading = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly sessionExpired = this.authService.sessionExpired;
 
-  // Stepper — always 2 steps
-  protected readonly currentStep = signal(1);
-  protected readonly isJuridical = signal(false);
-
-  // Registration success state — shown after POST /register returns OK.
-  // Keeps the modal open on a confirmation screen until the user presses Continuar.
-  protected readonly registrationSuccess = signal(false);
-  protected readonly registeredFirstName = signal('');
-
-  // Password visibility
   protected readonly showLoginPassword = signal(false);
   protected readonly showRegPassword = signal(false);
   protected readonly showRegConfirm = signal(false);
   protected readonly passwordsMismatch = signal(false);
 
-  // Login form
+  /** True when the modal renders the register/link-account UI. */
+  protected readonly effectiveRegisterMode = computed(() => this.mode() !== 'login');
+
   protected readonly loginForm: FormGroup = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(6)]],
   });
 
-  // Step 1: Credentials
-  protected readonly step1Form: FormGroup = this.fb.group({
+  /**
+   * Single-step register form. Personal data (document, phone, etc.) is
+   * collected in the "complete profile" modal that opens on /perfil after
+   * verification — so OAuth and email sign-ups converge on the same UX.
+   */
+  protected readonly registerForm: FormGroup = this.fb.group({
     firstName: ['', [Validators.required, Validators.minLength(2)]],
     lastName: ['', [Validators.required, Validators.minLength(2)]],
-    email: [
-      '',
-      {
-        validators: [Validators.required, Validators.email],
-        asyncValidators: [emailUniqueValidator(this.authService)],
-        updateOn: 'blur',
-      },
-    ],
+    email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(6)]],
     confirmPassword: ['', [Validators.required]],
   });
 
-  // Step 2: Identity & Contact (+ companyName conditional)
-  protected readonly step2Form: FormGroup = this.fb.group({
-    documentType: ['', [Validators.required]],
-    documentNumber: ['', [Validators.required]],
-    birthDate: [''],
-    phone: ['', [Validators.required, Validators.pattern(/^(0414|0424|0412|0416|0426)-?\d{7}$/)]],
-    companyName: [''],
-  });
-
   ngOnInit(): void {
-    // Apply initial mode + prefill if the parent requested register-with-email
-    if (this.initialMode() === 'register') {
-      this.mode.set('register');
+    const initialMode = this.initialMode();
+    if (initialMode === 'register' || initialMode === 'linkAccount') {
+      this.mode.set(initialMode);
     }
     const prefill = this.prefillEmail();
     if (prefill) {
-      this.step1Form.patchValue({ email: prefill });
+      this.registerForm.patchValue({ email: prefill });
       this.loginForm.patchValue({ email: prefill });
+    }
+
+    if (initialMode === 'linkAccount') {
+      this.registerForm.get('email')?.disable();
     }
 
     if (this.sessionExpired()) {
       setTimeout(() => this.authService.clearSessionExpired(), 5000);
     }
 
-    this.docTypeSub = this.step2Form.get('documentType')!.valueChanges.subscribe((type) => {
-      this.isJuridical.set(type === 'J');
-
-      const docCtrl = this.step2Form.get('documentNumber')!;
-      const birthCtrl = this.step2Form.get('birthDate')!;
-      const companyCtrl = this.step2Form.get('companyName')!;
-
-      const patterns: Record<string, RegExp> = {
-        V: /^\d{6,8}$/,
-        E: /^\d{6,8}$/,
-        J: /^\d{8,9}$/,
-        P: /^[a-zA-Z0-9]{5,15}$/,
-        G: /^\d{6,15}$/,
+    // Detect Google-only emails silently so submit can route to
+    // /auth/link-account without changing anything in the UI.
+    const emailCtrl = this.registerForm.get('email');
+    if (emailCtrl) {
+      const emptyResponse: CheckEmailResponse = {
+        success: true,
+        data: { exists: false },
       };
-
-      const pattern = patterns[type];
-      if (pattern) {
-        docCtrl.setValidators([Validators.required, Validators.pattern(pattern)]);
-      } else {
-        docCtrl.setValidators([Validators.required]);
-      }
-      docCtrl.updateValueAndValidity();
-
-      if (type === 'J') {
-        birthCtrl.clearValidators();
-        birthCtrl.setValue('');
-        companyCtrl.setValidators([Validators.required, Validators.minLength(3), Validators.maxLength(100)]);
-      } else {
-        birthCtrl.setValidators([Validators.required, minAgeValidator(MIN_REGISTRATION_AGE)]);
-        companyCtrl.clearValidators();
-        companyCtrl.setValue('');
-      }
-      birthCtrl.updateValueAndValidity();
-      companyCtrl.updateValueAndValidity();
-    });
+      this.emailCheckSub = emailCtrl.valueChanges
+        .pipe(
+          debounceTime(500),
+          distinctUntilChanged(),
+          switchMap((value: unknown) => {
+            const email = typeof value === 'string' ? value.trim() : '';
+            if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+              return of(emptyResponse);
+            }
+            return this.authService.checkEmail(email).pipe(
+              catchError(() => of(emptyResponse))
+            );
+          })
+        )
+        .subscribe((res) => {
+          const data = res?.data;
+          this.emailIsOAuthOnly.set(!!(data?.exists && data.isOAuthOnly));
+        });
+    }
   }
 
   ngOnDestroy(): void {
-    this.docTypeSub?.unsubscribe();
+    this.emailCheckSub?.unsubscribe();
     this.oauthFailsafeCleanup?.();
   }
 
-  switchMode(newMode: AuthMode): void {
+  switchMode(newMode: AuthModalMode): void {
     this.mode.set(newMode);
     this.errorMessage.set(null);
-    this.currentStep.set(1);
-    this.isJuridical.set(false);
-    this.registrationSuccess.set(false);
-    this.registeredFirstName.set('');
     this.loginForm.reset();
-    this.step1Form.reset();
-    this.step2Form.reset();
+    this.registerForm.reset();
+    this.emailIsOAuthOnly.set(false);
   }
-
-  // ========== Navigation ==========
 
   onRegPasswordInput(): void {
     this.errorMessage.set(null);
-    const pw = this.step1Form.get('password')?.value || '';
-    const confirm = this.step1Form.get('confirmPassword')?.value || '';
+    const pw = this.registerForm.get('password')?.value || '';
+    const confirm = this.registerForm.get('confirmPassword')?.value || '';
     this.passwordsMismatch.set(pw.length > 0 && confirm.length > 0 && pw !== confirm);
-  }
-
-  nextStep(): void {
-    if (this.step1Form.invalid) {
-      this.step1Form.markAllAsTouched();
-      return;
-    }
-
-    const s1 = this.step1Form.value;
-    if (s1.password !== s1.confirmPassword) {
-      this.errorMessage.set('Las contraseñas no coinciden');
-      return;
-    }
-
-    this.errorMessage.set(null);
-    this.currentStep.set(2);
-  }
-
-  prevStep(): void {
-    this.errorMessage.set(null);
-    this.currentStep.set(1);
   }
 
   // ========== Submit ==========
 
-  // Tracks the unverified email so the user can resend the verification mail
   protected readonly unverifiedEmail = signal<string | null>(null);
   protected readonly resendingVerification = signal(false);
   protected readonly resendFeedback = signal<string | null>(null);
@@ -229,7 +170,6 @@ export class AuthModalComponent implements OnInit, OnDestroy {
       error: (error) => {
         this.isLoading.set(false);
 
-        // EMAIL_NOT_VERIFIED → render inline message + "Reenviar correo" CTA
         if (error.error?.code === 'EMAIL_NOT_VERIFIED') {
           const email = error.error?.details?.email || this.loginForm.value.email;
           this.unverifiedEmail.set(email);
@@ -239,8 +179,6 @@ export class AuthModalComponent implements OnInit, OnDestroy {
           return;
         }
 
-        // When the account is blocked/suspended/deleted, raise the global
-        // modal and close this form — the inline error is insufficient.
         if (this.authService.triggerAccountBlocked(error)) {
           this.closeModal.emit();
           return;
@@ -250,7 +188,6 @@ export class AuthModalComponent implements OnInit, OnDestroy {
     });
   }
 
-  /** Re-sends the verification email when login was blocked by EMAIL_NOT_VERIFIED. */
   onResendVerificationFromLogin(): void {
     const email = this.unverifiedEmail();
     if (!email) return;
@@ -272,75 +209,107 @@ export class AuthModalComponent implements OnInit, OnDestroy {
     });
   }
 
-  /** Triggered by the "¿Olvidaste tu contraseña?" link in login mode. */
   onForgotPasswordClick(): void {
     this.forgotPasswordRequested.emit();
   }
 
-  onRegister(): void {
-    if (this.step2Form.invalid) {
-      this.step2Form.markAllAsTouched();
+  async onRegister(): Promise<void> {
+    if (this.registerForm.invalid) {
+      this.registerForm.markAllAsTouched();
       return;
     }
 
-    const { confirmPassword, ...s1 } = this.step1Form.value;
-    const s2 = this.step2Form.value;
+    const value = this.registerForm.getRawValue();
+    if (value.password !== value.confirmPassword) {
+      this.passwordsMismatch.set(true);
+      this.errorMessage.set('Las contraseñas no coinciden');
+      return;
+    }
 
     const payload: RegisterRequest = {
-      ...s1,
-      documentType: s2.documentType,
-      documentNumber: s2.documentNumber,
-      phone: s2.phone,
+      email: value.email,
+      password: value.password,
+      firstName: value.firstName,
+      lastName: value.lastName,
     };
-
-    if (s2.documentType !== 'J' && s2.birthDate) {
-      payload.birthDate = s2.birthDate;
-    }
-
-    if (s2.documentType === 'J' && s2.companyName) {
-      payload.companyName = s2.companyName;
-    }
 
     this.isLoading.set(true);
     this.errorMessage.set(null);
 
+    // Pre-flight check: confirm the email status RIGHT BEFORE submitting.
+    // The async validator may be stale (rapid typing + submit) and the
+    // backend's 409 only fires AFTER linkAccount has already burned a
+    // verification email — and email quotas are scarce.
+    let isOAuthOnly = this.emailIsOAuthOnly();
+    try {
+      const check = await firstValueFrom(this.authService.checkEmail(value.email));
+      const data = check.data;
+      if (data.exists && !data.isOAuthOnly) {
+        this.isLoading.set(false);
+        this.errorMessage.set(
+          'Ya tienes una cuenta con este correo. Inicia sesión o, si no recuerdas tu contraseña, usa nuestro sistema de recuperación de contraseña.'
+        );
+        return;
+      }
+      isOAuthOnly = !!(data.exists && data.isOAuthOnly);
+    } catch {
+      // Network failure: fall through. Backend remains the source of truth.
+    }
+
+    if (this.mode() === 'linkAccount' || isOAuthOnly) {
+      this.submitLinkAccount(payload);
+    } else {
+      this.submitRegister(payload);
+    }
+  }
+
+  private submitRegister(payload: RegisterRequest): void {
     this.authService.register(payload).subscribe({
       next: (response) => {
         this.isLoading.set(false);
         const firstName = response?.data?.user?.firstName || '';
         const email = response?.data?.user?.email || payload.email;
 
-        // Verification-pending path: backend did NOT return a token,
-        // user is NOT authenticated. Delegate to parent to show the
-        // verify-email-pending modal.
         if (response?.data?.requiresVerification) {
           this.verificationPending.emit({ email, firstName });
           return;
         }
 
-        // Legacy path (auto-login already happened in the service): show
-        // the in-modal success screen.
-        this.registeredFirstName.set(firstName);
-        this.registrationSuccess.set(true);
+        // Auto-login path (EMAIL_VERIFICATION_REQUIRED=false): drop the
+        // user on /perfil with the "complete profile" modal open.
+        this.toastService.success(`¡Bienvenido, ${firstName}!`);
+        this.closeModal.emit();
+        this.router.navigate(['/perfil'], { queryParams: { completeProfile: 'true' } });
       },
-      error: (error) => {
-        this.isLoading.set(false);
-        const body = error.error;
-        if (body?.errors?.length) {
-          const details = body.errors.map((e: { message: string }) => e.message).join('. ');
-          this.errorMessage.set(details);
-        } else if (body?.code === 'EMAIL_ALREADY_REGISTERED') {
-          this.errorMessage.set('Este correo ya está registrado. Intenta iniciar sesión.');
-        } else {
-          this.errorMessage.set(body?.message || 'Error al registrarse. Intenta de nuevo.');
-        }
-      },
+      error: (error) => this.handleRegisterError(error),
     });
   }
 
-  continueAfterRegistration(): void {
-    this.registrationSuccess.set(false);
-    this.closeModal.emit();
+  private submitLinkAccount(payload: RegisterRequest): void {
+    this.authService.linkAccount(payload).subscribe({
+      next: (response) => {
+        this.isLoading.set(false);
+        const firstName = response?.data?.user?.firstName || '';
+        const email = response?.data?.user?.email || payload.email;
+        this.accountLinkPending.emit({ email, firstName });
+      },
+      error: (error) => this.handleRegisterError(error),
+    });
+  }
+
+  private handleRegisterError(error: { error?: { errors?: { message: string }[]; code?: string; message?: string } }): void {
+    this.isLoading.set(false);
+    const body = error.error;
+    if (body?.errors?.length) {
+      const details = body.errors.map((e) => e.message).join('. ');
+      this.errorMessage.set(details);
+    } else if (body?.code === 'EMAIL_ALREADY_REGISTERED') {
+      this.errorMessage.set(
+        'Ya tienes una cuenta con este correo. Inicia sesión o, si no recuerdas tu contraseña, usa nuestro sistema de recuperación de contraseña.'
+      );
+    } else {
+      this.errorMessage.set(body?.message || 'Error al registrarse. Intenta de nuevo.');
+    }
   }
 
   // ========== OAuth ==========
@@ -356,15 +325,7 @@ export class AuthModalComponent implements OnInit, OnDestroy {
 
   /**
    * Resets the OAuth spinner if the user returns to this page without
-   * completing the flow. Two real-world scenarios where the original
-   * page stays alive after clicking the OAuth button:
-   *  - In-app browsers (FB/LinkedIn/IG WebViews) that open Google in a
-   *    Custom Tab instead of navigating the WebView.
-   *  - Back-forward cache restoration after pressing Back from
-   *    accounts.google.com.
-   *
-   * No-op in the happy desktop path: the component is destroyed by the
-   * full-page redirect before any listener can fire.
+   * completing the flow (in-app browsers / bfcache restoration).
    */
   private installOAuthFailsafe(): void {
     const onVisibility = (): void => {
@@ -403,32 +364,6 @@ export class AuthModalComponent implements OnInit, OnDestroy {
     if (control.errors['minlength']) {
       return `Mínimo ${control.errors['minlength'].requiredLength} caracteres`;
     }
-    if (control.errors['maxlength']) {
-      return `Máximo ${control.errors['maxlength'].requiredLength} caracteres`;
-    }
-    if (control.errors['pattern']) {
-      if (field === 'phone') return 'Formato: 04XX seguido de 7 dígitos';
-      if (field === 'documentNumber') return 'Formato de documento inválido';
-      return 'Formato inválido';
-    }
-    if (control.errors['minAge']) {
-      return `Debes tener al menos ${control.errors['minAge'].requiredAge} años para registrarte`;
-    }
-    if (control.errors['emailTaken']) {
-      return 'Este correo ya está registrado';
-    }
-
     return 'Campo inválido';
-  }
-
-  getDocNumberPlaceholder(): string {
-    const type = this.step2Form.get('documentType')?.value;
-    switch (type) {
-      case 'V': case 'E': return 'Ej: 12345678';
-      case 'J': return 'Ej: 123456789';
-      case 'P': return 'Ej: AB1234567';
-      case 'G': return 'Ej: 123456';
-      default: return 'Número de documento';
-    }
   }
 }

@@ -3,6 +3,24 @@
   @apply min-h-screen bg-gray-100 dark:bg-gray-900 relative;
 }
 
+.profile-incomplete-banner {
+  @apply max-w-6xl mx-auto mt-4 mb-2 px-4 sm:px-6 lg:px-8;
+  @apply flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3;
+  @apply rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700;
+  @apply px-4 py-3 text-amber-800 dark:text-amber-200;
+
+  .banner-text {
+    @apply flex flex-col gap-0.5 text-sm leading-relaxed;
+    strong { @apply font-semibold; }
+    span { @apply text-amber-700 dark:text-amber-300; }
+  }
+
+  .banner-cta {
+    @apply self-start sm:self-auto whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium;
+    @apply bg-amber-600 text-white hover:bg-amber-700 transition-colors;
+  }
+}
+
 // Banner
 .profile-banner {
   @apply relative h-48 md:h-56;

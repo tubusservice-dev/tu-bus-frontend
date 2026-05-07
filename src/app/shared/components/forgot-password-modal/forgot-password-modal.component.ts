@@ -1,14 +1,15 @@
 import { Component, signal, output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { AuthService } from '../../../core/services';
+import { AuthService } from '@core/services';
 
 /**
  * Standalone modal that asks the user for an email and triggers
- * `POST /api/auth/forgot-password`. Emits an event to its parent indicating
- * which follow-up modal should be shown:
- *  - 'sent'    → email-sent-modal (success path)
- *  - 'notFound' → email-not-found-modal (email not registered)
+ * `POST /api/auth/forgot-password`. Emits one of three events to its parent:
+ *  - 'sent'                  → standard reset (email-sent-modal)
+ *  - 'notFound'              → email not registered (register? modal)
+ *  - 'accountLinkRequired'   → Google-only account → reroute to register
+ *                              modal in linkAccount mode with prefilled email.
  *
  * Decoupled from the rest of the auth flow; parent owns visibility.
  */
@@ -23,12 +24,15 @@ export class ForgotPasswordModalComponent {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
 
-  /** Emitted when the user closes the modal without acting. */
   readonly closeModal = output<void>();
-  /** Emitted on successful send — payload is the email used. */
   readonly emailSent = output<string>();
-  /** Emitted when the email is not registered. */
   readonly emailNotFound = output<string>();
+  /**
+   * Emitted when the email belongs to a Google-only account. Caller should
+   * close this modal and open the auth modal in `linkAccount` mode with
+   * the email prefilled.
+   */
+  readonly accountLinkRequired = output<string>();
 
   protected readonly form: FormGroup = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
@@ -50,6 +54,10 @@ export class ForgotPasswordModalComponent {
     this.authService.forgotPassword(email).subscribe({
       next: (res) => {
         this.isLoading.set(false);
+        if (res.data.exists && res.data.requiresAccountLink) {
+          this.accountLinkRequired.emit(email);
+          return;
+        }
         if (res.data.exists) {
           this.emailSent.emit(email);
         } else {

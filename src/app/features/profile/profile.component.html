@@ -1,4 +1,16 @@
 <div class="profile-page">
+  @if (profileIncomplete()) {
+    <div class="profile-incomplete-banner">
+      <div class="banner-text">
+        <strong>Completa tus datos personales</strong>
+        <span>Necesitas estos datos para realizar pedidos en TuBus Express.</span>
+      </div>
+      <button type="button" class="banner-cta" (click)="openCompleteProfileModal()">
+        Completar ahora
+      </button>
+    </div>
+  }
+
   <!-- Banner superior -->
   <div class="profile-banner">
     <div class="banner-overlay"></div>
@@ -103,4 +115,11 @@
       } -->
     }
   </div>
+
+  @if (showCompleteProfileModal()) {
+    <app-complete-profile-modal
+      (closeModal)="closeCompleteProfileModal()"
+      (profileCompleted)="closeCompleteProfileModal()"
+    />
+  }
 </div>
