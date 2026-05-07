@@ -409,7 +409,7 @@
 
   &:focus {
     @apply ring-2 ring-offset-0 border-transparent outline-none;
-    ring-color: var(--accent-primary);
+    --tw-ring-color: var(--accent-primary);
   }
 
   &::placeholder {
@@ -1062,8 +1062,8 @@
   @apply rounded-lg;
   border-top-right-radius: 0;
   border-top-left-radius: 0;
-  border-top: none;
   background-color: #e0edff;
+  // Order matters: shorthand `border` first, then `border-top` override.
   border: 1px solid #c5d9f5;
   border-top: none;
 

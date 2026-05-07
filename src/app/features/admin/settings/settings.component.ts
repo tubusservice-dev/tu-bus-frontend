@@ -1,18 +1,18 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
-import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { SettingsService } from '../../../core/services/settings.service';
-import { PaymentMethodService } from '../../../core/services/payment-method.service';
-import { UploadService } from '../../../core/services/upload.service';
-import { ExchangeRateService } from '../../../core/services/exchange-rate.service';
-import { Settings, HeroImage, FloatingStat, PAGINATION_OPTIONS } from '../../../models/settings.model';
+import { SettingsService } from '@core/services/settings.service';
+import { PaymentMethodService } from '@core/services/payment-method.service';
+import { UploadService } from '@core/services/upload.service';
+import { ExchangeRateService } from '@core/services/exchange-rate.service';
+import { Settings, HeroImage, FloatingStat, PAGINATION_OPTIONS } from '@models/settings.model';
 import {
   PaymentMethodConfig,
   PaymentMethodType,
   PAYMENT_METHOD_TYPE_LABELS,
   getPaymentMethodSummary,
-} from '../../../models/payment-method.model';
+} from '@models/payment-method.model';
 
 type SectionKey = 'heroImages' | 'homeHero' | 'whatsapp' | 'carousels' | 'pagination' | 'dispatchModules' | 'dispatch' | 'paymentMethods' | 'exchangeRate' | 'supportContact' | 'customerSupport' | 'adminNotifications';
 type CustomerSupportField = 'whatsapp' | 'instagram' | 'facebook' | 'x';

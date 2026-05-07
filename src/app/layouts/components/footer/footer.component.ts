@@ -1,8 +1,8 @@
 import { Component, inject, input, computed } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { environment } from '../../../../environments/environment';
-import { ToastService } from '../../../shared/services/toast.service';
-import { SettingsService } from '../../../core/services/settings.service';
+import { environment } from '@env';
+import { ToastService } from '@shared/services/toast.service';
+import { SettingsService } from '@core/services/settings.service';
 
 interface SocialLink {
   name: string;
