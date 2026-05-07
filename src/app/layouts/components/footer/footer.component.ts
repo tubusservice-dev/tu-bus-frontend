@@ -1,11 +1,13 @@
-import { Component, inject, input } from '@angular/core';
+import { Component, inject, input, computed } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { environment } from '../../../../environments/environment';
 import { ToastService } from '../../../shared/services/toast.service';
+import { SettingsService } from '../../../core/services/settings.service';
 
 interface SocialLink {
   name: string;
-  icon: string;
+  icon: 'facebook' | 'instagram' | 'x';
+  url: string;
 }
 
 @Component({
@@ -17,6 +19,7 @@ interface SocialLink {
 })
 export class FooterComponent {
   private readonly toast = inject(ToastService);
+  private readonly settings = inject(SettingsService);
 
   /** En modo minimal solo muestra copyright (checkout mobile) */
   readonly minimal = input(false);
@@ -53,14 +56,18 @@ export class FooterComponent {
   ];
 
   /**
-   * Redes sociales — placeholders por ahora. Click muestra un toast
-   * "Próximamente" hasta que existan las URLs reales (ver `onSocialClick`).
+   * Social links resolved from `customerSupport` settings. Each entry keeps
+   * its `url` even when empty so the template can render the icon and the
+   * click handler decides whether to open the link or show "Próximamente".
    */
-  protected readonly socialLinks: SocialLink[] = [
-    { name: 'Facebook', icon: 'facebook' },
-    { name: 'Instagram', icon: 'instagram' },
-    { name: 'Twitter', icon: 'twitter' },
-  ];
+  protected readonly socialLinks = computed<SocialLink[]>(() => {
+    const cs = this.settings.customerSupportConfig();
+    return [
+      { name: 'Facebook', icon: 'facebook', url: cs.facebook },
+      { name: 'Instagram', icon: 'instagram', url: cs.instagram },
+      { name: 'X', icon: 'x', url: cs.x },
+    ];
+  });
 
   /** Scroll suave a sección (landing mode) */
   scrollToSection(sectionId: string): void {
@@ -71,10 +78,15 @@ export class FooterComponent {
   }
 
   /**
-   * Toast placeholder for unconfigured social links — replaces the previous
-   * `href="#"` which scrolled the page to the top on click.
+   * Open the configured URL in a new tab, or show a "Próximamente" toast
+   * when the field is empty (admin hasn't configured that social channel).
    */
-  protected onSocialClick(): void {
-    this.toast.info('Próximamente');
+  protected onSocialClick(social: SocialLink): void {
+    const url = social.url?.trim();
+    if (url) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } else {
+      this.toast.info('Próximamente');
+    }
   }
 }

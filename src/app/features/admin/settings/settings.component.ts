@@ -15,6 +15,7 @@ import {
 } from '../../../models/payment-method.model';
 
 type SectionKey = 'heroImages' | 'homeHero' | 'whatsapp' | 'carousels' | 'pagination' | 'dispatchModules' | 'dispatch' | 'paymentMethods' | 'exchangeRate' | 'supportContact' | 'customerSupport' | 'adminNotifications';
+type CustomerSupportField = 'whatsapp' | 'instagram' | 'facebook' | 'x';
 type PaginationSubKey = 'catalogLimit' | 'adminLimit';
 
 @Component({
@@ -145,6 +146,22 @@ export class SettingsComponent implements OnInit {
   protected dispatchForm!: FormGroup;
   protected supportContactForm!: FormGroup;
   protected customerSupportForm!: FormGroup;
+
+  /**
+   * Per-field state for the "Atención al Cliente" accordion. Each input
+   * (whatsapp / instagram / facebook / x) ships an independent pair of
+   * buttons (Guardar / Eliminar) so we track saving and feedback per key
+   * instead of a single section-level flag.
+   */
+  protected readonly customerFieldSaving = signal<Record<CustomerSupportField, boolean>>({
+    whatsapp: false, instagram: false, facebook: false, x: false,
+  });
+  protected readonly customerFieldSuccess = signal<Record<CustomerSupportField, boolean>>({
+    whatsapp: false, instagram: false, facebook: false, x: false,
+  });
+  protected readonly customerFieldError = signal<Record<CustomerSupportField, string | null>>({
+    whatsapp: null, instagram: null, facebook: null, x: null,
+  });
   protected adminNotificationsForm!: FormGroup;
 
   ngOnInit(): void {
@@ -218,10 +235,10 @@ export class SettingsComponent implements OnInit {
     });
 
     this.customerSupportForm = this.fb.group({
-      firstName: ['', [Validators.required, Validators.maxLength(20)]],
-      lastName: ['', [Validators.required, Validators.maxLength(20)]],
-      phone: ['', [Validators.required, Validators.pattern(/^04\d{2}-?\d{7}$/)]],
       whatsapp: ['', [Validators.pattern(/^(?:\+?\d{1,3})?[\s-]?\d{10,11}$/), Validators.maxLength(20)]],
+      instagram: ['', [Validators.pattern(/^(https?:\/\/.+)?$/), Validators.maxLength(200)]],
+      facebook: ['', [Validators.pattern(/^(https?:\/\/.+)?$/), Validators.maxLength(200)]],
+      x: ['', [Validators.pattern(/^(https?:\/\/.+)?$/), Validators.maxLength(200)]],
     });
 
     this.adminNotificationsForm = this.fb.group({
@@ -677,27 +694,65 @@ export class SettingsComponent implements OnInit {
     });
   }
 
-  // ========== Contacto de Soporte para el Cliente ==========
-  saveCustomerSupport(): void {
-    if (this.customerSupportForm.invalid) {
-      this.customerSupportForm.markAllAsTouched();
+  // ========== Contacto para Atención al Cliente (per-field save/delete) ==========
+
+  /**
+   * Save a single customer-support field. The other 3 channels are
+   * preserved because the backend endpoint accepts a partial payload.
+   */
+  saveCustomerField(field: CustomerSupportField): void {
+    const ctrl = this.customerSupportForm.get(field);
+    if (!ctrl || ctrl.invalid) {
+      ctrl?.markAsTouched();
       return;
     }
+    this.setCustomerFieldSaving(field, true);
+    this.setCustomerFieldError(field, null);
 
-    this.setSaving('customerSupport', true);
-    this.clearMessages('customerSupport');
-
-    this.settingsService.updateCustomerSupport(this.customerSupportForm.value).subscribe({
+    this.settingsService.updateCustomerSupport({ [field]: ctrl.value || '' }).subscribe({
       next: () => {
-        this.setSaving('customerSupport', false);
-        this.setSuccess('customerSupport', true);
-        setTimeout(() => this.setSuccess('customerSupport', false), 3000);
+        this.setCustomerFieldSaving(field, false);
+        this.setCustomerFieldSuccess(field, true);
+        setTimeout(() => this.setCustomerFieldSuccess(field, false), 2500);
       },
       error: (error) => {
-        this.setSaving('customerSupport', false);
-        this.setError('customerSupport', error.error?.message || 'Error al guardar');
+        this.setCustomerFieldSaving(field, false);
+        this.setCustomerFieldError(field, error.error?.message || 'Error al guardar');
       },
     });
+  }
+
+  /**
+   * Clear a single customer-support field. Sends an empty string so the
+   * backend writes '' — the landing page treats that as "not configured"
+   * and falls back to the "Próximamente" toast.
+   */
+  deleteCustomerField(field: CustomerSupportField): void {
+    this.setCustomerFieldSaving(field, true);
+    this.setCustomerFieldError(field, null);
+
+    this.settingsService.updateCustomerSupport({ [field]: '' }).subscribe({
+      next: () => {
+        this.customerSupportForm.get(field)?.setValue('');
+        this.setCustomerFieldSaving(field, false);
+        this.setCustomerFieldSuccess(field, true);
+        setTimeout(() => this.setCustomerFieldSuccess(field, false), 2500);
+      },
+      error: (error) => {
+        this.setCustomerFieldSaving(field, false);
+        this.setCustomerFieldError(field, error.error?.message || 'Error al eliminar');
+      },
+    });
+  }
+
+  private setCustomerFieldSaving(field: CustomerSupportField, value: boolean): void {
+    this.customerFieldSaving.update((s) => ({ ...s, [field]: value }));
+  }
+  private setCustomerFieldSuccess(field: CustomerSupportField, value: boolean): void {
+    this.customerFieldSuccess.update((s) => ({ ...s, [field]: value }));
+  }
+  private setCustomerFieldError(field: CustomerSupportField, value: string | null): void {
+    this.customerFieldError.update((s) => ({ ...s, [field]: value }));
   }
 
   // ========== Notificaciones del Admin ==========
