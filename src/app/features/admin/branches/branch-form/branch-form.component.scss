@@ -309,14 +309,15 @@
   @apply inline-flex items-center gap-1;
 }
 
-// Schedule
+// Schedule — stacks day/toggle/times on narrow viewports so the row
+// never overflows the form card on mobile.
 .schedule-grid { @apply space-y-2; }
 .schedule-row {
-  @apply flex items-center gap-4 p-3 rounded-lg border border-gray-100 dark:border-gray-700;
+  @apply flex flex-wrap items-center gap-x-4 gap-y-2 p-3 rounded-lg border border-gray-100 dark:border-gray-700;
   &.closed-day { @apply opacity-60 bg-gray-50 dark:bg-gray-800/50; }
 }
-.day-name { @apply w-24 text-sm font-medium text-gray-700 dark:text-gray-300 flex-shrink-0; }
-.time-inputs { @apply flex items-center gap-2; }
+.day-name { @apply w-20 sm:w-24 text-sm font-medium text-gray-700 dark:text-gray-300 flex-shrink-0; }
+.time-inputs { @apply flex items-center gap-2 flex-wrap; }
 .time-separator { @apply text-xs text-gray-400; }
 .closed-label { @apply text-xs text-gray-400 dark:text-gray-500 italic; }
 

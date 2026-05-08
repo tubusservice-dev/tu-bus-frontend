@@ -1,5 +1,7 @@
 .order-detail-page {
-  @apply p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto;
+  // Outer padding lives on the admin layout's <main>; duplicating it
+  // here only ate horizontal space on mobile.
+  @apply max-w-7xl mx-auto;
 }
 
 // ============================================
@@ -29,8 +31,15 @@
   @apply text-xl sm:text-2xl font-bold text-gray-900 dark:text-white;
 }
 
+// Right-align + wrap so:
+//  1. The 3-dot button is on the right of the row when header-actions
+//     wraps below the title in mobile layout (page-header is flex-col).
+//     This restores the implicit assumption of `.options-dropdown
+//     { right: 0 }` (popover extends LEFT from a right-side trigger).
+//  2. Long button pairs (Aprobar Cancelación / Rechazar Cancelación)
+//     wrap to a second row instead of overflowing the viewport.
 .header-actions {
-  @apply flex items-center gap-2;
+  @apply flex flex-wrap items-center justify-end gap-2;
 }
 
 .btn-mechanic-assigned {
@@ -679,9 +688,12 @@
   svg { @apply w-5 h-5; }
 }
 
+// Defensive max-width caps the popover to viewport width so it never
+// overflows even if the trigger ends up near a viewport edge.
 .options-dropdown {
   @apply absolute right-0 top-full mt-2 w-56 z-30 rounded-xl shadow-lg py-1;
   @apply bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700;
+  max-width: calc(100vw - 1.5rem);
 }
 
 .options-dropdown-header {
@@ -797,9 +809,16 @@
   @apply text-xs text-gray-500 dark:text-gray-400;
 }
 
+// Horizontal stepper. Wrapping breaks the visual metaphor of progress,
+// so on narrow viewports we let the row scroll horizontally instead.
 .service-stepper {
   @apply mt-4 flex items-start justify-between px-5 sm:px-6 pb-5 pt-2;
   gap: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar { display: none; }
 }
 
 .stepper-item {
@@ -912,6 +931,7 @@
   @apply absolute right-0 top-full mt-1 z-40 min-w-[140px];
   @apply bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg;
   @apply py-1 flex flex-col;
+  max-width: calc(100vw - 1.5rem);
   animation: phonePopoverFadeIn 0.15s ease-out;
 }
 

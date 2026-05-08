@@ -104,10 +104,15 @@
 }
 
 // Contenido principal
+// `min-width: 0` rompe la propagación de min-content intrínseco desde
+// hijos con `min-width` (tablas anchas con scroll). Sin esto el flex
+// algorithm estira a `.main-wrapper` al ancho intrínseco del contenido
+// y el `overflow-x: auto` de los table-shells nunca se dispara.
 .main-wrapper {
   @apply flex-1 flex flex-col lg:ml-64;
   min-height: 100vh;
   min-height: 100dvh;
+  min-width: 0;
 }
 
 .main-header {
@@ -137,9 +142,11 @@
   min-width: 18px; height: 18px; width: 18px;
 }
 
-// Notification Popover
+// Notification Popover — caps width to viewport so it never spills past
+// the right edge on very narrow phones (320px-class devices).
 .notif-popover {
-  @apply absolute right-0 top-full mt-2 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden;
+  @apply absolute right-0 top-full mt-2 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden;
+  width: min(20rem, calc(100vw - 1.5rem));
 }
 .notif-popover-header {
   @apply flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700;
@@ -187,6 +194,11 @@
 }
 
 // Contenido
+// `min-width: 0` por la misma razón que en `.main-wrapper`: este es el
+// flex item que envuelve el router-outlet, así que cualquier vista con
+// tabla ancha o grid rígido necesita que su contenedor pueda encogerse
+// por debajo del ancho intrínseco de su contenido.
 .main-content {
   @apply flex-1 p-4 lg:p-6;
+  min-width: 0;
 }

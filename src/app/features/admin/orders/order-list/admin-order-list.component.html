@@ -8,8 +8,18 @@
       </div>
     </div>
 
-    <!-- Filters + Search -->
+    <!-- Filters + Search — search is row 1 (full width), filters row 2 -->
     <div class="filters-row">
+      <div class="search-group">
+        <app-search-input
+          placeholder="Buscar por N° de orden..."
+          ariaLabel="Buscar ordenes"
+          [value]="searchQuery()"
+          [loading]="isSearching()"
+          (valueInput)="onSearchTyping($event)"
+          (searchChanged)="onSearchCommit($event)"
+        />
+      </div>
       <div class="filter-group">
         <label for="status-filter">Estado:</label>
         <select
@@ -23,16 +33,6 @@
             <option [value]="status">{{ ORDER_STATUS_LABELS[status] }}</option>
           }
         </select>
-      </div>
-      <div class="search-group">
-        <app-search-input
-          placeholder="Buscar por N° de orden..."
-          ariaLabel="Buscar ordenes"
-          [value]="searchQuery()"
-          [loading]="isSearching()"
-          (valueInput)="onSearchTyping($event)"
-          (searchChanged)="onSearchCommit($event)"
-        />
       </div>
     </div>
   </header>
@@ -53,7 +53,65 @@
         <p>Las ordenes realizadas por los clientes apareceran aqui</p>
       </div>
     } @else {
-      <!-- Table -->
+      <!-- Mobile: card list -->
+      <div class="cards-list">
+        @for (order of orders(); track order.id) {
+          <article class="order-card" (click)="viewOrderDetail(order)">
+            <header class="card-top">
+              <span class="card-order-number">{{ order.orderNumber }}</span>
+              <span class="dispatch-chip" [ngClass]="getDispatchTypeColor(order.dispatchType)">
+                {{ getDispatchTypeLabel(order.dispatchType) }}
+              </span>
+            </header>
+
+            <div class="card-client">
+              <span class="card-client-name">{{ getClientName(order) }}</span>
+              @if (getClientEmail(order)) {
+                <span class="card-client-email">{{ getClientEmail(order) }}</span>
+              }
+            </div>
+
+            @if (getRequestedServiceInfo(order); as svc) {
+              <div class="card-schedule">
+                <span class="tier-chip" [ngClass]="svc.tierClass">{{ svc.tierLabel }}</span>
+                <span class="schedule-date">{{ svc.dateLabel }}</span>
+              </div>
+            }
+
+            <footer class="card-bottom">
+              <div class="card-total-block">
+                <span class="card-total-label">Total</span>
+                <span class="card-total-value">${{ order.total | number:'1.2-2' }}</span>
+              </div>
+              <div class="card-status-block">
+                <span class="status-badge" [ngClass]="getStatusColor(order.status)">
+                  {{ getStatusLabel(order.status) }}
+                </span>
+                @if (getSecondaryIndicator(order); as sec) {
+                  <span class="secondary-badge" [ngClass]="sec.color">{{ sec.label }}</span>
+                }
+              </div>
+            </footer>
+
+            <div class="card-meta-row">
+              <span class="card-items">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m21 7.5-9-5.25L3 7.5m18 0-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
+                </svg>
+                {{ order.items.length }}
+                @if (getItemCount(order) !== order.items.length) {
+                  <span class="item-qty">x{{ getItemCount(order) }}</span>
+                }
+              </span>
+              <span class="card-date">
+                {{ formatShortDate(order.createdAt) }} · {{ formatShortTime(order.createdAt) }}
+              </span>
+            </div>
+          </article>
+        }
+      </div>
+
+      <!-- Desktop: table -->
       <div class="table-container">
         <table class="data-table">
           <thead>
