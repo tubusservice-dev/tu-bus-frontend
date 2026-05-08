@@ -83,6 +83,7 @@
 
 .data-table {
   @apply w-full text-sm;
+  min-width: 800px;
 
   thead {
     @apply bg-gray-50 dark:bg-gray-700/50;

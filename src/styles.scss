@@ -255,6 +255,29 @@ router-outlet + * {
 }
 
 /* ========================================
+   Admin tables — canonical responsive shell
+   ========================================
+   All admin data tables share the same responsive contract: a wrapper
+   that scrolls horizontally and a table that never collapses below a
+   readable floor. Each feature can override the floor via the CSS var
+   `--admin-table-min-width` on its own table element.
+   See: docs reference in the deep-debug audit. */
+.admin-table-shell {
+  @apply bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  // Defensive: blocks intrinsic min-content width from propagating up
+  // to ancestor flex/grid containers if they're not already configured.
+  max-width: 100%;
+  min-width: 0;
+}
+
+.admin-table {
+  @apply w-full text-sm;
+  min-width: var(--admin-table-min-width, 720px);
+}
+
+/* ========================================
    Componentes reutilizables
    ======================================== */
 @layer components {

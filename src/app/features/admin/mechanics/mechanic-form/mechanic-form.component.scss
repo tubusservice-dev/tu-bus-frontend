@@ -120,7 +120,7 @@
 }
 
 .schedule-row {
-  @apply flex items-center gap-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg transition-colors;
+  @apply flex flex-wrap items-center gap-x-4 gap-y-2 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg transition-colors;
 
   &.closed {
     @apply opacity-60;
@@ -128,7 +128,7 @@
 }
 
 .schedule-day-name {
-  @apply w-24 text-sm font-medium text-gray-700 dark:text-gray-300 flex-shrink-0;
+  @apply w-20 sm:w-24 text-sm font-medium text-gray-700 dark:text-gray-300 flex-shrink-0;
 }
 
 .schedule-toggle {
@@ -161,11 +161,11 @@
 }
 
 .schedule-times {
-  @apply flex items-center gap-2 flex-1;
+  @apply flex items-center gap-2 flex-wrap flex-1 min-w-0;
 }
 
 .time-input {
-  @apply w-28 px-3 py-1.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg;
+  @apply w-24 sm:w-28 px-3 py-1.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg;
   @apply text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:border-transparent;
   &:focus { --tw-ring-color: var(--accent-primary); }
 }

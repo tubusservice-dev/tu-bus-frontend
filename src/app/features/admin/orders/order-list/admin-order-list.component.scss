@@ -22,16 +22,17 @@
 
 // ==================== FILTERS ====================
 
+// Two-row stacked layout: search on row 1, filters on row 2.
 .filters-row {
-  @apply flex flex-wrap items-center gap-4;
+  @apply flex flex-col gap-3;
 }
 
 .search-group {
-  @apply flex-1 min-w-0 relative;
+  @apply w-full min-w-0 relative;
 }
 
 .filter-group {
-  @apply flex items-center gap-2;
+  @apply flex items-center justify-end gap-2 flex-wrap;
 
   label {
     @apply text-sm font-medium text-gray-700 dark:text-gray-300;
@@ -71,11 +72,97 @@
   }
 }
 
-// ==================== TABLE ====================
+// ==================== MOBILE CARDS (default, hidden on lg+) ====================
+
+.cards-list {
+  @apply flex flex-col gap-3;
+
+  @media (min-width: 1024px) {
+    display: none;
+  }
+}
+
+.order-card {
+  @apply flex flex-col gap-2.5 p-4 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 cursor-pointer;
+  @apply transition-all duration-200;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+
+  &:hover {
+    @apply border-gray-300 dark:border-gray-600;
+    box-shadow: 0 8px 24px rgba(0, 29, 86, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+    transform: translateY(-1px);
+  }
+
+  &:active { transform: translateY(0); }
+}
+
+.card-top {
+  @apply flex items-center justify-between gap-2 flex-wrap;
+}
+
+.card-order-number {
+  @apply font-mono font-bold text-sm text-gray-900 dark:text-white;
+}
+
+.card-client {
+  @apply flex flex-col min-w-0;
+}
+
+.card-client-name {
+  @apply text-sm font-medium text-gray-900 dark:text-white truncate;
+}
+
+.card-client-email {
+  @apply text-xs text-gray-500 dark:text-gray-400 truncate;
+}
+
+.card-schedule {
+  @apply flex items-center gap-2 flex-wrap;
+}
+
+.card-bottom {
+  @apply flex items-center justify-between gap-3 pt-2.5 mt-0.5 border-t border-gray-100 dark:border-gray-700;
+}
+
+.card-total-block {
+  @apply flex flex-col;
+}
+
+.card-total-label {
+  @apply text-[10px] uppercase tracking-wider font-semibold text-gray-400 dark:text-gray-500;
+}
+
+.card-total-value {
+  @apply text-base font-bold text-gray-900 dark:text-white tabular-nums leading-tight;
+}
+
+.card-status-block {
+  @apply flex flex-col items-end gap-1;
+}
+
+.card-meta-row {
+  @apply flex items-center justify-between gap-2 text-xs text-gray-500 dark:text-gray-400;
+}
+
+.card-items {
+  @apply inline-flex items-center gap-1;
+  svg { @apply w-3.5 h-3.5; }
+}
+
+.card-date {
+  @apply font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap;
+}
+
+// ==================== TABLE (hidden on mobile, visible lg+) ====================
 
 .table-container {
   @apply bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden;
   @apply overflow-x-auto;
+  display: none;
+
+  @media (min-width: 1024px) {
+    display: block;
+  }
 }
 
 .data-table {

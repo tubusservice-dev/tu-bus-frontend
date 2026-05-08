@@ -69,20 +69,83 @@
   }
 }
 
-// Tabla
+// ==================== MOBILE CARDS (default, hidden on lg+) ====================
+.cards-list {
+  @apply flex flex-col gap-3;
+
+  @media (min-width: 1024px) {
+    display: none;
+  }
+}
+
+.mechanic-card {
+  @apply flex flex-col gap-3 p-4 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700;
+  @apply transition-all duration-200;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+
+  &:hover {
+    @apply border-gray-300 dark:border-gray-600;
+    box-shadow: 0 8px 24px rgba(0, 29, 86, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+    transform: translateY(-1px);
+  }
+
+  &.is-inactive { @apply opacity-75; }
+
+  .card-top {
+    @apply flex items-start gap-3;
+  }
+
+  .card-identity {
+    @apply flex-1 min-w-0 flex flex-col gap-0.5;
+  }
+
+  .card-name {
+    @apply text-sm font-semibold text-blue-700 dark:text-blue-400 hover:underline truncate;
+  }
+
+  .card-email {
+    @apply text-xs text-gray-500 dark:text-gray-400 truncate;
+  }
+
+  .card-meta {
+    @apply flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-gray-600 dark:text-gray-300 pt-2 border-t border-gray-100 dark:border-gray-700;
+  }
+
+  .meta-item {
+    @apply inline-flex items-center gap-1.5;
+    svg { @apply w-3.5 h-3.5 text-gray-400 flex-shrink-0; }
+  }
+
+  .card-actions {
+    @apply flex items-center justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-700;
+
+    .btn-action {
+      @apply inline-flex items-center justify-center w-9 h-9 rounded-lg transition-colors;
+      svg { @apply w-4 h-4; }
+    }
+  }
+}
+
+// ==================== TABLE (hidden on mobile, visible lg+) ====================
 .table-container {
   @apply bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden;
   @apply overflow-x-auto;
+  display: none;
+
+  @media (min-width: 1024px) {
+    display: block;
+  }
 }
 
 .data-table {
   @apply w-full text-sm;
+  min-width: 720px;
 
   thead {
     @apply bg-gray-50 dark:bg-gray-700/50;
 
     th {
-      @apply px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider;
+      @apply px-3 sm:px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap;
     }
   }
 
@@ -96,7 +159,7 @@
     }
 
     td {
-      @apply px-4 py-3 text-gray-700 dark:text-gray-300;
+      @apply px-3 sm:px-4 py-3 text-gray-700 dark:text-gray-300;
     }
   }
 }

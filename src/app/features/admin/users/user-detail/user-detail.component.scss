@@ -202,11 +202,14 @@
 
 // Tables
 .table-container {
-  @apply bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden overflow-x-auto;
+  @apply bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .data-table {
   @apply w-full text-sm;
+  min-width: 700px;
 
   thead { @apply bg-gray-50 dark:bg-gray-700/50; }
   th {

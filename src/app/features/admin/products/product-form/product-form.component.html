@@ -55,7 +55,7 @@
 
             <div class="form-grid">
               <!-- Nombre -->
-              <div class="form-group col-span-2">
+              <div class="form-group sm:col-span-2">
                 <label for="name">Nombre del producto <span class="required">*</span></label>
                 <input
                   type="text"
@@ -91,17 +91,20 @@
 
               <!-- Línea -->
               <div class="form-group">
-                <label for="line">Línea <span class="optional">(opcional)</span></label>
-                <select id="line" formControlName="line">
-                  <option value="">Seleccionar</option>
-                  @for (line of lines(); track line.id) {
-                    <option [value]="line.id">{{ line.name }}</option>
-                  }
-                </select>
+                <label>Línea <span class="optional">(opcional)</span></label>
+                <app-searchable-select
+                  [options]="lineOptionList()"
+                  [selected]="selectedLineOption()"
+                  placeholder="Buscar línea..."
+                  emptyMessage="No se encontraron líneas"
+                  ariaLabel="Seleccionar línea del producto"
+                  chipVariant="blue"
+                  (selectedChange)="onLineSelectedChange($event)"
+                />
               </div>
 
               <!-- Descripción -->
-              <div class="form-group col-span-2">
+              <div class="form-group sm:col-span-2">
                 <label for="description">Descripción <span class="optional">(opcional)</span></label>
                 <textarea
                   id="description"
@@ -112,7 +115,7 @@
               </div>
 
               <!-- Toggles -->
-              <div class="form-group col-span-2">
+              <div class="form-group sm:col-span-2">
                 <div class="toggle-group">
                   <div class="toggle-item">
                     <label class="toggle-control">
@@ -145,7 +148,7 @@
 
             <div class="form-grid">
               <!-- Fila: Categorías (ocupa toda la fila) -->
-              <div class="form-group col-span-2">
+              <div class="form-group sm:col-span-2">
                 <label>Categorías <span class="optional">(opcional)</span></label>
                 <div class="category-selector">
                   <!-- Input de búsqueda -->
@@ -222,12 +225,12 @@
               </div>
 
               <!-- Separador -->
-              <div class="form-group col-span-2">
+              <div class="form-group sm:col-span-2">
                 <hr class="section-divider" />
               </div>
 
               <!-- Combo Toggle -->
-              <div class="form-group col-span-2">
+              <div class="form-group sm:col-span-2">
                 <div class="toggle-item highlight-toggle">
                   <label class="toggle-control">
                     <input type="checkbox" formControlName="isCombo" />
@@ -243,7 +246,7 @@
               </div>
 
               <!-- Servicio de cambio de aceite a domicilio gratis -->
-              <div class="form-group col-span-2">
+              <div class="form-group sm:col-span-2">
                 <div class="toggle-item highlight-toggle">
                   <label class="toggle-control">
                     <input type="checkbox" formControlName="freeOilChangeService" />
@@ -261,7 +264,7 @@
               <!-- Sucursales y Stock — extracted into a shared component used
                    here (embedded mode, no own save button) and inside the
                    admin product detail modal (standalone mode). -->
-              <div class="form-group col-span-2">
+              <div class="form-group sm:col-span-2">
                 <app-branch-stock-manager
                   #branchManager
                   [productId]="productId()"

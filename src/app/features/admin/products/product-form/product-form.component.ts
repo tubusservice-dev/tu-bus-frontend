@@ -79,6 +79,35 @@ export class ProductFormComponent implements OnInit {
     return filtered;
   });
 
+  // Línea seleccionada — driven by the same searchable-select pattern as
+  // brand. The reactive form's `line` control is kept so the rest of the
+  // submit pipeline can stay unchanged, but the UI is signal-driven.
+  protected readonly selectedLine = signal<Line | null>(null);
+
+  protected readonly lineOptionList = computed<SearchableOption[]>(() =>
+    this.lines()
+      .filter((l) => l.isActive !== false)
+      .map((l) => ({ id: l.id, label: l.name }))
+  );
+
+  protected readonly selectedLineOption = computed<SearchableOption | null>(() => {
+    const l = this.selectedLine();
+    return l ? { id: l.id, label: l.name } : null;
+  });
+
+  onLineSelectedChange(option: SearchableOption | null): void {
+    if (!option) {
+      this.selectedLine.set(null);
+      this.form.patchValue({ line: '' });
+      return;
+    }
+    const line = this.lines().find((l) => l.id === option.id);
+    if (line) {
+      this.selectedLine.set(line);
+      this.form.patchValue({ line: line.id });
+    }
+  }
+
   // Marcas — filtering/search now lives inside <app-searchable-select>
   protected readonly brands = signal<Brand[]>([]);
   protected readonly selectedBrand = signal<Brand | null>(null);
@@ -259,6 +288,14 @@ export class ProductFormComponent implements OnInit {
           freeOilChangeService: product.freeOilChangeService || false,
         });
         this.images.set(product.images || []);
+
+        // Sync the line searchable-select with the loaded product.
+        if (lineId) {
+          const matchedLine = this.lines().find((l) => l.id === lineId);
+          if (matchedLine) {
+            this.selectedLine.set(matchedLine);
+          }
+        }
 
         // Cargar categorías seleccionadas
         if (product.categories && Array.isArray(product.categories)) {

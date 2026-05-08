@@ -81,20 +81,24 @@
   }
 }
 
-// Table Card
+// Table Card — horizontal scroll on narrow viewports keeps the table
+// readable instead of clipping it.
 .table-card {
-  @apply bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden;
+  @apply bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .assign-table {
   @apply w-full text-sm;
+  min-width: 720px;
 
   thead tr {
     @apply bg-gray-50 dark:bg-gray-700/50;
   }
 
   th {
-    @apply px-4 py-2.5 text-left text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider;
+    @apply px-3 sm:px-4 py-2.5 text-left text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider;
     &.text-right { text-align: right; }
   }
 
@@ -104,7 +108,7 @@
     &.row-cancelled { @apply opacity-60; }
   }
 
-  td { @apply px-4 py-3; }
+  td { @apply px-3 sm:px-4 py-3; }
 }
 
 .cell-order { @apply font-semibold text-gray-900 dark:text-white text-xs; }

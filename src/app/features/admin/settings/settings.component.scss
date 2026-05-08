@@ -949,7 +949,7 @@
 
 // ========== Exchange Rate Section ==========
 .exchange-toggle-row {
-  @apply flex items-center justify-between p-4 rounded-lg mb-4;
+  @apply flex flex-wrap items-center justify-between gap-3 p-4 rounded-lg mb-4;
   @apply bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700;
 }
 
@@ -997,7 +997,11 @@
 
 .rate-fields-row {
   @apply grid gap-3 items-start;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: 1fr;
+
+  @media (min-width: 640px) {
+    grid-template-columns: 1fr auto 1fr;
+  }
 }
 
 .rate-field {
@@ -1098,7 +1102,11 @@
 
 .rate-toggle-center {
   @apply flex items-center justify-center;
-  padding-top: 1.75rem; // align with inputs
+  padding-top: 0.5rem;
+
+  @media (min-width: 640px) {
+    padding-top: 1.75rem; // align with inputs
+  }
 }
 
 .rate-field-disabled {
