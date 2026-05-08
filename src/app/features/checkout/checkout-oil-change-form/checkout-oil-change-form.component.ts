@@ -18,11 +18,12 @@ import {
 } from '@shared/validators/form-validators';
 import { VehicleFormComponent } from '@features/garage/vehicle-form/vehicle-form.component';
 import { CheckoutHeaderComponent } from '../components/checkout-header/checkout-header.component';
+import { PhoneMaskDirective } from '@shared/directives/phone-mask.directive';
 
 @Component({
   selector: 'app-checkout-oil-change-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, VehicleFormComponent, CheckoutHeaderComponent],
+  imports: [CommonModule, ReactiveFormsModule, VehicleFormComponent, CheckoutHeaderComponent, PhoneMaskDirective],
   templateUrl: './checkout-oil-change-form.component.html',
   styleUrl: './checkout-oil-change-form.component.scss',
 })

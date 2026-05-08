@@ -169,6 +169,55 @@ export class ProfileInfoComponent implements OnInit {
     this.showDocDropdown.set(false);
   }
 
+  /**
+   * Máximo de caracteres permitidos en `documentNumber` según tipo:
+   * V/E → 8, J → 9, P/G → 15. Reflect el upper bound del regex.
+   */
+  getDocNumberMaxLength(): number {
+    const type = this.profileForm.get('documentType')?.value;
+    switch (type) {
+      case 'V': case 'E': return 8;
+      case 'J': return 9;
+      case 'P': return 15;
+      case 'G': return 15;
+      default: return 20;
+    }
+  }
+
+  /** `inputmode` numeric salvo Pasaporte (alfanumérico). */
+  getDocNumberInputMode(): 'numeric' | 'text' {
+    return this.profileForm.get('documentType')?.value === 'P' ? 'text' : 'numeric';
+  }
+
+  /**
+   * Filtro reactivo: descarta caracteres no permitidos al teclear o pegar.
+   * Mantiene sincronizado el input del DOM con el FormControl.
+   */
+  onDocumentNumberInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const type = this.profileForm.get('documentType')?.value as string | null;
+    const maxLen = this.getDocNumberMaxLength();
+    const allowed = type === 'P' ? /[^a-zA-Z0-9]/g : /\D/g;
+    const cleaned = input.value.replace(allowed, '').slice(0, maxLen);
+    if (cleaned !== input.value) {
+      input.value = cleaned;
+    }
+    this.profileForm.get('documentNumber')?.setValue(cleaned, { emitEvent: false });
+  }
+
+  /**
+   * Filtro reactivo para teléfonos venezolanos (04XX-XXXXXXX o 04XXXXXXXXXX).
+   * Solo dígitos y guión opcional, máximo 12 caracteres.
+   */
+  onPhoneInput(event: Event, controlName: 'phone' | 'alternativePhone' = 'phone'): void {
+    const input = event.target as HTMLInputElement;
+    const cleaned = input.value.replace(/[^\d-]/g, '').slice(0, 12);
+    if (cleaned !== input.value) {
+      input.value = cleaned;
+    }
+    this.profileForm.get(controlName)?.setValue(cleaned, { emitEvent: false });
+  }
+
   startEditing(): void {
     this.isEditing.set(true);
     this.clearMessages();

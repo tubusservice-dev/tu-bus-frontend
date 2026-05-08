@@ -3,9 +3,13 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
+    "prestart": "node scripts/generate-firebase-sw.js",
     "start": "ng serve",
+    "prebuild": "node scripts/generate-firebase-sw.js",
     "build": "ng build",
+    "prebuild:prod": "node scripts/generate-firebase-sw.js --prod",
     "build:prod": "ng build --configuration production",
+    "prewatch": "node scripts/generate-firebase-sw.js",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },
@@ -27,6 +31,7 @@
     "@angular/forms": "^20.1.0",
     "@angular/platform-browser": "^20.1.0",
     "@angular/router": "^20.1.0",
+    "firebase": "^12.13.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.15.0"

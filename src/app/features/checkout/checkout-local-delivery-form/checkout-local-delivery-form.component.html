@@ -59,7 +59,7 @@
 
             <div class="form-group">
               <label for="phone">Teléfono <span class="required">*</span></label>
-              <input type="text" id="phone" formControlName="phone" placeholder="04XX-XXXXXXX" maxlength="12" inputmode="tel" class="input" [class.error]="hasError('phone')" />
+              <input type="text" id="phone" formControlName="phone" placeholder="04XX-XXXXXXX" maxlength="12" inputmode="tel" appPhoneMask class="input" [class.error]="hasError('phone')" />
               @if (hasError('phone')) {
                 <span class="error-message">{{ getErrorMessage('phone') }}</span>
               }
@@ -67,7 +67,7 @@
 
             <div class="form-group">
               <label for="alternativePhone">Teléfono alternativo</label>
-              <input type="text" id="alternativePhone" formControlName="alternativePhone" placeholder="04XX-XXXXXXX" maxlength="12" inputmode="tel" class="input" [class.error]="hasError('alternativePhone')" />
+              <input type="text" id="alternativePhone" formControlName="alternativePhone" placeholder="04XX-XXXXXXX" maxlength="12" inputmode="tel" appPhoneMask class="input" [class.error]="hasError('alternativePhone')" />
               @if (hasError('alternativePhone')) {
                 <span class="error-message">{{ getErrorMessage('alternativePhone') }}</span>
               }

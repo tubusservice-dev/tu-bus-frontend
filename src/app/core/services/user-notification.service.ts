@@ -1,15 +1,23 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, inject, signal, effect } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router, NavigationEnd, NavigationCancel, NavigationError } from '@angular/router';
-import { Observable, tap, interval, Subscription, filter } from 'rxjs';
+import { Observable, tap, interval, Subscription, filter, firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { AuthService } from './auth.service';
+import { DeviceTokenService } from './device-token.service';
+import { FirebaseMessagingService } from '@core/firebase';
 import {
   UserNotification,
   UserNotificationListResponse,
   UserUnreadCountResponse,
 } from '../../models/user-notification.model';
 import { browserNotify } from '@shared/utils/browser-notify.util';
+
+/** Polling cadence when FCM is NOT active — push fallback via local toast. */
+const POLL_INTERVAL_NO_FCM_MS = 30_000;
+
+/** Polling cadence when FCM IS active — only used for eventual UI consistency. */
+const POLL_INTERVAL_WITH_FCM_MS = 120_000;
 
 @Injectable({
   providedIn: 'root',
@@ -18,8 +26,13 @@ export class UserNotificationService {
   private readonly http = inject(HttpClient);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly fcm = inject(FirebaseMessagingService);
+  private readonly deviceTokenService = inject(DeviceTokenService);
   private readonly apiUrl = `${environment.apiUrl}/user-notifications`;
   private pollSub?: Subscription;
+  private foregroundSub?: Subscription;
+  private currentToken: string | null = null;
+  private permissionRequestedThisSession = false;
   private lastKnownCount = 0;
   private initialCountFetched = false;
 
@@ -51,19 +64,40 @@ export class UserNotificationService {
           this._showPopover.set(false);
         }
       });
+
+    // React to auth state. Triggers FCM permission + token registration:
+    //  - Fresh login (currentUser flips from null → user).
+    //  - Page reload while already authenticated.
+    // The session-scoped guard ensures we don't re-prompt on every signal
+    // tick, while the logout branch resets so the next login re-triggers.
+    effect(() => {
+      const user = this.authService.currentUser();
+      if (!user) {
+        this.permissionRequestedThisSession = false;
+        return;
+      }
+      // Skip on admin context — AdminNotificationsService handles that subject.
+      if (user.role === 'admin') return;
+      if (this.permissionRequestedThisSession) return;
+      this.permissionRequestedThisSession = true;
+      // Slight defer so the post-login UI renders before the native prompt.
+      setTimeout(() => {
+        this.requestNotificationPermission().catch(() => {
+          /* silent fail — polling fallback is always active */
+        });
+      }, 1500);
+    });
   }
 
   startPolling(): void {
-    this.fetchUnreadCount();
-    this.pollSub = interval(30000).subscribe(() => {
-      if (this.authService.isAuthenticated()) {
-        this.fetchUnreadCount();
-      }
-    });
+    // Default cadence assumes no FCM. Once a token is registered,
+    // adjustPollingInterval() switches to the slower cadence.
+    this.startPollingWithInterval(POLL_INTERVAL_NO_FCM_MS);
   }
 
   stopPolling(): void {
     this.pollSub?.unsubscribe();
+    this.pollSub = undefined;
     // Reset tracking so future sessions don't mistakenly trigger push from stale state
     this.initialCountFetched = false;
     this.lastKnownCount = 0;
@@ -87,9 +121,16 @@ export class UserNotificationService {
         const previousCount = this._unreadCount();
         this._unreadCount.set(newCount);
 
-        // Trigger browser push when count increases (skip the first fetch)
-        if (this.initialCountFetched && newCount > previousCount) {
-          this.triggerBrowserPush();
+        // Polling-based fallback push: only when FCM is NOT registered,
+        // simulate a push by surfacing a local notification on count rise.
+        // If FCM is active, the real push arrived (or will arrive) via SW —
+        // do NOT double-notify.
+        if (
+          this.initialCountFetched &&
+          newCount > previousCount &&
+          !this.currentToken
+        ) {
+          this.triggerBrowserPushFromPolling();
         }
         this.initialCountFetched = true;
         this.lastKnownCount = newCount;
@@ -109,7 +150,7 @@ export class UserNotificationService {
     return this.http.get<UserNotificationListResponse>(`${this.apiUrl}?page=${page}&limit=${limit}`);
   }
 
-  markAsRead(id: string): Observable<any> {
+  markAsRead(id: string): Observable<unknown> {
     return this.http.patch(`${this.apiUrl}/${id}/read`, {}).pipe(
       tap(() => {
         this._notifications.update(list => list.filter(n => n.id !== id));
@@ -120,7 +161,7 @@ export class UserNotificationService {
     );
   }
 
-  markAllAsRead(): Observable<any> {
+  markAllAsRead(): Observable<unknown> {
     return this.http.patch(`${this.apiUrl}/read-all`, {}).pipe(
       tap(() => {
         this._notifications.update(list => list.map(n => ({ ...n, isRead: true })));
@@ -130,38 +171,124 @@ export class UserNotificationService {
   }
 
   /**
-   * Request browser notification permission on startup.
-   * Silent fail if user dismisses or denies.
+   * Request browser notification permission and register the FCM token
+   * with the backend if granted.
+   *
+   * Called automatically after login via the constructor effect. Safe to
+   * call multiple times: token registration is idempotent server-side.
+   *
+   * Silent fail on every step — the polling fallback keeps the UI in sync
+   * even if FCM never works on this browser (iOS Safari without PWA, etc.).
    */
   async requestNotificationPermission(): Promise<void> {
+    if (!this.fcm.isMessagingSupportedSync()) return;
     if (!('Notification' in window)) return;
+
     if (Notification.permission === 'default') {
       try {
         await Notification.requestPermission();
       } catch {
-        // Silent fail
+        return;
       }
+    }
+    if (Notification.permission !== 'granted') return;
+
+    const token = await this.fcm.requestToken();
+    if (!token) return;
+
+    try {
+      await firstValueFrom(this.deviceTokenService.registerForUser(token));
+      this.currentToken = token;
+      this.attachForegroundListener();
+      this.adjustPollingInterval();
+    } catch (err) {
+      console.warn('[UserNotificationService] Failed to register FCM token:', err);
     }
   }
 
   /**
-   * Fire a browser push notification when unreadCount increases.
-   * Unlike admin, the client always receives push if permission is granted
-   * (no preference toggle). Uses `browserNotify` so it works on mobile
-   * Chrome with an active Service Worker (where `new Notification()` throws).
+   * Unregister the active FCM token from the backend. Called by AuthService
+   * before clearing the JWT — the DELETE request must travel with valid auth.
+   *
+   * Returns a promise that resolves regardless of outcome; failures are
+   * logged and the cron sweep cleans up stale tokens eventually.
    */
-  private triggerBrowserPush(): void {
+  async unregisterToken(): Promise<void> {
+    if (!this.currentToken) return;
+    const token = this.currentToken;
+    try {
+      await firstValueFrom(this.deviceTokenService.unregisterForUser(token));
+    } catch (err) {
+      console.warn('[UserNotificationService] Failed to unregister token on logout:', err);
+    }
+    this.currentToken = null;
+    this.foregroundSub?.unsubscribe();
+    this.foregroundSub = undefined;
+  }
+
+  private startPollingWithInterval(ms: number): void {
+    this.pollSub?.unsubscribe();
+    this.fetchUnreadCount();
+    this.pollSub = interval(ms).subscribe(() => {
+      if (this.authService.isAuthenticated()) {
+        this.fetchUnreadCount();
+      }
+    });
+  }
+
+  private adjustPollingInterval(): void {
+    // FCM is now active — slow the polling down. It still runs as an
+    // eventual-consistency backstop in case a push is missed.
+    this.startPollingWithInterval(POLL_INTERVAL_WITH_FCM_MS);
+  }
+
+  private attachForegroundListener(): void {
+    if (this.foregroundSub) return;
+    this.foregroundSub = this.fcm.onForegroundMessage$.subscribe((payload) => {
+      // The FCM SDK does NOT show the OS toast in foreground — we decide
+      // based on tab visibility:
+      //  - Visible: silent UI refresh. The user sees the badge climb;
+      //    a native toast on top of the open app is redundant noise.
+      //  - Hidden (other tab focused): show OS toast manually so the
+      //    user notices the new notification.
+      this.fetchUnreadCount();
+
+      if (document.visibilityState === 'hidden') {
+        this.showNativeFromPayload(payload);
+      }
+    });
+  }
+
+  private showNativeFromPayload(payload: {
+    notification?: { title?: string; body?: string };
+    data?: Record<string, string>;
+  }): void {
+    const title = payload.notification?.title || 'Nueva notificación';
+    const body = payload.notification?.body || '';
+    const url = payload.data?.['url'] || '/perfil#notificaciones';
+
+    browserNotify(title, {
+      body,
+      icon: '/autobus.png',
+      badge: '/autobus.png',
+      tag: `user-notif-fg-${Date.now()}`,
+      data: { url },
+    });
+  }
+
+  /**
+   * Fallback path: when FCM is NOT active, simulate a push by surfacing
+   * a local OS notification when the polling detects an unread-count rise.
+   */
+  private triggerBrowserPushFromPolling(): void {
     if (!('Notification' in window)) return;
     if (Notification.permission !== 'granted') return;
 
-    // Fetch latest notification to get title/message
     this.http.get<UserNotificationListResponse>(`${this.apiUrl}?limit=1`).subscribe({
       next: (res) => {
         const latest = res.data?.[0];
         if (!latest) return;
 
-        // The SW `notificationclick` handler reads `data.url` to know
-        // where to focus / open when the user taps the notification.
         browserNotify(latest.title || 'Nueva notificación', {
           body: latest.message,
           icon: '/autobus.png',

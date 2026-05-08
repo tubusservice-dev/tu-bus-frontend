@@ -77,7 +77,7 @@
 }
 
 .doc-type-options {
-  @apply absolute z-20 left-0 mt-1 max-h-60 overflow-auto;
+  @apply absolute z-20 left-0 max-h-60 overflow-auto;
   @apply rounded-lg border bg-white dark:bg-gray-900;
   @apply border-gray-200 dark:border-gray-700 shadow-lg;
   @apply list-none p-1;
@@ -85,6 +85,19 @@
   // The trigger column is narrow ("Tipo" cell), but the dropdown should
   // size to the longest option so the labels never wrap.
   min-width: 12rem;
+
+  // Default: open below the trigger.
+  top: 100%;
+  margin-top: 0.25rem;
+
+  // When there isn't enough room below (mobile / modal scroll), the TS
+  // toggles `dropup` to flip the dropdown above the trigger.
+  &.dropup {
+    top: auto;
+    bottom: 100%;
+    margin-top: 0;
+    margin-bottom: 0.25rem;
+  }
 }
 
 .doc-type-option {

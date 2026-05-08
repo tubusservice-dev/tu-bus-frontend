@@ -100,7 +100,17 @@
                     </div>
                   }
                 </div>
-                <input type="text" formControlName="documentNumber" class="form-input flex-1" placeholder="12345678" maxlength="10" inputmode="numeric" [class.error]="hasError('documentNumber')" />
+                <input
+                  type="text"
+                  formControlName="documentNumber"
+                  class="form-input flex-1"
+                  placeholder="12345678"
+                  autocomplete="off"
+                  [class.error]="hasError('documentNumber')"
+                  [attr.inputmode]="getDocNumberInputMode()"
+                  [attr.maxlength]="getDocNumberMaxLength()"
+                  (input)="onDocumentNumberInput($event)"
+                />
               </div>
               @if (hasError('documentNumber')) { <span class="field-error">{{ getErrorMessage('documentNumber') }}</span> }
             </div>
@@ -127,13 +137,13 @@
           <div class="form-grid">
             <div class="form-group">
               <label for="phone" class="form-label">Teléfono principal</label>
-              <input type="tel" id="phone" formControlName="phone" class="form-input" [class.error]="hasError('phone')" placeholder="04141234567" maxlength="12" inputmode="tel" />
+              <input type="tel" id="phone" formControlName="phone" class="form-input" [class.error]="hasError('phone')" placeholder="04141234567" maxlength="12" inputmode="tel" (input)="onPhoneInput($event, 'phone')" />
               @if (hasError('phone')) { <span class="field-error">{{ getErrorMessage('phone') }}</span> }
             </div>
 
             <div class="form-group">
               <label for="alternativePhone" class="form-label">Teléfono alternativo</label>
-              <input type="tel" id="alternativePhone" formControlName="alternativePhone" class="form-input" [class.error]="hasError('alternativePhone')" placeholder="04241234567" maxlength="12" inputmode="tel" />
+              <input type="tel" id="alternativePhone" formControlName="alternativePhone" class="form-input" [class.error]="hasError('alternativePhone')" placeholder="04241234567" maxlength="12" inputmode="tel" (input)="onPhoneInput($event, 'alternativePhone')" />
               @if (hasError('alternativePhone')) { <span class="field-error">{{ getErrorMessage('alternativePhone') }}</span> }
             </div>
           </div>
@@ -261,10 +271,7 @@
                 <div class="info-details">
                   <span class="info-label">Documento de identidad</span>
                   @if (user()?.documentType && user()?.documentNumber) {
-                    <app-copyable-value
-                      [value]="user()?.documentType + '-' + user()?.documentNumber"
-                      [compactRow]="false"
-                    />
+                    <span class="info-value">{{ user()?.documentType }}-{{ user()?.documentNumber }}</span>
                   } @else {
                     <span class="info-value">No especificado</span>
                   }

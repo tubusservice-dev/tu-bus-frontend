@@ -30,6 +30,7 @@ import { ClipboardService } from '@shared/services/clipboard.service';
 import { BodyScrollLockService } from '@shared/services/body-scroll-lock.service';
 import { CheckoutHeaderComponent } from '../components/checkout-header/checkout-header.component';
 import { businessTodayIso } from '@shared/utils/business-date.util';
+import { jsDowToBranchDay } from '@shared/utils/branch-day.util';
 
 @Component({
   selector: 'app-checkout-summary',
@@ -455,7 +456,8 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
     const hasVehicleIfRequired = !this.needsVehicle() || this.checkoutService.hasVehicle();
     const hasServiceDateIfOilChange =
       this.checkoutService.dispatchType() !== 'oil_change_service'
-      || this.checkoutService.hasRequestedServiceDate();
+      || (this.checkoutService.hasRequestedServiceDate()
+          && this.isRequestedServiceDateAlignedWithSchedule());
     // Disclaimer is only required when the cart contains a combo.
     const disclaimerOk = !this.cartHasCombo() || this.hasDisclaimerSelection();
     return disclaimerOk
@@ -464,6 +466,25 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
       && hasVehicleIfRequired
       && hasServiceDateIfOilChange;
   });
+
+  /**
+   * Re-valida que la fecha solicitada cae en un día con atención según el
+   * `schedule` de la sucursal asignada. Defense in depth — la UI ya bloquea
+   * los botones inválidos pero un cambio de sucursal posterior podría dejar
+   * la fecha previa fuera del horario.
+   */
+  private isRequestedServiceDateAlignedWithSchedule(): boolean {
+    const requested = this.checkoutService.requestedServiceDate();
+    if (!requested) return false;
+    const branch = this.checkoutService.selectedBranch();
+    const schedule = branch?.schedule;
+    if (!schedule || schedule.length === 0) return true; // sin info → permisivo
+    // `Date.getDay()` retorna en convención JS (0=Sun … 6=Sat) — el schedule
+    // de Branch usa convención local (0=Lun … 6=Dom). Convertir antes del lookup.
+    const branchDay = jsDowToBranchDay(new Date(requested.date + 'T00:00:00').getDay());
+    const day = schedule.find((d) => d.day === branchDay);
+    return !!day && !day.isClosed;
+  }
 
   protected onServiceDateChange(value: RequestedServiceDate | null): void {
     this.checkoutService.setRequestedServiceDate(value);

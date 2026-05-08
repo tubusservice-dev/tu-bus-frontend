@@ -364,6 +364,13 @@
       color: #f3f4f6;
     }
 
+    // El accent-primary del light mode es #001d56 — sobre el fondo oscuro del
+    // modal queda casi imperceptible. Usamos el accent brillante específico de
+    // dark mode (`tubus-text-accent` ≈ #4d94ff) para que el ícono se note.
+    &__icon svg {
+      color: var(--tubus-text-accent, #4d94ff);
+    }
+
     &__badge {
       &--available {
         background-color: rgba(16, 185, 129, 0.15);

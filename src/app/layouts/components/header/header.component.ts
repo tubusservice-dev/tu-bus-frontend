@@ -35,12 +35,17 @@ export class HeaderComponent implements OnInit, OnDestroy {
   protected readonly isLoggedIn = this.authService.isAuthenticated;
 
   ngOnInit(): void {
-    this.isProfilePage.set(this.router.url === '/perfil');
+    this.isProfilePage.set(this.matchesProfileRoot(this.router.url));
     this.routerSub = this.router.events
       .pipe(filter((event) => event instanceof NavigationEnd))
       .subscribe((event) => {
-        this.isProfilePage.set((event as NavigationEnd).url === '/perfil');
+        this.isProfilePage.set(this.matchesProfileRoot((event as NavigationEnd).urlAfterRedirects));
       });
+  }
+
+  private matchesProfileRoot(url: string): boolean {
+    const path = url.split('#')[0].split('?')[0];
+    return path === '/perfil';
   }
 
   ngOnDestroy(): void {

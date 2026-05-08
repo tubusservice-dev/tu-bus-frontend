@@ -148,3 +148,38 @@
   .tier-chip-scheduled { background: rgba(37, 99, 235, 0.2); color: #93c5fd; }
   .scheduled-hint-warning { color: #fbbf24; }
 }
+
+// Disabled tier (Express/Mañana) — branch closed or after hours.
+.tier-option:disabled,
+.tier-option[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.5;
+  filter: grayscale(0.4);
+
+  &:hover {
+    transform: none;
+    border-color: var(--border-color);
+    box-shadow: none;
+  }
+}
+
+// Banner shown when both Express and Mañana are blocked — pushes the user
+// toward the "Agendar" option.
+.quick-blocked-warning {
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.625rem;
+  background-color: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: #92400e;
+  font-size: 0.875rem;
+  line-height: 1.4;
+
+  strong { font-weight: 600; }
+}
+
+:host-context(.dark) .quick-blocked-warning {
+  background-color: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.35);
+  color: #fbbf24;
+}

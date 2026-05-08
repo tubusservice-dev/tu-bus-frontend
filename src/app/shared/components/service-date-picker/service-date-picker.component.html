@@ -11,6 +11,9 @@
       type="button"
       class="tier-option"
       [class.selected]="tier() === 'express'"
+      [disabled]="!isExpressAvailable()"
+      [attr.title]="expressDisabledReason()"
+      [attr.aria-disabled]="!isExpressAvailable()"
       (click)="selectTier('express')"
     >
       <span class="tier-chip tier-chip-express">Express</span>
@@ -22,6 +25,9 @@
       type="button"
       class="tier-option"
       [class.selected]="tier() === 'tomorrow'"
+      [disabled]="!isTomorrowAvailable()"
+      [attr.title]="tomorrowDisabledReason()"
+      [attr.aria-disabled]="!isTomorrowAvailable()"
       (click)="selectTier('tomorrow')"
     >
       <span class="tier-chip tier-chip-tomorrow">Mañana</span>
@@ -41,6 +47,12 @@
     </button>
   </div>
 
+  @if (bothQuickOptionsBlocked()) {
+    <p class="quick-blocked-warning">
+      No hay disponibilidad inmediata. Selecciona <strong>Agendar</strong> y elige otro día.
+    </p>
+  }
+
   @if (tier() === 'scheduled') {
     <div class="scheduled-input">
       <label class="field-label" for="scheduled-service-date">Selecciona la fecha</label>
@@ -49,12 +61,13 @@
         [ngModel]="scheduledDate()"
         (ngModelChange)="onScheduledDateChange($event)"
         [min]="minScheduledIso"
+        [disabledDaysOfWeek]="closedDaysOfWeek()"
       />
       @if (scheduledLabel()) {
         <p class="scheduled-hint">{{ scheduledLabel() }}</p>
       } @else {
         <p class="scheduled-hint scheduled-hint-warning">
-          La fecha debe ser posterior a mañana.
+          La fecha debe ser posterior a mañana y caer en un día con atención.
         </p>
       }
     </div>

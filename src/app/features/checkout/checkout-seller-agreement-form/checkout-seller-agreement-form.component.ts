@@ -6,11 +6,12 @@ import { CheckoutService, SellerAgreementInfo } from '../services/checkout.servi
 import { AuthService } from '@core/services/auth.service';
 import { scrollToFirstFormError } from '@shared/validators/form-validators';
 import { CheckoutHeaderComponent } from '../components/checkout-header/checkout-header.component';
+import { PhoneMaskDirective } from '@shared/directives/phone-mask.directive';
 
 @Component({
   selector: 'app-checkout-seller-agreement-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, CheckoutHeaderComponent],
+  imports: [CommonModule, ReactiveFormsModule, CheckoutHeaderComponent, PhoneMaskDirective],
   templateUrl: './checkout-seller-agreement-form.component.html',
   styleUrl: './checkout-seller-agreement-form.component.scss',
 })
