@@ -70,6 +70,12 @@ export class DateInputComponent implements ControlValueAccessor, OnDestroy {
   readonly min = input<string | null>(null);
   /** Optional upper bound (inclusive), ISO `YYYY-MM-DD`. */
   readonly max = input<string | null>(null);
+  /**
+   * Días de la semana (0=domingo … 6=sábado) que se marcan como deshabilitados
+   * en el calendar y se rechazan en la entrada manual. Pensado para que un
+   * consumidor (ej. service-date-picker) refleje el horario de la sucursal.
+   */
+  readonly disabledDaysOfWeek = input<number[]>([]);
   readonly disabled = input<boolean>(false);
   readonly required = input<boolean>(false);
   /** Optional value (works alongside Reactive Forms / ngModel). */
@@ -164,9 +170,31 @@ export class DateInputComponent implements ControlValueAccessor, OnDestroy {
 
   // ========== User interactions (input field) ==========
 
+  /**
+   * Une `isWithinBounds` con la nueva regla `disabledDaysOfWeek` para evitar
+   * duplicación entre `onInputChange`, `onInputBlur` y los handlers del panel.
+   */
+  private isAllowedIso(iso: string): boolean {
+    if (!isWithinBounds(iso, this.min(), this.max())) return false;
+    const closed = this.disabledDaysOfWeek();
+    if (!closed || closed.length === 0) return true;
+    const dow = new Date(iso + 'T00:00:00').getDay();
+    return !closed.includes(dow);
+  }
+
   protected onInputChange(event: Event): void {
-    const raw = (event.target as HTMLInputElement).value;
+    const input = event.target as HTMLInputElement;
+    const raw = input.value;
     const masked = applyMask(raw);
+
+    // Force-sync the DOM input to the masked value so non-digits the user
+    // typed/pasted (e.g. "22/11/1983hgfghfghfghfgh") get stripped immediately
+    // instead of waiting for the next change-detection tick. The signal
+    // alone is not enough because Angular skips the [value] binding write
+    // when the source comes from the same input event in the same tick.
+    if (input.value !== masked) {
+      input.value = masked;
+    }
     this.displayText.set(masked);
     this.hasParseError.set(false);
 
@@ -175,7 +203,7 @@ export class DateInputComponent implements ControlValueAccessor, OnDestroy {
     // time. Invalid intermediate states don't clear the existing value.
     if (masked.length === 10) {
       const iso = parseFlexibleDate(masked);
-      if (iso && isWithinBounds(iso, this.min(), this.max())) {
+      if (iso && this.isAllowedIso(iso)) {
         this.commitValue(iso);
       }
     }
@@ -191,7 +219,7 @@ export class DateInputComponent implements ControlValueAccessor, OnDestroy {
     }
 
     const iso = parseFlexibleDate(text);
-    if (iso && isWithinBounds(iso, this.min(), this.max())) {
+    if (iso && this.isAllowedIso(iso)) {
       this.commitValue(iso);
     } else {
       // Keep the invalid text visible so the user can correct it

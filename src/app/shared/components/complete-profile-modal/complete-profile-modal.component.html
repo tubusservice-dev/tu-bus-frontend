@@ -37,7 +37,12 @@
                 </svg>
               </button>
               @if (isDocTypeDropdownOpen()) {
-                <ul class="doc-type-options" role="listbox" (click)="$event.stopPropagation()">
+                <ul
+                  class="doc-type-options"
+                  [class.dropup]="docTypeDropdownDirection() === 'up'"
+                  role="listbox"
+                  (click)="$event.stopPropagation()"
+                >
                   @for (option of documentTypeOptions; track option.code) {
                     <li
                       role="option"
@@ -57,7 +62,17 @@
           </div>
           <div class="form-group">
             <label class="form-label">N. Documento</label>
-            <input type="text" formControlName="documentNumber" class="form-input" [class.error]="hasError('documentNumber')" [placeholder]="getDocNumberPlaceholder()" />
+            <input
+              type="text"
+              formControlName="documentNumber"
+              class="form-input"
+              autocomplete="off"
+              [class.error]="hasError('documentNumber')"
+              [placeholder]="getDocNumberPlaceholder()"
+              [attr.inputmode]="getDocNumberInputMode()"
+              [attr.maxlength]="getDocNumberMaxLength()"
+              (input)="onDocumentNumberInput($event)"
+            />
             @if (hasError('documentNumber')) {
               <span class="field-error">{{ getErrorMessage('documentNumber') }}</span>
             }
@@ -86,7 +101,17 @@
 
         <div class="form-group">
           <label class="form-label">Teléfono</label>
-          <input type="tel" formControlName="phone" class="form-input" [class.error]="hasError('phone')" placeholder="04121234567" />
+          <input
+            type="tel"
+            formControlName="phone"
+            class="form-input"
+            placeholder="04121234567"
+            autocomplete="tel"
+            inputmode="tel"
+            maxlength="12"
+            [class.error]="hasError('phone')"
+            (input)="onPhoneInput($event)"
+          />
           @if (hasError('phone')) {
             <span class="field-error">{{ getErrorMessage('phone') }}</span>
           }

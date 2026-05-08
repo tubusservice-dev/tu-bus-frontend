@@ -1,4 +1,4 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, Injector, signal, computed } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, tap, catchError, throwError } from 'rxjs';
@@ -137,7 +137,13 @@ export class AuthService {
 
   constructor(
     private readonly http: HttpClient,
-    private readonly router: Router
+    private readonly router: Router,
+    /**
+     * Used to resolve UserNotificationService / AdminNotificationsService
+     * dynamically inside `logout()` without creating a static circular
+     * dependency (those services already inject AuthService).
+     */
+    private readonly injector: Injector
   ) {}
 
   // ─── Helpers para detectar contexto ─────────────────────────
@@ -303,9 +309,25 @@ export class AuthService {
    * Closes the user's session both client- and server-side. Server-side
    * uses the `tokensInvalidatedAt` mass-invalidation marker so JWTs are
    * rejected on the next request from any device.
+   *
+   * The outer method stays synchronous to preserve the existing call-site
+   * signature; the async helper performs FCM unregister BEFORE clearing
+   * the JWT so the DELETE request travels with valid auth.
    */
   logout(): void {
+    void this.performLogoutAsync();
+  }
+
+  private async performLogoutAsync(): Promise<void> {
     const isAdmin = this.isAdminContext();
+
+    // Best-effort: unregister FCM token before clearing the JWT. Capped
+    // at 1.5 s so a slow network can't make the logout button feel stuck.
+    await Promise.race([
+      this.unregisterFcmTokenSilent(isAdmin),
+      new Promise<void>((resolve) => setTimeout(resolve, 1500)),
+    ]);
+
     const { tokenKey, userKey } = this.getStorageKeys();
 
     // Best-effort server notification — proceed with local cleanup
@@ -322,6 +344,24 @@ export class AuthService {
     localStorage.removeItem('oauth_return_url');
     this.currentUserSignal.set(null);
     this.router.navigate(isAdmin ? ['/admin/login'] : ['/']);
+  }
+
+  /**
+   * Resolves the matching notifications service via dynamic import to
+   * avoid a static circular dep, then calls its unregisterToken().
+   */
+  private async unregisterFcmTokenSilent(isAdmin: boolean): Promise<void> {
+    try {
+      if (isAdmin) {
+        const { AdminNotificationsService } = await import('./admin-notifications.service');
+        await this.injector.get(AdminNotificationsService).unregisterToken();
+      } else {
+        const { UserNotificationService } = await import('./user-notification.service');
+        await this.injector.get(UserNotificationService).unregisterToken();
+      }
+    } catch {
+      /* silent — stale tokens are reaped by the weekly cron */
+    }
   }
 
   handleSessionExpired(): void {

@@ -14,11 +14,12 @@ import {
   noNumbersValidator, scrollToFirstFormError,
 } from '@shared/validators/form-validators';
 import { CheckoutHeaderComponent } from '../components/checkout-header/checkout-header.component';
+import { PhoneMaskDirective } from '@shared/directives/phone-mask.directive';
 
 @Component({
   selector: 'app-checkout-local-delivery-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, CheckoutHeaderComponent],
+  imports: [CommonModule, ReactiveFormsModule, CheckoutHeaderComponent, PhoneMaskDirective],
   templateUrl: './checkout-local-delivery-form.component.html',
   styleUrl: './checkout-local-delivery-form.component.scss',
 })

@@ -73,6 +73,12 @@ export class CompleteProfileModalComponent implements OnInit, OnDestroy {
   protected readonly documentTypeOptions = DOCUMENT_TYPE_OPTIONS;
   protected readonly isDocTypeDropdownOpen = signal(false);
   protected readonly selectedDocumentTypeCode = signal<string>('');
+  /**
+   * Dirección de apertura del dropdown. Se recalcula en cada toggle según
+   * el espacio disponible bajo y sobre el trigger — evita que el dropdown
+   * se corte por el borde inferior del modal o del viewport en mobile.
+   */
+  protected readonly docTypeDropdownDirection = signal<'down' | 'up'>('down');
 
   private docTypeSub: Subscription | null = null;
 
@@ -166,6 +172,21 @@ export class CompleteProfileModalComponent implements OnInit, OnDestroy {
 
   toggleDocTypeDropdown(event: MouseEvent): void {
     event.stopPropagation();
+    // Antes de abrir, decidir si el dropdown va hacia arriba o hacia abajo
+    // según el espacio disponible respecto al trigger. Sin esto, en mobile
+    // o cerca del borde inferior del modal, las últimas opciones quedaban
+    // recortadas (ej. "G - Gubernamental" cortado).
+    if (!this.isDocTypeDropdownOpen()) {
+      const trigger = event.currentTarget as HTMLElement;
+      const rect = trigger.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      // Estimación: 5 opciones × ~40px + padding ≈ 240px.
+      const DROPDOWN_HEIGHT = 240;
+      this.docTypeDropdownDirection.set(
+        spaceBelow < DROPDOWN_HEIGHT && spaceAbove > spaceBelow ? 'up' : 'down',
+      );
+    }
     this.isDocTypeDropdownOpen.update((open) => !open);
   }
 
@@ -265,5 +286,56 @@ export class CompleteProfileModalComponent implements OnInit, OnDestroy {
       case 'G': return 'Ej: 123456';
       default: return 'Número de documento';
     }
+  }
+
+  /** Máximo de caracteres permitidos por tipo — refleja el upper bound del regex. */
+  getDocNumberMaxLength(): number {
+    const type = this.form.get('documentType')?.value;
+    switch (type) {
+      case 'V': case 'E': return 8;
+      case 'J': return 9;
+      case 'P': return 15;
+      case 'G': return 15;
+      default: return 20;
+    }
+  }
+
+  /**
+   * `inputmode` del input: numeric para todos excepto Pasaporte (alfanumérico).
+   * Esto hace que en mobile aparezca el teclado numérico para V/E/J/G.
+   */
+  getDocNumberInputMode(): 'numeric' | 'text' {
+    return this.form.get('documentType')?.value === 'P' ? 'text' : 'numeric';
+  }
+
+  /**
+   * Filtro reactivo del input: descarta caracteres inválidos (letras en
+   * V/E/J/G; cualquier no-alfanumérico en P) y respeta el `maxLength` del
+   * tipo. Evita que el usuario teclee `hhiouhiohihi` cuando seleccionó "E"
+   * o que pegue un valor de 30 dígitos que luego sería rechazado.
+   */
+  onDocumentNumberInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const type = this.form.get('documentType')?.value as string | null;
+    const maxLen = this.getDocNumberMaxLength();
+    const allowed = type === 'P' ? /[^a-zA-Z0-9]/g : /\D/g;
+    const cleaned = input.value.replace(allowed, '').slice(0, maxLen);
+    if (cleaned !== input.value) {
+      input.value = cleaned;
+    }
+    this.form.get('documentNumber')?.setValue(cleaned, { emitEvent: false });
+  }
+
+  /**
+   * Filtro reactivo para teléfono venezolano (04XX-XXXXXXX). Solo dígitos
+   * y el guión opcional, máximo 12 caracteres.
+   */
+  onPhoneInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const cleaned = input.value.replace(/[^\d-]/g, '').slice(0, 12);
+    if (cleaned !== input.value) {
+      input.value = cleaned;
+    }
+    this.form.get('phone')?.setValue(cleaned, { emitEvent: false });
   }
 }

@@ -212,9 +212,6 @@ type ViewMode = 'days' | 'months' | 'years';
       <!-- Action bar -->
       <footer class="picker-footer">
         <div class="picker-action-left">
-          <button type="button" class="picker-action picker-action-ghost" (click)="goToday()">
-            Hoy
-          </button>
           @if (draftValue()) {
             <button
               type="button"
@@ -727,6 +724,12 @@ export class DatePickerPanelComponent {
   readonly min = input<string | null>(null);
   /** Optional upper bound (inclusive), ISO `YYYY-MM-DD`. */
   readonly max = input<string | null>(null);
+  /**
+   * Días de la semana (0=domingo … 6=sábado) que se renderizan deshabilitados
+   * en el grid. Permite reflejar el horario de la sucursal: domingos cerrados,
+   * etc. Vacío → no aplica filtro.
+   */
+  readonly disabledDaysOfWeek = input<number[]>([]);
 
   /** Emits confirmed ISO `YYYY-MM-DD` when user confirms, or '' on clear. */
   readonly valueChange = output<string>();
@@ -801,6 +804,7 @@ export class DatePickerPanelComponent {
     const today = todayIso();
     const minBound = this.min();
     const maxBound = this.max();
+    const closedDows = this.disabledDaysOfWeek();
 
     const firstOfMonth = new Date(year, month, 1);
     const firstDay = (firstOfMonth.getDay() + 6) % 7; // Monday=0
@@ -810,16 +814,16 @@ export class DatePickerPanelComponent {
 
     for (let i = firstDay - 1; i >= 0; i--) {
       const d = new Date(year, month, -i);
-      out.push(this.buildDayCell(d, false, draft, today, minBound, maxBound));
+      out.push(this.buildDayCell(d, false, draft, today, minBound, maxBound, closedDows));
     }
     for (let day = 1; day <= daysInMonth; day++) {
       const d = new Date(year, month, day);
-      out.push(this.buildDayCell(d, true, draft, today, minBound, maxBound));
+      out.push(this.buildDayCell(d, true, draft, today, minBound, maxBound, closedDows));
     }
     const remaining = 42 - out.length;
     for (let day = 1; day <= remaining; day++) {
       const d = new Date(year, month + 1, day);
-      out.push(this.buildDayCell(d, false, draft, today, minBound, maxBound));
+      out.push(this.buildDayCell(d, false, draft, today, minBound, maxBound, closedDows));
     }
 
     return out;
@@ -1025,16 +1029,6 @@ export class DatePickerPanelComponent {
     }
   }
 
-  protected goToday(): void {
-    const today = new Date();
-    const iso = formatIsoLocal(today);
-    if (!isWithinBounds(iso, this.min(), this.max())) return;
-    this.viewMonth.set(today.getMonth());
-    this.viewYear.set(today.getFullYear());
-    this.draftValue.set(iso);
-    this.viewMode.set('days');
-  }
-
   // ========== Selection handlers ==========
 
   protected onSelectDay(cell: DayCell): void {
@@ -1093,15 +1087,18 @@ export class DatePickerPanelComponent {
     today: string,
     minBound: string | null,
     maxBound: string | null,
+    closedDows: number[],
   ): DayCell {
     const iso = formatIsoLocal(date);
+    const outsideBounds = !isWithinBounds(iso, minBound, maxBound);
+    const closedByDow = closedDows.length > 0 && closedDows.includes(date.getDay());
     return {
       iso,
       dayNumber: date.getDate(),
       isCurrentMonth,
       isToday: iso === today,
       isSelected: iso === draft,
-      isDisabled: !isWithinBounds(iso, minBound, maxBound),
+      isDisabled: outsideBounds || closedByDow,
     };
   }
 }
