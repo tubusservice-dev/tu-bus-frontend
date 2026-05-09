@@ -45,12 +45,14 @@ export class FirebaseMessagingService {
       const { getToken } = await import('firebase/messaging');
       const messaging = await this.getMessagingInstance();
 
-      // The Firebase Messaging SW must already be registered. Pass the
-      // registration explicitly to avoid the SDK auto-registering with
-      // a wrong scope when the page is served from a non-root path.
-      const swReg = await navigator.serviceWorker.getRegistration(
-        '/firebase-cloud-messaging-push-scope'
-      );
+      // Explicitly register the FCM SW with its own scope. Critical inside
+      // an installed PWA: the PWA `/sw.js` already controls scope '/', so
+      // a generic `getRegistration('/firebase-cloud-messaging-push-scope')`
+      // would return THAT SW, and getToken() would bind the token to it.
+      // Since `/sw.js` has no `push` handler, every notification would be
+      // silently swallowed — that's why pushes worked on the regular web
+      // but NOT inside the installed PWA.
+      const swReg = await this.ensureFcmServiceWorker();
 
       const token = await getToken(messaging, {
         vapidKey: environment.fcmVapidKey,
@@ -64,6 +66,34 @@ export class FirebaseMessagingService {
     } catch (err) {
       console.warn('[FirebaseMessaging] requestToken failed:', err);
       return null;
+    }
+  }
+
+  /**
+   * Find or register the Firebase Messaging SW under its dedicated scope.
+   *
+   * Lookup is by the SW's actual `scriptURL`, not by `getRegistration(path)`,
+   * because the latter returns whichever SW currently controls the requested
+   * path — which is the PWA `/sw.js` when installed.
+   */
+  private async ensureFcmServiceWorker(): Promise<ServiceWorkerRegistration | undefined> {
+    if (!('serviceWorker' in navigator)) return undefined;
+
+    const regs = await navigator.serviceWorker.getRegistrations();
+    for (const reg of regs) {
+      const url = reg.active?.scriptURL || reg.installing?.scriptURL || reg.waiting?.scriptURL;
+      if (url && url.endsWith('/firebase-messaging-sw.js')) {
+        return reg;
+      }
+    }
+
+    try {
+      return await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+        scope: '/firebase-cloud-messaging-push-scope/',
+      });
+    } catch (err) {
+      console.warn('[FirebaseMessaging] Failed to register FCM SW:', err);
+      return undefined;
     }
   }
 
