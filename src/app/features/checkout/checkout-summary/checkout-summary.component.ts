@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, OnDestroy, computed } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy, computed, effect } from '@angular/core';
 import { Router } from '@angular/router';
 import { CurrencyPipe, CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -13,6 +13,8 @@ import { UploadService } from '@core/services/upload.service';
 import { BranchProductService } from '@core/services/branch-product.service';
 import { ProductService } from '@core/services/product.service';
 import { ExchangeRateService } from '@core/services/exchange-rate.service';
+import { BranchAvailabilityService } from '@core/services/branch-availability.service';
+import { BranchAvailability } from '@models/branch-availability.model';
 import { CreateOrderRequest, PaymentSubmission, EngineModificationStatus } from '@models/order.model';
 import {
   PaymentMethodConfig,
@@ -30,7 +32,6 @@ import { ClipboardService } from '@shared/services/clipboard.service';
 import { BodyScrollLockService } from '@shared/services/body-scroll-lock.service';
 import { CheckoutHeaderComponent } from '../components/checkout-header/checkout-header.component';
 import { businessTodayIso } from '@shared/utils/business-date.util';
-import { jsDowToBranchDay } from '@shared/utils/branch-day.util';
 
 @Component({
   selector: 'app-checkout-summary',
@@ -54,6 +55,45 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
   protected readonly exchangeRateService = inject(ExchangeRateService);
   private readonly clipboard = inject(ClipboardService);
   private readonly scrollLock = inject(BodyScrollLockService);
+  private readonly branchAvailabilityService = inject(BranchAvailabilityService);
+
+  /**
+   * Disponibilidad agregada (mecánicos) de la sucursal seleccionada. Se
+   * carga reactivamente cuando cambia `selectedBranch` y alimenta el
+   * `app-service-date-picker` para habilitar/deshabilitar Express/Mañana
+   * según los horarios reales de los mecánicos, no del horario de tienda.
+   */
+  protected readonly branchAvailability = signal<BranchAvailability | null>(null);
+
+  /**
+   * Tracks the branchId currently fetched, so we don't re-issue the same
+   * request on unrelated re-renders. Resets to null when no branch is
+   * selected so a future selection refetches cleanly.
+   */
+  private fetchedAvailabilityBranchId: string | null = null;
+
+  // Reactive load of branch availability whenever the selected branch
+  // changes (only relevant for oil-change flows that show the picker).
+  private readonly _availabilityLoader = effect(() => {
+    const branch = this.checkoutService.selectedBranch();
+    const dt = this.checkoutService.dispatchType();
+    if (dt !== 'oil_change_service' || !branch) {
+      this.branchAvailability.set(null);
+      this.fetchedAvailabilityBranchId = null;
+      return;
+    }
+    if (this.fetchedAvailabilityBranchId === branch.id) return;
+    this.fetchedAvailabilityBranchId = branch.id;
+    this.branchAvailabilityService.getByBranch(branch.id).subscribe({
+      next: (data) => this.branchAvailability.set(data),
+      error: () => {
+        // Permissive on error: leave null so the picker stays unrestricted
+        // and the backend stays the single source of truth at submit time.
+        this.branchAvailability.set(null);
+        this.fetchedAvailabilityBranchId = null;
+      },
+    });
+  });
 
   /**
    * Local counter mirroring how many BodyScrollLock acquisitions this
@@ -468,21 +508,20 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
   });
 
   /**
-   * Re-valida que la fecha solicitada cae en un día con atención según el
-   * `schedule` de la sucursal asignada. Defense in depth — la UI ya bloquea
-   * los botones inválidos pero un cambio de sucursal posterior podría dejar
-   * la fecha previa fuera del horario.
+   * Re-valida que la fecha solicitada cae en un día con atención según la
+   * disponibilidad agregada de los mecánicos de la sucursal. Defense in
+   * depth — la UI ya bloquea los botones inválidos, pero un cambio de
+   * sucursal posterior o una recarga podrían dejar la fecha previa fuera
+   * de los horarios reales de los mecánicos.
    */
   private isRequestedServiceDateAlignedWithSchedule(): boolean {
     const requested = this.checkoutService.requestedServiceDate();
     if (!requested) return false;
-    const branch = this.checkoutService.selectedBranch();
-    const schedule = branch?.schedule;
-    if (!schedule || schedule.length === 0) return true; // sin info → permisivo
-    // `Date.getDay()` retorna en convención JS (0=Sun … 6=Sat) — el schedule
-    // de Branch usa convención local (0=Lun … 6=Dom). Convertir antes del lookup.
-    const branchDay = jsDowToBranchDay(new Date(requested.date + 'T00:00:00').getDay());
-    const day = schedule.find((d) => d.day === branchDay);
+    const availability = this.branchAvailability();
+    if (!availability) return true; // sin info → permisivo, backend valida
+    if (availability.fullyBlockedDates.includes(requested.date)) return false;
+    const jsDow = new Date(requested.date + 'T00:00:00').getDay();
+    const day = availability.schedule[jsDow];
     return !!day && !day.isClosed;
   }
 

@@ -335,7 +335,7 @@
         <section class="summary-section">
           <app-service-date-picker
             [initial]="checkoutService.requestedServiceDate()"
-            [schedule]="checkoutService.selectedBranch()?.schedule ?? null"
+            [availability]="branchAvailability()"
             (changed)="onServiceDateChange($event)"
           />
         </section>

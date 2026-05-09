@@ -6,6 +6,8 @@ import { SettingsService } from '@core/services/settings.service';
 import { PaymentMethodService } from '@core/services/payment-method.service';
 import { UploadService } from '@core/services/upload.service';
 import { ExchangeRateService } from '@core/services/exchange-rate.service';
+import { AdminNotificationsService } from '@core/services/admin-notifications.service';
+import { browserNotify } from '@shared/utils/browser-notify.util';
 import { Settings, HeroImage, FloatingStat, PAGINATION_OPTIONS } from '@models/settings.model';
 import {
   PaymentMethodConfig,
@@ -31,6 +33,7 @@ export class SettingsComponent implements OnInit {
   private readonly paymentMethodService = inject(PaymentMethodService);
   private readonly uploadService = inject(UploadService);
   protected readonly exchangeRateService = inject(ExchangeRateService);
+  private readonly adminNotifications = inject(AdminNotificationsService);
 
   // Current site location — used in inline help text so prod admins see
   // their real domain instead of "localhost:4200".
@@ -756,10 +759,20 @@ export class SettingsComponent implements OnInit {
   }
 
   // ========== Notificaciones del Admin ==========
-  saveAdminNotificationToggle(
+  /**
+   * Persists the toggle state and synchronises the FCM token lifecycle:
+   *   - Activating `browserPush` triggers permission prompt + token
+   *     registration so push delivery has a target on the backend.
+   *   - Deactivating `browserPush` unregisters the active token so the
+   *     admin stops receiving pushes immediately, even if the server
+   *     flag check is bypassed somewhere.
+   *   - The other toggles only persist their flag.
+   */
+  async saveAdminNotificationToggle(
     field: 'newOrder' | 'paymentNote' | 'mechanicRejection' | 'customerCancellation' | 'serviceProgress' | 'browserPush'
-  ): void {
+  ): Promise<void> {
     const value = this.adminNotificationsForm.get(field)?.value;
+
     this.settingsService.updateAdminNotifications({ [field]: value }).subscribe({
       next: () => {
         this.setSuccess('adminNotifications', true);
@@ -769,26 +782,37 @@ export class SettingsComponent implements OnInit {
         this.setError('adminNotifications', error.error?.message || 'Error al guardar');
       },
     });
+
+    if (field === 'browserPush') {
+      if (value === true) {
+        await this.adminNotifications.requestNotificationPermission();
+        if (Notification.permission === 'denied') {
+          this.setError(
+            'adminNotifications',
+            'Las notificaciones están bloqueadas en el navegador. Revisa las instrucciones abajo para desbloquearlas.'
+          );
+        }
+      } else {
+        await this.adminNotifications.unregisterToken();
+      }
+    }
   }
 
+  /**
+   * Triggered by the legacy "Activar permisos" affordance. Delegates to
+   * the full FCM flow (permission prompt + token registration) so the
+   * admin actually becomes reachable, not just permission-granted.
+   */
   async requestBrowserPushPermission(): Promise<void> {
     if (!('Notification' in window)) {
       this.setError('adminNotifications', 'Tu navegador no soporta notificaciones push');
       return;
     }
-    if (Notification.permission === 'granted') return;
     if (Notification.permission === 'denied') {
       this.setError('adminNotifications', 'Las notificaciones están bloqueadas. Revisa las instrucciones abajo para habilitarlas.');
       return;
     }
-    try {
-      const permission = await Notification.requestPermission();
-      if (permission !== 'granted') {
-        this.setError('adminNotifications', 'Permiso de notificaciones denegado');
-      }
-    } catch {
-      this.setError('adminNotifications', 'No se pudo solicitar permiso');
-    }
+    await this.adminNotifications.requestNotificationPermission();
   }
 
   /** Estado actual del permiso de notificaciones */
@@ -797,20 +821,22 @@ export class SettingsComponent implements OnInit {
     return Notification.permission;
   }
 
-  /** Dispara una notificación de prueba para verificar permisos y sonido */
+  /**
+   * Fires a local OS notification to validate that the SW path works.
+   *
+   * Uses `browserNotify` rather than `new Notification(...)` because the
+   * latter throws on mobile Chrome with an active Service Worker — the
+   * exact environment we need this test to validate.
+   */
   async testBrowserPushNotification(): Promise<void> {
     if (!('Notification' in window)) {
       this.setError('adminNotifications', 'Tu navegador no soporta notificaciones push');
       return;
     }
 
-    // Si no hay permiso, solicitarlo
     if (Notification.permission === 'default') {
-      const permission = await Notification.requestPermission();
-      if (permission !== 'granted') {
-        this.setError('adminNotifications', 'Permiso denegado. Habilítalo desde los ajustes del navegador.');
-        return;
-      }
+      // Run the full registration flow: permission + token registration.
+      await this.adminNotifications.requestNotificationPermission();
     }
 
     if (Notification.permission === 'denied') {
@@ -819,16 +845,13 @@ export class SettingsComponent implements OnInit {
     }
 
     try {
-      const notif = new Notification('TuBus Express — Prueba', {
+      await browserNotify('TuBus Express — Prueba', {
         body: 'Si ves este mensaje, las notificaciones push están funcionando correctamente.',
         icon: '/autobus.png',
         badge: '/autobus.png',
         tag: `test-notification-${Date.now()}`,
+        data: { url: '/admin' },
       });
-      notif.onclick = () => {
-        window.focus();
-        notif.close();
-      };
       this.setSuccess('adminNotifications', true);
       setTimeout(() => this.setSuccess('adminNotifications', false), 3000);
     } catch {

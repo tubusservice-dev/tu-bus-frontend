@@ -12,16 +12,15 @@ import { FormsModule } from '@angular/forms';
 import { DateInputComponent } from '@shared/components/date-input/date-input.component';
 import type { RequestedServiceDate, ServiceDateTier } from '@features/checkout/services/checkout.service';
 import { businessIsoOffset, formatBusinessDate } from '@shared/utils/business-date.util';
-import { branchDayToJsDow, jsDowToBranchDay } from '@shared/utils/branch-day.util';
-import type { ScheduleDay } from '@models/branch.model';
+import type { BranchAvailability } from '@models/branch-availability.model';
 
 /**
- * Buffer mínimo (en minutos) entre la hora actual y el cierre de la
- * sucursal para permitir Express. Cubre 90 min de duración de servicio
- * + ~30 min de traslado del mecánico, lo cual permite Express hasta
- * dos horas antes del cierre.
+ * Travel buffer (in minutes) added on top of the mechanic's service duration
+ * to gate Express. Combined with `availability.minServiceDurationMinutes`,
+ * Express stays open while there is still time to travel + complete the
+ * service before the latest close.
  */
-const EXPRESS_MIN_BUFFER_MINUTES = 120;
+const EXPRESS_TRAVEL_BUFFER_MINUTES = 30;
 
 /**
  * Three-way service date chooser for the home oil change flow.
@@ -46,12 +45,16 @@ const EXPRESS_MIN_BUFFER_MINUTES = 120;
 export class ServiceDatePickerComponent {
   readonly initial = input<RequestedServiceDate | null>(null);
   /**
-   * Schedule semanal de la sucursal (7 entradas, una por día).
-   * Cuando es null el picker actúa permisivamente (no puede validar) y
-   * deja la decisión final al backend — esto cubre el caso transitorio
-   * en que la sucursal aún no se cargó.
+   * Disponibilidad agregada de la sucursal — la unión de los horarios de
+   * todos los mecánicos activos. Cuando es null el picker actúa
+   * permisivamente (no puede validar) y deja la decisión final al backend,
+   * cubriendo el caso transitorio en que la disponibilidad aún no se cargó.
+   *
+   * `schedule[d]` está indexado por convención JS (0 = domingo … 6 = sábado),
+   * por lo que se compara directamente contra `new Date(iso).getDay()` sin
+   * conversiones intermedias.
    */
-  readonly schedule = input<ScheduleDay[] | null>(null);
+  readonly availability = input<BranchAvailability | null>(null);
   readonly changed = output<RequestedServiceDate | null>();
 
   protected readonly tier = signal<ServiceDateTier | null>(null);
@@ -70,9 +73,9 @@ export class ServiceDatePickerComponent {
   });
 
   // ──────────────────────────────────────────────────────────────────────
-  // Schedule-aware availability — derived from the branch schedule input.
-  // Sin schedule devuelven defaults permisivos para no bloquear cuando aún
-  // no se cargó la información de la sucursal.
+  // Availability-aware computeds — derived from the aggregated mechanic
+  // availability input. Sin availability devuelven defaults permisivos
+  // para no bloquear cuando aún no se cargó la información.
   // ──────────────────────────────────────────────────────────────────────
 
   /** Día de la semana actual (0=domingo … 6=sábado) recalculado al construir el computed. */
@@ -86,59 +89,76 @@ export class ServiceDatePickerComponent {
   });
 
   /**
-   * Encuentra la entrada del schedule que corresponde a un valor de
-   * `Date.getDay()`. Convierte primero la convención JS al `day` que
-   * usa Branch para localizar la entrada correcta.
+   * Buffer mínimo necesario entre la hora actual y el cierre del último
+   * mecánico para permitir Express: duración mínima del servicio entre los
+   * mecánicos + buffer de traslado. Si no hay disponibilidad cargada, cae
+   * a 120 min como heurística histórica.
    */
-  private findScheduleByJsDow(sched: ScheduleDay[], jsDow: number): ScheduleDay | undefined {
-    const branchDay = jsDowToBranchDay(jsDow);
-    return sched.find((d) => d.day === branchDay);
-  }
+  private readonly expressMinBufferMinutes = computed(() => {
+    const a = this.availability();
+    if (!a) return 120;
+    return a.minServiceDurationMinutes + EXPRESS_TRAVEL_BUFFER_MINUTES;
+  });
 
   /**
-   * Días de la semana donde la sucursal está cerrada, expresados ya en
-   * convención `Date.getDay()` (lo que el calendar y `new Date(iso).getDay()`
-   * esperan).
+   * Días de la semana donde NINGÚN mecánico atiende, en convención
+   * `Date.getDay()`. El availability ya viene en esa convención.
    */
   protected readonly closedDaysOfWeek = computed<number[]>(() => {
-    const sched = this.schedule();
-    if (!sched || sched.length === 0) return [];
-    return sched.filter((d) => d.isClosed).map((d) => branchDayToJsDow(d.day));
+    const a = this.availability();
+    if (!a) return [];
+    return a.schedule.filter((d) => d.isClosed).map((d) => d.day);
   });
 
   protected readonly isExpressAvailable = computed(() => {
-    const sched = this.schedule();
-    if (!sched || sched.length === 0) return true; // sin info → permisivo
-    const today = this.findScheduleByJsDow(sched, this.todayDow());
+    const a = this.availability();
+    if (!a) return true; // sin info → permisivo
+    const today = a.schedule[this.todayDow()];
     if (!today || today.isClosed) return false;
-    const closeMin = ServiceDatePickerComponent.timeStringToMinutes(today.closeTime);
-    return closeMin - this.nowMinutesOfDay() >= EXPRESS_MIN_BUFFER_MINUTES;
+    if (a.fullyBlockedDates.includes(this.todayIso)) return false;
+    const closeMin = ServiceDatePickerComponent.timeStringToMinutes(today.latestClose);
+    return closeMin - this.nowMinutesOfDay() >= this.expressMinBufferMinutes();
   });
 
   protected readonly isTomorrowAvailable = computed(() => {
-    const sched = this.schedule();
-    if (!sched || sched.length === 0) return true;
-    const tomorrow = this.findScheduleByJsDow(sched, this.tomorrowDow());
-    return !!tomorrow && !tomorrow.isClosed;
+    const a = this.availability();
+    if (!a) return true;
+    const tomorrow = a.schedule[this.tomorrowDow()];
+    if (!tomorrow || tomorrow.isClosed) return false;
+    return !a.fullyBlockedDates.includes(this.tomorrowIso);
   });
 
   protected readonly expressDisabledReason = computed<string | null>(() => {
-    const sched = this.schedule();
-    if (!sched || sched.length === 0) return null;
-    const today = this.findScheduleByJsDow(sched, this.todayDow());
-    if (!today || today.isClosed) return 'La sucursal no atiende hoy.';
-    const closeMin = ServiceDatePickerComponent.timeStringToMinutes(today.closeTime);
-    if (closeMin - this.nowMinutesOfDay() < EXPRESS_MIN_BUFFER_MINUTES) {
-      return `Ya no es posible Express hoy. La sucursal cierra a las ${today.closeTime}.`;
+    const a = this.availability();
+    if (!a) return null;
+    const today = a.schedule[this.todayDow()];
+    if (!today || today.isClosed) {
+      return a.hasMechanics
+        ? 'Ningún mecánico atiende hoy en esta sucursal.'
+        : 'La sucursal no atiende hoy.';
+    }
+    if (a.fullyBlockedDates.includes(this.todayIso)) {
+      return 'Hoy todos los mecánicos están bloqueados en esta sucursal.';
+    }
+    const closeMin = ServiceDatePickerComponent.timeStringToMinutes(today.latestClose);
+    if (closeMin - this.nowMinutesOfDay() < this.expressMinBufferMinutes()) {
+      return `Ya no es posible Express hoy. El último mecánico cierra a las ${today.latestClose}.`;
     }
     return null;
   });
 
   protected readonly tomorrowDisabledReason = computed<string | null>(() => {
-    const sched = this.schedule();
-    if (!sched || sched.length === 0) return null;
-    const tomorrow = this.findScheduleByJsDow(sched, this.tomorrowDow());
-    if (!tomorrow || tomorrow.isClosed) return 'La sucursal no atiende mañana.';
+    const a = this.availability();
+    if (!a) return null;
+    const tomorrow = a.schedule[this.tomorrowDow()];
+    if (!tomorrow || tomorrow.isClosed) {
+      return a.hasMechanics
+        ? 'Ningún mecánico atiende mañana en esta sucursal.'
+        : 'La sucursal no atiende mañana.';
+    }
+    if (a.fullyBlockedDates.includes(this.tomorrowIso)) {
+      return 'Mañana todos los mecánicos están bloqueados en esta sucursal.';
+    }
     return null;
   });
 
@@ -157,11 +177,11 @@ export class ServiceDatePickerComponent {
       }
     }, { allowSignalWrites: true });
 
-    // Reset reactivo: si cambia el schedule (ej. usuario cambia de sucursal)
-    // y la fecha pedida ya no es válida, limpiar la selección.
+    // Reset reactivo: si cambia la disponibilidad (ej. usuario cambia de
+    // sucursal) y la fecha pedida ya no es válida, limpiar la selección.
     effect(() => {
-      const sched = this.schedule();
-      if (!sched || sched.length === 0) return;
+      const a = this.availability();
+      if (!a) return;
       const current = this.tier();
       if (current === 'express' && !this.isExpressAvailable()) {
         this.tier.set(null);
@@ -215,8 +235,14 @@ export class ServiceDatePickerComponent {
     this.changed.emit(value);
   }
 
-  /** True si la fecha ISO (YYYY-MM-DD) cae en un día donde la sucursal está cerrada. */
+  /**
+   * True si la fecha ISO (YYYY-MM-DD) cae en un día donde ningún mecánico
+   * de la sucursal atiende — sea por horario semanal o por bloqueo total
+   * (todos los mecánicos con un dateBlock cubriendo esa fecha).
+   */
   private isClosedOnDate(iso: string): boolean {
+    const a = this.availability();
+    if (a?.fullyBlockedDates.includes(iso)) return true;
     const closed = this.closedDaysOfWeek();
     if (closed.length === 0) return false;
     const dow = new Date(iso + 'T00:00:00').getDay();
