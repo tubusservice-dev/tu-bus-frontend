@@ -1,6 +1,11 @@
 @if (isOpen()) {
   <div class="zoning-overlay" (click)="closeModal()">
-    <div class="zoning-modal" (click)="$event.stopPropagation()">
+    <div
+      class="zoning-modal"
+      [class.zoning-modal--resolving]="isResolving()"
+      [attr.inert]="isResolving() ? '' : null"
+      (click)="$event.stopPropagation()"
+    >
       <!-- Logo -->
       <div class="modal-logo">
         <img src="assets/icons/autobus.png" alt="TuBus Express" class="logo-img" />
@@ -121,13 +126,14 @@
         </div>
       }
 
-      <!-- Resolving overlay -->
-      @if (isResolving()) {
-        <div class="resolving-overlay">
-          <div class="spinner"></div>
-          <span>Verificando cobertura...</span>
-        </div>
-      }
     </div>
+
+    <!-- Resolving overlay (full-screen, blocks interaction) -->
+    @if (isResolving()) {
+      <div class="resolving-overlay" (click)="$event.stopPropagation()">
+        <div class="spinner"></div>
+        <span>Verificando cobertura...</span>
+      </div>
+    }
   </div>
 }

@@ -34,15 +34,24 @@ export interface ChangePasswordRequest {
   newPassword: string;
 }
 
+export interface SetPasswordRequest {
+  newPassword: string;
+}
+
 export interface UserResponse {
   success: boolean;
   message?: string;
   data: User;
 }
 
-export interface MessageResponse {
+export interface ChangePasswordResponse {
   success: boolean;
-  message: string;
+  message?: string;
+  data: {
+    user: User;
+    /** Nuevo JWT — el actual queda invalidado por `passwordChangedAt`. */
+    token: string;
+  };
 }
 
 @Injectable({
@@ -68,9 +77,20 @@ export class UserService {
   }
 
   /**
-   * Cambia la contraseña del usuario
+   * Cambia la contraseña del usuario. El backend stamp `passwordChangedAt`
+   * (invalida el JWT actual) y emite uno nuevo en la respuesta — el caller
+   * debe persistirlo via `AuthService.applyNewSession()` para mantener al
+   * usuario logueado sin disrupción.
    */
-  changePassword(data: ChangePasswordRequest): Observable<MessageResponse> {
-    return this.http.put<MessageResponse>(`${this.apiUrl}/change-password`, data);
+  changePassword(data: ChangePasswordRequest): Observable<ChangePasswordResponse> {
+    return this.http.put<ChangePasswordResponse>(`${this.apiUrl}/change-password`, data);
+  }
+
+  /**
+   * Configura una contraseña local para una cuenta vinculada con OAuth (Google).
+   * Tras el éxito, la cuenta podrá iniciar sesión por Google o por email + contraseña.
+   */
+  setPassword(data: SetPasswordRequest): Observable<UserResponse> {
+    return this.http.put<UserResponse>(`${this.apiUrl}/set-password`, data);
   }
 }

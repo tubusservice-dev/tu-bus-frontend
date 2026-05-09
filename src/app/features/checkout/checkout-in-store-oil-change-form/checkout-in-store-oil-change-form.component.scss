@@ -66,6 +66,49 @@
   color: var(--text-secondary);
 }
 
+// ========== Loading & Error states (mirrors garage component) ==========
+.loading-state {
+  @apply flex flex-col items-center justify-center py-10;
+
+  .spinner {
+    @apply w-8 h-8 border-2 rounded-full animate-spin mb-3;
+    border-color: rgba(148, 163, 184, 0.25);
+    border-top-color: var(--tubus-text-accent, #4d94ff);
+  }
+
+  p {
+    @apply text-sm;
+    color: var(--text-secondary);
+  }
+}
+
+.error-state {
+  @apply flex flex-col items-center justify-center text-center py-8 px-4 rounded-xl gap-3;
+  background-color: rgba(239, 68, 68, 0.06);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+
+  svg {
+    @apply w-7 h-7;
+    color: #ef4444;
+  }
+
+  p {
+    @apply text-sm leading-relaxed;
+    color: var(--text-primary);
+    max-width: 28rem;
+  }
+
+  .retry-btn {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all;
+    background-color: var(--tubus-text-accent, #4d94ff);
+    color: #ffffff;
+    border: none;
+    cursor: pointer;
+
+    &:hover { filter: brightness(1.1); }
+  }
+}
+
 // ========== Vehicle Multi-Select (mirrors checkout-oil-change-form) ==========
 .vehicle-select-list {
   @apply space-y-2;

@@ -1,7 +1,7 @@
-import { Component, inject, signal, OnInit, computed, HostListener } from '@angular/core';
+import { Component, inject, signal, OnInit, computed, HostListener, viewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { AuthService, UserService, UploadService } from '../../../core';
+import { AuthService, UserService, UploadService, UpdateProfileRequest } from '../../../core';
 import { getStates, getCitiesByState, getMunicipalitiesByState } from '../../../shared/data/venezuela-states';
 import {
   NAME_PATTERN, PHONE_VE_PATTERN, DOCUMENT_NUMBER_PATTERN, RIF_PATTERN, ZIPCODE_PATTERN,
@@ -59,6 +59,10 @@ export class ProfileInfoComponent implements OnInit {
   });
 
   protected profileForm!: FormGroup;
+
+  /** Top of the edit-mode card. Used to scroll the user to the form header
+   *  (NOT the page top) when "Editar Perfil" is clicked from the sidebar. */
+  private readonly editFormTop = viewChild<ElementRef<HTMLElement>>('editFormTop');
 
   ngOnInit(): void {
     this.initForm();
@@ -221,6 +225,12 @@ export class ProfileInfoComponent implements OnInit {
   startEditing(): void {
     this.isEditing.set(true);
     this.clearMessages();
+    // Defer to next frame so the form is rendered before scrolling. Targets
+    // the form card (NOT the page top) so the sidebar's "Acciones"/"Cuenta"
+    // sections aren't left awkwardly above the edit area on mobile.
+    requestAnimationFrame(() => {
+      this.editFormTop()?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
   }
 
   cancelEditing(): void {
@@ -286,7 +296,7 @@ export class ProfileInfoComponent implements OnInit {
       const selectedCity = this.availableCities().find((c: any) => c.code === this.profileForm.get('cityCode')?.value);
       const selectedMuni = this.availableMunicipalities().find((m: any) => m.code === this.profileForm.get('municipalityCode')?.value);
 
-      const updateData: any = {
+      const rawData: Record<string, unknown> = {
         firstName: this.profileForm.get('firstName')?.value,
         lastName: this.profileForm.get('lastName')?.value,
         birthDate: this.profileForm.get('birthDate')?.value || undefined,
@@ -312,6 +322,13 @@ export class ProfileInfoComponent implements OnInit {
         companyRif: this.profileForm.get('companyRif')?.value || undefined,
         ...(avatarUrl && { avatar: avatarUrl }),
       };
+
+      // Drop undefined entries — JSON.stringify omits them, but the backend
+      // service uses Object.assign on the loaded user document, where an
+      // explicit undefined would mark the field as modified and overwrite it.
+      const updateData = Object.fromEntries(
+        Object.entries(rawData).filter(([, v]) => v !== undefined)
+      ) as UpdateProfileRequest;
 
       this.userService.updateProfile(updateData).subscribe({
         next: () => {

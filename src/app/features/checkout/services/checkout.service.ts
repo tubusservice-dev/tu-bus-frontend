@@ -437,6 +437,15 @@ export class CheckoutService {
     this._state.update((s) => ({ ...s, selectedVehicles: [] }));
   }
 
+  /**
+   * Replace the entire `selectedVehicles` array. Used by the vehicle picker
+   * to reconcile the persisted selection against the authoritative list
+   * returned by the backend, dropping zombies (deleted/deactivated vehicles).
+   */
+  replaceVehicles(vehicles: Vehicle[]): void {
+    this._state.update((s) => ({ ...s, selectedVehicles: vehicles }));
+  }
+
   /** @deprecated Use addVehicle() instead */
   selectVehicle(vehicle: Vehicle): void {
     this._state.update((s) => ({ ...s, selectedVehicles: [vehicle] }));

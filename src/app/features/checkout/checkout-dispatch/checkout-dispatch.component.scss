@@ -55,7 +55,7 @@
 // CARD
 // ============================================
 .dispatch-card {
-  @apply relative flex items-center gap-4 p-5 rounded-xl transition-all duration-200 text-left;
+  @apply relative flex items-center gap-4 p-5 rounded-xl transition-all duration-200 text-left overflow-hidden;
   background-color: var(--bg-primary);
   border: 1.5px solid var(--border-color);
 
@@ -157,16 +157,7 @@
 .price-badge {
   @apply flex-shrink-0 px-2.5 py-1 text-xs font-semibold rounded-md;
 
-  &.free {
-    background-color: rgba(34, 197, 94, 0.12);
-    color: #16a34a;
-  }
-
-  &.extra {
-    background-color: rgba(59, 130, 246, 0.12);
-    color: #2563eb;
-  }
-
+  &.extra,
   &.cost {
     background-color: rgba(59, 130, 246, 0.12);
     color: #2563eb;
@@ -176,6 +167,31 @@
     background-color: var(--bg-tertiary);
     color: var(--text-tertiary);
   }
+}
+
+// ============================================
+// FREE RIBBON (top-right diagonal)
+// ============================================
+.free-ribbon {
+  position: absolute;
+  // Tight to the corner: 8px / -28px lets the rotated strip clip cleanly
+  // against the rounded edge while leaving minimal intrusion over the title.
+  top: 8px;
+  right: -28px;
+  width: 92px;
+  transform: rotate(45deg);
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  color: #ffffff;
+  text-align: center;
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  pointer-events: none;
+  user-select: none;
+  z-index: 1;
 }
 
 // ============================================
@@ -289,10 +305,6 @@
   }
 
   .price-badge {
-    &.free {
-      background-color: rgba(34, 197, 94, 0.12);
-      color: #4ade80;
-    }
     &.extra, &.cost {
       background-color: rgba(96, 165, 250, 0.12);
       color: #93c5fd;
@@ -301,6 +313,11 @@
       background-color: #374151;
       color: #6b7280;
     }
+  }
+
+  .free-ribbon {
+    background: linear-gradient(135deg, #22c55e 0%, #15803d 100%);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
   }
 
   .btn-continue {

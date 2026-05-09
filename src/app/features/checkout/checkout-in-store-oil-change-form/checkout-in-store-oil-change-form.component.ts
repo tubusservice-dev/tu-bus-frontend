@@ -31,10 +31,23 @@ export class CheckoutInStoreOilChangeFormComponent implements OnInit {
   protected readonly vehicles = signal<Vehicle[]>([]);
   protected readonly showVehicleForm = signal(false);
   protected readonly isLoadingVehicles = signal(false);
+  protected readonly loadError = signal<string | null>(null);
 
   /** Flips to `true` once the user tries to continue at least once, so the
    *  "at least one vehicle required" error can be rendered in red. */
   protected readonly submitAttempted = signal(false);
+
+  /**
+   * True only when every selected vehicle still exists in the backend list.
+   * Drives the "X seleccionado" badge so it never contradicts the rendered
+   * list (e.g. a zombie vehicle that was deleted from the profile).
+   */
+  protected readonly hasReconciledSelection = computed(() => {
+    const selected = this.checkoutService.selectedVehicles();
+    if (selected.length === 0) return false;
+    const validIds = new Set(this.vehicles().map((v) => v.id));
+    return selected.every((v) => validIds.has(v.id));
+  });
 
   protected readonly selectedVehiclesLabel = computed(() => {
     const selected = this.checkoutService.selectedVehicles();
@@ -59,19 +72,41 @@ export class CheckoutInStoreOilChangeFormComponent implements OnInit {
 
   private loadVehicles(): void {
     this.isLoadingVehicles.set(true);
+    this.loadError.set(null);
     this.vehicleService.getMyVehicles(1, 50).subscribe({
       next: (res: any) => {
         const list: Vehicle[] = res.data || [];
         this.vehicles.set(list);
         this.isLoadingVehicles.set(false);
 
+        // Reconcile selectedVehicles against the authoritative list. Drops
+        // zombies (vehicles deleted/deactivated since last visit) so the
+        // badge never contradicts the rendered list.
+        const validIds = new Set(list.map((v) => v.id));
+        const stillValid = this.checkoutService
+          .selectedVehicles()
+          .filter((v) => validIds.has(v.id));
+        if (stillValid.length !== this.checkoutService.selectedVehicles().length) {
+          this.checkoutService.replaceVehicles(stillValid);
+        }
+
         // Auto-select when there's exactly one vehicle and nothing picked yet
-        if (list.length === 1 && this.checkoutService.selectedVehicles().length === 0) {
+        if (list.length === 1 && stillValid.length === 0) {
           this.checkoutService.addVehicle(list[0]);
         }
       },
-      error: () => this.isLoadingVehicles.set(false),
+      error: (err) => {
+        this.isLoadingVehicles.set(false);
+        this.loadError.set(
+          err?.error?.message ||
+            'No pudimos cargar tus vehículos. Verifica tu conexión e intenta nuevamente.',
+        );
+      },
     });
+  }
+
+  protected retryLoadVehicles(): void {
+    this.loadVehicles();
   }
 
   protected isVehicleSelected(vehicleId: string): boolean {

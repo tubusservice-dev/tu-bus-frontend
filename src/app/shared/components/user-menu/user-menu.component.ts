@@ -77,11 +77,12 @@ export class UserMenuComponent implements OnDestroy {
 
   isActive(path: string, fragment?: string): boolean {
     const url = this.router.url.split('?')[0];
-    if (fragment) {
-      return url === `${path}#${fragment}`;
-    }
-    // "Mi Perfil" active only when no fragment or unknown fragments
-    return url === path || (url.startsWith(path + '#') && !url.includes('#pedidos') && !url.includes('#garaje'));
+    const hashIdx = url.indexOf('#');
+    const urlPath = hashIdx === -1 ? url : url.slice(0, hashIdx);
+    const urlFragment = hashIdx === -1 ? null : url.slice(hashIdx + 1);
+
+    if (urlPath !== path) return false;
+    return fragment ? urlFragment === fragment : urlFragment === null;
   }
 
   onAvatarError(event: Event): void {

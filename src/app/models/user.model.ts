@@ -42,6 +42,12 @@ export interface User {
    * start at false; local registrations always reach true at creation time.
    */
   profileCompleted: boolean;
+  /**
+   * True when the user has a local password set. False for Google-only
+   * accounts that have not gone through the link-account or set-password
+   * flow. Drives the "change" vs "set" mode of the password modal.
+   */
+  hasPassword?: boolean;
   createdAt: Date;
 }
 
