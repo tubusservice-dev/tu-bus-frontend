@@ -83,13 +83,24 @@ export class FirebaseMessagingService {
     for (const reg of regs) {
       const url = reg.active?.scriptURL || reg.installing?.scriptURL || reg.waiting?.scriptURL;
       if (url && url.endsWith('/firebase-messaging-sw.js')) {
+        // Force the browser to revalidate the SW script in case nginx (or
+        // a previous deploy) cached an old version that handles push wrong.
+        try {
+          await reg.update();
+        } catch {
+          /* ignore update failures — registration is still usable */
+        }
         return reg;
       }
     }
 
     try {
+      // `updateViaCache: 'none'` bypasses HTTP cache for the SW script
+      // every time the browser checks for updates. Critical because a
+      // stale SW silently swallows push events when the app is closed.
       return await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
         scope: '/firebase-cloud-messaging-push-scope/',
+        updateViaCache: 'none',
       });
     } catch (err) {
       console.warn('[FirebaseMessaging] Failed to register FCM SW:', err);
