@@ -26,6 +26,11 @@
             [disabled]="!option.isAvailable"
             (click)="selectOption(option)"
           >
+            <!-- Free corner ribbon -->
+            @if (isFree(option)) {
+              <span class="free-ribbon" aria-label="Gratis">Gratis</span>
+            }
+
             <!-- Radio indicator -->
             <div class="radio-indicator">
               @if (isSelected(option)) {
@@ -78,18 +83,8 @@
                 <h3 class="card-title">{{ option.name }}</h3>
                 @if (!option.isAvailable) {
                   <span class="price-badge soon">Próximamente</span>
-                } @else if (option.id === 'store_pickup') {
-                  <span class="price-badge free">Gratis</span>
-                } @else if (option.id === 'oil_change_service') {
-                  <span class="price-badge free">Gratis</span>
-                } @else if (option.id === 'in_store_oil_change') {
-                  <span class="price-badge free">Gratis</span>
-                } @else if (option.id === 'local_delivery') {
-                  @if (option.price === null) {
-                    <span class="price-badge free">Gratis</span>
-                  } @else {
-                    <span class="price-badge cost">${{ option.price!.toFixed(2) }}</span>
-                  }
+                } @else if (option.id === 'local_delivery' && option.price !== null) {
+                  <span class="price-badge cost">${{ option.price!.toFixed(2) }}</span>
                 }
               </div>
               <p class="card-description">{{ option.description }}</p>

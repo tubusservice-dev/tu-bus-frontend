@@ -24,6 +24,12 @@
     background-color: var(--border-primary);
     border-radius: 4px;
   }
+
+  // While the resolving overlay is shown we freeze the modal so the user
+  // cannot keep scrolling its internal list behind the loader.
+  &--resolving {
+    overflow: hidden;
+  }
 }
 
 // Logo
@@ -290,16 +296,18 @@
   }
 }
 
-// Resolving overlay
+// Resolving overlay — covers the full viewport so the loader is visible
+// regardless of modal size or internal scroll position.
 .resolving-overlay {
-  @apply absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-2xl;
-  background-color: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(2px);
+  @apply fixed inset-0 flex flex-col items-center justify-center gap-3;
+  background-color: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
   color: white;
-  z-index: 10;
+  z-index: 60;
+  animation: fadeIn 0.15s ease-out;
 
   .spinner {
-    @apply w-8 h-8 rounded-full;
+    @apply w-10 h-10 rounded-full;
     border-width: 3px;
     border-color: rgba(255, 255, 255, 0.3);
     border-top-color: white;

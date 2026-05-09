@@ -1,7 +1,9 @@
-import { Component, inject, signal, output } from '@angular/core';
+import { Component, inject, signal, output, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { UserService } from '../../../core';
+import { AuthService, UserService } from '../../../core';
+
+type PasswordModalMode = 'set' | 'change';
 
 @Component({
   selector: 'app-change-password-modal',
@@ -11,6 +13,7 @@ import { UserService } from '../../../core';
   styleUrl: './change-password-modal.component.scss',
 })
 export class ChangePasswordModalComponent {
+  private readonly authService = inject(AuthService);
   private readonly userService = inject(UserService);
   private readonly fb = inject(FormBuilder);
 
@@ -29,11 +32,31 @@ export class ChangePasswordModalComponent {
   protected readonly passwordsMismatch = signal(false);
   protected readonly canSubmit = signal(false);
 
+  /**
+   * Snapshot del modo capturado en construcción. NO reactivo a propósito —
+   * un re-fetch del perfil mid-flight no debe cambiar el modo del form ni el
+   * endpoint al que apunta el submit (deep-debug 2026-05-09).
+   */
+  protected readonly mode = signal<PasswordModalMode>(
+    this.authService.currentUser()?.hasPassword ? 'change' : 'set'
+  );
+
+  protected readonly title = computed(() =>
+    this.mode() === 'set' ? 'Agregar Contraseña' : 'Cambiar Contraseña'
+  );
+
+  protected readonly submitLabel = computed(() =>
+    this.mode() === 'set' ? 'Guardar Contraseña' : 'Cambiar Contraseña'
+  );
+
   protected passwordForm: FormGroup;
 
   constructor() {
+    const isChange = this.mode() === 'change';
     this.passwordForm = this.fb.group({
-      currentPassword: ['', [Validators.required, Validators.minLength(6)]],
+      ...(isChange
+        ? { currentPassword: ['', [Validators.required, Validators.minLength(6)]] }
+        : {}),
       newPassword: ['', [Validators.required, Validators.minLength(6)]],
       confirmPassword: ['', [Validators.required]],
     });
@@ -61,13 +84,13 @@ export class ChangePasswordModalComponent {
     this.canSubmit.set(this.passwordForm.valid && hasBoth && newPass === confirm && !this.isLoading());
   }
 
-  changePassword(): void {
+  submit(): void {
     if (this.passwordForm.invalid) {
       this.passwordForm.markAllAsTouched();
       return;
     }
 
-    const { currentPassword, newPassword, confirmPassword } = this.passwordForm.value;
+    const { newPassword, confirmPassword } = this.passwordForm.value;
 
     if (newPassword !== confirmPassword) {
       this.errorMessage.set('Las contraseñas no coinciden');
@@ -78,8 +101,32 @@ export class ChangePasswordModalComponent {
     this.successMessage.set(null);
     this.errorMessage.set(null);
 
+    if (this.mode() === 'set') {
+      this.userService.setPassword({ newPassword }).subscribe({
+        next: (response) => {
+          this.successMessage.set(response.message || 'Contraseña configurada exitosamente');
+          // Refresh the cached user so future opens render in `change` mode.
+          this.authService.loadUserProfile().subscribe({ next: () => {}, error: () => {} });
+          this.isLoading.set(false);
+          setTimeout(() => this.onClose(), 2000);
+        },
+        error: (error) => {
+          this.errorMessage.set(error.error?.message || 'Error al configurar la contraseña');
+          this.isLoading.set(false);
+        },
+      });
+      return;
+    }
+
+    const currentPassword = this.passwordForm.get('currentPassword')?.value;
     this.userService.changePassword({ currentPassword, newPassword }).subscribe({
       next: (response) => {
+        // El backend invalida el JWT actual via passwordChangedAt y emite uno
+        // nuevo en la respuesta — lo persistimos para mantener la sesión
+        // sin sacar al usuario.
+        if (response.data?.token && response.data?.user) {
+          this.authService.applyNewSession(response.data.token, response.data.user);
+        }
         this.successMessage.set(response.message || 'Contraseña actualizada exitosamente');
         this.isLoading.set(false);
         setTimeout(() => this.onClose(), 2000);

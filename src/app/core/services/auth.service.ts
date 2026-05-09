@@ -306,6 +306,20 @@ export class AuthService {
   }
 
   /**
+   * Reemplaza el JWT y el user cacheado con una sesión recién emitida por
+   * el backend. Se usa cuando un endpoint autenticado (e.g. change-password)
+   * invalida el token actual y devuelve uno nuevo para mantener al usuario
+   * logueado sin tener que rehacer login.
+   */
+  applyNewSession(token: string, user: User): void {
+    const { tokenKey, userKey } = this.getStorageKeys();
+    localStorage.setItem(tokenKey, token);
+    localStorage.setItem(userKey, JSON.stringify(user));
+    this.currentUserSignal.set(user);
+    this.sessionExpiredSignal.set(false);
+  }
+
+  /**
    * Closes the user's session both client- and server-side. Server-side
    * uses the `tokensInvalidatedAt` mass-invalidation marker so JWTs are
    * rejected on the next request from any device.

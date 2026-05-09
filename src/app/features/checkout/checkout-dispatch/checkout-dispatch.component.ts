@@ -38,6 +38,16 @@ export class CheckoutDispatchComponent implements OnInit {
     return this.selectedType() === option.id;
   }
 
+  isFree(option: DispatchOption): boolean {
+    if (!option.isAvailable) return false;
+    return (
+      option.id === 'store_pickup' ||
+      option.id === 'oil_change_service' ||
+      option.id === 'in_store_oil_change' ||
+      (option.id === 'local_delivery' && option.price === null)
+    );
+  }
+
   onContinue(): void {
     const dispatchType = this.selectedType();
 
