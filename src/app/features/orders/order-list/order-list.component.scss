@@ -75,11 +75,13 @@
 // TOOLBAR: SEARCH + FILTER
 // ============================================
 .orders-toolbar {
-  @apply flex items-center gap-3 flex-wrap;
+  // Mobile: stack vertically — search on row 1 (full width), filter on row 2 aligned right.
+  // Desktop (≥ sm): single row, search expands, filter stays inline.
+  @apply flex flex-wrap items-stretch sm:items-center gap-3;
 }
 
 .toolbar-search {
-  @apply flex-1 min-w-0 relative;
+  @apply w-full sm:w-auto sm:flex-1 min-w-0 relative;
 
   .search-icon {
     @apply absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4;
@@ -98,7 +100,10 @@
 }
 
 .status-filter {
-  @apply px-3 py-2 text-sm rounded-lg border outline-none transition-colors;
+  // `ml-auto` on mobile pushes the wrapped filter to the right edge of the
+  // second row. On `sm+` the toolbar is single-row so margin-left auto would
+  // push the filter to the far right too — keep it natural with `sm:ml-0`.
+  @apply ml-auto sm:ml-0 px-3 py-2 text-sm rounded-lg border outline-none transition-colors;
   background-color: var(--bg-primary);
   border-color: var(--border-color, #d1d5db);
   color: var(--text-primary);
