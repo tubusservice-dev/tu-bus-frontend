@@ -55,13 +55,20 @@ export class ProfileComponent implements OnInit {
   protected readonly activeTab = signal<ProfileTab>('profile');
 
   /**
-   * True when the auth-system v2 migration left the user with missing
-   * personal data (typical for OAuth-only registrations). Drives the
-   * persistent banner and the auto-opened modal.
+   * True when the user is missing any mandatory personal data. Mirrors the
+   * backend `computeProfileCompleted` rule (documentType + documentNumber +
+   * phone, plus companyName for J or birthDate otherwise) so the banner is
+   * driven by real field state instead of the cached `profileCompleted`
+   * flag — which can drift out of sync with reality if a write path skips
+   * the pre-save hook (e.g. an admin update via findByIdAndUpdate).
    */
   protected readonly profileIncomplete = computed(() => {
     const u = this.user();
-    return !!u && u.profileCompleted === false;
+    if (!u) return false;
+    const hasCore = !!(u.documentType && u.documentNumber && u.phone);
+    if (!hasCore) return true;
+    if (u.documentType === 'J') return !u.companyName;
+    return !u.birthDate;
   });
 
   protected readonly showCompleteProfileModal = signal(false);

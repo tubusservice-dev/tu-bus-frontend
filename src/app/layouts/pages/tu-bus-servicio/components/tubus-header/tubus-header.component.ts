@@ -63,14 +63,25 @@ export class TubusHeaderComponent implements OnInit, OnDestroy {
     }
 
     // Check initial route
-    this.isProfilePage.set(this.router.url === '/perfil');
+    this.isProfilePage.set(this.matchesProfileRoot(this.router.url));
 
     // Listen for route changes
     this.routerSub = this.router.events
       .pipe(filter((event) => event instanceof NavigationEnd))
       .subscribe((event) => {
-        this.isProfilePage.set((event as NavigationEnd).url === '/perfil');
+        this.isProfilePage.set(
+          this.matchesProfileRoot((event as NavigationEnd).urlAfterRedirects),
+        );
       });
+  }
+
+  // Strip fragment and query so the match still holds when the profile
+  // tabs switch via fragments (`/perfil#garaje`, `/perfil#pedidos`, ...).
+  // The previous strict equality check hid the back arrow on every tab
+  // other than the default one.
+  private matchesProfileRoot(url: string): boolean {
+    const path = url.split('#')[0].split('?')[0];
+    return path === '/perfil';
   }
 
   ngOnDestroy(): void {
