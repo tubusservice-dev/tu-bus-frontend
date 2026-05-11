@@ -33,11 +33,12 @@ import { PAYMENT_TYPES_WITH_FORM, PaymentMethodType } from '../../../models/paym
 import { MechanicAvatarComponent } from '../../../shared/components/mechanic-avatar/mechanic-avatar.component';
 import { OrderCommentsComponent } from '../../../shared/components/order-comments/order-comments.component';
 import { RatingModalComponent } from '../../../shared/components/rating-modal/rating-modal.component';
+import { PhoneActionPopoverComponent } from '../../../shared/components/phone-action-popover/phone-action-popover.component';
 
 @Component({
   selector: 'app-order-detail',
   standalone: true,
-  imports: [CommonModule, CurrencyPipe, RouterLink, MechanicAvatarComponent, OrderCommentsComponent, RatingModalComponent],
+  imports: [CommonModule, CurrencyPipe, RouterLink, MechanicAvatarComponent, OrderCommentsComponent, RatingModalComponent, PhoneActionPopoverComponent],
   templateUrl: './order-detail.component.html',
   styleUrl: './order-detail.component.scss',
 })
@@ -73,9 +74,6 @@ export class OrderDetailComponent implements OnInit {
   protected readonly isUploadingProof = signal(false);
   protected readonly uploadProofError = signal<string | null>(null);
   protected readonly uploadProofSuccess = signal<string | null>(null);
-
-  // ========== POPOVERS DE TELÉFONO ==========
-  protected readonly activePhonePopover = signal<string | null>(null);
 
   // ========== IMPRESIÓN ==========
   protected printedAt = '';
@@ -491,35 +489,8 @@ export class OrderDetailComponent implements OnInit {
     return '';
   }
 
-  // ============================================
-  // POPOVERS DE TELÉFONO
-  // ============================================
-  togglePhonePopover(id: string): void {
-    this.activePhonePopover.update((current) => (current === id ? null : id));
-  }
-
-  closePopovers(): void {
-    this.activePhonePopover.set(null);
-  }
-
   onCommentsUpdated(updatedOrder: Order): void {
     this.order.set(updatedOrder);
-  }
-
-  openWhatsApp(phone: string): void {
-    if (!phone) return;
-    const cleaned = phone.replace(/-/g, '').replace(/\s/g, '');
-    const international = '58' + cleaned.replace(/^0/, '');
-    window.open(`https://wa.me/${international}`, '_blank');
-    this.activePhonePopover.set(null);
-  }
-
-  callPhone(phone: string): void {
-    if (!phone) return;
-    const cleaned = phone.replace(/-/g, '').replace(/\s/g, '');
-    const international = '+58' + cleaned.replace(/^0/, '');
-    window.open(`tel:${international}`, '_self');
-    this.activePhonePopover.set(null);
   }
 
   // ============================================

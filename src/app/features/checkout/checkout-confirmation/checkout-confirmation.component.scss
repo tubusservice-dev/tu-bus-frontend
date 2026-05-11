@@ -68,10 +68,12 @@
 .order-details-grid {
   @apply grid grid-cols-2 gap-4;
 
-  // When the mobile status cell is hidden on desktop the first cell (date)
-  // would shrink to half-width with empty space beside it — span it across
-  // both columns instead so the layout reads cleanly.
-  > .detail:first-child {
+  // When the mobile status cell is hidden on desktop AND no branch-contact
+  // cell exists, the date would shrink to half-width with empty space beside
+  // it — span it across both columns instead so the layout reads cleanly.
+  // When a branch-contact cell IS present, the date stays in column 1 and
+  // the contact sits next to it in column 2.
+  &:not(:has(.detail-branch-contact)) > .detail:first-child {
     @apply sm:col-span-2;
   }
 }
@@ -81,6 +83,16 @@
 
   .detail-label { @apply text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide; }
   .detail-value { @apply text-sm font-semibold text-gray-900 dark:text-white mt-1; }
+}
+
+// Branch-contact cell — clickable phone with Llamar/WhatsApp popover. On
+// mobile it claims its own row so the popover has room to expand without
+// crowding the status cell; on desktop it sits next to the date, right-
+// aligned to mirror the "Estado de la Orden" cell above it.
+.detail.detail-branch-contact {
+  @apply col-span-2 sm:col-span-1 sm:items-end sm:text-right;
+
+  app-phone-action-popover { @apply mt-1; }
 }
 
 .capitalize { text-transform: capitalize; }

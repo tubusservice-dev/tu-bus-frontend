@@ -47,6 +47,7 @@ import { MechanicAvatarComponent } from '../../../../shared/components/mechanic-
 import { OrderCommentsComponent } from '../../../../shared/components/order-comments/order-comments.component';
 import { ClickOutsideDirective } from '../../../../shared/directives/click-outside.directive';
 import { MechanicAssignmentService } from '../../../../core/services/mechanic-assignment.service';
+import { PhoneActionPopoverComponent } from '../../../../shared/components/phone-action-popover/phone-action-popover.component';
 
 @Component({
   selector: 'app-admin-order-detail',
@@ -58,6 +59,7 @@ import { MechanicAssignmentService } from '../../../../core/services/mechanic-as
     MechanicAvatarComponent,
     OrderCommentsComponent,
     ClickOutsideDirective,
+    PhoneActionPopoverComponent,
   ],
   templateUrl: './admin-order-detail.component.html',
   styleUrl: './admin-order-detail.component.scss',
@@ -122,9 +124,6 @@ export class AdminOrderDetailComponent implements OnInit {
 
   // ========== IMAGE LIGHTBOX ==========
   protected readonly proofPreview = signal<string | null>(null);
-
-  // ========== PHONE POPOVERS ==========
-  protected readonly activePhonePopover = signal<string | null>(null);
 
   // ========== CONSTANTS ==========
   protected readonly ORDER_STATUS_LABELS = ORDER_STATUS_LABELS;
@@ -727,32 +726,6 @@ export class AdminOrderDetailComponent implements OnInit {
       },
       error: () => this.isSavingNotes.set(false),
     });
-  }
-
-  // ========== PHONE POPOVERS ==========
-
-  togglePhonePopover(id: string): void {
-    this.activePhonePopover.update((current) => (current === id ? null : id));
-  }
-
-  closePhonePopovers(): void {
-    this.activePhonePopover.set(null);
-  }
-
-  callPhone(phone: string): void {
-    if (!phone) return;
-    const cleaned = phone.replace(/-/g, '').replace(/\s/g, '');
-    const international = '+58' + cleaned.replace(/^0/, '');
-    window.open(`tel:${international}`, '_self');
-    this.activePhonePopover.set(null);
-  }
-
-  openWhatsApp(phone: string): void {
-    if (!phone) return;
-    const cleaned = phone.replace(/-/g, '').replace(/\s/g, '');
-    const international = '58' + cleaned.replace(/^0/, '');
-    window.open(`https://wa.me/${international}`, '_blank');
-    this.activePhonePopover.set(null);
   }
 
   // ========== NAVIGATION ==========

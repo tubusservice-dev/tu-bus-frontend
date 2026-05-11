@@ -52,6 +52,10 @@ export interface DispatchDetails {
   selectedBranchId?: string;
   selectedBranchName?: string;
   selectedBranchAddress?: string;
+  /** Snapshot of the branch's WhatsApp/mobile phone at the moment the order
+   *  was created. Persisted on the order so the value the client saw at
+   *  checkout survives any later edit of the branch's contact info. */
+  selectedBranchPhone?: string;
 }
 
 export interface BillingAddress {
@@ -191,6 +195,10 @@ export interface CreateOrderRequest {
   disclaimerAccepted: boolean;
   engineModification?: EngineModificationStatus;
   notes?: string;
+  /** Optional free-form note from the client to the admin team, captured at
+   *  checkout. Backend persists it as the first comment in the order thread,
+   *  not on `notes` (which belongs to the admin). */
+  customerNote?: string;
   paymentSubmission?: PaymentSubmission;
 }
 

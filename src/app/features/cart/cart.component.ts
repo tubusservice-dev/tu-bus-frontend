@@ -32,14 +32,20 @@ export class CartComponent {
   }
 
   goToCatalog(): void {
-    // When the cart is mounted as an overlay on top of /catalogo, a plain
-    // router.navigate is a no-op (same URL). Pop the overlay instead so the
-    // user lands back on the catalog underneath.
-    if (this.overlayService.isOpen()) {
-      this.overlayService.goBack();
-    } else {
-      this.router.navigate(['/catalogo']);
+    const currentUrl = this.router.url.split('?')[0].split('#')[0];
+
+    // Already on /catalogo: router.navigate would be a no-op
+    // (onSameUrlNavigation: 'ignore'), so just pop the overlay.
+    if (currentUrl === '/catalogo') {
+      if (this.overlayService.isOpen()) {
+        this.overlayService.goBack();
+      }
+      return;
     }
+
+    // Any other route: navigate. The NavigationEnd subscription in
+    // OverlayStackService clears the stack automatically.
+    this.router.navigate(['/catalogo']);
   }
 
   /** Header back button. When this cart is mounted inside an overlay,

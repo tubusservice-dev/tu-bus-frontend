@@ -8,11 +8,12 @@ import { MechanicAssignment, ProgressStep, BranchContactInfo } from '../../model
 import { SupportContactConfig } from '../../models/settings.model';
 import { environment } from '../../../environments/environment';
 import { MechanicAvatarComponent } from '../../shared/components/mechanic-avatar/mechanic-avatar.component';
+import { PhoneActionPopoverComponent } from '../../shared/components/phone-action-popover/phone-action-popover.component';
 
 @Component({
   selector: 'app-mechanic-progress',
   standalone: true,
-  imports: [CommonModule, MechanicAvatarComponent],
+  imports: [CommonModule, MechanicAvatarComponent, PhoneActionPopoverComponent],
   templateUrl: './mechanic-progress.component.html',
   styleUrl: './mechanic-progress.component.scss',
 })
@@ -63,7 +64,6 @@ export class MechanicProgressComponent implements OnInit {
   protected readonly showSupportModal = signal(false);
   protected readonly supportContact = signal<SupportContactConfig | null>(null);
   protected readonly branchContact = signal<BranchContactInfo | null>(null);
-  protected readonly activePhonePopover = signal<string | null>(null);
 
   protected readonly currentStepIndex = computed(() => {
     const a = this.assignment();
@@ -168,24 +168,15 @@ export class MechanicProgressComponent implements OnInit {
   // ========== Support Modal ==========
   openSupportModal(): void {
     this.showSupportModal.set(true);
-    this.activePhonePopover.set(null);
   }
 
   closeSupportModal(): void {
     this.showSupportModal.set(false);
-    this.activePhonePopover.set(null);
-  }
-
-  togglePhonePopover(id: string): void {
-    this.activePhonePopover.update((current) => (current === id ? null : id));
-  }
-
-  closePopovers(): void {
-    this.activePhonePopover.set(null);
   }
 
   /** Strip non-digits and normalize to international (58...) form.
-   *  Accepts local `04XXXXXXXXXX`, international `+58412...` or bare digits. */
+   *  Accepts local `04XXXXXXXXXX`, international `+58412...` or bare digits.
+   *  Used by the direct (non-popover) support buttons in the support modal. */
   private toInternationalDigits(phone: string): string {
     const digits = (phone || '').replace(/\D/g, '');
     if (!digits) return '';
@@ -197,14 +188,12 @@ export class MechanicProgressComponent implements OnInit {
     const international = this.toInternationalDigits(phone);
     if (!international) return;
     window.open(`https://wa.me/${international}`, '_blank');
-    this.activePhonePopover.set(null);
   }
 
   callPhone(phone: string): void {
     const international = this.toInternationalDigits(phone);
     if (!international) return;
     window.open(`tel:+${international}`, '_self');
-    this.activePhonePopover.set(null);
   }
 
   // ========== Advance/Reject ==========

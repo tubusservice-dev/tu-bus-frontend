@@ -240,6 +240,14 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
     'Banco de la Gente Emprendedora (Bangente)',
   ];
 
+  /**
+   * Optional free-form note the user can include for the admin team. Persisted
+   * by the backend as the first entry in the order's comments thread so it
+   * surfaces in the same conversation widget used for follow-ups.
+   */
+  protected readonly customerNote = signal('');
+  protected readonly customerNoteMaxLength = 1000;
+
   // Payment form state
   protected readonly formReferenceNumber = signal('');
   protected readonly formSourceBank = signal('');
@@ -513,6 +521,9 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
    * depth — la UI ya bloquea los botones inválidos, pero un cambio de
    * sucursal posterior o una recarga podrían dejar la fecha previa fuera
    * de los horarios reales de los mecánicos.
+   *
+   * Para hoy/mañana prefiere las ventanas efectivas (con dateBlocks aplicados);
+   * para fechas más adelante cae al schedule semanal + fullyBlockedDates.
    */
   private isRequestedServiceDateAlignedWithSchedule(): boolean {
     const requested = this.checkoutService.requestedServiceDate();
@@ -520,6 +531,13 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
     const availability = this.branchAvailability();
     if (!availability) return true; // sin info → permisivo, backend valida
     if (availability.fullyBlockedDates.includes(requested.date)) return false;
+
+    if (requested.date === availability.todayIso) {
+      return availability.todayWindows.length > 0;
+    }
+    if (requested.date === availability.tomorrowIso) {
+      return availability.tomorrowWindows.length > 0;
+    }
     const jsDow = new Date(requested.date + 'T00:00:00').getDay();
     const day = availability.schedule[jsDow];
     return !!day && !day.isClosed;
@@ -1154,11 +1172,14 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
     // Build dispatch details based on type
     const dispatchDetails: any = {};
 
-    // Branch info for pickup/in-store types
+    // Branch info for pickup/in-store types. `selectedBranchPhone` is captured
+    // as a historical snapshot — if the branch updates its WhatsApp number
+    // later, this order still surfaces the contact the client saw at checkout.
     if (selectedBranch) {
       dispatchDetails.selectedBranchId = selectedBranch.id;
       dispatchDetails.selectedBranchName = selectedBranch.name;
       dispatchDetails.selectedBranchAddress = selectedBranch.address;
+      dispatchDetails.selectedBranchPhone = selectedBranch.whatsappPhone;
       dispatchDetails.storeAddress = selectedBranch.address;
     }
 
@@ -1235,6 +1256,7 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
         this.dispatchType === 'oil_change_service' && requestedDate ? requestedDate.date : undefined,
       requestedServiceTier:
         this.dispatchType === 'oil_change_service' && requestedDate ? requestedDate.tier : undefined,
+      customerNote: this.buildCustomerNote(),
     };
 
     this.orderService.createOrder(orderData).subscribe({
@@ -1308,5 +1330,68 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
       default:
         this.router.navigate(['/checkout/despacho']);
     }
+  }
+
+  // ==========================================================================
+  // Customer note assembly
+  //
+  // Each dispatch flow has its own "notes" textarea inside its dedicated form
+  // (oil change, local delivery, shipping agency, seller agreement). Those
+  // notes used to die in the CheckoutService state because `executeOrder()`
+  // never read them. We now consolidate them with the optional note captured
+  // in this summary screen and ship the combined text as `customerNote`, which
+  // the backend persists as the first entry in the order's comments thread.
+  // ==========================================================================
+
+  /** Reads the per-flow `notes` field from the active dispatch's saved info. */
+  private collectFlowNote(): string {
+    switch (this.dispatchType) {
+      case 'oil_change_service':
+        return this.oilChangeServiceInfo?.notes?.trim() || '';
+      case 'local_delivery':
+        return this.localDeliveryInfo?.notes?.trim() || '';
+      case 'shipping_agency':
+        return this.recipientInfo?.notes?.trim() || '';
+      case 'seller_agreement':
+        return this.sellerAgreementInfo?.notes?.trim() || '';
+      default:
+        return '';
+    }
+  }
+
+  /**
+   * Combines the per-flow note (from the dispatch form) with the optional
+   * customer note (from the summary textarea) into a single string that the
+   * backend will persist as the first comment of the order's thread.
+   *
+   * Format rules:
+   *   - Both empty → returns `undefined` (no comment is created).
+   *   - Only one present → returned as-is, no label (the origin is obvious).
+   *   - Both present → joined with double newline and soft labels so the
+   *     admin can tell which textarea each block came from.
+   *   - Hard-capped at 1000 chars (mirrors the backend `addComment` cap).
+   */
+  private buildCustomerNote(): string | undefined {
+    const MAX = 1000;
+    const flow = this.collectFlowNote();
+    const summary = this.customerNote().trim();
+
+    let combined: string;
+    if (flow && summary) {
+      combined = `Notas del formulario:\n${flow}\n\nNota adicional:\n${summary}`;
+    } else if (flow) {
+      combined = flow;
+    } else if (summary) {
+      combined = summary;
+    } else {
+      return undefined;
+    }
+
+    if (combined.length > MAX) {
+      // Truncate with ellipsis so the admin sees a clear cut-off marker.
+      combined = combined.slice(0, MAX - 1) + '…';
+    }
+
+    return combined;
   }
 }

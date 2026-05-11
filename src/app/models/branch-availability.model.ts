@@ -12,12 +12,33 @@ export interface BranchAvailabilityDay {
   latestClose: string;
 }
 
+/**
+ * Effective sub-window for a single mechanic on a specific calendar date,
+ * with `dateBlocks` already applied. Times are expressed in minutes since
+ * 00:00 in the business timezone (so the client compares them directly
+ * against its own "now minutes" snapshot).
+ */
+export interface MechanicEffectiveWindow {
+  openMin: number;
+  closeMin: number;
+  serviceDurationMinutes: number;
+}
+
 export interface BranchAvailability {
   branchId: string;
   schedule: BranchAvailabilityDay[];
   fullyBlockedDates: string[];
   minServiceDurationMinutes: number;
   hasMechanics: boolean;
+  /** Business "today" at the moment the envelope was built (YYYY-MM-DD). */
+  todayIso: string;
+  /** Business "tomorrow" (today + 1, YYYY-MM-DD). */
+  tomorrowIso: string;
+  /** Effective per-mechanic sub-windows for `todayIso`. Empty array means
+   *  no mechanic can attend today (weekly closed or fully blocked). */
+  todayWindows: MechanicEffectiveWindow[];
+  /** Effective per-mechanic sub-windows for `tomorrowIso`. */
+  tomorrowWindows: MechanicEffectiveWindow[];
 }
 
 export interface BranchAvailabilityResponse {
