@@ -1,8 +1,8 @@
-import { Injectable, inject, signal, effect } from '@angular/core';
+import { Injectable, inject, signal, computed, effect } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router, NavigationEnd, NavigationCancel, NavigationError } from '@angular/router';
 import { Observable, tap, interval, Subscription, filter, firstValueFrom } from 'rxjs';
-import { environment } from '../../../environments/environment';
+import { environment } from '@env';
 import { AuthService } from './auth.service';
 import { DeviceTokenService } from './device-token.service';
 import { FirebaseMessagingService } from '@core/firebase';
@@ -10,7 +10,7 @@ import {
   UserNotification,
   UserNotificationListResponse,
   UserUnreadCountResponse,
-} from '../../models/user-notification.model';
+} from '@models/user-notification.model';
 import { browserNotify } from '@shared/utils/browser-notify.util';
 
 /** Polling cadence when FCM is NOT active — push fallback via local toast. */
@@ -18,6 +18,28 @@ const POLL_INTERVAL_NO_FCM_MS = 30_000;
 
 /** Polling cadence when FCM IS active — only used for eventual UI consistency. */
 const POLL_INTERVAL_WITH_FCM_MS = 120_000;
+
+/**
+ * Wider view of the browser's notification permission state. Adds the
+ * `'unsupported'` sentinel for environments where the API is missing
+ * (e.g. iOS Safari without PWA installation).
+ */
+export type NotificationPermissionState =
+  | 'granted'
+  | 'denied'
+  | 'default'
+  | 'unsupported';
+
+/**
+ * Snapshot reader that maps the browser's permission value into our
+ * extended sentinel. Safe to call in any context — returns
+ * `'unsupported'` when the API does not exist.
+ */
+const readBrowserPermission = (): NotificationPermissionState => {
+  if (typeof window === 'undefined') return 'unsupported';
+  if (!('Notification' in window)) return 'unsupported';
+  return Notification.permission;
+};
 
 @Injectable({
   providedIn: 'root',
@@ -31,18 +53,24 @@ export class UserNotificationService {
   private readonly apiUrl = `${environment.apiUrl}/user-notifications`;
   private pollSub?: Subscription;
   private foregroundSub?: Subscription;
-  private currentToken: string | null = null;
-  private permissionRequestedThisSession = false;
   private lastKnownCount = 0;
   private initialCountFetched = false;
 
   private readonly _unreadCount = signal(0);
   private readonly _notifications = signal<UserNotification[]>([]);
   private readonly _showPopover = signal(false);
+  private readonly _currentToken = signal<string | null>(null);
+  private readonly _permissionState = signal<NotificationPermissionState>(
+    readBrowserPermission()
+  );
 
   readonly unreadCount = this._unreadCount.asReadonly();
   readonly notifications = this._notifications.asReadonly();
   readonly showPopover = this._showPopover.asReadonly();
+  /** True when this browser has an active FCM token registered with the backend. */
+  readonly hasFcmToken = computed(() => this._currentToken() !== null);
+  /** Current `Notification.permission` view exposed as a signal so the UI can react. */
+  readonly permissionState = this._permissionState.asReadonly();
 
   /**
    * Stream of push events targeted at the customer scope. Surfaces every
@@ -74,28 +102,41 @@ export class UserNotificationService {
         }
       });
 
-    // React to auth state. Triggers FCM permission + token registration:
-    //  - Fresh login (currentUser flips from null → user).
-    //  - Page reload while already authenticated.
-    // The session-scoped guard ensures we don't re-prompt on every signal
-    // tick, while the logout branch resets so the next login re-triggers.
+    // React to auth state. When the customer logs in (or reloads while
+    // authenticated) AND the browser already granted notifications in a
+    // previous session, silently rehydrate the FCM token. We deliberately
+    // do NOT auto-prompt for permission — modern browsers (Safari, Brave,
+    // Firefox iOS, etc.) ignore prompts that lack a user gesture, so the
+    // user just never sees it. The explicit toggle in the user menu owns
+    // the prompt path now; that click is the gesture the browser needs.
     effect(() => {
       const user = this.authService.currentUser();
-      if (!user) {
-        this.permissionRequestedThisSession = false;
-        return;
-      }
+      this._permissionState.set(readBrowserPermission());
+      if (!user) return;
       // Skip on admin context — AdminNotificationsService handles that subject.
       if (user.role === 'admin') return;
-      if (this.permissionRequestedThisSession) return;
-      this.permissionRequestedThisSession = true;
-      // Slight defer so the post-login UI renders before the native prompt.
-      setTimeout(() => {
-        this.requestNotificationPermission().catch(() => {
-          /* silent fail — polling fallback is always active */
-        });
-      }, 1500);
+      if (this._currentToken() !== null) return;
+      if (readBrowserPermission() !== 'granted') return;
+      void this.rehydrateFcmToken();
     });
+  }
+
+  /**
+   * Silently re-registers the FCM token when the browser already granted
+   * permission in a previous session. No prompt, no UI noise — just
+   * ensures the backend has an up-to-date target for this device.
+   */
+  private async rehydrateFcmToken(): Promise<void> {
+    try {
+      const token = await this.fcm.requestToken();
+      if (!token) return;
+      await firstValueFrom(this.deviceTokenService.registerForUser(token));
+      this._currentToken.set(token);
+      this.attachForegroundListener();
+      this.adjustPollingInterval();
+    } catch (err) {
+      console.warn('[UserNotificationService] Token rehydration failed:', err);
+    }
   }
 
   startPolling(): void {
@@ -137,7 +178,7 @@ export class UserNotificationService {
         if (
           this.initialCountFetched &&
           newCount > previousCount &&
-          !this.currentToken
+          this._currentToken() === null
         ) {
           this.triggerBrowserPushFromPolling();
         }
@@ -183,23 +224,28 @@ export class UserNotificationService {
    * Request browser notification permission and register the FCM token
    * with the backend if granted.
    *
-   * Called automatically after login via the constructor effect. Safe to
-   * call multiple times: token registration is idempotent server-side.
+   * MUST be invoked from a user gesture (click/tap on the toggle) so the
+   * browser actually shows its native prompt — automatic calls are ignored
+   * by Safari/Firefox/Brave and silently dropped.
    *
-   * Silent fail on every step — the polling fallback keeps the UI in sync
-   * even if FCM never works on this browser (iOS Safari without PWA, etc.).
+   * Idempotent: safe to call multiple times. Always re-syncs `permissionState`
+   * with the browser before returning.
    */
   async requestNotificationPermission(): Promise<void> {
-    if (!this.fcm.isMessagingSupportedSync()) return;
-    if (!('Notification' in window)) return;
+    if (!this.fcm.isMessagingSupportedSync()) {
+      this._permissionState.set('unsupported');
+      return;
+    }
 
     if (Notification.permission === 'default') {
       try {
         await Notification.requestPermission();
       } catch {
+        this._permissionState.set(readBrowserPermission());
         return;
       }
     }
+    this._permissionState.set(readBrowserPermission());
     if (Notification.permission !== 'granted') return;
 
     const token = await this.fcm.requestToken();
@@ -207,7 +253,7 @@ export class UserNotificationService {
 
     try {
       await firstValueFrom(this.deviceTokenService.registerForUser(token));
-      this.currentToken = token;
+      this._currentToken.set(token);
       this.attachForegroundListener();
       this.adjustPollingInterval();
     } catch (err) {
@@ -216,23 +262,23 @@ export class UserNotificationService {
   }
 
   /**
-   * Unregister the active FCM token from the backend. Called by AuthService
-   * before clearing the JWT — the DELETE request must travel with valid auth.
-   *
-   * Returns a promise that resolves regardless of outcome; failures are
-   * logged and the cron sweep cleans up stale tokens eventually.
+   * Unregister the active FCM token from the backend. Used both on logout
+   * (called by AuthService before clearing the JWT) and when the user
+   * deliberately deactivates push from the toggle.
    */
   async unregisterToken(): Promise<void> {
-    if (!this.currentToken) return;
-    const token = this.currentToken;
+    const token = this._currentToken();
+    if (!token) return;
     try {
       await firstValueFrom(this.deviceTokenService.unregisterForUser(token));
     } catch (err) {
       console.warn('[UserNotificationService] Failed to unregister token on logout:', err);
     }
-    this.currentToken = null;
+    this._currentToken.set(null);
     this.foregroundSub?.unsubscribe();
     this.foregroundSub = undefined;
+    // Refresh permission view in case the user changed it in browser settings.
+    this._permissionState.set(readBrowserPermission());
   }
 
   private startPollingWithInterval(ms: number): void {
@@ -254,17 +300,13 @@ export class UserNotificationService {
   private attachForegroundListener(): void {
     if (this.foregroundSub) return;
     this.foregroundSub = this.fcm.onForegroundMessage$.subscribe((payload) => {
-      // The FCM SDK does NOT show the OS toast in foreground — we decide
-      // based on tab visibility:
-      //  - Visible: silent UI refresh. The user sees the badge climb;
-      //    a native toast on top of the open app is redundant noise.
-      //  - Hidden (other tab focused): show OS toast manually so the
-      //    user notices the new notification.
       this.fetchUnreadCount();
-
-      if (document.visibilityState === 'hidden') {
-        this.showNativeFromPayload(payload);
-      }
+      // Always surface the native OS toast in foreground. The FCM SDK
+      // intentionally skips the system notification when the page is open;
+      // we re-emit it manually so the customer gets the same audible cue
+      // regardless of tab visibility — matches the behaviour of any other
+      // chat-like app (WhatsApp etc.).
+      this.showNativeFromPayload(payload);
     });
   }
 

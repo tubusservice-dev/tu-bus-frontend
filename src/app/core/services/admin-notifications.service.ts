@@ -1,24 +1,36 @@
-import { Injectable, inject, signal, effect } from '@angular/core';
+import { Injectable, inject, signal, computed, effect } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap, interval, Subscription, firstValueFrom } from 'rxjs';
-import { environment } from '../../../environments/environment';
+import { environment } from '@env';
 import {
   AdminNotification,
   NotificationListResponse,
   UnreadCountResponse,
   NotificationResponse,
-} from '../../models/notification.model';
+} from '@models/notification.model';
 import { SettingsService } from './settings.service';
 import { AuthService } from './auth.service';
 import { DeviceTokenService } from './device-token.service';
 import { FirebaseMessagingService } from '@core/firebase';
 import { browserNotify } from '@shared/utils/browser-notify.util';
+import type { NotificationPermissionState } from './user-notification.service';
 
 /** Polling cadence when FCM is NOT active. */
 const POLL_INTERVAL_NO_FCM_MS = 30_000;
 
 /** Polling cadence when FCM IS active — eventual-consistency backstop only. */
 const POLL_INTERVAL_WITH_FCM_MS = 120_000;
+
+/**
+ * Local copy of the snapshot reader. Duplicated (instead of imported) to
+ * avoid a runtime dependency between the two notification services that
+ * would force them to share a barrel.
+ */
+const readBrowserPermission = (): NotificationPermissionState => {
+  if (typeof window === 'undefined') return 'unsupported';
+  if (!('Notification' in window)) return 'unsupported';
+  return Notification.permission;
+};
 
 @Injectable({
   providedIn: 'root',
@@ -32,18 +44,24 @@ export class AdminNotificationsService {
   private readonly apiUrl = `${environment.apiUrl}/admin/notifications`;
   private pollSub?: Subscription;
   private foregroundSub?: Subscription;
-  private currentToken: string | null = null;
-  private permissionRequestedThisSession = false;
   private lastKnownCount = 0;
   private initialCountFetched = false;
 
   private readonly _unreadCount = signal(0);
   private readonly _notifications = signal<AdminNotification[]>([]);
   private readonly _showPopover = signal(false);
+  private readonly _currentToken = signal<string | null>(null);
+  private readonly _permissionState = signal<NotificationPermissionState>(
+    readBrowserPermission()
+  );
 
   readonly unreadCount = this._unreadCount.asReadonly();
   readonly notifications = this._notifications.asReadonly();
   readonly showPopover = this._showPopover.asReadonly();
+  /** True when this admin browser has an active FCM token on the backend. */
+  readonly hasFcmToken = computed(() => this._currentToken() !== null);
+  /** Reactive view of `Notification.permission`. Updates after each prompt. */
+  readonly permissionState = this._permissionState.asReadonly();
 
   /**
    * Stream of push events targeted at the admin scope. Surfaces every
@@ -56,25 +74,37 @@ export class AdminNotificationsService {
   readonly pushReceived$ = this.fcm.onPushReceived$;
 
   constructor() {
-    // Auto-trigger FCM registration on admin login or page reload while
-    // authenticated. Mirrors the customer flow in UserNotificationService —
-    // the two services target distinct subjectTypes on the backend, each
-    // requesting its own token via the matching admin/user endpoint.
+    // When the admin reloads or logs in AND the browser already granted
+    // notifications in a previous session, silently rehydrate the FCM
+    // token. The browser permission prompt is owned by the toggle in
+    // settings; we never auto-fire it because modern browsers ignore
+    // prompts that lack a user gesture.
     effect(() => {
       const user = this.authService.currentUser();
-      if (!user) {
-        this.permissionRequestedThisSession = false;
-        return;
-      }
+      this._permissionState.set(readBrowserPermission());
+      if (!user) return;
       if (user.role !== 'admin') return;
-      if (this.permissionRequestedThisSession) return;
-      this.permissionRequestedThisSession = true;
-      setTimeout(() => {
-        this.requestNotificationPermission().catch(() => {
-          /* silent — polling fallback covers it */
-        });
-      }, 1500);
+      if (this._currentToken() !== null) return;
+      if (readBrowserPermission() !== 'granted') return;
+      void this.rehydrateFcmToken();
     });
+  }
+
+  /**
+   * Silently re-registers the admin's FCM token when permission was
+   * already granted in a previous session. No prompt, no UI noise.
+   */
+  private async rehydrateFcmToken(): Promise<void> {
+    try {
+      const token = await this.fcm.requestToken();
+      if (!token) return;
+      await firstValueFrom(this.deviceTokenService.registerForAdmin(token));
+      this._currentToken.set(token);
+      this.attachForegroundListener();
+      this.adjustPollingInterval();
+    } catch (err) {
+      console.warn('[AdminNotificationsService] Token rehydration failed:', err);
+    }
   }
 
   startPolling(): void {
@@ -115,7 +145,7 @@ export class AdminNotificationsService {
         if (
           this.initialCountFetched &&
           newCount > previousCount &&
-          !this.currentToken
+          this._currentToken() === null
         ) {
           this.triggerBrowserPushFromPolling(newCount - previousCount);
         }
@@ -153,20 +183,24 @@ export class AdminNotificationsService {
    * Request browser notification permission and register the admin's
    * FCM token with the backend if granted. Idempotent.
    *
-   * Auto-invoked on admin login via the constructor effect. Still callable
-   * by AdminLayoutComponent.ngOnInit() for explicit re-prompts.
+   * MUST be invoked from a user gesture (click on the toggle) — modern
+   * browsers ignore prompts triggered from automatic code paths.
    */
   async requestNotificationPermission(): Promise<void> {
-    if (!this.fcm.isMessagingSupportedSync()) return;
-    if (!('Notification' in window)) return;
+    if (!this.fcm.isMessagingSupportedSync()) {
+      this._permissionState.set('unsupported');
+      return;
+    }
 
     if (Notification.permission === 'default') {
       try {
         await Notification.requestPermission();
       } catch {
+        this._permissionState.set(readBrowserPermission());
         return;
       }
     }
+    this._permissionState.set(readBrowserPermission());
     if (Notification.permission !== 'granted') return;
 
     const token = await this.fcm.requestToken();
@@ -174,7 +208,7 @@ export class AdminNotificationsService {
 
     try {
       await firstValueFrom(this.deviceTokenService.registerForAdmin(token));
-      this.currentToken = token;
+      this._currentToken.set(token);
       this.attachForegroundListener();
       this.adjustPollingInterval();
     } catch (err) {
@@ -183,20 +217,22 @@ export class AdminNotificationsService {
   }
 
   /**
-   * Unregister the active admin FCM token. Called by AuthService before
-   * clearing the JWT so the DELETE request travels authenticated.
+   * Unregister the active admin FCM token. Used on logout (AuthService
+   * triggers it before clearing the JWT) and when the admin deliberately
+   * turns push off from the toggle.
    */
   async unregisterToken(): Promise<void> {
-    if (!this.currentToken) return;
-    const token = this.currentToken;
+    const token = this._currentToken();
+    if (!token) return;
     try {
       await firstValueFrom(this.deviceTokenService.unregisterForAdmin(token));
     } catch (err) {
       console.warn('[AdminNotificationsService] Failed to unregister token:', err);
     }
-    this.currentToken = null;
+    this._currentToken.set(null);
     this.foregroundSub?.unsubscribe();
     this.foregroundSub = undefined;
+    this._permissionState.set(readBrowserPermission());
   }
 
   private startPollingWithInterval(ms: number): void {
@@ -214,23 +250,29 @@ export class AdminNotificationsService {
     this.foregroundSub = this.fcm.onForegroundMessage$.subscribe((payload) => {
       this.fetchUnreadCount();
 
-      // Hidden tab: show OS toast manually since FCM SDK skips it in foreground.
-      if (document.visibilityState === 'hidden') {
-        const prefs = this.settingsService.adminNotificationsConfig();
-        if (!prefs?.browserPush) return;
+      // Always surface the native OS toast in foreground. The FCM SDK
+      // intentionally skips the system notification when the page is open;
+      // we re-emit it manually so the admin gets the same audible cue
+      // regardless of tab visibility — the user explicitly wants the
+      // sound/banner every time a push arrives.
+      //
+      // Still gated by the global `browserPush` settings flag so admins
+      // can mute the channel without losing the in-app badge.
+      const prefs = this.settingsService.adminNotificationsConfig();
+      if (!prefs?.browserPush) return;
+      if (Notification.permission !== 'granted') return;
 
-        const title = payload.notification?.title || 'Nueva notificación';
-        const body = payload.notification?.body || '';
-        const url = (payload.data && (payload.data as Record<string, string>)['url']) || '/admin';
+      const title = payload.notification?.title || 'Nueva notificación';
+      const body = payload.notification?.body || '';
+      const url = (payload.data && (payload.data as Record<string, string>)['url']) || '/admin';
 
-        browserNotify(title, {
-          body,
-          icon: '/autobus.png',
-          badge: '/autobus.png',
-          tag: `admin-notif-fg-${Date.now()}`,
-          data: { url },
-        });
-      }
+      browserNotify(title, {
+        body,
+        icon: '/autobus.png',
+        badge: '/autobus.png',
+        tag: `admin-notif-fg-${Date.now()}`,
+        data: { url },
+      });
     });
   }
 

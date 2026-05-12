@@ -1,15 +1,16 @@
 import { Component, signal, inject, computed, OnDestroy } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { AuthService } from '../../../core/services';
-import { ThemeService } from '../../../core/services/theme.service';
-import { UserNotificationService } from '../../../core/services/user-notification.service';
-import { ClickOutsideDirective } from '../../directives/click-outside.directive';
-import { BodyScrollLockService } from '../../services/body-scroll-lock.service';
+import { AuthService } from '@core/services';
+import { ThemeService } from '@core/services/theme.service';
+import { UserNotificationService } from '@core/services/user-notification.service';
+import { ClickOutsideDirective } from '@shared/directives/click-outside.directive';
+import { BodyScrollLockService } from '@shared/services/body-scroll-lock.service';
+import { PushPermissionToggleComponent } from '@shared/components/push-permission-toggle/push-permission-toggle.component';
 
 @Component({
   selector: 'app-user-menu',
   standalone: true,
-  imports: [RouterLink, ClickOutsideDirective],
+  imports: [RouterLink, ClickOutsideDirective, PushPermissionToggleComponent],
   templateUrl: './user-menu.component.html',
   styleUrl: './user-menu.component.scss'
 })
@@ -30,6 +31,20 @@ export class UserMenuComponent implements OnDestroy {
   protected readonly showLogoutModal = signal(false);
 
   protected readonly userNotifService = inject(UserNotificationService);
+
+  /**
+   * Fires the browser's permission prompt and registers the FCM token.
+   * Must run inside the click handler so the browser treats it as a
+   * user gesture — automatic invocations are silently dropped.
+   */
+  async enablePushNotifications(): Promise<void> {
+    await this.userNotifService.requestNotificationPermission();
+  }
+
+  /** Removes the FCM token from the backend (browser permission stays). */
+  async disablePushNotifications(): Promise<void> {
+    await this.userNotifService.unregisterToken();
+  }
 
   ngOnDestroy(): void {
     // Defensive — release the lock if the host header is torn down while

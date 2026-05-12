@@ -1,7 +1,9 @@
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import { Component, DestroyRef, inject, signal, computed, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { OrderService } from '@core/services/order.service';
+import { UserNotificationService } from '@core/services/user-notification.service';
 import { MechanicAssignment, ProgressStep } from '@models/mechanic-assignment.model';
 import { MechanicAvatarComponent } from '@shared/components/mechanic-avatar/mechanic-avatar.component';
 import { PhoneActionPopoverComponent } from '@shared/components/phone-action-popover/phone-action-popover.component';
@@ -20,6 +22,8 @@ export class ServiceTrackingComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly orderService = inject(OrderService);
+  private readonly userNotifications = inject(UserNotificationService);
+  private readonly destroyRef = inject(DestroyRef);
 
   // ========== ESTADO ==========
   protected readonly orderId = signal('');
@@ -190,6 +194,7 @@ export class ServiceTrackingComponent implements OnInit {
       this.orderId.set(id);
       this.loadTracking(id);
     }
+    this.subscribeToPushEvents();
   }
 
   private loadTracking(orderId: string): void {
@@ -208,6 +213,34 @@ export class ServiceTrackingComponent implements OnInit {
         this.isLoading.set(false);
       },
     });
+  }
+
+  /**
+   * Refreshes the assignment in place when a push relevant to this order
+   * arrives — no spinner so the screen feels live. The progress bar and
+   * step list update inline.
+   */
+  private silentReloadTracking(orderId: string): void {
+    this.orderService.getServiceTracking(orderId).subscribe({
+      next: (res) => {
+        if (res.data) {
+          this.assignment.set(res.data);
+          this.noAssignment.set(false);
+        }
+      },
+      error: () => { /* silent — polling fallback retries */ },
+    });
+  }
+
+  private subscribeToPushEvents(): void {
+    this.userNotifications.pushReceived$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((event) => {
+        const id = this.orderId();
+        if (!id) return;
+        if (event.relatedOrder !== id) return;
+        this.silentReloadTracking(id);
+      });
   }
 
   // ========== NAVEGACIÓN ==========

@@ -3,18 +3,18 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
 import { RouterLink, Router, ActivatedRoute } from '@angular/router';
 import { forkJoin, Observable } from 'rxjs';
-import { BranchService } from '../../../../core/services/branch.service';
-import { ZoneService } from '../../../../core/services/zone.service';
-import { BranchZoneService } from '../../../../core/services/branch-zone.service';
-import { ToastService } from '../../../../shared/services/toast.service';
-import { CreateBranchRequest } from '../../../../models/branch.model';
-import { Zone } from '../../../../models/zone.model';
-import { BranchZone, DeliveryConfigItem } from '../../../../models/branch-zone.model';
-import { City } from '../../../../models/city.model';
+import { BranchService } from '@core/services/branch.service';
+import { ZoneService } from '@core/services/zone.service';
+import { BranchZoneService } from '@core/services/branch-zone.service';
+import { ToastService } from '@shared/services/toast.service';
+import { CreateBranchRequest } from '@models/branch.model';
+import { Zone } from '@models/zone.model';
+import { BranchZone, DeliveryConfigItem } from '@models/branch-zone.model';
+import { City } from '@models/city.model';
 import {
   PHONE_VE_PATTERN, LANDLINE_VE_PATTERN, COORDINATES_PATTERN,
   MAX_BRANCH_NAME_LENGTH, MAX_DESCRIPTION_LENGTH, MAX_ADDRESS_LENGTH,
-} from '../../../../shared/validators/form-validators';
+} from '@shared/validators/form-validators';
 
 const DAY_NAMES = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 

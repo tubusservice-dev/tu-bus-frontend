@@ -140,7 +140,13 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.notificationService.startPolling();
     this.adminNotifications.startPolling();
-    this.adminNotifications.requestNotificationPermission();
+    // We deliberately do NOT auto-call requestNotificationPermission() here.
+    // Modern browsers (Safari, Brave, Firefox iOS, …) ignore permission
+    // prompts that lack a user gesture, so the call silently fails and the
+    // admin never sees a prompt. The toggle in Configuración → Notificaciones
+    // owns the prompt path now — that click is the gesture the browser needs.
+    // Admins who already granted permission in a previous session are
+    // rehydrated automatically by an effect inside AdminNotificationsService.
     this.originalBodyBg = document.body.style.backgroundColor;
     this.updateBodyBg();
     this.mutationObserver = new MutationObserver(() => this.updateBodyBg());

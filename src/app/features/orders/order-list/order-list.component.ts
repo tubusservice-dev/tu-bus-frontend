@@ -1,13 +1,29 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, DestroyRef, inject, signal, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { Router } from '@angular/router';
-import { OrderService } from '../../../core/services/order.service';
-import { ExchangeRateService } from '../../../core/services/exchange-rate.service';
+import { OrderService } from '@core/services/order.service';
+import { ExchangeRateService } from '@core/services/exchange-rate.service';
+import { UserNotificationService } from '@core/services/user-notification.service';
 import {
   Order, OrderStatus,
   ORDER_STATUS_LABELS, ORDER_STATUS_COLORS,
-} from '../../../models/order.model';
-import { SearchInputComponent } from '../../../shared/components/search-input/search-input.component';
+} from '@models/order.model';
+import { SearchInputComponent } from '@shared/components/search-input/search-input.component';
+
+/**
+ * Push event `type` prefixes that imply something in this user's order list
+ * has changed and the screen should refresh itself silently. Built as a
+ * whitelist so unrelated pushes (announcements, future feature events)
+ * don't trigger unnecessary HTTP calls.
+ */
+const ORDER_AFFECTING_PUSH_PREFIXES = [
+  'order_',
+  'dispatch_',
+  'mechanic_',
+  'service_',
+  'cancellation_',
+];
 
 @Component({
   selector: 'app-order-list',
@@ -19,6 +35,8 @@ import { SearchInputComponent } from '../../../shared/components/search-input/se
 export class OrderListComponent implements OnInit {
   protected readonly orderService = inject(OrderService);
   protected readonly exchangeRateService = inject(ExchangeRateService);
+  private readonly userNotifications = inject(UserNotificationService);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly router = inject(Router);
 
   protected readonly isSearching = signal(false);
@@ -44,6 +62,7 @@ export class OrderListComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadOrders();
+    this.subscribeToPushEvents();
   }
 
   // ==================== DATA LOADING ====================
@@ -63,6 +82,39 @@ export class OrderListComponent implements OnInit {
         this.isSearching.set(false);
       },
     });
+  }
+
+  /**
+   * Refreshes the current page with the active filters but without
+   * lighting the search spinner. Triggered by relevant FCM push events
+   * so the list stays in sync without the user reloading.
+   */
+  private silentReloadOrders(): void {
+    const status = this.statusFilter() || undefined;
+    const search = this.searchQuery().trim() || undefined;
+    this.orderService.getMyOrders(this.currentPage(), 10, status as OrderStatus, search).subscribe({
+      next: (res) => {
+        this.currentPage.set(res.pagination.page);
+        this.totalPages.set(res.pagination.pages);
+        this.totalItems.set(res.pagination.total);
+      },
+      error: () => { /* silent — polling fallback retries */ },
+    });
+  }
+
+  /**
+   * React to FCM pushes that touch this user's orders (status changes,
+   * dispatch updates, mechanic assignments, comments, …) by silently
+   * refreshing the current page in place.
+   */
+  private subscribeToPushEvents(): void {
+    this.userNotifications.pushReceived$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((event) => {
+        const t = event.type || '';
+        if (!ORDER_AFFECTING_PUSH_PREFIXES.some((p) => t.startsWith(p))) return;
+        this.silentReloadOrders();
+      });
   }
 
   onStatusFilterChange(event: Event): void {

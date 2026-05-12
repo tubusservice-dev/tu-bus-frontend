@@ -1265,6 +1265,17 @@
   @apply mt-3 flex items-center justify-between gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700;
 }
 
+// Wrapper for the new permission toggle + test-notification button.
+// The toggle grows to fill available space; the icon button sits flush
+// on the right with consistent spacing across breakpoints.
+.push-permission-row {
+  @apply mt-3 flex items-center gap-3;
+
+  .push-permission-toggle {
+    @apply flex-1 min-w-0;
+  }
+}
+
 .push-status-left {
   @apply flex items-center gap-2;
 }

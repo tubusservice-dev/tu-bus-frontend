@@ -3,10 +3,10 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { OrderService } from '../../../../core/services/order.service';
-import { ExchangeRateService } from '../../../../core/services/exchange-rate.service';
-import { AdminNotificationsService } from '../../../../core/services/admin-notifications.service';
-import { ClipboardService } from '../../../../shared/services/clipboard.service';
+import { OrderService } from '@core/services/order.service';
+import { ExchangeRateService } from '@core/services/exchange-rate.service';
+import { AdminNotificationsService } from '@core/services/admin-notifications.service';
+import { ClipboardService } from '@shared/services/clipboard.service';
 import {
   Order,
   OrderStatus,
@@ -20,12 +20,13 @@ import {
   DISPATCH_TYPE_COLORS,
   isOilChangeOrder,
   isShippingOrder,
-  isInStoreOilChange,
   getAvailableDispatchStatuses,
   getOptionsMenuStatuses,
   ServiceDateState,
   getServiceDateState,
-} from '../../../../models/order.model';
+  orderCommentKey,
+  OrderComment,
+} from '@models/order.model';
 
 /** Admin-facing copy for the service-date card. Operational tone, not coloquial. */
 const ADMIN_SERVICE_DATE_BADGE: Record<ServiceDateState, { label: string; cls: string }> = {
@@ -42,14 +43,14 @@ const ADMIN_SERVICE_DATE_MESSAGE: Record<ServiceDateState, string> = {
   rescheduled:
     'La cita fue reprogramada porque no había disponibilidad en la fecha originalmente solicitada por el cliente. Se asignó la opción más cercana disponible.',
 };
-import { PAYMENT_METHOD_TYPE_LABELS, PaymentMethodType } from '../../../../models/payment-method.model';
-import { MechanicAssignment, ProgressStep } from '../../../../models/mechanic-assignment.model';
+import { PAYMENT_METHOD_TYPE_LABELS, PaymentMethodType } from '@models/payment-method.model';
+import { MechanicAssignment, ProgressStep } from '@models/mechanic-assignment.model';
 import { OrderDispatchModalComponent } from '../order-dispatch-modal/order-dispatch-modal.component';
-import { MechanicAvatarComponent } from '../../../../shared/components/mechanic-avatar/mechanic-avatar.component';
-import { OrderCommentsComponent } from '../../../../shared/components/order-comments/order-comments.component';
-import { ClickOutsideDirective } from '../../../../shared/directives/click-outside.directive';
-import { MechanicAssignmentService } from '../../../../core/services/mechanic-assignment.service';
-import { PhoneActionPopoverComponent } from '../../../../shared/components/phone-action-popover/phone-action-popover.component';
+import { MechanicAvatarComponent } from '@shared/components/mechanic-avatar/mechanic-avatar.component';
+import { OrderCommentsComponent } from '@shared/components/order-comments/order-comments.component';
+import { ClickOutsideDirective } from '@shared/directives/click-outside.directive';
+import { MechanicAssignmentService } from '@core/services/mechanic-assignment.service';
+import { PhoneActionPopoverComponent } from '@shared/components/phone-action-popover/phone-action-popover.component';
 
 @Component({
   selector: 'app-admin-order-detail',
@@ -128,6 +129,15 @@ export class AdminOrderDetailComponent implements OnInit {
 
   // ========== IMAGE LIGHTBOX ==========
   protected readonly proofPreview = signal<string | null>(null);
+
+  // ========== COMMENT HIGHLIGHT (push-driven pulse) ==========
+  /**
+   * Stable key of the newest incoming comment that should pulse in the
+   * comments panel. Set when `silentReloadOrder` detects a brand-new
+   * client comment after a push, cleared 3 s later by `highlightTimer`.
+   */
+  protected readonly highlightCommentId = signal<string | null>(null);
+  private highlightTimer: ReturnType<typeof setTimeout> | null = null;
 
   // ========== CONSTANTS ==========
   protected readonly ORDER_STATUS_LABELS = ORDER_STATUS_LABELS;
@@ -267,12 +277,28 @@ export class AdminOrderDetailComponent implements OnInit {
   // ========== LIFECYCLE ==========
 
   ngOnInit(): void {
-    const id = this.route.snapshot.paramMap.get('id');
-    if (!id) {
-      this.router.navigate(['/admin/orders']);
-      return;
-    }
-    this.loadOrder(id);
+    // Subscribe to paramMap (not snapshot) so Angular's component reuse on
+    // /admin/orders/:id → /admin/orders/:other-id reloads the order instead
+    // of sticking with the one that was loaded on first mount — which is
+    // exactly the case when the admin clicks "Ver orden" inside the push
+    // notification modal while already viewing another order's detail.
+    this.route.paramMap
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((params) => {
+        const id = params.get('id');
+        if (!id) {
+          this.router.navigate(['/admin/orders']);
+          return;
+        }
+        // Reset transient per-order UI state so it doesn't leak across orders.
+        this.serviceAssignment.set(null);
+        this.error.set(null);
+        this.loadOrder(id);
+      });
+
+    // Push subscription registered once for the component's lifetime; the
+    // handler reads `this.order()?.id` at fire time so it always filters
+    // against the *currently loaded* order, not the original one.
     this.subscribeToPushEvents();
   }
 
@@ -298,19 +324,44 @@ export class AdminOrderDetailComponent implements OnInit {
    * already-rendered UI stays visible while the new data swaps in. Used
    * when a push notification reports a change for the order currently
    * being viewed — the user perceives the update as "live".
+   *
+   * Side effect: if a brand-new client-authored comment appeared between
+   * the previous snapshot and the new one, schedule a pulse highlight on
+   * the comments panel so the admin notices the message without scrolling.
    */
   private silentReloadOrder(id: string): void {
+    const previousKeys = new Set(
+      (this.order()?.comments || []).map(orderCommentKey)
+    );
     this.orderService.getAdminOrderById(id).subscribe({
       next: (res) => {
         this.order.set(res.data);
         if (this.isOilChange()) {
           this.loadServiceTracking(id);
         }
+        const incomingClientComment = (res.data.comments || [])
+          .filter((c: OrderComment) => c.authorType === 'client')
+          .filter((c: OrderComment) => !previousKeys.has(orderCommentKey(c)))
+          .pop();
+        if (incomingClientComment) {
+          this.triggerCommentHighlight(orderCommentKey(incomingClientComment));
+        }
       },
       // Silent on error: the user is already seeing valid (stale) data and
       // another push or the polling will retry eventually.
       error: () => { /* no-op */ },
     });
+  }
+
+  /**
+   * Sets the highlight signal for ~3 s so the new comment's pulse
+   * animation runs exactly once. Re-firing during the window resets the
+   * timer (rare: multiple pushes arriving in <3 s for the same order).
+   */
+  private triggerCommentHighlight(key: string): void {
+    this.highlightCommentId.set(key);
+    if (this.highlightTimer) clearTimeout(this.highlightTimer);
+    this.highlightTimer = setTimeout(() => this.highlightCommentId.set(null), 3000);
   }
 
   /**

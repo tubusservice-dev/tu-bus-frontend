@@ -2,6 +2,13 @@
   @apply relative;
 }
 
+// Wrapper for the push-notifications permission toggle inside the dropdown.
+// Sits between the navigation links and the theme toggle, with its own
+// breathing room so it doesn't blend into the menu items.
+.menu-push-toggle {
+  padding: 0.5rem 0.625rem 0.25rem;
+}
+
 .user-btn {
   @apply flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200;
   background-color: transparent;
