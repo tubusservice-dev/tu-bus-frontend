@@ -12,16 +12,15 @@ import { FormsModule } from '@angular/forms';
 import { DateInputComponent } from '@shared/components/date-input/date-input.component';
 import type { RequestedServiceDate, ServiceDateTier } from '@features/checkout/services/checkout.service';
 import { businessIsoOffset, formatBusinessDate } from '@shared/utils/business-date.util';
-import { branchDayToJsDow, jsDowToBranchDay } from '@shared/utils/branch-day.util';
-import type { ScheduleDay } from '@models/branch.model';
+import type { BranchAvailability, MechanicEffectiveWindow } from '@models/branch-availability.model';
 
 /**
- * Buffer mínimo (en minutos) entre la hora actual y el cierre de la
- * sucursal para permitir Express. Cubre 90 min de duración de servicio
- * + ~30 min de traslado del mecánico, lo cual permite Express hasta
- * dos horas antes del cierre.
+ * Travel + safety buffer (in minutes) added on top of the mechanic's service
+ * duration to gate Express. The mechanic must finish the service + this
+ * buffer before their effective close. Mirrors the same constant in the
+ * backend `BranchAvailabilityService` — keep them in sync.
  */
-const EXPRESS_MIN_BUFFER_MINUTES = 120;
+const EXPRESS_TRAVEL_BUFFER_MINUTES = 30;
 
 /**
  * Three-way service date chooser for the home oil change flow.
@@ -34,6 +33,12 @@ const EXPRESS_MIN_BUFFER_MINUTES = 120;
  * The component is decoupled from CheckoutService so it can be embedded
  * anywhere (summary, edit-order dialogs). It only reports its value upwards
  * and expects the parent to persist it.
+ *
+ * Express / Tomorrow gating runs against `availability.todayWindows` and
+ * `availability.tomorrowWindows` — sub-windows per mechanic with `dateBlocks`
+ * already projected by the backend. Express requires that at least one
+ * mechanic is currently *inside* their window AND has enough time to finish
+ * the service + buffer before that window closes.
  */
 @Component({
   selector: 'app-service-date-picker',
@@ -46,12 +51,17 @@ const EXPRESS_MIN_BUFFER_MINUTES = 120;
 export class ServiceDatePickerComponent {
   readonly initial = input<RequestedServiceDate | null>(null);
   /**
-   * Schedule semanal de la sucursal (7 entradas, una por día).
-   * Cuando es null el picker actúa permisivamente (no puede validar) y
-   * deja la decisión final al backend — esto cubre el caso transitorio
-   * en que la sucursal aún no se cargó.
+   * Disponibilidad agregada de la sucursal — la unión de los horarios de
+   * todos los mecánicos activos, con sus `dateBlocks` proyectados sobre hoy
+   * y mañana. Cuando es null el picker actúa permisivamente (no puede
+   * validar) y deja la decisión final al backend, cubriendo el caso
+   * transitorio en que la disponibilidad aún no se cargó.
+   *
+   * `schedule[d]` está indexado por convención JS (0 = domingo … 6 = sábado),
+   * por lo que se compara directamente contra `new Date(iso).getDay()` sin
+   * conversiones intermedias.
    */
-  readonly schedule = input<ScheduleDay[] | null>(null);
+  readonly availability = input<BranchAvailability | null>(null);
   readonly changed = output<RequestedServiceDate | null>();
 
   protected readonly tier = signal<ServiceDateTier | null>(null);
@@ -70,14 +80,10 @@ export class ServiceDatePickerComponent {
   });
 
   // ──────────────────────────────────────────────────────────────────────
-  // Schedule-aware availability — derived from the branch schedule input.
-  // Sin schedule devuelven defaults permisivos para no bloquear cuando aún
-  // no se cargó la información de la sucursal.
+  // Availability-aware computeds — derived from the effective windows for
+  // today/tomorrow. Sin availability devuelven defaults permisivos para
+  // no bloquear cuando aún no se cargó la información.
   // ──────────────────────────────────────────────────────────────────────
-
-  /** Día de la semana actual (0=domingo … 6=sábado) recalculado al construir el computed. */
-  private readonly todayDow = computed(() => new Date().getDay());
-  private readonly tomorrowDow = computed(() => (this.todayDow() + 1) % 7);
 
   /** Hora actual expresada en minutos desde medianoche (0..1439). */
   private readonly nowMinutesOfDay = computed(() => {
@@ -86,59 +92,63 @@ export class ServiceDatePickerComponent {
   });
 
   /**
-   * Encuentra la entrada del schedule que corresponde a un valor de
-   * `Date.getDay()`. Convierte primero la convención JS al `day` que
-   * usa Branch para localizar la entrada correcta.
-   */
-  private findScheduleByJsDow(sched: ScheduleDay[], jsDow: number): ScheduleDay | undefined {
-    const branchDay = jsDowToBranchDay(jsDow);
-    return sched.find((d) => d.day === branchDay);
-  }
-
-  /**
-   * Días de la semana donde la sucursal está cerrada, expresados ya en
-   * convención `Date.getDay()` (lo que el calendar y `new Date(iso).getDay()`
-   * esperan).
+   * Días de la semana donde NINGÚN mecánico atiende, en convención
+   * `Date.getDay()`. El availability ya viene en esa convención.
    */
   protected readonly closedDaysOfWeek = computed<number[]>(() => {
-    const sched = this.schedule();
-    if (!sched || sched.length === 0) return [];
-    return sched.filter((d) => d.isClosed).map((d) => branchDayToJsDow(d.day));
+    const a = this.availability();
+    if (!a) return [];
+    return a.schedule.filter((d) => d.isClosed).map((d) => d.day);
   });
 
   protected readonly isExpressAvailable = computed(() => {
-    const sched = this.schedule();
-    if (!sched || sched.length === 0) return true; // sin info → permisivo
-    const today = this.findScheduleByJsDow(sched, this.todayDow());
-    if (!today || today.isClosed) return false;
-    const closeMin = ServiceDatePickerComponent.timeStringToMinutes(today.closeTime);
-    return closeMin - this.nowMinutesOfDay() >= EXPRESS_MIN_BUFFER_MINUTES;
+    const a = this.availability();
+    if (!a) return true; // sin info → permisivo
+    if (a.fullyBlockedDates.includes(this.todayIso)) return false;
+    if (a.todayWindows.length === 0) return false;
+    return this.anyWindowFitsNow(a.todayWindows, this.nowMinutesOfDay());
   });
 
   protected readonly isTomorrowAvailable = computed(() => {
-    const sched = this.schedule();
-    if (!sched || sched.length === 0) return true;
-    const tomorrow = this.findScheduleByJsDow(sched, this.tomorrowDow());
-    return !!tomorrow && !tomorrow.isClosed;
+    const a = this.availability();
+    if (!a) return true;
+    if (a.fullyBlockedDates.includes(this.tomorrowIso)) return false;
+    return a.tomorrowWindows.length > 0;
   });
 
   protected readonly expressDisabledReason = computed<string | null>(() => {
-    const sched = this.schedule();
-    if (!sched || sched.length === 0) return null;
-    const today = this.findScheduleByJsDow(sched, this.todayDow());
-    if (!today || today.isClosed) return 'La sucursal no atiende hoy.';
-    const closeMin = ServiceDatePickerComponent.timeStringToMinutes(today.closeTime);
-    if (closeMin - this.nowMinutesOfDay() < EXPRESS_MIN_BUFFER_MINUTES) {
-      return `Ya no es posible Express hoy. La sucursal cierra a las ${today.closeTime}.`;
+    const a = this.availability();
+    if (!a) return null;
+    if (a.fullyBlockedDates.includes(this.todayIso)) {
+      return 'Hoy todos los mecánicos están bloqueados en esta sucursal.';
     }
-    return null;
+    if (a.todayWindows.length === 0) {
+      return a.hasMechanics
+        ? 'Ningún mecánico atiende hoy en esta sucursal.'
+        : 'La sucursal no atiende hoy.';
+    }
+    const now = this.nowMinutesOfDay();
+    if (this.anyWindowFitsNow(a.todayWindows, now)) return null;
+
+    const anyOpenNow = a.todayWindows.some((w) => now >= w.openMin && now < w.closeMin);
+    if (!anyOpenNow) {
+      return 'Ningún mecánico está en turno en este momento.';
+    }
+    const latestClose = Math.max(...a.todayWindows.map((w) => w.closeMin));
+    return `Ya no es posible Express hoy. El último mecánico cierra a las ${ServiceDatePickerComponent.minutesToTimeString(latestClose)}.`;
   });
 
   protected readonly tomorrowDisabledReason = computed<string | null>(() => {
-    const sched = this.schedule();
-    if (!sched || sched.length === 0) return null;
-    const tomorrow = this.findScheduleByJsDow(sched, this.tomorrowDow());
-    if (!tomorrow || tomorrow.isClosed) return 'La sucursal no atiende mañana.';
+    const a = this.availability();
+    if (!a) return null;
+    if (a.fullyBlockedDates.includes(this.tomorrowIso)) {
+      return 'Mañana todos los mecánicos están bloqueados en esta sucursal.';
+    }
+    if (a.tomorrowWindows.length === 0) {
+      return a.hasMechanics
+        ? 'Ningún mecánico atiende mañana en esta sucursal.'
+        : 'La sucursal no atiende mañana.';
+    }
     return null;
   });
 
@@ -157,11 +167,11 @@ export class ServiceDatePickerComponent {
       }
     }, { allowSignalWrites: true });
 
-    // Reset reactivo: si cambia el schedule (ej. usuario cambia de sucursal)
-    // y la fecha pedida ya no es válida, limpiar la selección.
+    // Reset reactivo: si cambia la disponibilidad (ej. usuario cambia de
+    // sucursal) y la fecha pedida ya no es válida, limpiar la selección.
     effect(() => {
-      const sched = this.schedule();
-      if (!sched || sched.length === 0) return;
+      const a = this.availability();
+      if (!a) return;
       const current = this.tier();
       if (current === 'express' && !this.isExpressAvailable()) {
         this.tier.set(null);
@@ -215,12 +225,33 @@ export class ServiceDatePickerComponent {
     this.changed.emit(value);
   }
 
-  /** True si la fecha ISO (YYYY-MM-DD) cae en un día donde la sucursal está cerrada. */
+  /**
+   * True if the iso date (YYYY-MM-DD) falls on a day where no mechanic
+   * attends — either by weekly schedule or by full-day block. Used by the
+   * `scheduled` flow only; today/tomorrow have their own gating via the
+   * effective windows.
+   */
   private isClosedOnDate(iso: string): boolean {
+    const a = this.availability();
+    if (a?.fullyBlockedDates.includes(iso)) return true;
     const closed = this.closedDaysOfWeek();
     if (closed.length === 0) return false;
     const dow = new Date(iso + 'T00:00:00').getDay();
     return closed.includes(dow);
+  }
+
+  /**
+   * True if at least one of the supplied windows can host a service starting
+   * "now": the current minute must be inside `[openMin, closeMin - duration -
+   * buffer]` for some window. This is the strict Express gate — it requires
+   * a mechanic to be actively in turn AND with enough runway left.
+   */
+  private anyWindowFitsNow(windows: MechanicEffectiveWindow[], nowMin: number): boolean {
+    return windows.some(
+      (w) =>
+        nowMin >= w.openMin &&
+        nowMin + w.serviceDurationMinutes + EXPRESS_TRAVEL_BUFFER_MINUTES <= w.closeMin,
+    );
   }
 
   private formatHumanDate(iso: string): string {
@@ -231,9 +262,9 @@ export class ServiceDatePickerComponent {
     });
   }
 
-  private static timeStringToMinutes(t: string): number {
-    if (!t) return 0;
-    const [h, m] = t.split(':').map(Number);
-    return (h || 0) * 60 + (m || 0);
+  private static minutesToTimeString(minutes: number): string {
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
   }
 }

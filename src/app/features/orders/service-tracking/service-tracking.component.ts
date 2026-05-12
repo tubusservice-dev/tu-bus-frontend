@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { OrderService } from '@core/services/order.service';
 import { MechanicAssignment, ProgressStep } from '@models/mechanic-assignment.model';
 import { MechanicAvatarComponent } from '@shared/components/mechanic-avatar/mechanic-avatar.component';
+import { PhoneActionPopoverComponent } from '@shared/components/phone-action-popover/phone-action-popover.component';
 import { formatBusinessDate } from '@shared/utils/business-date.util';
 
 type StepKey = 'asignado' | 'en_camino' | 'en_proceso' | 'completado';
@@ -11,7 +12,7 @@ type StepKey = 'asignado' | 'en_camino' | 'en_proceso' | 'completado';
 @Component({
   selector: 'app-service-tracking',
   standalone: true,
-  imports: [CommonModule, MechanicAvatarComponent],
+  imports: [CommonModule, MechanicAvatarComponent, PhoneActionPopoverComponent],
   templateUrl: './service-tracking.component.html',
   styleUrl: './service-tracking.component.scss',
 })
@@ -26,9 +27,6 @@ export class ServiceTrackingComponent implements OnInit {
   protected readonly isLoading = signal(true);
   protected readonly noAssignment = signal(false);
   protected readonly fromHistory = signal(false);
-
-  // ========== POPOVER TELÉFONO ==========
-  protected readonly activePhonePopover = signal<string | null>(null);
 
   // Labels canónicos de pasos
   private readonly STEP_LABELS: Record<StepKey, string> = {
@@ -234,29 +232,4 @@ export class ServiceTrackingComponent implements OnInit {
            d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
   }
 
-  // ========== POPOVERS TELÉFONO ==========
-  togglePhonePopover(id: string, event: Event): void {
-    event.stopPropagation();
-    this.activePhonePopover.update((current) => (current === id ? null : id));
-  }
-
-  closePopovers(): void {
-    this.activePhonePopover.set(null);
-  }
-
-  openWhatsApp(phone: string): void {
-    if (!phone) return;
-    const cleaned = phone.replace(/-/g, '').replace(/\s/g, '');
-    const international = '58' + cleaned.replace(/^0/, '');
-    window.open(`https://wa.me/${international}`, '_blank');
-    this.activePhonePopover.set(null);
-  }
-
-  callPhone(phone: string): void {
-    if (!phone) return;
-    const cleaned = phone.replace(/-/g, '').replace(/\s/g, '');
-    const international = '+58' + cleaned.replace(/^0/, '');
-    window.open(`tel:${international}`, '_self');
-    this.activePhonePopover.set(null);
-  }
 }

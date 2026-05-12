@@ -1,0 +1,87 @@
+:host {
+  display: inline-block;
+}
+
+.phone-action-wrapper {
+  @apply relative inline-block;
+}
+
+.phone-action-btn {
+  @apply inline-flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-colors;
+  @apply bg-blue-50 text-blue-600 border border-blue-200;
+  @apply hover:bg-blue-100 active:bg-blue-200;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+
+  :host-context(.dark) & {
+    @apply text-blue-400 border-blue-800;
+    background-color: rgba(59, 130, 246, 0.1);
+    &:hover { background-color: rgba(59, 130, 246, 0.2); }
+  }
+
+  svg { @apply w-3.5 h-3.5 flex-shrink-0; }
+}
+
+.phone-action-label {
+  white-space: nowrap;
+}
+
+.phone-action-popover {
+  @apply absolute mt-1 rounded-xl shadow-lg overflow-hidden bg-white border border-gray-200;
+  right: 0;
+  min-width: 160px;
+  z-index: 20;
+  animation: phone-action-popover-in 0.15s ease-out;
+
+  :host-context(.dark) & {
+    background-color: #1e293b;
+    border-color: #334155;
+  }
+}
+
+@keyframes phone-action-popover-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.popover-option {
+  @apply w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors;
+  @apply text-gray-700 hover:bg-gray-50;
+
+  :host-context(.dark) & {
+    @apply text-gray-300;
+    &:hover { background-color: #334155; }
+  }
+
+  svg { @apply w-5 h-5 flex-shrink-0; }
+
+  & + & {
+    @apply border-t border-gray-100;
+    :host-context(.dark) & { border-top-color: #334155; }
+  }
+
+  &.popover-whatsapp {
+    color: #15803d;
+    :host-context(.dark) & { color: #4ade80; }
+    &:hover {
+      background-color: #f0fdf4;
+      :host-context(.dark) & { background-color: rgba(34, 197, 94, 0.1); }
+    }
+  }
+}
+
+.phone-action-fallback {
+  @apply text-sm text-gray-700 dark:text-gray-300;
+}
+
+// Print: hide popover, render button as plain text.
+@media print {
+  .phone-action-popover { display: none !important; }
+  .phone-action-btn {
+    background: transparent !important;
+    border: none !important;
+    color: #111827 !important;
+    padding: 0 !important;
+    svg { display: none !important; }
+  }
+}

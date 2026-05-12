@@ -77,7 +77,7 @@ export class BranchFormComponent implements OnInit {
     name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(MAX_BRANCH_NAME_LENGTH)]],
     description: ['', [Validators.maxLength(MAX_DESCRIPTION_LENGTH)]],
     address: ['', [Validators.required, Validators.maxLength(MAX_ADDRESS_LENGTH)]],
-    whatsappPhone: ['', [Validators.pattern(PHONE_VE_PATTERN)]],
+    whatsappPhone: ['', [Validators.required, Validators.pattern(PHONE_VE_PATTERN)]],
     landlinePhone: ['', [Validators.pattern(LANDLINE_VE_PATTERN)]],
     coordinatesRaw: ['', [Validators.pattern(COORDINATES_PATTERN)]],
     hasInStoreOilChange: [false],
