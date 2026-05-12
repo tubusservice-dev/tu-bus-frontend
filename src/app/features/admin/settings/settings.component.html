@@ -895,7 +895,7 @@
                     type="checkbox"
                     formControlName="browserPush"
                     class="toggle-input"
-                    (change)="saveAdminNotificationToggle('browserPush'); requestBrowserPushPermission()"
+                    (change)="saveAdminNotificationToggle('browserPush')"
                   />
                   <span class="toggle-switch"></span>
                   <div class="toggle-info">
@@ -943,8 +943,8 @@
                   <strong>¿Cómo funcionan las notificaciones push?</strong>
                   <ul>
                     <li>Haz clic en <b>"Probar notificación"</b> para verificar que funciona y que se escuche el sonido.</li>
-                    <li>Las notificaciones aparecen en tu sistema operativo (esquina de la pantalla), con el navegador minimizado.</li>
-                    <li>Solo funcionan con la pestaña del panel admin abierta en el navegador.</li>
+                    <li>Las notificaciones aparecen en tu sistema operativo (esquina de la pantalla, pantalla de bloqueo en móvil) aunque el navegador o la app estén cerrados.</li>
+                    <li>Si instalas el panel como PWA, recibirás las alertas como cualquier app nativa.</li>
                     <li>El sonido depende de la configuración de tu sistema operativo.</li>
                   </ul>
                 </div>

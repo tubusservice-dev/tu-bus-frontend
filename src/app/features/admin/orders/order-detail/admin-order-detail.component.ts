@@ -1,9 +1,11 @@
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import { Component, DestroyRef, inject, signal, computed, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { OrderService } from '../../../../core/services/order.service';
 import { ExchangeRateService } from '../../../../core/services/exchange-rate.service';
+import { AdminNotificationsService } from '../../../../core/services/admin-notifications.service';
 import { ClipboardService } from '../../../../shared/services/clipboard.service';
 import {
   Order,
@@ -47,6 +49,7 @@ import { MechanicAvatarComponent } from '../../../../shared/components/mechanic-
 import { OrderCommentsComponent } from '../../../../shared/components/order-comments/order-comments.component';
 import { ClickOutsideDirective } from '../../../../shared/directives/click-outside.directive';
 import { MechanicAssignmentService } from '../../../../core/services/mechanic-assignment.service';
+import { PhoneActionPopoverComponent } from '../../../../shared/components/phone-action-popover/phone-action-popover.component';
 
 @Component({
   selector: 'app-admin-order-detail',
@@ -58,6 +61,7 @@ import { MechanicAssignmentService } from '../../../../core/services/mechanic-as
     MechanicAvatarComponent,
     OrderCommentsComponent,
     ClickOutsideDirective,
+    PhoneActionPopoverComponent,
   ],
   templateUrl: './admin-order-detail.component.html',
   styleUrl: './admin-order-detail.component.scss',
@@ -69,6 +73,8 @@ export class AdminOrderDetailComponent implements OnInit {
   private readonly assignmentService = inject(MechanicAssignmentService);
   protected readonly exchangeRateService = inject(ExchangeRateService);
   private readonly clipboard = inject(ClipboardService);
+  private readonly adminNotifications = inject(AdminNotificationsService);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly isLoading = signal(true);
   protected readonly order = signal<Order | null>(null);
@@ -122,9 +128,6 @@ export class AdminOrderDetailComponent implements OnInit {
 
   // ========== IMAGE LIGHTBOX ==========
   protected readonly proofPreview = signal<string | null>(null);
-
-  // ========== PHONE POPOVERS ==========
-  protected readonly activePhonePopover = signal<string | null>(null);
 
   // ========== CONSTANTS ==========
   protected readonly ORDER_STATUS_LABELS = ORDER_STATUS_LABELS;
@@ -270,6 +273,7 @@ export class AdminOrderDetailComponent implements OnInit {
       return;
     }
     this.loadOrder(id);
+    this.subscribeToPushEvents();
   }
 
   private loadOrder(id: string): void {
@@ -287,6 +291,43 @@ export class AdminOrderDetailComponent implements OnInit {
         this.isLoading.set(false);
       },
     });
+  }
+
+  /**
+   * Refreshes the order in place without flipping `isLoading`, so the
+   * already-rendered UI stays visible while the new data swaps in. Used
+   * when a push notification reports a change for the order currently
+   * being viewed — the user perceives the update as "live".
+   */
+  private silentReloadOrder(id: string): void {
+    this.orderService.getAdminOrderById(id).subscribe({
+      next: (res) => {
+        this.order.set(res.data);
+        if (this.isOilChange()) {
+          this.loadServiceTracking(id);
+        }
+      },
+      // Silent on error: the user is already seeing valid (stale) data and
+      // another push or the polling will retry eventually.
+      error: () => { /* no-op */ },
+    });
+  }
+
+  /**
+   * Reacts to FCM push events that target this admin tab. Filters by the
+   * currently-viewed order id so unrelated pushes (other orders, generic
+   * notifications) are ignored. Both foreground and background SW push
+   * events flow through the same stream.
+   */
+  private subscribeToPushEvents(): void {
+    this.adminNotifications.pushReceived$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((event) => {
+        const currentId = this.order()?.id;
+        if (!currentId) return;
+        if (event.relatedOrder !== currentId) return;
+        this.silentReloadOrder(currentId);
+      });
   }
 
   private loadServiceTracking(orderId: string): void {
@@ -727,32 +768,6 @@ export class AdminOrderDetailComponent implements OnInit {
       },
       error: () => this.isSavingNotes.set(false),
     });
-  }
-
-  // ========== PHONE POPOVERS ==========
-
-  togglePhonePopover(id: string): void {
-    this.activePhonePopover.update((current) => (current === id ? null : id));
-  }
-
-  closePhonePopovers(): void {
-    this.activePhonePopover.set(null);
-  }
-
-  callPhone(phone: string): void {
-    if (!phone) return;
-    const cleaned = phone.replace(/-/g, '').replace(/\s/g, '');
-    const international = '+58' + cleaned.replace(/^0/, '');
-    window.open(`tel:${international}`, '_self');
-    this.activePhonePopover.set(null);
-  }
-
-  openWhatsApp(phone: string): void {
-    if (!phone) return;
-    const cleaned = phone.replace(/-/g, '').replace(/\s/g, '');
-    const international = '58' + cleaned.replace(/^0/, '');
-    window.open(`https://wa.me/${international}`, '_blank');
-    this.activePhonePopover.set(null);
   }
 
   // ========== NAVIGATION ==========
