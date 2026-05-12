@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
-import { OrderComment, Order } from '../../../models/order.model';
-import { OrderService } from '../../../core/services/order.service';
+import { OrderComment, Order, orderCommentKey } from '@models/order.model';
+import { OrderService } from '@core/services/order.service';
 
 /**
  * Business rule mirrored from the backend (see
@@ -39,8 +39,12 @@ const MAX_CLIENT_COMMENTS_PER_ORDER = 5;
         <p class="comments-empty">Aún no hay comentarios en esta orden. Sé el primero en escribir.</p>
       } @else {
         <ul class="comments-list">
-          @for (c of comments(); track c._id || c.createdAt) {
-            <li class="comment-item" [class.is-admin]="c.authorType === 'admin'">
+          @for (c of comments(); track commentKey(c)) {
+            <li
+              class="comment-item"
+              [class.is-admin]="c.authorType === 'admin'"
+              [class.is-highlighted]="commentKey(c) === highlightId()"
+            >
               <div class="comment-head">
                 <span class="comment-author">{{ c.authorName }}</span>
                 <span class="comment-date">{{ c.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
@@ -117,13 +121,28 @@ const MAX_CLIENT_COMMENTS_PER_ORDER = 5;
       @apply bg-gray-50 border-gray-200 dark:bg-gray-900/40 dark:border-gray-700;
       border-left-width: 3px;
       border-left-color: #9ca3af;
+      transition: background-color 0.4s ease, border-color 0.4s ease;
 
       &.is-admin {
         @apply bg-blue-50/60 dark:bg-blue-900/15;
         border-left-color: #2563eb;
       }
+
+      &.is-highlighted {
+        // Three short pulses so the new comment grabs attention without
+        // hijacking the screen. Picks up the chat accent so admin and
+        // client comments both feel "lit up" while staying readable.
+        animation: comment-pulse 2.4s ease-out 1;
+      }
     }
     :host-context(.dark) .comment-item.is-admin { border-left-color: #60a5fa; }
+
+    @keyframes comment-pulse {
+      0%   { background-color: rgba(59, 130, 246, 0.30); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.40); }
+      30%  { background-color: rgba(59, 130, 246, 0.18); box-shadow: 0 0 0 6px rgba(59, 130, 246, 0); }
+      60%  { background-color: rgba(59, 130, 246, 0.22); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.30); }
+      100% { background-color: inherit; box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+    }
 
     .comment-head {
       @apply flex items-center justify-between gap-2 flex-wrap;
@@ -187,8 +206,17 @@ export class OrderCommentsComponent {
   readonly orderId = input.required<string>();
   readonly comments = input.required<OrderComment[]>();
   readonly mode = input.required<'client' | 'admin'>();
+  /**
+   * Stable key of the comment that should pulse once after being added.
+   * Parent components compute the key with `orderCommentKey()` and clear
+   * the value after a few seconds so the animation does not loop.
+   */
+  readonly highlightId = input<string | null>(null);
 
   readonly commentsUpdated = output<Order>();
+
+  /** Bridge to the model helper so the template can call it for track-by + class binding. */
+  protected readonly commentKey = orderCommentKey;
 
   protected readonly draftMessage = signal('');
   protected readonly isSending = signal(false);

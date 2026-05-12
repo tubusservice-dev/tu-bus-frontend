@@ -129,6 +129,15 @@ export interface OrderComment {
   createdAt: string;
 }
 
+/**
+ * Stable identifier for an OrderComment used across the UI (highlight
+ * animation, track-by, diffing). Prefers the Mongo `_id` when present,
+ * falls back to a deterministic composite key so the value is stable
+ * across re-renders of the same comment, even pre-persistence.
+ */
+export const orderCommentKey = (c: OrderComment): string =>
+  c._id || `${c.authorType}:${c.author}:${c.createdAt}`;
+
 export type DispatchType = 'store_pickup' | 'shipping_agency' | 'local_delivery' | 'seller_agreement' | 'oil_change_service' | 'in_store_oil_change';
 
 export interface Order {

@@ -66,28 +66,34 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
     return null;
   };
 
-  private readonly _availabilityLoader = effect(() => {
-    const branch = this.checkoutService.selectedBranch();
-    const dt = this.checkoutService.dispatchType();
-    const mode = this.oilChangeAvailabilityMode(dt);
-    if (!mode || !branch) {
-      this.branchAvailability.set(null);
-      this.fetchedAvailabilityKey = null;
-      return;
-    }
-    const key = `${branch.id}:${mode}`;
-    if (this.fetchedAvailabilityKey === key) return;
-    this.fetchedAvailabilityKey = key;
-    this.branchAvailabilityService.getByBranch(branch.id, mode).subscribe({
-      next: (data) => this.branchAvailability.set(data),
-      error: () => {
-        // Permissive on error: leave null so the picker stays unrestricted
-        // and the backend stays the single source of truth at submit time.
+  constructor() {
+    // Branch-availability loader effect. Lives inside the constructor so it
+    // registers in the component's injection context without leaving an
+    // "unused field" reference behind (the return value of `effect()` is
+    // never read — Angular auto-cleans it on destroy).
+    effect(() => {
+      const branch = this.checkoutService.selectedBranch();
+      const dt = this.checkoutService.dispatchType();
+      const mode = this.oilChangeAvailabilityMode(dt);
+      if (!mode || !branch) {
         this.branchAvailability.set(null);
         this.fetchedAvailabilityKey = null;
-      },
+        return;
+      }
+      const key = `${branch.id}:${mode}`;
+      if (this.fetchedAvailabilityKey === key) return;
+      this.fetchedAvailabilityKey = key;
+      this.branchAvailabilityService.getByBranch(branch.id, mode).subscribe({
+        next: (data) => this.branchAvailability.set(data),
+        error: () => {
+          // Permissive on error: leave null so the picker stays unrestricted
+          // and the backend stays the single source of truth at submit time.
+          this.branchAvailability.set(null);
+          this.fetchedAvailabilityKey = null;
+        },
+      });
     });
-  });
+  }
 
   // ── Scroll lock helpers (used only for the confirm-order modal; the
   //    payment modal has its own counter inside CheckoutPaymentUiService) ─

@@ -1,8 +1,10 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, DestroyRef, inject, signal, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { OrderService } from '@core/services/order.service';
+import { AdminNotificationsService } from '@core/services/admin-notifications.service';
 import {
   Order,
   OrderStatus,
@@ -26,6 +28,8 @@ import { formatBusinessDate } from '@shared/utils/business-date.util';
 })
 export class AdminOrderListComponent implements OnInit {
   private readonly orderService = inject(OrderService);
+  private readonly adminNotifications = inject(AdminNotificationsService);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly router = inject(Router);
 
   protected readonly isLoading = signal(true);
@@ -52,6 +56,7 @@ export class AdminOrderListComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadOrders();
+    this.subscribeToPushEvents();
   }
 
   loadOrders(page = 1): void {
@@ -72,6 +77,32 @@ export class AdminOrderListComponent implements OnInit {
         this.isSearching.set(false);
       },
     });
+  }
+
+  /**
+   * Refreshes the current admin orders page without showing any spinner.
+   * Triggered by FCM pushes that touch the order pipeline (new orders,
+   * customer comments, cancellation requests, dispatch updates, …) so
+   * the table stays in sync with the bell badge.
+   */
+  private silentReloadOrders(): void {
+    const status = (this.statusFilter() as OrderStatus) || undefined;
+    const search = this.searchQuery().trim() || undefined;
+    this.orderService.getAdminOrders(this.currentPage(), 10, status, search).subscribe({
+      next: (response) => {
+        this.orders.set(response.data);
+        this.currentPage.set(response.pagination.page);
+        this.totalPages.set(response.pagination.pages);
+        this.totalItems.set(response.pagination.total);
+      },
+      error: () => { /* silent — polling fallback retries */ },
+    });
+  }
+
+  private subscribeToPushEvents(): void {
+    this.adminNotifications.pushReceived$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.silentReloadOrders());
   }
 
   onStatusFilterChange(): void {

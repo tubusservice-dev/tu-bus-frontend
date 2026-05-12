@@ -84,6 +84,18 @@
         </div>
       </nav>
 
+      <!-- Push notifications permission toggle (web + móvil) -->
+      <div class="menu-push-toggle">
+        <app-push-permission-toggle
+          [enabled]="userNotifService.hasFcmToken()"
+          [permission]="userNotifService.permissionState()"
+          label="Notificaciones del navegador"
+          description="Recibe avisos del sistema operativo cuando hay cambios en tus pedidos."
+          (activate)="enablePushNotifications()"
+          (deactivate)="disablePushNotifications()"
+        />
+      </div>
+
       <!-- Theme toggle (solo mobile) -->
       <div class="mobile-theme-toggle">
         <button type="button" class="menu-item theme-toggle-item" role="menuitem" (click)="themeService.toggleTheme()">

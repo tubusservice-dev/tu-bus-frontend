@@ -905,25 +905,17 @@
                 </label>
               </div>
 
-              <!-- Estado del permiso del navegador + botón de prueba -->
-              <div class="push-status-row">
-                <div class="push-status-left">
-                  <span class="push-status-label">Estado del permiso:</span>
-                  @switch (getBrowserPushStatus()) {
-                    @case ('granted') {
-                      <span class="push-status-badge push-status-granted">✓ Permitido</span>
-                    }
-                    @case ('denied') {
-                      <span class="push-status-badge push-status-denied">✕ Bloqueado</span>
-                    }
-                    @case ('default') {
-                      <span class="push-status-badge push-status-default">Pendiente</span>
-                    }
-                    @default {
-                      <span class="push-status-badge push-status-unsupported">No soportado</span>
-                    }
-                  }
-                </div>
+              <!-- Permiso del navegador (toggle + acciones) -->
+              <div class="push-permission-row">
+                <app-push-permission-toggle
+                  class="push-permission-toggle"
+                  [enabled]="adminNotifications.hasFcmToken()"
+                  [permission]="adminNotifications.permissionState()"
+                  label="Permiso del navegador"
+                  description="Controla si este navegador puede mostrar notificaciones del sistema. Debe estar activo para que llegue cualquier alerta nativa."
+                  (activate)="activateBrowserPermission()"
+                  (deactivate)="deactivateBrowserPermission()"
+                />
                 <button
                   type="button"
                   class="push-test-btn"

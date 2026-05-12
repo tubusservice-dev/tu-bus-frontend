@@ -215,7 +215,12 @@ export class UserNotificationsBellComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.notifService.requestNotificationPermission();
+    // We deliberately do NOT auto-call requestNotificationPermission() here.
+    // Modern browsers ignore prompts triggered without a user gesture, so
+    // the call silently fails and the customer never sees the prompt. The
+    // toggle inside the user menu owns the prompt path now — that click
+    // is the gesture the browser requires. Users who already granted
+    // permission are rehydrated automatically by UserNotificationService.
     this.notifService.startPolling();
   }
 
