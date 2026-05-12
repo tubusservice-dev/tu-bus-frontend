@@ -89,8 +89,9 @@
         <app-push-permission-toggle
           [enabled]="userNotifService.hasFcmToken()"
           [permission]="userNotifService.permissionState()"
-          label="Notificaciones del navegador"
-          description="Recibe avisos del sistema operativo cuando hay cambios en tus pedidos."
+          [compact]="true"
+          label="Notificaciones"
+          description="Avisos del sistema sobre tus pedidos."
           (activate)="enablePushNotifications()"
           (deactivate)="disablePushNotifications()"
         />

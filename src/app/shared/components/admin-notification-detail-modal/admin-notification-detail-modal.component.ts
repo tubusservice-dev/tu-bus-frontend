@@ -1,6 +1,6 @@
-import { Component, EventEmitter, Input, Output, computed, signal } from '@angular/core';
+import { Component, EventEmitter, Input, Output, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { AdminNotification, NotificationType } from '../../../models/notification.model';
 import { DISPATCH_TYPE_LABELS, DispatchType } from '../../../models/order.model';
 import { PAYMENT_METHOD_TYPE_LABELS, PaymentMethodType } from '../../../models/payment-method.model';
@@ -13,11 +13,13 @@ import { PAYMENT_METHOD_TYPE_LABELS, PaymentMethodType } from '../../../models/p
 @Component({
   selector: 'app-admin-notification-detail-modal',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule],
   templateUrl: './admin-notification-detail-modal.component.html',
   styleUrl: './admin-notification-detail-modal.component.scss',
 })
 export class AdminNotificationDetailModalComponent {
+  private readonly router = inject(Router);
+
   private readonly _notification = signal<AdminNotification | null>(null);
 
   @Input({ required: true })
@@ -95,5 +97,21 @@ export class AdminNotificationDetailModalComponent {
 
   protected close(): void {
     this.closed.emit();
+  }
+
+  /**
+   * Navigate to the order detail and dismiss the modal. Calling
+   * `router.navigate(...)` BEFORE `close()` matters: emitting `closed` here
+   * causes the parent to null out the modal's input, which destroys this
+   * component (and any `[routerLink]` directive on its DOM) within the same
+   * change-detection tick. Programmatic navigation captures the intent
+   * synchronously on the live Router instance, so the navigation completes
+   * even though the originating element is about to be unmounted.
+   */
+  protected goToOrder(): void {
+    const id = this.orderId();
+    if (!id) return;
+    this.router.navigate(['/admin/orders', id]);
+    this.close();
   }
 }
