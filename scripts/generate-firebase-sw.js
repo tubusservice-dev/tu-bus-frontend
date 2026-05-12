@@ -100,11 +100,29 @@ self.addEventListener('activate', (event) => {
  * When the payload includes a \`notification\` field, the Firebase SDK
  * shows the OS notification automatically — we do NOT need to call
  * showNotification() here. Defining onBackgroundMessage explicitly is
- * required by the SDK to keep the channel alive and to allow custom
- * logging / analytics paths if needed later.
+ * required by the SDK to keep the channel alive.
+ *
+ * In addition to the native toast, we broadcast the data payload to every
+ * open client (tab / PWA window) so any component currently mounted can
+ * react to the event — e.g. the admin order-detail screen refreshing
+ * automatically when a new comment arrives.
  */
-messaging.onBackgroundMessage((payload) => {
-  console.log('[firebase-messaging-sw] Background message received:', payload);
+messaging.onBackgroundMessage(async (payload) => {
+  try {
+    const allClients = await self.clients.matchAll({
+      type: 'window',
+      includeUncontrolled: true,
+    });
+    for (const client of allClients) {
+      client.postMessage({
+        type: 'fcm-push',
+        payload: payload.data || {},
+      });
+    }
+  } catch (err) {
+    // Broadcasting is best-effort — the OS toast still appears.
+    console.warn('[firebase-messaging-sw] broadcast failed:', err);
+  }
 });
 
 /**
@@ -118,10 +136,9 @@ self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
   const fcmData = event.notification.data || {};
-  const targetUrl =
-    fcmData.url ||
-    (fcmData.FCM_MSG && fcmData.FCM_MSG.data && fcmData.FCM_MSG.data.url) ||
-    '/';
+  const dataPayload =
+    (fcmData.FCM_MSG && fcmData.FCM_MSG.data) || fcmData;
+  const targetUrl = dataPayload.url || '/';
 
   event.waitUntil((async () => {
     const allClients = await self.clients.matchAll({
@@ -132,6 +149,17 @@ self.addEventListener('notificationclick', (event) => {
     for (const client of allClients) {
       if ('focus' in client) {
         await client.focus();
+        // Always notify the focused client so it can refresh its data
+        // even when the URL it already shows matches \`targetUrl\` (Angular
+        // Router does not re-instantiate the component on same-URL navs).
+        try {
+          client.postMessage({
+            type: 'fcm-notification-click',
+            payload: dataPayload,
+          });
+        } catch {
+          /* postMessage failures are non-fatal */
+        }
         if ('navigate' in client) {
           try {
             await client.navigate(targetUrl);

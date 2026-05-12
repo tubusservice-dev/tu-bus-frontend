@@ -331,7 +331,7 @@
         </section>
       }
 
-      @if (dispatchType === 'oil_change_service') {
+      @if (dispatchType === 'oil_change_service' || dispatchType === 'in_store_oil_change') {
         <section class="summary-section">
           <app-service-date-picker
             [initial]="checkoutService.requestedServiceDate()"

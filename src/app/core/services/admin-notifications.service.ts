@@ -45,6 +45,16 @@ export class AdminNotificationsService {
   readonly notifications = this._notifications.asReadonly();
   readonly showPopover = this._showPopover.asReadonly();
 
+  /**
+   * Stream of push events targeted at the admin scope. Surfaces every
+   * push reaching this tab — foreground (`onMessage`) and background
+   * (SW → postMessage) — so any admin screen can react: order-detail
+   * refreshes when a comment arrives, order list could highlight new
+   * orders, etc. Subscribers MUST filter by `event.type` /
+   * `event.relatedOrder` to act only on relevant events.
+   */
+  readonly pushReceived$ = this.fcm.onPushReceived$;
+
   constructor() {
     // Auto-trigger FCM registration on admin login or page reload while
     // authenticated. Mirrors the customer flow in UserNotificationService —

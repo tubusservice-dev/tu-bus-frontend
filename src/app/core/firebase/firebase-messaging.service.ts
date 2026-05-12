@@ -3,6 +3,7 @@ import type { MessagePayload, Messaging } from 'firebase/messaging';
 import { Observable, Subject } from 'rxjs';
 import { environment } from '@env';
 import { getFirebaseApp } from './firebase.config';
+import { isFcmSwMessage, PushEventData } from './push-event.types';
 
 /**
  * Lazy-loaded wrapper over `firebase/messaging`.
@@ -25,9 +26,25 @@ import { getFirebaseApp } from './firebase.config';
 export class FirebaseMessagingService {
   private messagingPromise: Promise<Messaging> | null = null;
   private foregroundListenerAttached = false;
+  private swListenerAttached = false;
   private readonly foregroundSubject = new Subject<MessagePayload>();
+  /**
+   * Unified push stream — emits whenever a push reaches this tab, no
+   * matter whether it arrived via the SDK's foreground `onMessage` or
+   * via the background Service Worker forwarding the payload through
+   * `postMessage`. Components that need to react to a push (e.g. the
+   * order-detail screen refreshing on a new comment) should subscribe
+   * to this, not to `onForegroundMessage$`.
+   */
+  private readonly pushSubject = new Subject<PushEventData>();
   readonly onForegroundMessage$: Observable<MessagePayload> =
     this.foregroundSubject.asObservable();
+  readonly onPushReceived$: Observable<PushEventData> =
+    this.pushSubject.asObservable();
+
+  constructor() {
+    this.attachSwMessageListener();
+  }
 
   /**
    * Returns the FCM token for this browser, or null if:
@@ -141,7 +158,26 @@ export class FirebaseMessagingService {
     const messaging = await this.getMessagingInstance();
     onMessage(messaging, (payload) => {
       this.foregroundSubject.next(payload);
+      const data = (payload.data || {}) as PushEventData;
+      this.pushSubject.next(data);
     });
     this.foregroundListenerAttached = true;
+  }
+
+  /**
+   * Bridge for pushes that arrive while the page is in background and
+   * are handled by `firebase-messaging-sw.js`. The SW broadcasts the
+   * payload to every open client via `postMessage`; this listener
+   * funnels those messages into the same `pushReceived$` stream so
+   * consumers don't need to care which path the push took.
+   */
+  private attachSwMessageListener(): void {
+    if (this.swListenerAttached) return;
+    if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
+    navigator.serviceWorker.addEventListener('message', (event: MessageEvent) => {
+      if (!isFcmSwMessage(event.data)) return;
+      this.pushSubject.next(event.data.payload);
+    });
+    this.swListenerAttached = true;
   }
 }

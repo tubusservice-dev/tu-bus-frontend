@@ -6,6 +6,7 @@ import { OrderService } from '../../../core/services/order.service';
 import { ExchangeRateService } from '../../../core/services/exchange-rate.service';
 import { UploadService } from '../../../core/services/upload.service';
 import { ReviewService } from '../../../core/services/review.service';
+import { UserNotificationService } from '../../../core/services/user-notification.service';
 import {
   Order, OrderStatus, DispatchStatus,
   ORDER_STATUS_LABELS, ORDER_STATUS_COLORS, ORDER_STATUS_DESCRIPTIONS,
@@ -48,6 +49,7 @@ export class OrderDetailComponent implements OnInit {
   private readonly orderService = inject(OrderService);
   private readonly uploadService = inject(UploadService);
   private readonly reviewService = inject(ReviewService);
+  private readonly userNotifications = inject(UserNotificationService);
   private readonly destroyRef = inject(DestroyRef);
   protected readonly exchangeRateService = inject(ExchangeRateService);
 
@@ -238,6 +240,8 @@ export class OrderDetailComponent implements OnInit {
         this.ratingSubmitError.set(null);
         this.loadOrder(id);
       });
+
+    this.subscribeToPushEvents();
   }
 
   private loadOrder(id: string): void {
@@ -257,6 +261,36 @@ export class OrderDetailComponent implements OnInit {
         this.isLoading.set(false);
       },
     });
+  }
+
+  /**
+   * Refreshes the order without flipping `isLoading`, so the already
+   * rendered UI stays visible while the new data swaps in. Triggered by
+   * a push relevant to this order — the user perceives the update live.
+   */
+  private silentReloadOrder(id: string): void {
+    this.orderService.getOrderById(id).subscribe({
+      next: (res) => {
+        this.order.set(res.data);
+      },
+      error: () => { /* silent — polling fallback will retry */ },
+    });
+  }
+
+  /**
+   * Reacts to FCM push events that target this client tab. Filters by
+   * the currently-viewed order id so unrelated pushes are ignored.
+   * Foreground and background SW push events share the same stream.
+   */
+  private subscribeToPushEvents(): void {
+    this.userNotifications.pushReceived$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((event) => {
+        const currentId = this.order()?.id;
+        if (!currentId) return;
+        if (event.relatedOrder !== currentId) return;
+        this.silentReloadOrder(currentId);
+      });
   }
 
   // ============================================

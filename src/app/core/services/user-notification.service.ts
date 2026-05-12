@@ -44,6 +44,15 @@ export class UserNotificationService {
   readonly notifications = this._notifications.asReadonly();
   readonly showPopover = this._showPopover.asReadonly();
 
+  /**
+   * Stream of push events targeted at the customer scope. Surfaces every
+   * push reaching this tab — foreground (`onMessage`) and background
+   * (SW → postMessage) — so any client screen can react. Subscribers
+   * MUST filter by `event.type` / `event.relatedOrder` to act only on
+   * relevant events.
+   */
+  readonly pushReceived$ = this.fcm.onPushReceived$;
+
   constructor() {
     // The popover floats outside <router-outlet>; auto-close on any navigation
     // completion keeps it in sync with the visible view. Backstop for in-panel
