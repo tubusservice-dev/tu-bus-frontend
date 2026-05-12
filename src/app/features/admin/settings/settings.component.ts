@@ -8,6 +8,7 @@ import { UploadService } from '@core/services/upload.service';
 import { ExchangeRateService } from '@core/services/exchange-rate.service';
 import { AdminNotificationsService } from '@core/services/admin-notifications.service';
 import { browserNotify } from '@shared/utils/browser-notify.util';
+import { PushPermissionToggleComponent } from '@shared/components/push-permission-toggle/push-permission-toggle.component';
 import { Settings, HeroImage, FloatingStat, PAGINATION_OPTIONS } from '@models/settings.model';
 import {
   PaymentMethodConfig,
@@ -23,7 +24,7 @@ type PaginationSubKey = 'catalogLimit' | 'adminLimit';
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink, PushPermissionToggleComponent],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss',
 })
@@ -33,7 +34,7 @@ export class SettingsComponent implements OnInit {
   private readonly paymentMethodService = inject(PaymentMethodService);
   private readonly uploadService = inject(UploadService);
   protected readonly exchangeRateService = inject(ExchangeRateService);
-  private readonly adminNotifications = inject(AdminNotificationsService);
+  protected readonly adminNotifications = inject(AdminNotificationsService);
 
   // Current site location — used in inline help text so prod admins see
   // their real domain instead of "localhost:4200".
@@ -813,6 +814,20 @@ export class SettingsComponent implements OnInit {
       return;
     }
     await this.adminNotifications.requestNotificationPermission();
+  }
+
+  /**
+   * Bound to the `<app-push-permission-toggle>` activate event. Runs
+   * inside the toggle's click handler so the browser sees a real user
+   * gesture and shows the native prompt.
+   */
+  async activateBrowserPermission(): Promise<void> {
+    await this.adminNotifications.requestNotificationPermission();
+  }
+
+  /** Mirror for the deactivate event: drops the FCM token on the backend. */
+  async deactivateBrowserPermission(): Promise<void> {
+    await this.adminNotifications.unregisterToken();
   }
 
   /** Estado actual del permiso de notificaciones */
