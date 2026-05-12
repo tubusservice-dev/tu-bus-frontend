@@ -2,11 +2,11 @@ import { Component, DestroyRef, computed, inject, signal, OnInit } from '@angula
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { OrderService } from '../../../core/services/order.service';
-import { ExchangeRateService } from '../../../core/services/exchange-rate.service';
-import { UploadService } from '../../../core/services/upload.service';
-import { ReviewService } from '../../../core/services/review.service';
-import { UserNotificationService } from '../../../core/services/user-notification.service';
+import { OrderService } from '@core/services/order.service';
+import { ExchangeRateService } from '@core/services/exchange-rate.service';
+import { UploadService } from '@core/services/upload.service';
+import { ReviewService } from '@core/services/review.service';
+import { UserNotificationService } from '@core/services/user-notification.service';
 import {
   Order, OrderStatus, DispatchStatus,
   ORDER_STATUS_LABELS, ORDER_STATUS_COLORS, ORDER_STATUS_DESCRIPTIONS,
@@ -14,7 +14,7 @@ import {
   isShippingOrder, isOilChangeOrder,
   ServiceDateState, getServiceDateState, getServiceDateIso,
   orderCommentKey, OrderComment,
-} from '../../../models/order.model';
+} from '@models/order.model';
 
 /** Client-facing copy for the service-date card. Keyed by lifecycle state. */
 const CLIENT_SERVICE_DATE_BADGE: Record<ServiceDateState, { label: string; cls: string }> = {
@@ -31,11 +31,11 @@ const CLIENT_SERVICE_DATE_MESSAGE: Record<ServiceDateState, string> = {
   rescheduled:
     'Tu servicio fue agendado para esta nueva fecha. En la fecha solicitada originalmente no contábamos con disponibilidad. Nuestro equipo está listo para brindarte la mejor atención.',
 };
-import { PAYMENT_TYPES_WITH_FORM, PaymentMethodType } from '../../../models/payment-method.model';
-import { MechanicAvatarComponent } from '../../../shared/components/mechanic-avatar/mechanic-avatar.component';
-import { OrderCommentsComponent } from '../../../shared/components/order-comments/order-comments.component';
-import { RatingModalComponent } from '../../../shared/components/rating-modal/rating-modal.component';
-import { PhoneActionPopoverComponent } from '../../../shared/components/phone-action-popover/phone-action-popover.component';
+import { PAYMENT_TYPES_WITH_FORM, PaymentMethodType } from '@models/payment-method.model';
+import { MechanicAvatarComponent } from '@shared/components/mechanic-avatar/mechanic-avatar.component';
+import { OrderCommentsComponent } from '@shared/components/order-comments/order-comments.component';
+import { RatingModalComponent } from '@shared/components/rating-modal/rating-modal.component';
+import { PhoneActionPopoverComponent } from '@shared/components/phone-action-popover/phone-action-popover.component';
 
 @Component({
   selector: 'app-order-detail',
@@ -501,9 +501,7 @@ export class OrderDetailComponent implements OnInit {
     if (a && typeof a === 'object' && a.mechanic && typeof a.mechanic === 'object' && (a.mechanic.name || a.mechanic.whatsapp)) return true;
 
     // Fuente 3: mechanicAssignment populated means mechanic was assigned
-    if (order.mechanicAssignment && typeof order.mechanicAssignment === 'object') return true;
-
-    return false;
+    return !!(order.mechanicAssignment && typeof order.mechanicAssignment === 'object');
   }
 
   mechanicName(order: Order): string {

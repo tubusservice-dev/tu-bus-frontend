@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
-import { OrderComment, Order, orderCommentKey } from '../../../models/order.model';
-import { OrderService } from '../../../core/services/order.service';
+import { OrderComment, Order, orderCommentKey } from '@models/order.model';
+import { OrderService } from '@core/services/order.service';
 
 /**
  * Business rule mirrored from the backend (see

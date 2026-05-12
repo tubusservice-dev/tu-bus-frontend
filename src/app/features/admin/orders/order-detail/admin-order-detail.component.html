@@ -105,7 +105,7 @@
 
         <!-- ===== OPTIONS MENU (hidden for pending/cancellation_requested/completed) ===== -->
         @if (!isPending() && !hasCancellationRequest() && !isCompleted()) {
-          <div class="options-wrapper" clickOutside (clickOutside)="closeOptionsMenu()">
+          <div class="options-wrapper" (clickOutside)="closeOptionsMenu()">
             <button type="button" class="btn-options" (click)="toggleOptionsMenu()" [class.active]="showOptionsMenu()">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 12.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 18.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5Z" />

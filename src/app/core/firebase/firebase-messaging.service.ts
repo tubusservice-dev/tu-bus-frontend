@@ -134,11 +134,12 @@ export class FirebaseMessagingService {
    * without forcing the SDK chunk to load.
    */
   isMessagingSupportedSync(): boolean {
-    if (typeof window === 'undefined') return false;
-    if (!('Notification' in window)) return false;
-    if (!('serviceWorker' in navigator)) return false;
-    if (!('PushManager' in window)) return false;
-    return true;
+    return (
+      typeof window !== 'undefined' &&
+      'Notification' in window &&
+      'serviceWorker' in navigator &&
+      'PushManager' in window
+    );
   }
 
   private getMessagingInstance(): Promise<Messaging> {

@@ -49,24 +49,18 @@
     </div>
   }
 
-  <!-- ==================== LOADING ==================== -->
+  <!-- ==================== LOADING / ERROR / CONTENIDO ==================== -->
   @if (isLoading()) {
     <div class="loading-state">
       <div class="spinner"></div>
       <span>Cargando orden...</span>
     </div>
-  }
-
-  <!-- ==================== ERROR ==================== -->
-  @else if (error()) {
+  } @else if (error()) {
     <div class="error-state">
       <p>{{ error() }}</p>
       <button type="button" class="btn-back-link" (click)="goBack()">Volver a mis pedidos</button>
     </div>
-  }
-
-  <!-- ==================== CONTENIDO ==================== -->
-  @else if (order(); as o) {
+  } @else if (order(); as o) {
     <!-- Mobile-only: promote comments above all sections when the order has
          at least one comment, so the user sees the conversation immediately
          without scrolling. Hidden on desktop because the original instance

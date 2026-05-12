@@ -1,13 +1,13 @@
 import { Injectable, inject, signal, effect } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap, interval, Subscription, firstValueFrom } from 'rxjs';
-import { environment } from '../../../environments/environment';
+import { environment } from '@env';
 import {
   AdminNotification,
   NotificationListResponse,
   UnreadCountResponse,
   NotificationResponse,
-} from '../../models/notification.model';
+} from '@models/notification.model';
 import { SettingsService } from './settings.service';
 import { AuthService } from './auth.service';
 import { DeviceTokenService } from './device-token.service';

@@ -1,9 +1,9 @@
 import { Component, DestroyRef, inject, signal, OnInit } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
-import { UserNotificationService } from '../../../../core/services/user-notification.service';
-import { UserNotification } from '../../../../models/user-notification.model';
-import { UserNotificationDetailModalComponent } from '../../../../shared/components/user-notification-detail-modal/user-notification-detail-modal.component';
+import { UserNotificationService } from '@core/services/user-notification.service';
+import { UserNotification } from '@models/user-notification.model';
+import { UserNotificationDetailModalComponent } from '@shared/components/user-notification-detail-modal/user-notification-detail-modal.component';
 
 @Component({
   selector: 'app-notifications-list',

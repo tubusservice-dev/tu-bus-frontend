@@ -3,10 +3,10 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { OrderService } from '../../../../core/services/order.service';
-import { ExchangeRateService } from '../../../../core/services/exchange-rate.service';
-import { AdminNotificationsService } from '../../../../core/services/admin-notifications.service';
-import { ClipboardService } from '../../../../shared/services/clipboard.service';
+import { OrderService } from '@core/services/order.service';
+import { ExchangeRateService } from '@core/services/exchange-rate.service';
+import { AdminNotificationsService } from '@core/services/admin-notifications.service';
+import { ClipboardService } from '@shared/services/clipboard.service';
 import {
   Order,
   OrderStatus,
@@ -20,14 +20,13 @@ import {
   DISPATCH_TYPE_COLORS,
   isOilChangeOrder,
   isShippingOrder,
-  isInStoreOilChange,
   getAvailableDispatchStatuses,
   getOptionsMenuStatuses,
   ServiceDateState,
   getServiceDateState,
   orderCommentKey,
   OrderComment,
-} from '../../../../models/order.model';
+} from '@models/order.model';
 
 /** Admin-facing copy for the service-date card. Operational tone, not coloquial. */
 const ADMIN_SERVICE_DATE_BADGE: Record<ServiceDateState, { label: string; cls: string }> = {
@@ -44,14 +43,14 @@ const ADMIN_SERVICE_DATE_MESSAGE: Record<ServiceDateState, string> = {
   rescheduled:
     'La cita fue reprogramada porque no había disponibilidad en la fecha originalmente solicitada por el cliente. Se asignó la opción más cercana disponible.',
 };
-import { PAYMENT_METHOD_TYPE_LABELS, PaymentMethodType } from '../../../../models/payment-method.model';
-import { MechanicAssignment, ProgressStep } from '../../../../models/mechanic-assignment.model';
+import { PAYMENT_METHOD_TYPE_LABELS, PaymentMethodType } from '@models/payment-method.model';
+import { MechanicAssignment, ProgressStep } from '@models/mechanic-assignment.model';
 import { OrderDispatchModalComponent } from '../order-dispatch-modal/order-dispatch-modal.component';
-import { MechanicAvatarComponent } from '../../../../shared/components/mechanic-avatar/mechanic-avatar.component';
-import { OrderCommentsComponent } from '../../../../shared/components/order-comments/order-comments.component';
-import { ClickOutsideDirective } from '../../../../shared/directives/click-outside.directive';
-import { MechanicAssignmentService } from '../../../../core/services/mechanic-assignment.service';
-import { PhoneActionPopoverComponent } from '../../../../shared/components/phone-action-popover/phone-action-popover.component';
+import { MechanicAvatarComponent } from '@shared/components/mechanic-avatar/mechanic-avatar.component';
+import { OrderCommentsComponent } from '@shared/components/order-comments/order-comments.component';
+import { ClickOutsideDirective } from '@shared/directives/click-outside.directive';
+import { MechanicAssignmentService } from '@core/services/mechanic-assignment.service';
+import { PhoneActionPopoverComponent } from '@shared/components/phone-action-popover/phone-action-popover.component';
 
 @Component({
   selector: 'app-admin-order-detail',

@@ -2,14 +2,14 @@ import { Component, DestroyRef, inject, signal, OnInit } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { Router } from '@angular/router';
-import { OrderService } from '../../../core/services/order.service';
-import { ExchangeRateService } from '../../../core/services/exchange-rate.service';
-import { UserNotificationService } from '../../../core/services/user-notification.service';
+import { OrderService } from '@core/services/order.service';
+import { ExchangeRateService } from '@core/services/exchange-rate.service';
+import { UserNotificationService } from '@core/services/user-notification.service';
 import {
   Order, OrderStatus,
   ORDER_STATUS_LABELS, ORDER_STATUS_COLORS,
-} from '../../../models/order.model';
-import { SearchInputComponent } from '../../../shared/components/search-input/search-input.component';
+} from '@models/order.model';
+import { SearchInputComponent } from '@shared/components/search-input/search-input.component';
 
 /**
  * Push event `type` prefixes that imply something in this user's order list

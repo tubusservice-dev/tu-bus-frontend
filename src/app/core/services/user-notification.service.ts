@@ -2,7 +2,7 @@ import { Injectable, inject, signal, effect } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router, NavigationEnd, NavigationCancel, NavigationError } from '@angular/router';
 import { Observable, tap, interval, Subscription, filter, firstValueFrom } from 'rxjs';
-import { environment } from '../../../environments/environment';
+import { environment } from '@env';
 import { AuthService } from './auth.service';
 import { DeviceTokenService } from './device-token.service';
 import { FirebaseMessagingService } from '@core/firebase';
@@ -10,7 +10,7 @@ import {
   UserNotification,
   UserNotificationListResponse,
   UserUnreadCountResponse,
-} from '../../models/user-notification.model';
+} from '@models/user-notification.model';
 import { browserNotify } from '@shared/utils/browser-notify.util';
 
 /** Polling cadence when FCM is NOT active — push fallback via local toast. */

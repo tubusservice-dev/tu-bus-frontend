@@ -25,7 +25,7 @@ if (!fs.existsSync(envPath)) {
 
 const envSource = fs.readFileSync(envPath, 'utf8');
 
-const firebaseBlockMatch = envSource.match(/firebase:\s*\{([\s\S]+?)\}/);
+const firebaseBlockMatch = envSource.match(/firebase:\s*\{([\s\S]+?)}/);
 if (!firebaseBlockMatch) {
   console.error('[generate-firebase-sw] No "firebase: {...}" block found in env file');
   process.exit(1);
