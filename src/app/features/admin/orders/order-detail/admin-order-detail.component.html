@@ -647,6 +647,7 @@
           [orderId]="o.id"
           [comments]="o.comments || []"
           mode="admin"
+          [highlightId]="highlightCommentId()"
           (commentsUpdated)="onCommentsUpdated($event)"
         />
 

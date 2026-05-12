@@ -254,17 +254,13 @@ export class UserNotificationService {
   private attachForegroundListener(): void {
     if (this.foregroundSub) return;
     this.foregroundSub = this.fcm.onForegroundMessage$.subscribe((payload) => {
-      // The FCM SDK does NOT show the OS toast in foreground — we decide
-      // based on tab visibility:
-      //  - Visible: silent UI refresh. The user sees the badge climb;
-      //    a native toast on top of the open app is redundant noise.
-      //  - Hidden (other tab focused): show OS toast manually so the
-      //    user notices the new notification.
       this.fetchUnreadCount();
-
-      if (document.visibilityState === 'hidden') {
-        this.showNativeFromPayload(payload);
-      }
+      // Always surface the native OS toast in foreground. The FCM SDK
+      // intentionally skips the system notification when the page is open;
+      // we re-emit it manually so the customer gets the same audible cue
+      // regardless of tab visibility — matches the behaviour of any other
+      // chat-like app (WhatsApp etc.).
+      this.showNativeFromPayload(payload);
     });
   }
 

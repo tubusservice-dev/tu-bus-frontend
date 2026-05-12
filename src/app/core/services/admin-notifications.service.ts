@@ -214,23 +214,29 @@ export class AdminNotificationsService {
     this.foregroundSub = this.fcm.onForegroundMessage$.subscribe((payload) => {
       this.fetchUnreadCount();
 
-      // Hidden tab: show OS toast manually since FCM SDK skips it in foreground.
-      if (document.visibilityState === 'hidden') {
-        const prefs = this.settingsService.adminNotificationsConfig();
-        if (!prefs?.browserPush) return;
+      // Always surface the native OS toast in foreground. The FCM SDK
+      // intentionally skips the system notification when the page is open;
+      // we re-emit it manually so the admin gets the same audible cue
+      // regardless of tab visibility — the user explicitly wants the
+      // sound/banner every time a push arrives.
+      //
+      // Still gated by the global `browserPush` settings flag so admins
+      // can mute the channel without losing the in-app badge.
+      const prefs = this.settingsService.adminNotificationsConfig();
+      if (!prefs?.browserPush) return;
+      if (Notification.permission !== 'granted') return;
 
-        const title = payload.notification?.title || 'Nueva notificación';
-        const body = payload.notification?.body || '';
-        const url = (payload.data && (payload.data as Record<string, string>)['url']) || '/admin';
+      const title = payload.notification?.title || 'Nueva notificación';
+      const body = payload.notification?.body || '';
+      const url = (payload.data && (payload.data as Record<string, string>)['url']) || '/admin';
 
-        browserNotify(title, {
-          body,
-          icon: '/autobus.png',
-          badge: '/autobus.png',
-          tag: `admin-notif-fg-${Date.now()}`,
-          data: { url },
-        });
-      }
+      browserNotify(title, {
+        body,
+        icon: '/autobus.png',
+        badge: '/autobus.png',
+        tag: `admin-notif-fg-${Date.now()}`,
+        data: { url },
+      });
     });
   }
 

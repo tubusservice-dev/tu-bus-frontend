@@ -1,4 +1,5 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, DestroyRef, inject, signal, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { UserNotificationService } from '../../../../core/services/user-notification.service';
 import { UserNotification } from '../../../../models/user-notification.model';
@@ -13,6 +14,7 @@ import { UserNotificationDetailModalComponent } from '../../../../shared/compone
 })
 export class NotificationsListComponent implements OnInit {
   private readonly notifService = inject(UserNotificationService);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly notifications = signal<UserNotification[]>([]);
   protected readonly isLoading = signal(true);
@@ -22,6 +24,7 @@ export class NotificationsListComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadPage(1);
+    this.subscribeToPushEvents();
   }
 
   loadPage(page: number): void {
@@ -35,6 +38,28 @@ export class NotificationsListComponent implements OnInit {
       },
       error: () => this.isLoading.set(false),
     });
+  }
+
+  /**
+   * Refreshes the current page silently (no spinner) when a new push
+   * arrives, so the user sees the new notification appear in real time
+   * without leaving the screen. Every push generates a UserNotification
+   * on the backend, so we don't filter by type here.
+   */
+  private silentReloadCurrentPage(): void {
+    this.notifService.getAll(this.currentPage(), 10).subscribe({
+      next: (res) => {
+        this.notifications.set(res.data);
+        this.totalPages.set(res.pagination.pages);
+      },
+      error: () => { /* silent — polling will retry */ },
+    });
+  }
+
+  private subscribeToPushEvents(): void {
+    this.notifService.pushReceived$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.silentReloadCurrentPage());
   }
 
   openNotification(n: UserNotification): void {

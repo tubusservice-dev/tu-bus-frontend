@@ -13,6 +13,7 @@ import {
   DISPATCH_STATUS_LABELS, DISPATCH_STATUS_COLORS, DISPATCH_STATUS_DESCRIPTIONS,
   isShippingOrder, isOilChangeOrder,
   ServiceDateState, getServiceDateState, getServiceDateIso,
+  orderCommentKey, OrderComment,
 } from '../../../models/order.model';
 
 /** Client-facing copy for the service-date card. Keyed by lifecycle state. */
@@ -57,6 +58,10 @@ export class OrderDetailComponent implements OnInit {
   protected readonly order = signal<Order | null>(null);
   protected readonly isLoading = signal(true);
   protected readonly error = signal<string | null>(null);
+
+  // ========== COMMENT HIGHLIGHT (push-driven pulse) ==========
+  protected readonly highlightCommentId = signal<string | null>(null);
+  private highlightTimer: ReturnType<typeof setTimeout> | null = null;
 
   // ========== LIGHTBOX COMPROBANTE ==========
   protected readonly proofPreview = signal<string | null>(null);
@@ -267,14 +272,38 @@ export class OrderDetailComponent implements OnInit {
    * Refreshes the order without flipping `isLoading`, so the already
    * rendered UI stays visible while the new data swaps in. Triggered by
    * a push relevant to this order — the user perceives the update live.
+   *
+   * Side effect: if a brand-new admin-authored comment appeared between
+   * snapshots, schedule a pulse highlight on the comments panel so the
+   * customer notices the reply without scrolling.
    */
   private silentReloadOrder(id: string): void {
+    const previousKeys = new Set(
+      (this.order()?.comments || []).map(orderCommentKey)
+    );
     this.orderService.getOrderById(id).subscribe({
       next: (res) => {
         this.order.set(res.data);
+        const incomingAdminComment = (res.data.comments || [])
+          .filter((c: OrderComment) => c.authorType === 'admin')
+          .filter((c: OrderComment) => !previousKeys.has(orderCommentKey(c)))
+          .pop();
+        if (incomingAdminComment) {
+          this.triggerCommentHighlight(orderCommentKey(incomingAdminComment));
+        }
       },
       error: () => { /* silent — polling fallback will retry */ },
     });
+  }
+
+  /**
+   * Lights up the new comment for ~3 s. Reset on every fire so back-to-back
+   * pushes restart the animation instead of leaving it stuck.
+   */
+  private triggerCommentHighlight(key: string): void {
+    this.highlightCommentId.set(key);
+    if (this.highlightTimer) clearTimeout(this.highlightTimer);
+    this.highlightTimer = setTimeout(() => this.highlightCommentId.set(null), 3000);
   }
 
   /**
