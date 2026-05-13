@@ -648,6 +648,7 @@
           [comments]="o.comments || []"
           mode="admin"
           [highlightId]="highlightCommentId()"
+          [interlocutorName]="getClientName(o)"
           (commentsUpdated)="onCommentsUpdated($event)"
         />
 

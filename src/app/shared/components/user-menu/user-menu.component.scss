@@ -2,13 +2,6 @@
   @apply relative;
 }
 
-// Wrapper for the push-notifications permission toggle inside the dropdown.
-// Sits between the navigation links and the theme toggle, with its own
-// breathing room so it doesn't blend into the menu items.
-.menu-push-toggle {
-  padding: 0.5rem 0.625rem 0.25rem;
-}
-
 .user-btn {
   @apply flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200;
   background-color: transparent;
@@ -105,6 +98,19 @@
     background-color: rgba(0, 0, 0, 0.06);
     font-weight: 600;
   }
+}
+
+// Neutralise the user-agent defaults when `.menu-item` is applied to a
+// <button>: native buttons ship with a grey background, a border and
+// `width: auto`, which makes them render as a narrow pill instead of
+// spanning the dropdown like the <a> siblings do.
+button.menu-item {
+  width: 100%;
+  text-align: left;
+  background-color: transparent;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
 }
 
 .menu-icon {

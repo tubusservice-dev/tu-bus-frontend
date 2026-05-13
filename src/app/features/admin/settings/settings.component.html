@@ -800,6 +800,34 @@
             </p>
 
             <form [formGroup]="adminNotificationsForm">
+              <!-- Permiso del navegador (único control real del transporte push) -->
+              <app-push-permission-toggle
+                class="push-permission-toggle"
+                [enabled]="adminNotifications.hasFcmToken()"
+                [permission]="adminNotifications.permissionState()"
+                label="Permiso del navegador"
+                description="Controla si este navegador puede mostrar notificaciones del sistema. Debe estar activo para que llegue cualquier alerta nativa."
+                (activate)="activateBrowserPermission()"
+                (deactivate)="deactivateBrowserPermission()"
+              />
+
+              @if (getBrowserPushStatus() === 'denied') {
+                <!-- Instrucciones para desbloquear en Chrome -->
+                <div class="push-unblock-box">
+                  <strong>Las notificaciones están bloqueadas. Para habilitarlas:</strong>
+                  <ol>
+                    <li>En Chrome, haz clic en el icono <b>ⓘ</b> (círculo con "i") o <b>"Ver información del sitio"</b> a la izquierda de la URL (<code>{{ currentHost }}</code>).</li>
+                    <li>Busca <b>"Notificaciones"</b> en el menú desplegable y cambia de <i>"Bloquear"</i> a <i>"Permitir"</i>.</li>
+                    <li>O abre una nueva pestaña y pega esta URL: <code>chrome://settings/content/notifications</code></li>
+                    <li>En la sección <b>"No se permite enviar notificaciones"</b> busca <code>{{ currentOrigin }}</code>, haz clic en los tres puntos (⋮) y selecciona <b>"Permitir"</b> o <b>"Eliminar"</b>.</li>
+                    <li>Recarga esta página con <b>Ctrl + Shift + R</b> y vuelve a hacer clic en <b>"Probar notificación"</b>.</li>
+                  </ol>
+                </div>
+              }
+
+              <!-- Separador entre la configuración del navegador y los eventos -->
+              <div class="notification-separator"></div>
+
               <!-- Nueva orden -->
               <div class="dispatch-module-item">
                 <label class="toggle-container">
@@ -884,77 +912,6 @@
                   </div>
                 </label>
               </div>
-
-              <!-- Separador -->
-              <div class="notification-separator"></div>
-
-              <!-- Notificaciones push del navegador -->
-              <div class="dispatch-module-item">
-                <label class="toggle-container">
-                  <input
-                    type="checkbox"
-                    formControlName="browserPush"
-                    class="toggle-input"
-                    (change)="saveAdminNotificationToggle('browserPush')"
-                  />
-                  <span class="toggle-switch"></span>
-                  <div class="toggle-info">
-                    <span class="toggle-label">Notificaciones push del navegador</span>
-                    <span class="toggle-hint">Muestra alertas nativas del sistema operativo cuando lleguen nuevas notificaciones</span>
-                  </div>
-                </label>
-              </div>
-
-              <!-- Permiso del navegador (toggle + acciones) -->
-              <div class="push-permission-row">
-                <app-push-permission-toggle
-                  class="push-permission-toggle"
-                  [enabled]="adminNotifications.hasFcmToken()"
-                  [permission]="adminNotifications.permissionState()"
-                  label="Permiso del navegador"
-                  description="Controla si este navegador puede mostrar notificaciones del sistema. Debe estar activo para que llegue cualquier alerta nativa."
-                  (activate)="activateBrowserPermission()"
-                  (deactivate)="deactivateBrowserPermission()"
-                />
-                <button
-                  type="button"
-                  class="push-test-btn"
-                  (click)="testBrowserPushNotification()"
-                  title="Probar notificación"
-                  aria-label="Probar notificación"
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" /></svg>
-                  <span class="push-test-tooltip">Probar notificación</span>
-                </button>
-              </div>
-
-              <!-- Info sobre cómo funciona el push -->
-              <div class="push-info-box">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="push-info-icon"><path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" /></svg>
-                <div class="push-info-text">
-                  <strong>¿Cómo funcionan las notificaciones push?</strong>
-                  <ul>
-                    <li>Haz clic en <b>"Probar notificación"</b> para verificar que funciona y que se escuche el sonido.</li>
-                    <li>Las notificaciones aparecen en tu sistema operativo (esquina de la pantalla, pantalla de bloqueo en móvil) aunque el navegador o la app estén cerrados.</li>
-                    <li>Si instalas el panel como PWA, recibirás las alertas como cualquier app nativa.</li>
-                    <li>El sonido depende de la configuración de tu sistema operativo.</li>
-                  </ul>
-                </div>
-              </div>
-
-              @if (getBrowserPushStatus() === 'denied') {
-                <!-- Instrucciones para desbloquear en Chrome -->
-                <div class="push-unblock-box">
-                  <strong>Las notificaciones están bloqueadas. Para habilitarlas:</strong>
-                  <ol>
-                    <li>En Chrome, haz clic en el icono <b>ⓘ</b> (círculo con "i") o <b>"Ver información del sitio"</b> a la izquierda de la URL (<code>{{ currentHost }}</code>).</li>
-                    <li>Busca <b>"Notificaciones"</b> en el menú desplegable y cambia de <i>"Bloquear"</i> a <i>"Permitir"</i>.</li>
-                    <li>O abre una nueva pestaña y pega esta URL: <code>chrome://settings/content/notifications</code></li>
-                    <li>En la sección <b>"No se permite enviar notificaciones"</b> busca <code>{{ currentOrigin }}</code>, haz clic en los tres puntos (⋮) y selecciona <b>"Permitir"</b> o <b>"Eliminar"</b>.</li>
-                    <li>Recarga esta página con <b>Ctrl + Shift + R</b> y vuelve a hacer clic en <b>"Probar notificación"</b>.</li>
-                  </ol>
-                </div>
-              }
 
               @if (saveSuccess()['adminNotifications']) {
                 <p class="save-success-text">Preferencias actualizadas</p>

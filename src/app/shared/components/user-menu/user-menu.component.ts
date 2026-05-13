@@ -5,12 +5,11 @@ import { ThemeService } from '@core/services/theme.service';
 import { UserNotificationService } from '@core/services/user-notification.service';
 import { ClickOutsideDirective } from '@shared/directives/click-outside.directive';
 import { BodyScrollLockService } from '@shared/services/body-scroll-lock.service';
-import { PushPermissionToggleComponent } from '@shared/components/push-permission-toggle/push-permission-toggle.component';
 
 @Component({
   selector: 'app-user-menu',
   standalone: true,
-  imports: [RouterLink, ClickOutsideDirective, PushPermissionToggleComponent],
+  imports: [RouterLink, ClickOutsideDirective],
   templateUrl: './user-menu.component.html',
   styleUrl: './user-menu.component.scss'
 })
@@ -33,17 +32,26 @@ export class UserMenuComponent implements OnDestroy {
   protected readonly userNotifService = inject(UserNotificationService);
 
   /**
-   * Fires the browser's permission prompt and registers the FCM token.
-   * Must run inside the click handler so the browser treats it as a
-   * user gesture — automatic invocations are silently dropped.
+   * Standalone handler for the "Activar notificaciones" menu button.
+   * Triggers the browser's native permission prompt directly — does NOT
+   * go through the push toggle flow on purpose, so the button keeps
+   * working when the toggle is moved elsewhere.
+   *
+   * Browser semantics:
+   *   - `'default'`: shows the prompt.
+   *   - `'denied'`: the browser silently returns 'denied' without prompting.
+   *     The button still fires the call (per product spec) — the user must
+   *     unblock from the site settings if they want to revert it.
+   *   - `'granted'`: the button is hidden by the template guard.
    */
-  async enablePushNotifications(): Promise<void> {
-    await this.userNotifService.requestNotificationPermission();
-  }
-
-  /** Removes the FCM token from the backend (browser permission stays). */
-  async disablePushNotifications(): Promise<void> {
-    await this.userNotifService.unregisterToken();
+  async activatePushNotifications(): Promise<void> {
+    if (typeof window === 'undefined' || !('Notification' in window)) return;
+    try {
+      await Notification.requestPermission();
+    } catch {
+      /* user cancelled the prompt — nothing to do */
+    }
+    this.userNotifService.syncPermissionState();
   }
 
   ngOnDestroy(): void {

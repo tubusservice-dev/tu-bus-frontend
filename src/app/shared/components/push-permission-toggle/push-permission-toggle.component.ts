@@ -26,6 +26,7 @@ import type { NotificationPermissionState } from '@core/services/user-notificati
     <div
       class="ppt-wrap"
       [class.is-compact]="compact()"
+      [class.is-embedded]="embedded()"
       [class.is-denied]="permission() === 'denied'"
     >
       <button
@@ -45,14 +46,14 @@ import type { NotificationPermissionState } from '@core/services/user-notificati
         @if (description(); as desc) {
           <span class="ppt-desc">{{ desc }}</span>
         }
-        @if (compact() && permission() === 'denied') {
+        @if (compact() && permission() === 'denied' && showInlineHelp()) {
           <button type="button" class="ppt-help-btn ppt-help-btn-inline" (click)="toggleHelp($event)">
             ¿Bloqueado? Toca aquí para desbloquear
           </button>
         }
       </div>
 
-      @if (!compact()) {
+      @if (!compact() && showBadge()) {
         <div class="ppt-status">
           @switch (permission()) {
             @case ('granted') {
@@ -78,7 +79,7 @@ import type { NotificationPermissionState } from '@core/services/user-notificati
         </div>
       }
 
-      @if (showHelp()) {
+      @if (showHelp() && !embedded()) {
         <div class="ppt-help-panel" role="status">
           <p class="ppt-help-title">Cómo desbloquear las notificaciones</p>
           <ol class="ppt-help-steps">
@@ -106,9 +107,17 @@ import type { NotificationPermissionState } from '@core/services/user-notificati
       gap: 0.75rem;
       padding: 0.625rem 0.75rem;
     }
+    .ppt-wrap.is-embedded {
+      border: 0;
+      background-color: transparent;
+      padding: 0;
+    }
     :host-context(.dark) .ppt-wrap {
       border-color: #374151;
       background-color: rgba(31, 41, 55, 0.6);
+    }
+    :host-context(.dark) .ppt-wrap.is-embedded {
+      background-color: transparent;
     }
 
     .ppt-toggle {
@@ -238,6 +247,24 @@ export class PushPermissionToggleComponent {
    * Denied state surfaces an inline help link under the description.
    */
   readonly compact = input<boolean>(false);
+  /**
+   * Suppress the right-side status badge in non-compact mode. Hosts that
+   * own a richer container (e.g. the profile sidebar card) can opt out
+   * and render the badge somewhere with more room — like the card header.
+   */
+  readonly showBadge = input<boolean>(true);
+  /**
+   * Suppress the inline help link rendered under the description in
+   * compact mode when `permission === 'denied'`. Useful when the host
+   * places its own help affordance outside the toggle.
+   */
+  readonly showInlineHelp = input<boolean>(true);
+  /**
+   * Strip the wrapper's border, background and padding so the toggle
+   * blends into a host container that already provides its own card
+   * chrome. Without it, the toggle reads as a nested card-in-card.
+   */
+  readonly embedded = input<boolean>(false);
 
   /** Emitted when the user wants to enable push (click on OFF). */
   readonly activate = output<void>();

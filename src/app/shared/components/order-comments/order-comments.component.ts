@@ -14,6 +14,7 @@ import {
 import { CommonModule, DatePipe } from '@angular/common';
 import { OrderComment, Order, orderCommentKey } from '@models/order.model';
 import { OrderService } from '@core/services/order.service';
+import { UserAvatarComponent } from '@shared/components/user-avatar/user-avatar.component';
 
 /**
  * Business rule mirrored from the backend (see
@@ -36,15 +37,23 @@ const MAX_CLIENT_COMMENTS_PER_ORDER = 5;
 @Component({
   selector: 'app-order-comments',
   standalone: true,
-  imports: [CommonModule, DatePipe],
+  imports: [CommonModule, DatePipe, UserAvatarComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="comments-card">
-      <header class="comments-header">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="comments-icon" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 9.75a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375m-13.5 3.01c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />
-        </svg>
-        <h3>Mensajes</h3>
+      <header class="comments-header" [class.with-identity]="!!interlocutorName()">
+        @if (interlocutorName(); as name) {
+          <app-user-avatar [name]="name" [src]="interlocutorAvatarSrc()" [size]="36" />
+          <div class="comments-identity-text">
+            <h3>{{ name }}</h3>
+            <p class="comments-subtitle">Mensajería</p>
+          </div>
+        } @else {
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="comments-icon" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 9.75a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375m-13.5 3.01c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />
+          </svg>
+          <h3>Mensajes</h3>
+        }
       </header>
 
       @if (comments().length === 0) {
@@ -119,6 +128,21 @@ const MAX_CLIENT_COMMENTS_PER_ORDER = 5;
       h3 { @apply m-0 text-sm font-semibold; }
     }
     .comments-icon { @apply w-5 h-5 text-blue-600 dark:text-blue-400; }
+
+    // Identity layout — avatar + stacked name/subtitle. Active when the
+    // parent passes interlocutorName, mirrors the modal header so admin
+    // (inline) and client (modal) share the same visual language.
+    .comments-header.with-identity {
+      @apply gap-3 py-2.5;
+    }
+    .comments-identity-text {
+      @apply flex flex-col min-w-0;
+      line-height: 1.2;
+      h3 { @apply truncate; }
+    }
+    .comments-subtitle {
+      @apply text-[11px] font-normal m-0 mt-0.5 text-gray-500 dark:text-gray-400;
+    }
 
     .comments-empty {
       @apply px-5 sm:px-6 py-6 text-sm italic text-gray-500 dark:text-gray-400 m-0 text-center;
@@ -269,6 +293,22 @@ export class OrderCommentsComponent implements AfterViewInit {
    * the value after a few seconds so the animation does not loop.
    */
   readonly highlightId = input<string | null>(null);
+
+  /**
+   * Display name of the OTHER party in the thread. When provided, the
+   * inline header swaps from the generic "Mensajes" label to an identity
+   * row (avatar + name + "Mensajería" subtitle), matching the modal look.
+   * Leave undefined to keep the original header (used by the modal which
+   * hides the inline header anyway and surfaces its own identity row).
+   */
+  readonly interlocutorName = input<string | null>(null);
+
+  /**
+   * Optional avatar URL for the interlocutor. When missing or broken the
+   * UserAvatarComponent falls back to brand-colored initials derived from
+   * `interlocutorName`.
+   */
+  readonly interlocutorAvatarSrc = input<string | null>(null);
 
   readonly commentsUpdated = output<Order>();
 
