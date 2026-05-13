@@ -5,11 +5,12 @@ import { ThemeService } from '@core/services/theme.service';
 import { UserNotificationService } from '@core/services/user-notification.service';
 import { ClickOutsideDirective } from '@shared/directives/click-outside.directive';
 import { BodyScrollLockService } from '@shared/services/body-scroll-lock.service';
+import { PushUnblockModalComponent } from '@shared/components/push-unblock-modal/push-unblock-modal.component';
 
 @Component({
   selector: 'app-user-menu',
   standalone: true,
-  imports: [RouterLink, ClickOutsideDirective],
+  imports: [RouterLink, ClickOutsideDirective, PushUnblockModalComponent],
   templateUrl: './user-menu.component.html',
   styleUrl: './user-menu.component.scss'
 })
@@ -28,30 +29,43 @@ export class UserMenuComponent implements OnDestroy {
 
   protected readonly isMenuOpen = signal(false);
   protected readonly showLogoutModal = signal(false);
+  protected readonly showUnblockModal = signal(false);
 
   protected readonly userNotifService = inject(UserNotificationService);
 
   /**
-   * Standalone handler for the "Activar notificaciones" menu button.
-   * Triggers the browser's native permission prompt directly — does NOT
-   * go through the push toggle flow on purpose, so the button keeps
-   * working when the toggle is moved elsewhere.
+   * Handler for the "Permitir" CTA inside the push-alert banner.
    *
-   * Browser semantics:
-   *   - `'default'`: shows the prompt.
-   *   - `'denied'`: the browser silently returns 'denied' without prompting.
-   *     The button still fires the call (per product spec) — the user must
-   *     unblock from the site settings if they want to revert it.
-   *   - `'granted'`: the button is hidden by the template guard.
+   * Branches on the current permission state:
+   *   - `'default'` (user never decided): triggers the native browser
+   *     prompt directly so the click counts as a user gesture.
+   *   - `'denied'` (user already refused or blocked from site settings):
+   *     the browser silently returns 'denied' without prompting, so
+   *     calling requestPermission again is pointless. Instead, open the
+   *     unblock-instructions modal that guides the user through the
+   *     browser settings.
+   *   - `'granted'` / `'unsupported'`: the banner is hidden by the
+   *     template guard, so this method should not run in those states.
    */
   async activatePushNotifications(): Promise<void> {
     if (typeof window === 'undefined' || !('Notification' in window)) return;
+
+    if (Notification.permission === 'denied') {
+      this.closeMenu();
+      this.showUnblockModal.set(true);
+      return;
+    }
+
     try {
       await Notification.requestPermission();
     } catch {
       /* user cancelled the prompt — nothing to do */
     }
     this.userNotifService.syncPermissionState();
+  }
+
+  protected closeUnblockModal(): void {
+    this.showUnblockModal.set(false);
   }
 
   ngOnDestroy(): void {

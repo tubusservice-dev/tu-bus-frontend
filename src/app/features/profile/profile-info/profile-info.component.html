@@ -71,19 +71,9 @@
       />
 
       @if (userNotifService.permissionState() === 'denied') {
-        <button type="button" class="push-help-link" (click)="togglePushHelpPanel()">
+        <button type="button" class="push-help-link" (click)="openPushHelpPanel()">
           ¿Bloqueado? Toca aquí para desbloquear
         </button>
-        @if (showPushHelpPanel()) {
-          <div class="push-help-panel" role="status">
-            <p class="push-help-title">Cómo desbloquear las notificaciones</p>
-            <ol class="push-help-steps">
-              <li>Abre la configuración del navegador en este sitio (candado <strong>🔒</strong> a la izquierda de la URL).</li>
-              <li>Busca <strong>Notificaciones</strong> y cambia a <strong>Permitir</strong>.</li>
-              <li>Recarga esta página y vuelve a activar el toggle.</li>
-            </ol>
-          </div>
-        }
       }
     </div>
   </aside>
@@ -426,3 +416,10 @@
 @if (isPasswordModalOpen()) {
   <app-change-password-modal (close)="closePasswordModal()" />
 }
+
+<!-- Modal de desbloqueo de notificaciones (fuera del grid para no consumir
+     un slot de columnas y desplazar el <main>). -->
+<app-push-unblock-modal
+  [isOpen]="showPushHelpPanel()"
+  (close)="closePushHelpPanel()"
+/>

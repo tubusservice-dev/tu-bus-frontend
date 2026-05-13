@@ -154,19 +154,19 @@ const MAX_CLIENT_COMMENTS_PER_ORDER = 5;
       overflow-y: auto;
     }
 
-    // Row wrapper — flexes the bubble to one side. The natural gap between
-    // bubbles is small (2 px) so a streak of messages from the same author
-    // reads as a tight group; jump up to 12 px right after the author
-    // changes, achieved with the adjacent-sibling combinator below.
+    // Row wrapper — flexes the bubble to one side. A 6 px gap between
+    // bubbles of the same author keeps a streak grouped while letting
+    // each message breathe; 18 px right after the author changes makes
+    // the turn-taking obvious without breaking the conversation rhythm.
     .comment-row {
       @apply flex w-full;
-      margin-top: 2px;
+      margin-top: 14px;
 
       &.is-own   { justify-content: flex-end; }
       &.is-other { justify-content: flex-start; }
 
       &.is-own + .is-other,
-      &.is-other + .is-own { margin-top: 12px; }
+      &.is-other + .is-own { margin-top: 26px; }
 
       &:first-child { margin-top: 0; }
     }
@@ -182,7 +182,7 @@ const MAX_CLIENT_COMMENTS_PER_ORDER = 5;
       gap: 4px 10px;
       max-width: 75%;
       padding: 8px 12px;
-      border-radius: 16px;
+      border-radius: 8px;
       line-height: 1.4;
       // Soft drop shadow consistent with cards in the rest of the app.
       box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
@@ -192,14 +192,12 @@ const MAX_CLIENT_COMMENTS_PER_ORDER = 5;
     // OWN: right side, accent fill (project blue, not WhatsApp green).
     .is-own .comment-bubble {
       @apply bg-blue-600 text-white;
-      border-bottom-right-radius: 4px;
       :host-context(.dark) & { @apply bg-blue-700; }
     }
 
     // OTHER: left side, neutral fill with light border.
     .is-other .comment-bubble {
       @apply bg-gray-100 text-gray-900 border border-gray-200;
-      border-bottom-left-radius: 4px;
       :host-context(.dark) & {
         @apply bg-gray-700 text-gray-100;
         border-color: rgba(255, 255, 255, 0.06);
