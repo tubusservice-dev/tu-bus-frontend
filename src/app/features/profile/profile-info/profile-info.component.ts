@@ -13,11 +13,12 @@ import {
 import { ChangePasswordModalComponent } from '../change-password-modal/change-password-modal.component';
 import { CopyableValueComponent } from '../../../shared/components/copyable-value/copyable-value.component';
 import { DateInputComponent } from '../../../shared/components/date-input/date-input.component';
+import { PushUnblockModalComponent } from '../../../shared/components/push-unblock-modal/push-unblock-modal.component';
 
 @Component({
   selector: 'app-profile-info',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ChangePasswordModalComponent, CopyableValueComponent, DateInputComponent, PushPermissionToggleComponent],
+  imports: [CommonModule, ReactiveFormsModule, ChangePasswordModalComponent, CopyableValueComponent, DateInputComponent, PushPermissionToggleComponent, PushUnblockModalComponent],
   templateUrl: './profile-info.component.html',
   styleUrl: './profile-info.component.scss',
 })
@@ -47,10 +48,13 @@ export class ProfileInfoComponent implements OnInit {
     return { variant: 'unsupported', text: 'No soportado' };
   });
 
-  /** Controls the expand/collapse of the unblock-instructions panel. */
+  /** Controls visibility of the "Cómo desbloquear las notificaciones" modal. */
   protected readonly showPushHelpPanel = signal(false);
-  protected togglePushHelpPanel(): void {
-    this.showPushHelpPanel.update((v) => !v);
+  protected openPushHelpPanel(): void {
+    this.showPushHelpPanel.set(true);
+  }
+  protected closePushHelpPanel(): void {
+    this.showPushHelpPanel.set(false);
   }
 
   protected readonly user = this.authService.currentUser;

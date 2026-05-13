@@ -86,22 +86,6 @@
   &:hover { @apply text-blue-700 dark:text-blue-300; }
 }
 
-// Expanded instructions block. Generous padding + tipografía cómoda — no
-// se apila contra el toggle como pasaba en el componente compacto.
-.push-help-panel {
-  @apply mx-5 mb-5 p-4 rounded-xl;
-  @apply bg-red-50 dark:bg-red-900/20;
-  @apply border border-red-200 dark:border-red-800/60;
-  @apply text-xs leading-relaxed text-red-900 dark:text-red-200;
-
-  .push-help-title {
-    @apply text-sm font-semibold mb-2;
-  }
-
-  .push-help-steps {
-    @apply list-decimal pl-5 space-y-1.5;
-  }
-}
 
 .content-card {
   @apply bg-white dark:bg-gray-800 rounded-2xl shadow-sm;

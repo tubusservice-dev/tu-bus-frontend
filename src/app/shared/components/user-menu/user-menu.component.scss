@@ -113,6 +113,51 @@ button.menu-item {
   font: inherit;
 }
 
+// ─── Banner de alerta para activar notificaciones del navegador ───
+// Aparece dentro del dropdown cuando el permiso del browser no es
+// 'granted'. Tono warning ambar/naranja: llama la atención sin la
+// urgencia del rojo. El CTA "Permitir" es el único elemento clickeable.
+.push-alert {
+  @apply mx-2 my-2 flex items-center gap-2 px-3 py-2.5 rounded-xl;
+  @apply bg-amber-50 border border-amber-300;
+
+  .push-alert-icon {
+    @apply w-5 h-5 flex-shrink-0;
+    color: #b45309; // amber-700
+  }
+
+  .push-alert-text {
+    @apply flex-1 text-xs font-medium leading-tight;
+    color: #78350f; // amber-900
+  }
+
+  .push-alert-cta {
+    @apply flex-shrink-0 text-xs font-semibold rounded-md px-2.5 py-1 transition-colors;
+    background-color: #f59e0b; // amber-500
+    color: #ffffff;
+    border: 0;
+    cursor: pointer;
+
+    &:hover { background-color: #d97706; } // amber-600
+    &:active { background-color: #b45309; } // amber-700
+  }
+}
+
+:host-context(.dark) .push-alert {
+  background-color: rgba(120, 53, 15, 0.25); // amber-900 / 25%
+  border-color: rgba(217, 119, 6, 0.5);      // amber-600 / 50%
+
+  .push-alert-icon { color: #fbbf24; }       // amber-400
+  .push-alert-text { color: #fde68a; }       // amber-200
+
+  .push-alert-cta {
+    background-color: #f59e0b;               // amber-500
+    color: #1f2937;                          // gray-800 — contraste sobre amarillo
+    &:hover { background-color: #fbbf24; }   // amber-400
+    &:active { background-color: #d97706; }  // amber-600
+  }
+}
+
 .menu-icon {
   @apply w-5 h-5;
   color: var(--text-secondary);
