@@ -1,7 +1,8 @@
 import { Component, inject, signal, OnInit, computed, HostListener, viewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { AuthService, UserService, UploadService, UpdateProfileRequest } from '../../../core';
+import { AuthService, UserService, UploadService, UpdateProfileRequest, UserNotificationService } from '../../../core';
+import { PushPermissionToggleComponent } from '../../../shared/components/push-permission-toggle/push-permission-toggle.component';
 import { getStates, getCitiesByState, getMunicipalitiesByState } from '../../../shared/data/venezuela-states';
 import {
   NAME_PATTERN, PHONE_VE_PATTERN, DOCUMENT_NUMBER_PATTERN, RIF_PATTERN, ZIPCODE_PATTERN,
@@ -16,7 +17,7 @@ import { DateInputComponent } from '../../../shared/components/date-input/date-i
 @Component({
   selector: 'app-profile-info',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ChangePasswordModalComponent, CopyableValueComponent, DateInputComponent],
+  imports: [CommonModule, ReactiveFormsModule, ChangePasswordModalComponent, CopyableValueComponent, DateInputComponent, PushPermissionToggleComponent],
   templateUrl: './profile-info.component.html',
   styleUrl: './profile-info.component.scss',
 })
@@ -25,6 +26,32 @@ export class ProfileInfoComponent implements OnInit {
   private readonly userService = inject(UserService);
   private readonly uploadService = inject(UploadService);
   private readonly fb = inject(FormBuilder);
+  protected readonly userNotifService = inject(UserNotificationService);
+
+  /**
+   * Derives the badge shown next to the "Notificaciones" sidebar title.
+   * Mirrors the states the push-permission-toggle renders internally, but
+   * we own it here so the badge can sit in the card header instead of
+   * crowding the toggle row.
+   */
+  protected readonly pushStatusBadge = computed(() => {
+    const perm = this.userNotifService.permissionState();
+    const enabled = this.userNotifService.pushEnabled();
+    if (perm === 'granted') {
+      return enabled
+        ? { variant: 'on', text: 'Permitido' }
+        : { variant: 'paused', text: 'Pausado' };
+    }
+    if (perm === 'default') return { variant: 'pending', text: 'Pendiente' };
+    if (perm === 'denied') return { variant: 'blocked', text: 'Bloqueado' };
+    return { variant: 'unsupported', text: 'No soportado' };
+  });
+
+  /** Controls the expand/collapse of the unblock-instructions panel. */
+  protected readonly showPushHelpPanel = signal(false);
+  protected togglePushHelpPanel(): void {
+    this.showPushHelpPanel.update((v) => !v);
+  }
 
   protected readonly user = this.authService.currentUser;
   protected readonly userAvatar = this.authService.userAvatar;
@@ -384,6 +411,20 @@ export class ProfileInfoComponent implements OnInit {
     // Use UTC to avoid timezone offset shifting the day
     const d = new Date(date);
     return d.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
+  }
+
+  /**
+   * Toggle ON path: prompts the browser permission if needed, registers
+   * the FCM token and persists `pushEnabled: true` on the backend. Must
+   * run inside the user click so the browser treats it as a user gesture.
+   */
+  async enablePushNotifications(): Promise<void> {
+    await this.userNotifService.requestNotificationPermission();
+  }
+
+  /** Toggle OFF path: persists `pushEnabled: false`. Keeps the FCM token. */
+  async disablePushNotifications(): Promise<void> {
+    await this.userNotifService.disablePushPreference();
   }
 
   // Build full address string for display

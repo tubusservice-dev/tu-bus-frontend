@@ -141,7 +141,7 @@
       <!-- FOOTER -->
       <div class="notif-modal-footer">
         @if (orderId()) {
-          <a class="notif-btn-order" [routerLink]="['/admin/orders', orderId()]" (click)="close()">Ver orden</a>
+          <button type="button" class="notif-btn-order" (click)="goToOrder()">Ver orden</button>
         }
         <button type="button" class="notif-btn-close" (click)="close()">Cerrar</button>
       </div>

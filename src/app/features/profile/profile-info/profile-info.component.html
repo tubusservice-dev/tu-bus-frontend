@@ -49,6 +49,43 @@
         </div>
       </div>
     </div>
+
+    <div class="sidebar-card">
+      <div class="sidebar-card-header">
+        <h3 class="sidebar-title">Notificaciones</h3>
+        <span class="push-badge" [class]="'push-badge--' + pushStatusBadge().variant">
+          {{ pushStatusBadge().text }}
+        </span>
+      </div>
+
+      <app-push-permission-toggle
+        [enabled]="userNotifService.pushEnabled()"
+        [permission]="userNotifService.permissionState()"
+        [showBadge]="false"
+        [showInlineHelp]="false"
+        [embedded]="true"
+        label="Notificaciones push"
+        description="Avisos del sistema sobre tus pedidos."
+        (activate)="enablePushNotifications()"
+        (deactivate)="disablePushNotifications()"
+      />
+
+      @if (userNotifService.permissionState() === 'denied') {
+        <button type="button" class="push-help-link" (click)="togglePushHelpPanel()">
+          ¿Bloqueado? Toca aquí para desbloquear
+        </button>
+        @if (showPushHelpPanel()) {
+          <div class="push-help-panel" role="status">
+            <p class="push-help-title">Cómo desbloquear las notificaciones</p>
+            <ol class="push-help-steps">
+              <li>Abre la configuración del navegador en este sitio (candado <strong>🔒</strong> a la izquierda de la URL).</li>
+              <li>Busca <strong>Notificaciones</strong> y cambia a <strong>Permitir</strong>.</li>
+              <li>Recarga esta página y vuelve a activar el toggle.</li>
+            </ol>
+          </div>
+        }
+      }
+    </div>
   </aside>
 
   <!-- Main Content -->

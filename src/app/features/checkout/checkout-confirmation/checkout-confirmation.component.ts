@@ -9,12 +9,12 @@ import {
   DispatchType,
   isOilChangeOrder,
 } from '@models/order.model';
-import { PhoneActionPopoverComponent } from '@shared/components/phone-action-popover/phone-action-popover.component';
+import { CustomerSupportActionComponent } from '@shared/components/customer-support-action/customer-support-action.component';
 
 @Component({
   selector: 'app-checkout-confirmation',
   standalone: true,
-  imports: [CommonModule, CurrencyPipe, DatePipe, PhoneActionPopoverComponent],
+  imports: [CommonModule, CurrencyPipe, DatePipe, CustomerSupportActionComponent],
   templateUrl: './checkout-confirmation.component.html',
   styleUrl: './checkout-confirmation.component.scss',
 })

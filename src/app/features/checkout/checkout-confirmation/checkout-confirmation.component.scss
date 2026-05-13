@@ -68,14 +68,10 @@
 .order-details-grid {
   @apply grid grid-cols-2 gap-4;
 
-  // When the mobile status cell is hidden on desktop AND no branch-contact
-  // cell exists, the date would shrink to half-width with empty space beside
-  // it — span it across both columns instead so the layout reads cleanly.
-  // When a branch-contact cell IS present, the date stays in column 1 and
-  // the contact sits next to it in column 2.
-  &:not(:has(.detail-branch-contact)) > .detail:first-child {
-    @apply sm:col-span-2;
-  }
+  // The mobile status cell is hidden from sm: up, so the date would shrink
+  // to half-width with empty space beside it on desktop. Spanning the date
+  // across both columns keeps the layout balanced.
+  > .detail:first-child { @apply sm:col-span-2; }
 }
 
 .detail {
@@ -85,14 +81,18 @@
   .detail-value { @apply text-sm font-semibold text-gray-900 dark:text-white mt-1; }
 }
 
-// Branch-contact cell — clickable phone with Llamar/WhatsApp popover. On
-// mobile it claims its own row so the popover has room to expand without
-// crowding the status cell; on desktop it sits next to the date, right-
-// aligned to mirror the "Estado de la Orden" cell above it.
-.detail.detail-branch-contact {
-  @apply col-span-2 sm:col-span-1 sm:items-end sm:text-right;
+// Support prompt — same card chrome as `.detail-section` so it sits in the
+// rhythm of the confirmation page, but headerless (no title, no icon) so it
+// still reads as an inline informational row with the trigger on the right.
+.support-prompt {
+  @apply flex items-center gap-4 mb-5 px-4 sm:px-5 py-4 rounded-xl text-left;
+  @apply bg-gray-50 dark:bg-gray-900/50;
+  @apply border border-gray-200 dark:border-gray-700;
+}
 
-  app-phone-action-popover { @apply mt-1; }
+.support-prompt-text {
+  @apply flex-1 m-0 text-sm leading-relaxed;
+  @apply text-gray-600 dark:text-gray-400;
 }
 
 .capitalize { text-transform: capitalize; }

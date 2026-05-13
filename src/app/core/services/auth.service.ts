@@ -320,6 +320,20 @@ export class AuthService {
   }
 
   /**
+   * Merges a partial update into the cached user without rotating the JWT.
+   * Used by preference endpoints (e.g. notification toggles) that mutate
+   * a single field server-side and return the updated payload.
+   */
+  patchCurrentUser(patch: Partial<User>): void {
+    const current = this.currentUserSignal();
+    if (!current) return;
+    const merged: User = { ...current, ...patch };
+    const { userKey } = this.getStorageKeys();
+    localStorage.setItem(userKey, JSON.stringify(merged));
+    this.currentUserSignal.set(merged);
+  }
+
+  /**
    * Closes the user's session both client- and server-side. Server-side
    * uses the `tokensInvalidatedAt` mass-invalidation marker so JWTs are
    * rejected on the next request from any device.

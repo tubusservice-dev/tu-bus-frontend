@@ -1,0 +1,204 @@
+:host { display: contents; }
+
+// Full-viewport overlay with backdrop. Mobile renders the dialog as a
+// fullscreen sheet (safe-area aware); desktop centres it with a max-width
+// dialog and soft backdrop.
+.messaging-overlay {
+  @apply fixed inset-0 z-50 flex items-stretch sm:items-center justify-center;
+  background-color: rgba(0, 0, 0, 0.55);
+  animation: messaging-overlay-in 0.18s ease-out;
+  // Prevent scroll-chaining: a swipe inside the modal that hits the edge
+  // of the scrollable list must NOT propagate to the page underneath
+  // (iOS Safari rubber-band, Android overscroll glow). Pairs with the
+  // overflow lock on <html> and <body>.
+  overscroll-behavior: contain;
+}
+
+@keyframes messaging-overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.messaging-dialog {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-primary, #ffffff);
+  width: 100%;
+  height: 100%;
+  border: none;
+  // `overflow: hidden` lets the rounded corners clip the header background
+  // bleed; without it the header's solid fill leaks past the dialog's
+  // border-radius in the top corners.
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  animation: messaging-dialog-in 0.2s ease-out;
+
+  // Mobile fullscreen — respect notch / home indicator.
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+
+  @media (min-width: 640px) {
+    height: auto;
+    max-width: 36rem;       // 576px
+    max-height: 80vh;
+    border-radius: 1rem;
+    border: 1px solid var(--border-color, #e5e7eb);
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+}
+
+@keyframes messaging-dialog-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.messaging-header {
+  @apply flex items-center justify-between gap-3 px-4 sm:px-5 py-3;
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+  background-color: var(--bg-secondary, #f9fafb);
+}
+
+// Identity block — circular project avatar + interlocutor name stacked
+// above the "Mensajería" subtitle. Mirrors the WhatsApp chat header so
+// the user immediately recognises who they're talking to.
+.messaging-identity {
+  @apply flex items-center gap-3 min-w-0;
+  flex: 1;
+}
+
+.messaging-avatar {
+  @apply flex items-center justify-center rounded-full overflow-hidden flex-shrink-0;
+  width: 40px;
+  height: 40px;
+  background-color: var(--accent-primary, #2563eb);
+
+  img {
+    @apply w-full h-full object-cover;
+    // Slight inset padding so the bus glyph doesn't kiss the circle edge.
+    padding: 6px;
+  }
+
+  :host-context(.dark) & {
+    background-color: #1e3a8a;
+  }
+}
+
+.messaging-identity-text {
+  @apply flex flex-col min-w-0;
+  line-height: 1.2;
+}
+
+.messaging-title {
+  @apply text-sm sm:text-base font-semibold m-0 truncate;
+  color: var(--text-primary, #111827);
+}
+
+.messaging-subtitle {
+  @apply text-[11px] m-0 mt-0.5;
+  color: var(--text-secondary, #6b7280);
+}
+
+.messaging-close {
+  @apply p-2 rounded-lg transition-colors flex-shrink-0;
+  color: var(--text-secondary, #6b7280);
+
+  &:hover {
+    background-color: var(--bg-tertiary, #f3f4f6);
+    color: var(--text-primary, #111827);
+  }
+
+  svg { @apply w-5 h-5; }
+}
+
+// Body wraps the embedded comments thread. The thread brings its own
+// chrome (header "Mensajes" / list / input). To avoid double headers
+// we hide the inner header — the modal header already does the labeling.
+//
+// The whole subtree is forced into a flex-column layout where:
+//   - the messages list is the only scrollable area (flex: 1),
+//   - the input form is anchored to the bottom (flex-shrink: 0),
+//   - no extra scroll lives on the modal body itself.
+// `min-height: 0` on every flex item is the trick that lets `overflow-y`
+// actually clip inside nested flex containers — without it the list
+// would grow to its content and push the form out of view.
+.messaging-body {
+  @apply flex-1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+
+  ::ng-deep app-order-comments {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+  }
+
+  ::ng-deep app-order-comments .comments-card {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    border: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+  }
+
+  ::ng-deep app-order-comments .comments-header {
+    display: none !important;
+  }
+
+  ::ng-deep app-order-comments .comments-list {
+    flex: 1 1 auto;
+    max-height: none !important;
+    min-height: 0;
+  }
+
+  ::ng-deep app-order-comments .comments-empty {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  ::ng-deep app-order-comments .comments-form {
+    flex-shrink: 0;
+  }
+}
+
+// ============================================
+// DARK MODE
+// ============================================
+:host-context(.dark) {
+  .messaging-dialog {
+    background-color: #1f2937;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+
+    @media (min-width: 640px) {
+      border-color: #374151;
+    }
+  }
+
+  .messaging-header {
+    background-color: #111827;
+    border-bottom-color: #374151;
+  }
+
+  .messaging-title {
+    color: #f3f4f6;
+  }
+
+  .messaging-subtitle {
+    color: #9ca3af;
+  }
+
+  .messaging-close {
+    color: #9ca3af;
+
+    &:hover {
+      background-color: #374151;
+      color: #f3f4f6;
+    }
+  }
+}

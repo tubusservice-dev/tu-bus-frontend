@@ -1,0 +1,32 @@
+@if (open()) {
+  <div class="messaging-overlay" (click)="onBackdropClick()">
+    <div class="messaging-dialog" role="dialog" aria-modal="true" aria-labelledby="messaging-title" (click)="$event.stopPropagation()">
+      <header class="messaging-header">
+        <div class="messaging-identity">
+          <div class="messaging-avatar">
+            <img src="assets/icons/autobus.png" alt="TuBusExpress" />
+          </div>
+          <div class="messaging-identity-text">
+            <h2 id="messaging-title" class="messaging-title">{{ interlocutorName() }}</h2>
+            <p class="messaging-subtitle">Mensajería</p>
+          </div>
+        </div>
+        <button type="button" class="messaging-close" aria-label="Cerrar" (click)="onClose()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </header>
+
+      <div class="messaging-body">
+        <app-order-comments
+          [orderId]="orderId()"
+          [comments]="comments()"
+          [mode]="mode()"
+          [highlightId]="highlightId()"
+          (commentsUpdated)="onCommentsUpdated($event)"
+        />
+      </div>
+    </div>
+  </div>
+}

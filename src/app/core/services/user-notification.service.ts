@@ -1,7 +1,7 @@
 import { Injectable, inject, signal, computed, effect } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router, NavigationEnd, NavigationCancel, NavigationError } from '@angular/router';
-import { Observable, tap, interval, Subscription, filter, firstValueFrom } from 'rxjs';
+import { Observable, tap, interval, Subscription, filter, firstValueFrom, map } from 'rxjs';
 import { environment } from '@env';
 import { AuthService } from './auth.service';
 import { DeviceTokenService } from './device-token.service';
@@ -71,6 +71,17 @@ export class UserNotificationService {
   readonly hasFcmToken = computed(() => this._currentToken() !== null);
   /** Current `Notification.permission` view exposed as a signal so the UI can react. */
   readonly permissionState = this._permissionState.asReadonly();
+  /**
+   * High-level "is push actually on for this user?" signal. Combines the
+   * device-level state (FCM token present) with the persisted per-user
+   * preference. Drives the toggle visual so a stale token can never make
+   * the UI lie when the backend already gates out the dispatch.
+   */
+  readonly pushEnabled = computed(() => {
+    if (this._currentToken() === null) return false;
+    const user = this.authService.currentUser();
+    return user?.pushNotificationsEnabled !== false;
+  });
 
   /**
    * Stream of push events targeted at the customer scope. Surfaces every
@@ -221,6 +232,53 @@ export class UserNotificationService {
   }
 
   /**
+   * Count unread notifications for the current user scoped to a single order,
+   * optionally filtered by type. Powers the red dot on the order-detail
+   * messaging button.
+   */
+  getOrderUnreadCount(orderId: string, type?: string): Observable<{ count: number }> {
+    const params = type ? `?type=${encodeURIComponent(type)}` : '';
+    return this.http
+      .get<{ success: boolean; data: { count: number } }>(
+        `${this.apiUrl}/by-order/${orderId}/unread-count${params}`,
+      )
+      .pipe(tap(() => { /* no local cache mutation */ }), map(res => res.data));
+  }
+
+  /**
+   * Mark every unread notification for the current user tied to a given
+   * order as read, optionally filtered by type. Used when the messaging
+   * modal opens so the indicator clears on the backend too.
+   */
+  markOrderAsRead(orderId: string, type?: string): Observable<{ count: number }> {
+    const params = type ? `?type=${encodeURIComponent(type)}` : '';
+    return this.http
+      .patch<{ success: boolean; data: { count: number } }>(
+        `${this.apiUrl}/by-order/${orderId}/read${params}`,
+        {},
+      )
+      .pipe(
+        tap((res) => {
+          const cleared = res?.data?.count ?? 0;
+          if (cleared > 0) {
+            this._unreadCount.update((c) => Math.max(0, c - cleared));
+          }
+        }),
+        map((res) => res.data),
+      );
+  }
+
+  /**
+   * Re-read the browser permission and publish it on `permissionState`.
+   * Standalone helper: does NOT prompt, does NOT touch the FCM token —
+   * callers that fired their own `Notification.requestPermission()` use
+   * this to push the latest value into the reactive view.
+   */
+  syncPermissionState(): void {
+    this._permissionState.set(readBrowserPermission());
+  }
+
+  /**
    * Request browser notification permission and register the FCM token
    * with the backend if granted.
    *
@@ -230,6 +288,11 @@ export class UserNotificationService {
    *
    * Idempotent: safe to call multiple times. Always re-syncs `permissionState`
    * with the browser before returning.
+   *
+   * Also flips the per-user opt-out flag to `true` so the backend gate
+   * stops blocking dispatch. The PATCH runs even if the token registration
+   * fails (e.g. transient FCM hiccup) so a retry just succeeds — the flag
+   * is the source of truth, the token is the transport.
    */
   async requestNotificationPermission(): Promise<void> {
     if (!this.fcm.isMessagingSupportedSync()) {
@@ -256,15 +319,32 @@ export class UserNotificationService {
       this._currentToken.set(token);
       this.attachForegroundListener();
       this.adjustPollingInterval();
+      await this.patchPushPreference(true);
     } catch (err) {
       console.warn('[UserNotificationService] Failed to register FCM token:', err);
     }
   }
 
   /**
-   * Unregister the active FCM token from the backend. Used both on logout
-   * (called by AuthService before clearing the JWT) and when the user
-   * deliberately deactivates push from the toggle.
+   * Disables push for this user by flipping the per-user opt-out flag on
+   * the backend. The FCM token stays registered — re-enabling later only
+   * needs a PATCH back to true, no permission prompt, no token re-registration.
+   * The backend gate in PushService.dispatch() handles the rest.
+   */
+  async disablePushPreference(): Promise<void> {
+    try {
+      await this.patchPushPreference(false);
+    } catch (err) {
+      console.warn('[UserNotificationService] Failed to persist push opt-out:', err);
+    }
+  }
+
+  /**
+   * Unregister the active FCM token from the backend. Called by
+   * AuthService on logout (before clearing the JWT) and reused as the
+   * device-teardown half of `disablePushPreference`. Does NOT touch the
+   * persisted user preference — logout must leave the opt-in flag intact
+   * so the next login keeps the same setting.
    */
   async unregisterToken(): Promise<void> {
     const token = this._currentToken();
@@ -279,6 +359,20 @@ export class UserNotificationService {
     this.foregroundSub = undefined;
     // Refresh permission view in case the user changed it in browser settings.
     this._permissionState.set(readBrowserPermission());
+  }
+
+  /**
+   * Persists the per-user push opt-out flag on the backend and merges the
+   * response into the cached user. Isolated as a private helper so both
+   * the enable and disable paths share the same source-of-truth update.
+   */
+  private async patchPushPreference(pushEnabled: boolean): Promise<void> {
+    await firstValueFrom(
+      this.http.patch(`${environment.apiUrl}/users/profile/notification-preferences`, {
+        pushEnabled,
+      }),
+    );
+    this.authService.patchCurrentUser({ pushNotificationsEnabled: pushEnabled });
   }
 
   private startPollingWithInterval(ms: number): void {

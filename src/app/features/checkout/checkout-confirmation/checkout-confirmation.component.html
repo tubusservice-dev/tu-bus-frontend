@@ -56,18 +56,24 @@
             <span class="detail-label">Fecha de la Orden</span>
             <span class="detail-value">{{ o.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
           </div>
-          @if (o.dispatchDetails.selectedBranchPhone) {
-            <div class="detail detail-branch-contact">
-              <span class="detail-label">Contacto de la Sucursal</span>
-              <app-phone-action-popover [phone]="o.dispatchDetails.selectedBranchPhone" />
-            </div>
-          }
           <div class="detail order-status-mobile">
             <span class="detail-label">Estado de la Orden</span>
             <span class="detail-value">{{ getStatusLabel(o.status) }}</span>
           </div>
         </div>
       </div>
+
+      <!-- Inline prompt that surfaces the support action right after the order
+           identification block. Plain text on the left, icon trigger on the
+           right — the popover wires Call / WhatsApp to the dispatching branch
+           phone snapshotted on the order. -->
+      <section class="support-prompt">
+        <p class="support-prompt-text">
+          ¿Necesitas coordinar algún detalle o tienes dudas sobre tu orden?
+          Pulsa el botón para contactar con uno de nuestros agentes y elegir cómo prefieres comunicarte.
+        </p>
+        <app-customer-support-action [phone]="o.dispatchDetails.selectedBranchPhone" />
+      </section>
 
       <!-- ============ Products detail ============ -->
       <section class="detail-section">

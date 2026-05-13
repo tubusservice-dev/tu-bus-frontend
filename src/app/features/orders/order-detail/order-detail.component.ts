@@ -1,5 +1,6 @@
 import { Component, DestroyRef, computed, inject, signal, OnInit } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { interval } from 'rxjs';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { OrderService } from '@core/services/order.service';
@@ -33,14 +34,15 @@ const CLIENT_SERVICE_DATE_MESSAGE: Record<ServiceDateState, string> = {
 };
 import { PAYMENT_TYPES_WITH_FORM, PaymentMethodType } from '@models/payment-method.model';
 import { MechanicAvatarComponent } from '@shared/components/mechanic-avatar/mechanic-avatar.component';
-import { OrderCommentsComponent } from '@shared/components/order-comments/order-comments.component';
 import { RatingModalComponent } from '@shared/components/rating-modal/rating-modal.component';
 import { PhoneActionPopoverComponent } from '@shared/components/phone-action-popover/phone-action-popover.component';
+import { CustomerSupportActionComponent } from '@shared/components/customer-support-action/customer-support-action.component';
+import { OrderMessagingModalComponent } from '@shared/components/order-messaging-modal/order-messaging-modal.component';
 
 @Component({
   selector: 'app-order-detail',
   standalone: true,
-  imports: [CommonModule, CurrencyPipe, RouterLink, MechanicAvatarComponent, OrderCommentsComponent, RatingModalComponent, PhoneActionPopoverComponent],
+  imports: [CommonModule, CurrencyPipe, RouterLink, MechanicAvatarComponent, RatingModalComponent, PhoneActionPopoverComponent, CustomerSupportActionComponent, OrderMessagingModalComponent],
   templateUrl: './order-detail.component.html',
   styleUrl: './order-detail.component.scss',
 })
@@ -62,6 +64,10 @@ export class OrderDetailComponent implements OnInit {
   // ========== COMMENT HIGHLIGHT (push-driven pulse) ==========
   protected readonly highlightCommentId = signal<string | null>(null);
   private highlightTimer: ReturnType<typeof setTimeout> | null = null;
+
+  // ========== MESSAGING MODAL ==========
+  protected readonly showMessagingModal = signal(false);
+  protected readonly hasUnreadMessages = signal(false);
 
   // ========== LIGHTBOX COMPROBANTE ==========
   protected readonly proofPreview = signal<string | null>(null);
@@ -247,6 +253,25 @@ export class OrderDetailComponent implements OnInit {
       });
 
     this.subscribeToPushEvents();
+    this.startThreadPolling();
+  }
+
+  /**
+   * Local resilience floor: pull the order fresh every 30 s while the
+   * detail screen is mounted. Independent from FCM and from the global
+   * notification polling — guarantees the chat reflects new admin
+   * messages even when push delivery is broken (no token registered,
+   * unsecure dev context, SW asleep). `silentReloadOrder` is idempotent
+   * and diff-based, so calls without changes are cheap and produce no
+   * UI flicker.
+   */
+  private startThreadPolling(): void {
+    interval(30_000)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        const id = this.order()?.id;
+        if (id) this.silentReloadOrder(id);
+      });
   }
 
   private loadOrder(id: string): void {
@@ -260,11 +285,25 @@ export class OrderDetailComponent implements OnInit {
         if (res.data.status === OrderStatus.COMPLETED) {
           this.checkReviewAndMaybeOpenModal(res.data.id);
         }
+        this.refreshUnreadMessages(id);
       },
       error: (err) => {
         this.error.set(err.error?.message || 'Error al cargar la orden');
         this.isLoading.set(false);
       },
+    });
+  }
+
+  /**
+   * Asks the backend for the unread `order_comment` notification count for
+   * this order. Drives the red dot on the messaging trigger. Called on
+   * first load and whenever a relevant push arrives while the modal is
+   * closed.
+   */
+  private refreshUnreadMessages(orderId: string): void {
+    this.userNotifications.getOrderUnreadCount(orderId, 'order_comment').subscribe({
+      next: ({ count }) => this.hasUnreadMessages.set(count > 0),
+      error: () => { /* silent — non-critical signal */ },
     });
   }
 
@@ -288,8 +327,24 @@ export class OrderDetailComponent implements OnInit {
           .filter((c: OrderComment) => c.authorType === 'admin')
           .filter((c: OrderComment) => !previousKeys.has(orderCommentKey(c)))
           .pop();
-        if (incomingAdminComment) {
-          this.triggerCommentHighlight(orderCommentKey(incomingAdminComment));
+        if (!incomingAdminComment) return;
+
+        // Always trigger the pulse highlight — useful both inside the
+        // modal (drawing the eye to the new bubble) and right after the
+        // user opens it next time.
+        this.triggerCommentHighlight(orderCommentKey(incomingAdminComment));
+
+        // Diff-driven dot logic — independent from the FCM push event
+        // payload, so it works on the polling fallback path too:
+        //   - Modal closed → light the unread dot.
+        //   - Modal open   → user is already watching; sync the backend
+        //                    immediately so the dot doesn't ghost back on.
+        if (this.showMessagingModal()) {
+          this.userNotifications
+            .markOrderAsRead(id, 'order_comment')
+            .subscribe({ error: () => { /* silent */ } });
+        } else {
+          this.hasUnreadMessages.set(true);
         }
       },
       error: () => { /* silent — polling fallback will retry */ },
@@ -315,9 +370,16 @@ export class OrderDetailComponent implements OnInit {
     this.userNotifications.pushReceived$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((event) => {
+        // [diagnostics] temporary log — confirms FCM delivery while the
+        // messaging feature is being verified end-to-end. Safe to remove
+        // once the unread flow is stable in production.
+        console.info('[OrderDetail] push received:', event);
+
         const currentId = this.order()?.id;
         if (!currentId) return;
         if (event.relatedOrder !== currentId) return;
+        // `silentReloadOrder` owns both the in-page refresh AND the
+        // unread-dot logic (diff-based). No need to second-guess here.
         this.silentReloadOrder(currentId);
       });
   }
@@ -552,6 +614,24 @@ export class OrderDetailComponent implements OnInit {
 
   onCommentsUpdated(updatedOrder: Order): void {
     this.order.set(updatedOrder);
+  }
+
+  // ============================================
+  // MESSAGING MODAL
+  // ============================================
+  protected openMessaging(): void {
+    this.showMessagingModal.set(true);
+    const id = this.order()?.id;
+    if (!id) return;
+    // Optimistic: clear the dot immediately, then sync with the backend.
+    this.hasUnreadMessages.set(false);
+    this.userNotifications
+      .markOrderAsRead(id, 'order_comment')
+      .subscribe({ error: () => { /* silent — UI already optimistic */ } });
+  }
+
+  protected closeMessaging(): void {
+    this.showMessagingModal.set(false);
   }
 
   // ============================================

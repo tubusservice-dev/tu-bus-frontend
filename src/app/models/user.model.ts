@@ -48,6 +48,13 @@ export interface User {
    * flow. Drives the "change" vs "set" mode of the password modal.
    */
   hasPassword?: boolean;
+  /**
+   * Per-user opt-out for push notifications. When `false`, the backend
+   * skips push dispatch for this account regardless of registered FCM
+   * tokens. Optional in the frontend type for backwards compatibility
+   * with sessions cached before this field existed.
+   */
+  pushNotificationsEnabled?: boolean;
   createdAt: Date;
 }
 

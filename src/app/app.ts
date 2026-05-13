@@ -2,6 +2,7 @@ import { Component, inject, signal, effect } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { OverlayStackService } from '@core/services/overlay-stack.service';
 import { AuthService } from '@core/services/auth.service';
+import { UserNotificationService } from '@core/services/user-notification.service';
 import { ProductDetailPageComponent } from '@features/product-detail/product-detail-page/product-detail-page.component';
 import { CartOverlayComponent } from '@features/cart/cart-overlay/cart-overlay.component';
 import { ToastContainerComponent } from '@shared/components/toast-container/toast-container.component';
@@ -38,6 +39,7 @@ import { AccountLinkPendingModalComponent } from '@shared/components/account-lin
 export class App {
   protected readonly overlayService = inject(OverlayStackService);
   protected readonly authService = inject(AuthService);
+  private readonly userNotifications = inject(UserNotificationService);
 
   // Auth modal hosted here so it stacks above any feature overlay (product
   // detail, cart) which mount with z-index 1000.
@@ -61,6 +63,23 @@ export class App {
       if (this.authService.sessionExpired()) {
         this.authService.openAuthModal();
       }
+    });
+
+    // Bootstrap the customer notification polling at the application root,
+    // independent from any specific UI surface. The user-notifications bell
+    // also calls `startPolling()` when it mounts, but the bell lives only
+    // in the desktop header (`.notif-desktop-only`) — a mobile session
+    // would otherwise have NO polling at all and `unreadCount` would stay
+    // frozen at 0. Hosting the lifecycle here guarantees that every
+    // authenticated customer tab refreshes the notification count even
+    // when FCM cannot deliver pushes (dev / unsecure / token rejected).
+    effect(() => {
+      const user = this.authService.currentUser();
+      if (!user || user.role === 'admin') {
+        this.userNotifications.stopPolling();
+        return;
+      }
+      this.userNotifications.startPolling();
     });
   }
 
