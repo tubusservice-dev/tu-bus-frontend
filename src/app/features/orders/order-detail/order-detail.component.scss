@@ -14,33 +14,62 @@
 // ============================================
 // HEADER
 // ============================================
+// Mobile: 3-row grid where the status badge and the action buttons share
+// the bottom row (status on the left, actions on the right). `header-left`
+// and `header-info` collapse to `display: contents` so their children
+// participate directly in the page-header grid. Desktop reverts to the
+// original flex layout (back+title stacked on the left, actions on the
+// right) without HTML changes.
 .page-header {
-  @apply flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6;
+  @apply mb-6;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    "back   back"
+    "title  title"
+    "status actions";
+  align-items: center;
+  gap: 0.5rem 0.75rem;
 }
 
-.header-left {
-  @apply flex flex-col gap-2;
+.header-left { display: contents; }
+.header-info { display: contents; }
+
+@screen sm {
+  .page-header {
+    @apply flex flex-row items-center justify-between gap-4;
+  }
+
+  .header-left {
+    display: flex;
+    @apply flex-col gap-2;
+  }
+
+  .header-info {
+    display: flex;
+    @apply items-center gap-3 flex-wrap;
+    min-width: 0;
+  }
 }
 
 .btn-back {
   @apply inline-flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors w-fit;
+  grid-area: back;
 
   svg { @apply w-4 h-4; }
 }
 
-.header-info {
-  @apply flex items-center gap-3 flex-wrap;
-  min-width: 0;
-}
-
 .page-title {
   @apply text-xl sm:text-2xl font-bold text-gray-900 dark:text-white m-0;
+  grid-area: title;
   min-width: 0;
   overflow-wrap: anywhere;
 }
 
 .header-actions {
   @apply flex items-center gap-2;
+  grid-area: actions;
+  justify-self: end;
 }
 
 .btn-print {
@@ -59,6 +88,15 @@
 // ============================================
 .status-badge {
   @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold;
+}
+
+// Scoped to the page-header grid only — the badge participates in the grid
+// area `status` so on mobile it sits in the bottom-left cell next to the
+// action buttons. Other `.status-badge` instances elsewhere in the page
+// (timeline, dispatch, service date) are unaffected.
+.page-header .status-badge {
+  grid-area: status;
+  justify-self: start;
 }
 
 // ============================================

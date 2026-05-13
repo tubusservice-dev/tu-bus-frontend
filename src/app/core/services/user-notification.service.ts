@@ -1,7 +1,7 @@
 import { Injectable, inject, signal, computed, effect } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router, NavigationEnd, NavigationCancel, NavigationError } from '@angular/router';
-import { Observable, tap, interval, Subscription, filter, firstValueFrom } from 'rxjs';
+import { Observable, tap, interval, Subscription, filter, firstValueFrom, map } from 'rxjs';
 import { environment } from '@env';
 import { AuthService } from './auth.service';
 import { DeviceTokenService } from './device-token.service';
@@ -218,6 +218,43 @@ export class UserNotificationService {
         this._unreadCount.set(0);
       })
     );
+  }
+
+  /**
+   * Count unread notifications for the current user scoped to a single order,
+   * optionally filtered by type. Powers the red dot on the order-detail
+   * messaging button.
+   */
+  getOrderUnreadCount(orderId: string, type?: string): Observable<{ count: number }> {
+    const params = type ? `?type=${encodeURIComponent(type)}` : '';
+    return this.http
+      .get<{ success: boolean; data: { count: number } }>(
+        `${this.apiUrl}/by-order/${orderId}/unread-count${params}`,
+      )
+      .pipe(tap(() => { /* no local cache mutation */ }), map(res => res.data));
+  }
+
+  /**
+   * Mark every unread notification for the current user tied to a given
+   * order as read, optionally filtered by type. Used when the messaging
+   * modal opens so the indicator clears on the backend too.
+   */
+  markOrderAsRead(orderId: string, type?: string): Observable<{ count: number }> {
+    const params = type ? `?type=${encodeURIComponent(type)}` : '';
+    return this.http
+      .patch<{ success: boolean; data: { count: number } }>(
+        `${this.apiUrl}/by-order/${orderId}/read${params}`,
+        {},
+      )
+      .pipe(
+        tap((res) => {
+          const cleared = res?.data?.count ?? 0;
+          if (cleared > 0) {
+            this._unreadCount.update((c) => Math.max(0, c - cleared));
+          }
+        }),
+        map((res) => res.data),
+      );
   }
 
   /**

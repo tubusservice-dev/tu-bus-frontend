@@ -1,0 +1,156 @@
+:host {
+  display: inline-block;
+}
+
+.support-action-wrapper {
+  @apply relative inline-block;
+}
+
+// Square icon tile — mirrors the header `cart-btn` so the visual language
+// stays consistent across the app's icon-only triggers.
+.support-action-btn {
+  @apply relative p-2 rounded-lg transition-all duration-200;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+
+  &:hover {
+    background-color: var(--border-color-hover);
+    color: var(--accent-primary);
+  }
+
+  &:focus-visible {
+    @apply outline-none ring-2 ring-offset-2;
+    --tw-ring-color: var(--accent-primary);
+  }
+}
+
+.support-action-icon {
+  @apply w-5 h-5;
+}
+
+// Red badge over the trigger when there are unread messages. Mirrors the
+// `avatar-notif-dot` pattern from the user-menu so the visual signal is
+// already familiar to the user.
+.support-action-dot {
+  @apply absolute w-2.5 h-2.5 rounded-full;
+  top: -1px;
+  right: -1px;
+  background-color: #ef4444;
+  border: 2px solid var(--bg-primary, #ffffff);
+
+  :host-context(.dark) & {
+    border-color: #1f2937;
+  }
+}
+
+// Smaller dot used inside the popover, right next to the "Mensajería" label
+// so the cue is still visible while the popover is open.
+.popover-dot {
+  @apply inline-block w-2 h-2 rounded-full ml-auto;
+  background-color: #ef4444;
+}
+
+// Dropdown card — same shape and shadow as the `user-menu` dropdown.
+.support-action-popover {
+  @apply absolute right-0 top-full mt-2 rounded-xl py-2 overflow-hidden;
+  min-width: 200px;
+  z-index: 50;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-lg);
+  animation: support-action-popover-in 0.18s ease-out;
+}
+
+@keyframes support-action-popover-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.popover-option {
+  @apply flex items-center gap-3 w-full px-4 py-2.5 text-sm font-medium text-left transition-colors duration-150;
+  background-color: transparent;
+  color: var(--text-primary);
+
+  &:not(:disabled):hover {
+    background-color: rgba(0, 0, 0, 0.04);
+  }
+
+  &:disabled,
+  &.is-disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+
+  svg {
+    @apply w-5 h-5 flex-shrink-0;
+    color: var(--text-secondary);
+  }
+
+  &:not(:disabled):hover svg {
+    color: var(--text-primary);
+  }
+
+  &.popover-whatsapp {
+    color: #15803d;
+
+    svg { color: #15803d; }
+
+    &:not(:disabled):hover {
+      background-color: #f0fdf4;
+    }
+  }
+}
+
+.popover-label {
+  @apply flex-1;
+}
+
+// ============================================
+// DARK MODE
+// ============================================
+:host-context(.dark) {
+  .support-action-btn {
+    background-color: #374151;
+    color: #f3f4f6;
+
+    &:hover {
+      background-color: #4b5563;
+      color: var(--tubus-text-accent, #4d94ff);
+    }
+  }
+
+  .support-action-popover {
+    background-color: #1f2937;
+    border-color: #374151;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+  }
+
+  .popover-option {
+    color: #d1d5db;
+
+    &:not(:disabled):hover {
+      background-color: rgba(255, 255, 255, 0.06);
+      color: #f3f4f6;
+    }
+
+    svg { color: #9ca3af; }
+
+    &:not(:disabled):hover svg {
+      color: #f3f4f6;
+    }
+
+    &.popover-whatsapp {
+      color: #4ade80;
+
+      svg { color: #4ade80; }
+
+      &:not(:disabled):hover {
+        background-color: rgba(34, 197, 94, 0.1);
+      }
+    }
+  }
+}
+
+// Print: hide the trigger and the popover — irrelevant on paper.
+@media print {
+  :host { display: none !important; }
+}

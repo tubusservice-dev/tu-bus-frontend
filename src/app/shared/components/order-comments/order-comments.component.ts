@@ -1,4 +1,16 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
+import {
+  AfterViewInit,
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  ViewChild,
+  computed,
+  effect,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { OrderComment, Order, orderCommentKey } from '@models/order.model';
 import { OrderService } from '@core/services/order.service';
@@ -32,24 +44,26 @@ const MAX_CLIENT_COMMENTS_PER_ORDER = 5;
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="comments-icon" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 9.75a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375m-13.5 3.01c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />
         </svg>
-        <h3>Comentarios</h3>
+        <h3>Mensajes</h3>
       </header>
 
       @if (comments().length === 0) {
-        <p class="comments-empty">Aún no hay comentarios en esta orden. Sé el primero en escribir.</p>
+        <p class="comments-empty">Aún no hay mensajes en esta orden. Sé el primero en escribir.</p>
       } @else {
-        <ul class="comments-list">
+        <ul class="comments-list" #listEl>
           @for (c of comments(); track commentKey(c)) {
             <li
-              class="comment-item"
-              [class.is-admin]="c.authorType === 'admin'"
-              [class.is-highlighted]="commentKey(c) === highlightId()"
+              class="comment-row"
+              [class.is-own]="c.authorType === mode()"
+              [class.is-other]="c.authorType !== mode()"
             >
-              <div class="comment-head">
-                <span class="comment-author">{{ c.authorName }}</span>
-                <span class="comment-date">{{ c.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
+              <div
+                class="comment-bubble"
+                [class.is-highlighted]="commentKey(c) === highlightId()"
+              >
+                <span class="comment-body">{{ c.message }}</span>
+                <span class="comment-meta">{{ c.createdAt | date:'HH:mm' }}</span>
               </div>
-              <p class="comment-body">{{ c.message }}</p>
             </li>
           }
         </ul>
@@ -62,7 +76,7 @@ const MAX_CLIENT_COMMENTS_PER_ORDER = 5;
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008Zm-9-4.5a9 9 0 1 1 18 0 9 9 0 0 1-18 0Z" />
             </svg>
             <span>
-              Has alcanzado el límite de {{ maxClientComments }} comentarios para esta orden.
+              Has alcanzado el límite de {{ maxClientComments }} mensajes para esta orden.
               Espera la respuesta de un agente para continuar la conversación.
             </span>
           </div>
@@ -71,7 +85,7 @@ const MAX_CLIENT_COMMENTS_PER_ORDER = 5;
           class="comments-textarea"
           rows="3"
           maxlength="1000"
-          [placeholder]="hasReachedClientLimit() ? 'Has alcanzado el límite de comentarios.' : 'Escribe un comentario…'"
+          [placeholder]="hasReachedClientLimit() ? 'Has alcanzado el límite de mensajes.' : 'Escribe un mensaje…'"
           [value]="draftMessage()"
           [disabled]="hasReachedClientLimit()"
           (input)="draftMessage.set($any($event.target).value); sendError.set(null)"
@@ -88,7 +102,7 @@ const MAX_CLIENT_COMMENTS_PER_ORDER = 5;
             [disabled]="!canSend() || isSending()"
             (click)="send()"
           >
-            @if (isSending()) { Enviando… } @else { Enviar comentario }
+            @if (isSending()) { Enviando… } @else { Enviar mensaje }
           </button>
         </div>
       </div>
@@ -111,53 +125,96 @@ const MAX_CLIENT_COMMENTS_PER_ORDER = 5;
     }
 
     .comments-list {
-      @apply flex flex-col gap-3 px-4 sm:px-5 py-4 m-0 list-none;
+      @apply flex flex-col px-4 sm:px-5 py-4 m-0 list-none;
       max-height: 360px;
       overflow-y: auto;
     }
 
-    .comment-item {
-      @apply flex flex-col gap-1 p-3 rounded-lg border;
-      @apply bg-gray-50 border-gray-200 dark:bg-gray-900/40 dark:border-gray-700;
-      border-left-width: 3px;
-      border-left-color: #9ca3af;
-      transition: background-color 0.4s ease, border-color 0.4s ease;
+    // Row wrapper — flexes the bubble to one side. The natural gap between
+    // bubbles is small (2 px) so a streak of messages from the same author
+    // reads as a tight group; jump up to 12 px right after the author
+    // changes, achieved with the adjacent-sibling combinator below.
+    .comment-row {
+      @apply flex w-full;
+      margin-top: 2px;
 
-      &.is-admin {
-        @apply bg-blue-50/60 dark:bg-blue-900/15;
-        border-left-color: #2563eb;
+      &.is-own   { justify-content: flex-end; }
+      &.is-other { justify-content: flex-start; }
+
+      &.is-own + .is-other,
+      &.is-other + .is-own { margin-top: 12px; }
+
+      &:first-child { margin-top: 0; }
+    }
+
+    // Bubble — inline-flex wrap is the trick that lets the timestamp ride
+    // alongside short messages but drop to a new line on long ones, just
+    // like the WhatsApp pattern. The flex:1 on the body pushes the meta
+    // to the far right when they share a line.
+    .comment-bubble {
+      display: inline-flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      gap: 4px 10px;
+      max-width: 75%;
+      padding: 8px 12px;
+      border-radius: 16px;
+      line-height: 1.4;
+      // Soft drop shadow consistent with cards in the rest of the app.
+      box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+      transition: box-shadow 0.4s ease;
+    }
+
+    // OWN: right side, accent fill (project blue, not WhatsApp green).
+    .is-own .comment-bubble {
+      @apply bg-blue-600 text-white;
+      border-bottom-right-radius: 4px;
+      :host-context(.dark) & { @apply bg-blue-700; }
+    }
+
+    // OTHER: left side, neutral fill with light border.
+    .is-other .comment-bubble {
+      @apply bg-gray-100 text-gray-900 border border-gray-200;
+      border-bottom-left-radius: 4px;
+      :host-context(.dark) & {
+        @apply bg-gray-700 text-gray-100;
+        border-color: rgba(255, 255, 255, 0.06);
       }
-
-      &.is-highlighted {
-        // Three short pulses so the new comment grabs attention without
-        // hijacking the screen. Picks up the chat accent so admin and
-        // client comments both feel "lit up" while staying readable.
-        animation: comment-pulse 2.4s ease-out 1;
-      }
-    }
-    :host-context(.dark) .comment-item.is-admin { border-left-color: #60a5fa; }
-
-    @keyframes comment-pulse {
-      0%   { background-color: rgba(59, 130, 246, 0.30); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.40); }
-      30%  { background-color: rgba(59, 130, 246, 0.18); box-shadow: 0 0 0 6px rgba(59, 130, 246, 0); }
-      60%  { background-color: rgba(59, 130, 246, 0.22); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.30); }
-      100% { background-color: inherit; box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
     }
 
-    .comment-head {
-      @apply flex items-center justify-between gap-2 flex-wrap;
-    }
-    .comment-author {
-      @apply text-xs font-semibold text-gray-900 dark:text-white;
-    }
-    .comment-date {
-      @apply text-[11px] text-gray-500 dark:text-gray-400;
-    }
     .comment-body {
-      @apply text-sm text-gray-700 dark:text-gray-200 m-0 leading-relaxed;
+      @apply text-sm m-0;
+      flex: 1 1 auto;
+      min-width: 0;
       white-space: pre-wrap;
       word-break: break-word;
       overflow-wrap: anywhere;
+    }
+
+    // Timestamp inside the bubble — small, faded, hugs the trailing edge
+    // of the last text line when it fits, falls to its own line when not.
+    .comment-meta {
+      font-size: 10px;
+      line-height: 1;
+      opacity: 0.75;
+      flex-shrink: 0;
+      align-self: flex-end;
+      margin-left: auto;
+    }
+    .is-own   .comment-meta { color: rgba(255, 255, 255, 0.85); }
+    .is-other .comment-meta { @apply text-gray-500 dark:text-gray-400; }
+
+    // Pulse highlight refactored: ring around the bubble instead of swapping
+    // its background. Works identically on own (blue) and other (gray) sides
+    // without competing with their base colour.
+    .comment-bubble.is-highlighted {
+      animation: bubble-pulse 2.4s ease-out 1;
+    }
+
+    @keyframes bubble-pulse {
+      0%   { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.55); }
+      40%  { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
+      100% { box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04); }
     }
 
     .comments-form {
@@ -200,7 +257,7 @@ const MAX_CLIENT_COMMENTS_PER_ORDER = 5;
     }
   `],
 })
-export class OrderCommentsComponent {
+export class OrderCommentsComponent implements AfterViewInit {
   private readonly orderService = inject(OrderService);
 
   readonly orderId = input.required<string>();
@@ -218,11 +275,50 @@ export class OrderCommentsComponent {
   /** Bridge to the model helper so the template can call it for track-by + class binding. */
   protected readonly commentKey = orderCommentKey;
 
+  /**
+   * Reference to the scrollable `<ul>` that holds the messages. Used to
+   * pin the view to the latest message — chat-style — whenever the thread
+   * changes (initial render, incoming push, message sent).
+   */
+  @ViewChild('listEl') private listEl?: ElementRef<HTMLElement>;
+
   protected readonly draftMessage = signal('');
   protected readonly isSending = signal(false);
   protected readonly sendError = signal<string | null>(null);
 
   protected readonly maxClientComments = MAX_CLIENT_COMMENTS_PER_ORDER;
+
+  constructor() {
+    // Re-scroll whenever the comments array changes. Reading `comments()`
+    // registers the dependency; `requestAnimationFrame` defers the
+    // measurement until Angular has actually painted the new rows.
+    effect(() => {
+      this.comments();
+      this.scheduleScrollToBottom();
+    });
+  }
+
+  ngAfterViewInit(): void {
+    // First paint after the view is built — the effect above already runs
+    // synchronously on init, but at that moment `listEl` is still
+    // undefined. This second call lands once the ViewChild is wired.
+    this.scheduleScrollToBottom();
+  }
+
+  /**
+   * Scrolls the messages list to the bottom on the next animation frame.
+   * Guarded by a presence check on the ViewChild because the `<ul>` only
+   * exists when there is at least one comment (the empty state renders a
+   * `<p>` placeholder instead).
+   */
+  private scheduleScrollToBottom(): void {
+    if (typeof window === 'undefined') return;
+    requestAnimationFrame(() => {
+      const el = this.listEl?.nativeElement;
+      if (!el) return;
+      el.scrollTop = el.scrollHeight;
+    });
+  }
 
   /** Count of existing client-authored comments in this order's thread. */
   protected readonly clientCommentsCount = computed(
@@ -267,7 +363,7 @@ export class OrderCommentsComponent {
       error: (err) => {
         this.isSending.set(false);
         const body = err?.error;
-        const baseMsg = body?.message || 'No se pudo enviar el comentario. Intenta de nuevo.';
+        const baseMsg = body?.message || 'No se pudo enviar el mensaje. Intenta de nuevo.';
         const detail = Array.isArray(body?.errors) && body.errors.length
           ? ` (${body.errors[0].field}: ${body.errors[0].message})`
           : '';
