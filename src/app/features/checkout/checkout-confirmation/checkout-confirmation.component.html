@@ -72,7 +72,11 @@
           ¿Necesitas coordinar algún detalle o tienes dudas sobre tu orden?
           Pulsa el botón para contactar con uno de nuestros agentes y elegir cómo prefieres comunicarte.
         </p>
-        <app-customer-support-action [phone]="o.dispatchDetails.selectedBranchPhone" />
+        <app-customer-support-action
+          [phone]="o.dispatchDetails.selectedBranchPhone"
+          [hasUnreadMessages]="hasUnreadMessages()"
+          (messagingClick)="openMessaging()"
+        />
       </section>
 
       <!-- ============ Products detail ============ -->
@@ -329,3 +333,17 @@
     </div>
   }
 </div>
+
+<!-- ==================== MESSAGING MODAL ==================== -->
+@if (order(); as o) {
+  <app-order-messaging-modal
+    [open]="showMessagingModal()"
+    [orderId]="o.id"
+    [comments]="o.comments || []"
+    mode="client"
+    interlocutorName="Agente TuBusExpress"
+    [highlightId]="highlightCommentId()"
+    (closed)="closeMessaging()"
+    (commentsUpdated)="onCommentsUpdated($event)"
+  />
+}
