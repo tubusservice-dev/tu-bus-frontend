@@ -13,23 +13,53 @@
 .order-card {
   @apply bg-white dark:bg-gray-800 rounded-xl shadow-sm;
   @apply border border-gray-200 dark:border-gray-700;
-  @apply overflow-hidden cursor-pointer;
+  @apply cursor-pointer;
   @apply hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all;
+  // No `overflow: hidden` on purpose — the in-card support popover anchors
+  // inside the card header and was being clipped at the rounded edges.
+  // Safe to drop the clipping because none of the children carry their own
+  // background; the rounded corners read cleanly without it.
 }
 
 .order-card-header {
-  @apply flex items-center justify-between px-5 py-3;
+  @apply flex items-center justify-between gap-2 px-5 py-3;
   @apply border-b border-gray-100 dark:border-gray-700;
 }
 
 .order-number {
-  @apply flex flex-col;
+  @apply flex flex-col min-w-0;
   .order-number-label { @apply text-xs text-gray-500 dark:text-gray-400; }
-  .order-number-value { @apply text-sm font-bold text-gray-900 dark:text-white font-mono; }
+  .order-number-value { @apply text-sm font-bold text-gray-900 dark:text-white font-mono truncate; }
+}
+
+// Right side of the header: status badge + (optionally) support button.
+// Stays nowrap so they always sit on the same row, but if the badge label
+// is unusually wide on tiny screens the inner badge truncates first via
+// its own padding/text size.
+.order-card-actions {
+  @apply flex items-center gap-2 flex-shrink-0;
 }
 
 .status-badge {
   @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold;
+}
+
+// In-list trigger needs to be visually subordinate to the badge AND to the
+// total price below. Shrinks the icon button from 36 px (detail page) to
+// 28 px so it reads as a secondary affordance.
+.order-support-wrap {
+  display: inline-flex;
+  line-height: 0;
+
+  ::ng-deep .support-action-btn {
+    padding: 0.3125rem; // 5 px instead of 8 px (p-2 default)
+  }
+
+  ::ng-deep .support-action-icon {
+    width: 1.125rem;  // 18 px instead of 20 px
+    height: 1.125rem;
+  }
+
 }
 
 .order-card-body { @apply px-5 py-3; }
