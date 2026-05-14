@@ -45,9 +45,23 @@
               <span class="order-number-label">Orden</span>
               <span class="order-number-value">{{ order.orderNumber }}</span>
             </div>
-            <span class="status-badge" [ngClass]="getStatusClass(order.status)">
-              {{ getStatusLabel(order.status) }}
-            </span>
+            <div class="order-card-actions">
+              <span class="status-badge" [ngClass]="getStatusClass(order.status)">
+                {{ getStatusLabel(order.status) }}
+              </span>
+              @if (order.status !== COMPLETED) {
+                <!-- The wrapper catches every click that originates from the
+                     popover (open trigger + Call / WhatsApp / Mensajería
+                     options) and stops it from bubbling up to the card,
+                     which would otherwise navigate to the order detail. -->
+                <div class="order-support-wrap" (click)="$event.stopPropagation()">
+                  <app-customer-support-action
+                    [phone]="order.dispatchDetails.selectedBranchPhone"
+                    (messagingClick)="openMessagingFromList(order)"
+                  />
+                </div>
+              }
+            </div>
           </div>
           <div class="order-card-body">
             <div class="order-items-preview">
@@ -71,6 +85,22 @@
         </div>
       }
     </div>
+
+    <!-- Messaging modal opened from any in-card support button. A single
+         instance lives at the list level; the active order is swapped
+         via `messagingOrder` so the same modal handles every card. -->
+    @if (messagingOrder(); as mo) {
+      <app-order-messaging-modal
+        [open]="showMessagingModal()"
+        [orderId]="mo.id"
+        [comments]="mo.comments || []"
+        mode="client"
+        interlocutorName="Agente TuBusExpress"
+        [highlightId]="highlightCommentId()"
+        (closed)="closeMessaging()"
+        (commentsUpdated)="onMessagingCommentsUpdated($event)"
+      />
+    }
 
     <!-- Pagination -->
     @if (totalPages() > 1) {
