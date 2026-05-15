@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Router, NavigationEnd, NavigationCancel, NavigationError } from '@angular/router';
 import { Observable, tap, interval, Subscription, filter, firstValueFrom, map } from 'rxjs';
 import { environment } from '@env';
+import { PlatformService } from '@platform';
 import { AuthService } from './auth.service';
 import { DeviceTokenService } from './device-token.service';
 import { FirebaseMessagingService } from '@core/firebase';
@@ -34,6 +35,13 @@ export type NotificationPermissionState =
  * Snapshot reader that maps the browser's permission value into our
  * extended sentinel. Safe to call in any context — returns
  * `'unsupported'` when the API does not exist.
+ *
+ * Web-only. Native callers must check via the Capacitor Firebase
+ * Messaging plugin (handled in `requestNotificationPermission()` and
+ * `syncPermissionState()` below); the `Notification` global does NOT
+ * exist inside the Capacitor WebView and would always return
+ * `'unsupported'` if used here on native — making the toggle render
+ * "No soportado" even though native push works fine.
  */
 const readBrowserPermission = (): NotificationPermissionState => {
   if (typeof window === 'undefined') return 'unsupported';
@@ -50,7 +58,28 @@ export class UserNotificationService {
   private readonly router = inject(Router);
   private readonly fcm = inject(FirebaseMessagingService);
   private readonly deviceTokenService = inject(DeviceTokenService);
+  private readonly platform = inject(PlatformService);
   private readonly apiUrl = `${environment.apiUrl}/user-notifications`;
+
+  /**
+   * Reads the OS-level permission state respecting the runtime platform.
+   * Native bypasses the browser `Notification.permission` (does not exist
+   * inside the Capacitor WebView) and infers from token presence — if a
+   * token has been minted previously, the OS prompt was accepted.
+   *
+   * The "true" native permission state is checked async during
+   * `requestNotificationPermission` (via the plugin) so this synchronous
+   * read just provides a conservative default for UI rendering at boot.
+   */
+  private readPermission(): NotificationPermissionState {
+    if (this.platform.isNative()) {
+      // No way to query the OS permission synchronously; default to
+      // 'default' until the user taps the toggle. If they previously
+      // enrolled (token persisted), assume granted.
+      return this._currentToken() !== null ? 'granted' : 'default';
+    }
+    return readBrowserPermission();
+  }
   private pollSub?: Subscription;
   private foregroundSub?: Subscription;
   private lastKnownCount = 0;
@@ -61,7 +90,10 @@ export class UserNotificationService {
   private readonly _showPopover = signal(false);
   private readonly _currentToken = signal<string | null>(null);
   private readonly _permissionState = signal<NotificationPermissionState>(
-    readBrowserPermission()
+    // Initial value uses the platform-aware reader so native does NOT
+    // see 'unsupported' just because Notification API is missing in the
+    // WebView. The signal updates again post-init via syncPermissionState.
+    this.platform.isNative() ? 'default' : readBrowserPermission()
   );
 
   readonly unreadCount = this._unreadCount.asReadonly();
@@ -122,11 +154,16 @@ export class UserNotificationService {
     // the prompt path now; that click is the gesture the browser needs.
     effect(() => {
       const user = this.authService.currentUser();
-      this._permissionState.set(readBrowserPermission());
+      this._permissionState.set(this.readPermission());
       if (!user) return;
       // Skip on admin context — AdminNotificationsService handles that subject.
       if (user.role === 'admin') return;
       if (this._currentToken() !== null) return;
+      // Web: only rehydrate if browser already granted (the user opted in
+      // a previous session). Native: skip silent rehydration entirely
+      // because we cannot query OS permission synchronously without a
+      // plugin call; the explicit toggle is the source of truth.
+      if (this.platform.isNative()) return;
       if (readBrowserPermission() !== 'granted') return;
       void this.rehydrateFcmToken();
     });
@@ -269,13 +306,18 @@ export class UserNotificationService {
   }
 
   /**
-   * Re-read the browser permission and publish it on `permissionState`.
-   * Standalone helper: does NOT prompt, does NOT touch the FCM token —
-   * callers that fired their own `Notification.requestPermission()` use
-   * this to push the latest value into the reactive view.
+   * Re-read the permission state and publish it on `permissionState`.
+   * Standalone helper: does NOT prompt, does NOT touch the FCM token.
+   *
+   * Web: queries `Notification.permission`.
+   * Native: cannot query the OS permission synchronously without a
+   * dedicated plugin call; we infer from token presence (token implies
+   * permission was granted). The async truth is established when the
+   * user actually taps the toggle and `requestNotificationPermission`
+   * runs through the plugin.
    */
   syncPermissionState(): void {
-    this._permissionState.set(readBrowserPermission());
+    this._permissionState.set(this.readPermission());
   }
 
   /**
@@ -300,6 +342,42 @@ export class UserNotificationService {
       return;
     }
 
+    // Native path: skip the Notification API (does not exist in the
+    // WebView). The Capacitor Firebase Messaging plugin invoked inside
+    // `fcm.requestToken()` handles the OS-level POST_NOTIFICATIONS
+    // prompt internally. If the user denies, the plugin returns null
+    // and we mark the state as 'denied'.
+    if (this.platform.isNative()) {
+      console.log('[UserNotif] Native push activation flow start');
+      let token: string | null = null;
+      try {
+        token = await this.fcm.requestToken();
+        console.log('[UserNotif] fcm.requestToken returned:', token ? 'token-OK' : 'null');
+      } catch (err) {
+        console.error('[UserNotif] fcm.requestToken threw:', err);
+        this._permissionState.set('denied');
+        return;
+      }
+      if (!token) {
+        console.warn('[UserNotif] No token — marking permission as denied');
+        this._permissionState.set('denied');
+        return;
+      }
+      this._permissionState.set('granted');
+      try {
+        await firstValueFrom(this.deviceTokenService.registerForUser(token));
+        this._currentToken.set(token);
+        this.attachForegroundListener();
+        this.adjustPollingInterval();
+        await this.patchPushPreference(true);
+        console.log('[UserNotif] Native push activated successfully');
+      } catch (err) {
+        console.warn('[UserNotif] Failed to register FCM token (native):', err);
+      }
+      return;
+    }
+
+    // Web path (unchanged).
     if (Notification.permission === 'default') {
       try {
         await Notification.requestPermission();
@@ -357,8 +435,8 @@ export class UserNotificationService {
     this._currentToken.set(null);
     this.foregroundSub?.unsubscribe();
     this.foregroundSub = undefined;
-    // Refresh permission view in case the user changed it in browser settings.
-    this._permissionState.set(readBrowserPermission());
+    // Refresh permission view in case the user changed it in OS/browser settings.
+    this._permissionState.set(this.readPermission());
   }
 
   /**
@@ -424,8 +502,12 @@ export class UserNotificationService {
   /**
    * Fallback path: when FCM is NOT active, simulate a push by surfacing
    * a local OS notification when the polling detects an unread-count rise.
+   *
+   * Web-only — native devices always have FCM active when push is enabled,
+   * and the `Notification` API does not exist in the WebView anyway.
    */
   private triggerBrowserPushFromPolling(): void {
+    if (this.platform.isNative()) return;
     if (!('Notification' in window)) return;
     if (Notification.permission !== 'granted') return;
 

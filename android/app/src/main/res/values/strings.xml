@@ -4,4 +4,16 @@
     <string name="title_activity_main">TuBus Express</string>
     <string name="package_name">com.tubusexpress.app</string>
     <string name="custom_url_scheme">com.tubusexpress.app</string>
+    <!--
+        Web Server OAuth Client ID auto-created by Firebase when we
+        registered the Android app. The Google Sign-In SDK reads this
+        string at runtime to know which client ID to request the idToken
+        for. Without it, the SDK returns an Android-scoped access_token
+        that our backend's google-auth-library rejects (audience mismatch).
+
+        This is the same id we configured in Railway as
+        GOOGLE_CLIENT_ID_WEB_FIREBASE so the backend accepts the token.
+    -->
+    <string name="default_web_client_id" translatable="false">1071922885496-ggktf2e4q2a1kl7pjt866rqvm8ad0gft.apps.googleusercontent.com</string>
+    <string name="server_client_id" translatable="false">1071922885496-ggktf2e4q2a1kl7pjt866rqvm8ad0gft.apps.googleusercontent.com</string>
 </resources>

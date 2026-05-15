@@ -80,20 +80,28 @@ export class FirebaseMessagingService {
 
   private async requestTokenNative(): Promise<string | null> {
     try {
+      console.log('[FCM-Native] importing @capacitor-firebase/messaging...');
       const { FirebaseMessaging } = await import('@capacitor-firebase/messaging');
+      console.log('[FCM-Native] plugin loaded, requesting permissions...');
 
       // The native plugin handles its own permission flow. Caller MUST
       // invoke from a user gesture so the OS shows the system prompt
       // (Android 13+ requires runtime POST_NOTIFICATIONS permission).
       const perm = await FirebaseMessaging.requestPermissions();
-      if (perm.receive !== 'granted') return null;
+      console.log('[FCM-Native] requestPermissions result:', JSON.stringify(perm));
+      if (perm.receive !== 'granted') {
+        console.warn('[FCM-Native] Permission not granted:', perm.receive);
+        return null;
+      }
 
       await this.attachNativeListeners();
+      console.log('[FCM-Native] listeners attached, getting token...');
 
       const result = await FirebaseMessaging.getToken();
+      console.log('[FCM-Native] getToken result:', result.token ? 'token-OK' : 'null');
       return result.token ?? null;
     } catch (err) {
-      console.warn('[FirebaseMessaging] requestTokenNative failed:', err);
+      console.error('[FCM-Native] requestTokenNative failed:', err);
       return null;
     }
   }

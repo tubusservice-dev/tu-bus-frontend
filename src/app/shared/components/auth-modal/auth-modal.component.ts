@@ -1,4 +1,4 @@
-import { Component, signal, output, input, inject, OnInit, OnDestroy, computed } from '@angular/core';
+import { Component, signal, output, input, inject, OnInit, OnDestroy, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
@@ -7,6 +7,7 @@ import { catchError, debounceTime, distinctUntilChanged, switchMap } from 'rxjs/
 import { AuthService, AuthModalMode } from '@core/services';
 import { CheckEmailResponse, RegisterRequest } from '@models';
 import { ToastService } from '@shared/services/toast.service';
+import { PlatformService } from '@platform';
 
 @Component({
   selector: 'app-auth-modal',
@@ -20,7 +21,20 @@ export class AuthModalComponent implements OnInit, OnDestroy {
   private readonly authService = inject(AuthService);
   private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
+  private readonly platform = inject(PlatformService);
   private emailCheckSub: Subscription | null = null;
+
+  constructor() {
+    // Sync the local OAuth spinner with the AuthService's native flow
+    // signal. Without this the spinner would stay on forever after the
+    // native flow completes (the WebView never reloads on native, so the
+    // bfcache failsafe used for web does not fire).
+    effect(() => {
+      if (!this.authService.nativeOAuthLoading()) {
+        this.isOAuthLoading.set(false);
+      }
+    });
+  }
 
   /**
    * Tracks whether the email currently typed in the register form belongs

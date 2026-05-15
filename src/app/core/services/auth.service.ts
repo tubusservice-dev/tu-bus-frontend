@@ -126,6 +126,18 @@ export class AuthService {
     this.blockedInfoSignal.set({ code, message, reason });
   }
 
+  /**
+   * True while a native Google sign-in flow is in progress (between the
+   * moment the user taps the button and the moment the backend responds
+   * — including the OS picker, idToken exchange and user profile fetch).
+   *
+   * Auth modal reads this with effect() to keep its OAuth spinner in
+   * sync. The web flow does NOT need this signal because the page
+   * navigates away (signal would be reset by app reload anyway).
+   */
+  private readonly nativeOAuthLoadingSignal = signal(false);
+  readonly nativeOAuthLoading = this.nativeOAuthLoadingSignal.asReadonly();
+
   private readonly authModalOpenSignal = signal(false);
   readonly authModalOpen = this.authModalOpenSignal.asReadonly();
 
@@ -362,15 +374,24 @@ export class AuthService {
    *     would have surfaced; here we log to console for debugging.
    */
   private async signInWithGoogleNative(): Promise<void> {
+    // Mark in-flight so the auth-modal can show / clear its spinner via
+    // the `nativeOAuthLoading` signal. ALWAYS clear it on the way out
+    // regardless of success/failure, so a stuck spinner can never happen.
+    this.nativeOAuthLoadingSignal.set(true);
+
     let idToken: string;
     try {
       const result = await this.googleAuth.signIn();
-      if (result.flow !== 'native') return; // safety — should not happen
+      if (result.flow !== 'native') {
+        this.nativeOAuthLoadingSignal.set(false);
+        return; // safety — should not happen
+      }
       idToken = result.idToken;
     } catch (err) {
       // User cancelled the picker, or plugin failure. No-op silently —
       // surfacing a toast for an intentional dismissal is annoying.
       console.warn('[AuthService] Google native sign-in cancelled or failed:', err);
+      this.nativeOAuthLoadingSignal.set(false);
       return;
     }
 
@@ -395,9 +416,12 @@ export class AuthService {
           } else {
             this.router.navigate(['/']);
           }
+          this.closeAuthModal();
+          this.nativeOAuthLoadingSignal.set(false);
         },
         error: (err) => {
           console.warn('[AuthService] Google native exchange failed:', err);
+          this.nativeOAuthLoadingSignal.set(false);
         },
       });
   }

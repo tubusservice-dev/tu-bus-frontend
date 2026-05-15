@@ -60,6 +60,16 @@ const config: CapacitorConfig = {
       backgroundColor: '#001D56',
       overlaysWebView: false,
     },
+    FirebaseAuthentication: {
+      // skipNativeAuth: false → the plugin uses the native Google Sign-In
+      // SDK (vs falling back to the Firebase web SDK in the WebView, which
+      // breaks because Google blocks WebView-based OAuth since 2021).
+      skipNativeAuth: false,
+      // Enabled providers for this app. Adding 'apple.com' / 'facebook.com'
+      // later just requires an entry here plus enabling them in Firebase
+      // Console → Authentication → Sign-in method.
+      providers: ['google.com'],
+    },
   },
 };
 
