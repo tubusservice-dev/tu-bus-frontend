@@ -21,6 +21,11 @@ import {
   isChunkLoadError,
   reloadOnceForStaleBuild,
 } from '@core/error-handlers/chunk-load-error.handler';
+import {
+  providePlatform,
+  BackButtonService,
+  DeepLinksService,
+} from '@platform';
 
 // Register Spanish locale so the `date` pipe can format with 'es'
 registerLocaleData(localeEs, 'es');
@@ -64,6 +69,27 @@ function initializePwa(): () => void {
   return () => pwaService.init();
 }
 
+/**
+ * Attaches the Capacitor `App.backButton` listener so the Android hardware
+ * back button closes overlays / navigates back instead of exiting the app.
+ * No-op on web (the BackButtonService self-gates via PlatformService).
+ */
+function initializeBackButton(): () => void {
+  const backButton = inject(BackButtonService);
+  return () => void backButton.init();
+}
+
+/**
+ * Attaches the Capacitor `App.appUrlOpen` listener so https:// deep links
+ * (verify-email, reset-password, auth callback, etc.) routed by Android
+ * App Links navigate inside the app via Angular Router instead of opening
+ * the browser. No-op on web.
+ */
+function initializeDeepLinks(): () => void {
+  const deepLinks = inject(DeepLinksService);
+  return () => void deepLinks.init();
+}
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
@@ -90,6 +116,10 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withInterceptors([
       authInterceptor,
     ])),
+    // Platform layer: binds STORAGE / EXTERNAL_LINK / GOOGLE_AUTH / MESSAGING
+    // tokens to the correct strategy (web or native) based on PlatformService.
+    // Cero impacto web — strategies web envuelven el comportamiento actual.
+    providePlatform(),
     { provide: ErrorHandler, useClass: ChunkLoadErrorHandler },
     {
       provide: APP_INITIALIZER,
@@ -104,6 +134,16 @@ export const appConfig: ApplicationConfig = {
     {
       provide: APP_INITIALIZER,
       useFactory: initializePwa,
+      multi: true,
+    },
+    {
+      provide: APP_INITIALIZER,
+      useFactory: initializeBackButton,
+      multi: true,
+    },
+    {
+      provide: APP_INITIALIZER,
+      useFactory: initializeDeepLinks,
       multi: true,
     },
     { provide: LOCALE_ID, useValue: 'es' },
