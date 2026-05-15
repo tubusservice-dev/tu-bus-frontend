@@ -36,6 +36,31 @@ const config: CapacitorConfig = {
     // color so the splash-to-content transition feels seamless.
     backgroundColor: '#001D56',
   },
+  plugins: {
+    SplashScreen: {
+      // Show the splash for up to 2 seconds, then auto-hide. The actual
+      // hide happens earlier — `SplashScreen.hide()` is invoked by the
+      // SplashService once Angular bootstrap completes.
+      launchShowDuration: 2000,
+      launchAutoHide: true,
+      backgroundColor: '#001D56',
+      // Letterbox to honour the source aspect ratio; the brand asset is
+      // a square logo and we don't want it stretched on tall screens.
+      androidScaleType: 'CENTER_CROP',
+      showSpinner: false,
+      androidSpinnerStyle: 'large',
+      spinnerColor: '#FFFFFF',
+      splashFullScreen: true,
+      splashImmersive: true,
+    },
+    StatusBar: {
+      // Light icons on dark background. Setting via config is necessary
+      // because the plugin reads it at native init (before JS runs).
+      style: 'DARK',
+      backgroundColor: '#001D56',
+      overlaysWebView: false,
+    },
+  },
 };
 
 export default config;

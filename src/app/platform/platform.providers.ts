@@ -13,6 +13,12 @@ import { NativeGoogleAuthStrategy } from './google-auth/native-google-auth.strat
 import { MESSAGING, IMessaging } from './messaging/messaging.service';
 import { WebMessagingStrategy } from './messaging/web-messaging.strategy';
 import { NativeMessagingStrategy } from './messaging/native-messaging.strategy';
+import { CAMERA, ICamera } from './camera/camera.service';
+import { WebCameraStrategy } from './camera/web-camera.strategy';
+import { NativeCameraStrategy } from './camera/native-camera.strategy';
+import { GEOLOCATION, IGeolocation } from './geolocation/geolocation.service';
+import { WebGeolocationStrategy } from './geolocation/web-geolocation.strategy';
+import { NativeGeolocationStrategy } from './geolocation/native-geolocation.strategy';
 
 /**
  * Returns the providers that bind every platform abstraction token to its
@@ -74,6 +80,20 @@ export function providePlatform(): EnvironmentProviders {
       // the native strategy ignores it. Acceptable trade-off: it is already
       // providedIn root and ~5 kB of code that we'd ship anyway.
       deps: [PlatformService, FirebaseMessagingService],
+    },
+
+    {
+      provide: CAMERA,
+      useFactory: (platform: PlatformService): ICamera =>
+        platform.isNative() ? new NativeCameraStrategy() : new WebCameraStrategy(),
+      deps: [PlatformService],
+    },
+
+    {
+      provide: GEOLOCATION,
+      useFactory: (platform: PlatformService): IGeolocation =>
+        platform.isNative() ? new NativeGeolocationStrategy() : new WebGeolocationStrategy(),
+      deps: [PlatformService],
     },
   ] satisfies Provider[]);
 }

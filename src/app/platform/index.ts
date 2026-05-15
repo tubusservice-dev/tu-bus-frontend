@@ -36,6 +36,23 @@ export {
   type PushPayload,
 } from './messaging/messaging.service';
 
+// Camera (image picker)
+export {
+  CAMERA,
+  type ICamera,
+  type CameraSource,
+  type PickImageOptions,
+} from './camera/camera.service';
+
+// Geolocation (GPS / coordinates)
+export {
+  GEOLOCATION,
+  type IGeolocation,
+  type Coordinates,
+} from './geolocation/geolocation.service';
+
 // Lifecycle services (no strategy split — single class with internal gating)
 export { BackButtonService } from './back-button/back-button.service';
 export { DeepLinksService } from './deep-links/deep-links.service';
+export { BiometricService } from './biometric/biometric.service';
+export { SplashService } from './splash/splash.service';

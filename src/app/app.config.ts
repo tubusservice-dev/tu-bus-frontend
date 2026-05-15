@@ -25,6 +25,8 @@ import {
   providePlatform,
   BackButtonService,
   DeepLinksService,
+  SplashService,
+  BiometricService,
 } from '@platform';
 
 // Register Spanish locale so the `date` pipe can format with 'es'
@@ -100,6 +102,25 @@ function initializeDeepLinks(): () => void {
   return () => void deepLinks.init();
 }
 
+/**
+ * Configures the native status bar (color + icon style) and hides the
+ * Capacitor splash screen once Angular has bootstrapped. No-op on web —
+ * the web app uses CSS for branding.
+ */
+function initializeSplash(): () => void {
+  const splash = inject(SplashService);
+  return () => void splash.init();
+}
+
+/**
+ * Hydrates the biometric opt-in flag from native Preferences so the UI
+ * shows the correct toggle state at boot. No-op on web.
+ */
+function initializeBiometric(): () => void {
+  const biometric = inject(BiometricService);
+  return () => void biometric.loadEnrollmentState();
+}
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
@@ -154,6 +175,16 @@ export const appConfig: ApplicationConfig = {
     {
       provide: APP_INITIALIZER,
       useFactory: initializeDeepLinks,
+      multi: true,
+    },
+    {
+      provide: APP_INITIALIZER,
+      useFactory: initializeSplash,
+      multi: true,
+    },
+    {
+      provide: APP_INITIALIZER,
+      useFactory: initializeBiometric,
       multi: true,
     },
     { provide: LOCALE_ID, useValue: 'es' },

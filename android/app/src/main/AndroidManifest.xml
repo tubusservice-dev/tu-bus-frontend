@@ -73,4 +73,48 @@
         POST_NOTIFICATIONS for messaging-style apps.
     -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!--
+        Camera permission for @capacitor/camera plugin. The plugin handles
+        the runtime prompt at first use; this declaration is what makes
+        that prompt appear. Without it the prompt is silently skipped and
+        camera access fails.
+    -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <!--
+        Photo library access on Android 13+ (API 33+). Replaces the
+        legacy READ_EXTERNAL_STORAGE for media files.
+    -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+
+    <!--
+        Legacy storage read for Android 12 (API 32) and below. The
+        `maxSdkVersion` attribute makes Android 13+ ignore it (so the
+        device only sees ONE storage permission at any time).
+    -->
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+
+    <!--
+        Geolocation permissions for @capacitor/geolocation plugin.
+        Both granted because FusedLocationProvider uses both:
+          - FINE_LOCATION → GPS-level accuracy (5-20m).
+          - COARSE_LOCATION → WiFi/cell triangulation fallback (50-2000m).
+        The user can grant only one in Android 12+; the plugin works with
+        whichever is granted.
+    -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <!--
+        Biometric prompt permission for @capgo/capacitor-native-biometric.
+        USE_BIOMETRIC is the modern (API 28+) declaration; USE_FINGERPRINT
+        is the legacy fallback for API 23-27 devices. Both are normal
+        permissions (no runtime prompt) — the OS handles authentication
+        UI internally.
+    -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <uses-permission android:name="android.permission.USE_FINGERPRINT" />
 </manifest>
