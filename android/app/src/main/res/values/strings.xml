@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">TuBus Express</string>
+    <string name="title_activity_main">TuBus Express</string>
+    <string name="package_name">com.tubusexpress.app</string>
+    <string name="custom_url_scheme">com.tubusexpress.app</string>
+</resources>
