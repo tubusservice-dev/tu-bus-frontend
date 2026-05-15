@@ -2,6 +2,7 @@ import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
+import { EXTERNAL_LINK, IExternalLink } from '@platform';
 import { MechanicAssignmentService } from '../../core/services/mechanic-assignment.service';
 import { ThemeService } from '../../core/services/theme.service';
 import { MechanicAssignment, ProgressStep, BranchContactInfo } from '../../models/mechanic-assignment.model';
@@ -22,6 +23,7 @@ export class MechanicProgressComponent implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly assignmentService = inject(MechanicAssignmentService);
   protected readonly themeService = inject(ThemeService);
+  private readonly externalLink = inject<IExternalLink>(EXTERNAL_LINK);
 
   protected readonly assignment = signal<MechanicAssignment | null>(null);
   protected readonly isLoading = signal(true);
@@ -187,13 +189,13 @@ export class MechanicProgressComponent implements OnInit {
   openWhatsApp(phone: string): void {
     const international = this.toInternationalDigits(phone);
     if (!international) return;
-    window.open(`https://wa.me/${international}`, '_blank');
+    void this.externalLink.open(`https://wa.me/${international}`, '_blank');
   }
 
   callPhone(phone: string): void {
     const international = this.toInternationalDigits(phone);
     if (!international) return;
-    window.open(`tel:+${international}`, '_self');
+    void this.externalLink.open(`tel:+${international}`, '_self');
   }
 
   // ========== Advance/Reject ==========

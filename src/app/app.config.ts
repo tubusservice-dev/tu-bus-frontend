@@ -31,12 +31,22 @@ import {
 registerLocaleData(localeEs, 'es');
 
 /**
- * Initializes user session if a stored token exists (non-blocking)
+ * Initializes the user session.
+ *
+ * BLOCKING: awaits `loadCacheFromStorage()` so the in-memory caches
+ * (`tokenCacheSignal`, `userCacheSignal`) are populated before the first
+ * HTTP request can fire. Without this, the auth interceptor would read
+ * `getToken() = null` for any synchronous request issued during the
+ * boot window and miss the Authorization header.
+ *
+ * The subsequent `loadUserProfile()` is NON-blocking — refreshing the
+ * profile from the server can happen in the background after the app
+ * is interactive.
  */
-function initializeAuth(): () => void {
+function initializeAuth(): () => Promise<void> {
   const authService = inject(AuthService);
-
-  return () => {
+  return async () => {
+    await authService.loadCacheFromStorage();
     const token = authService.getToken();
     if (token) {
       authService.loadUserProfile().subscribe();

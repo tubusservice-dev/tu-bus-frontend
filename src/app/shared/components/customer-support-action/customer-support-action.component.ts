@@ -10,6 +10,7 @@ import {
   signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { EXTERNAL_LINK, IExternalLink } from '@platform';
 import { toVenezuelanE164, toWhatsAppDigits } from '@shared/utils/phone.util';
 
 /**
@@ -33,6 +34,7 @@ import { toVenezuelanE164, toWhatsAppDigits } from '@shared/utils/phone.util';
 })
 export class CustomerSupportActionComponent {
   private readonly host = inject(ElementRef<HTMLElement>);
+  private readonly externalLink = inject<IExternalLink>(EXTERNAL_LINK);
 
   /** Raw phone string. Accepts any VE format; invalid input keeps the popover
    *  open but disables both Call and WhatsApp. */
@@ -64,13 +66,13 @@ export class CustomerSupportActionComponent {
 
   protected callPhone(): void {
     if (!this.canContact()) return;
-    window.open(`tel:${this.e164()}`, '_self');
+    void this.externalLink.open(`tel:${this.e164()}`, '_self');
     this.isOpen.set(false);
   }
 
   protected openWhatsApp(): void {
     if (!this.canContact()) return;
-    window.open(`https://wa.me/${this.waDigits()}`, '_blank');
+    void this.externalLink.open(`https://wa.me/${this.waDigits()}`, '_blank');
     this.isOpen.set(false);
   }
 

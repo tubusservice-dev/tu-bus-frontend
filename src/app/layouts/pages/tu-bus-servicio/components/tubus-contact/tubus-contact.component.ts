@@ -1,4 +1,5 @@
 import { Component, inject, computed } from '@angular/core';
+import { EXTERNAL_LINK, IExternalLink } from '@platform';
 import { SettingsService } from '../../../../../core/services/settings.service';
 import { LocationService, BranchSummary } from '../../../../../core/services/location.service';
 
@@ -14,6 +15,7 @@ const DAY_NAMES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 export class TubusContactComponent {
   private readonly settingsService = inject(SettingsService);
   private readonly locationService = inject(LocationService);
+  private readonly externalLink = inject<IExternalLink>(EXTERNAL_LINK);
 
   protected readonly whatsappConfig = this.settingsService.whatsappConfig;
   protected readonly customerSupport = this.settingsService.customerSupportConfig;
@@ -81,13 +83,13 @@ export class TubusContactComponent {
     const digits = raw.replace(/\D/g, '');
     const international = digits.startsWith('0') ? '58' + digits.substring(1) : digits;
     const message = encodeURIComponent('Hola, me interesa información sobre sus servicios de cambio de aceite.');
-    window.open(`https://wa.me/${international}?text=${message}`, '_blank');
+    void this.externalLink.open(`https://wa.me/${international}?text=${message}`, '_blank');
   }
 
   callPhone(phoneNumber?: string): void {
     const target = phoneNumber ?? this.phone();
     if (target) {
-      window.open(`tel:${target}`, '_self');
+      void this.externalLink.open(`tel:${target}`, '_self');
     }
   }
 }

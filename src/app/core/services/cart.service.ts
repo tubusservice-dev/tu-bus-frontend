@@ -1,4 +1,5 @@
 import { Injectable, computed, signal, inject, effect } from '@angular/core';
+import { EXTERNAL_LINK, IExternalLink } from '@platform';
 import { AuthService } from './auth.service';
 import { SettingsService } from './settings.service';
 
@@ -40,6 +41,7 @@ const CART_STORAGE_KEY = 'shopping_cart';
 export class CartService {
   private readonly authService = inject(AuthService);
   private readonly settingsService = inject(SettingsService);
+  private readonly externalLink = inject<IExternalLink>(EXTERNAL_LINK);
 
   /** Trackea el estado previo de autenticación para detectar logout */
   private wasAuthenticated = false;
@@ -478,7 +480,9 @@ export class CartService {
     const encodedMessage = encodeURIComponent(message);
     const phoneNumber = whatsappConfig.phoneNumber;
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
-    window.open(whatsappUrl, '_blank');
+    // ExternalLink routes wa.me/* to the WhatsApp app on native (via OS
+    // intent) and to a new tab on web — same UX outcome.
+    void this.externalLink.open(whatsappUrl, '_blank');
   }
 
   /**
