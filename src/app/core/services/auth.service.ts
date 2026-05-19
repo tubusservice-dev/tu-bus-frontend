@@ -27,6 +27,7 @@ import {
   LinkAccountResponse,
   VerifyAccountLinkResponse,
 } from '@models';
+import { ToastService } from '@shared/services/toast.service';
 
 const CLIENT_TOKEN_KEY = 'auth_token';
 const CLIENT_USER_KEY = 'auth_user';
@@ -78,6 +79,14 @@ export class AuthService {
    * and native (idToken exchange via POST /api/auth/google/native).
    */
   private readonly platform = inject(PlatformService);
+
+  /**
+   * User-facing toast surface. Used to translate silent plugin failures
+   * (e.g. native Google sign-in errors that aren't user cancellations)
+   * into a visible message — without it, a failed sign-in looks like
+   * nothing happened, leaving the user and us with no diagnostic.
+   */
+  private readonly toast = inject(ToastService);
 
   /**
    * In-memory cache of the JWT keyed by storage scope. Keeps `getToken()`
@@ -147,6 +156,19 @@ export class AuthService {
   private readonly authModalPrefillEmailSignal = signal<string>('');
   readonly authModalPrefillEmail = this.authModalPrefillEmailSignal.asReadonly();
 
+  /**
+   * Holds the Google idToken captured during a native sign-in attempt that
+   * collided with an existing local account (backend responded 409 with
+   * code EMAIL_ALREADY_REGISTERED_LOCAL). The link-google-password-modal
+   * reads this signal to know it should open; the modal posts the idToken
+   * plus the user-supplied password to `/api/auth/link-google-with-password`
+   * to attach the Google identity to the existing local account.
+   *
+   * Null means no link flow is in progress — the modal stays hidden.
+   */
+  private readonly linkGooglePendingSignal = signal<string | null>(null);
+  readonly linkGoogleModalOpen = computed(() => this.linkGooglePendingSignal() !== null);
+
   openAuthModal(mode: AuthModalMode = 'login', prefillEmail = ''): void {
     this.authModalInitialModeSignal.set(mode);
     this.authModalPrefillEmailSignal.set(prefillEmail);
@@ -166,6 +188,68 @@ export class AuthService {
     this.authModalOpenSignal.set(false);
     this.authModalInitialModeSignal.set('login');
     this.authModalPrefillEmailSignal.set('');
+  }
+
+  /**
+   * Stages a Google idToken for the link-with-password modal. Called from
+   * `signInWithGoogleNative` when the backend rejects the native sign-in
+   * with EMAIL_ALREADY_REGISTERED_LOCAL — the user already has a local
+   * account and must prove ownership via password to attach Google.
+   *
+   * Closes the auth modal in the same step so the user sees ONE modal at a
+   * time — same pattern used by `onAccountLinkPending` and the verify-email
+   * handoff in app.ts. Without this, the auth modal stays mounted behind
+   * the link modal and reappears when the link modal closes.
+   */
+  openLinkGoogleModal(idToken: string): void {
+    this.linkGooglePendingSignal.set(idToken);
+    this.closeAuthModal();
+  }
+
+  closeLinkGoogleModal(): void {
+    this.linkGooglePendingSignal.set(null);
+  }
+
+  /**
+   * Posts the staged idToken + the user-supplied local password to the
+   * link endpoint. On success the backend returns the same { token, user }
+   * shape as a regular sign-in, so we route through `handleAuthSuccess`
+   * exactly like a normal login — the linked Google account is now
+   * authoritatively logged in, modal closes, blocked flow handled.
+   *
+   * Observable surface keeps the same error semantics as the rest of the
+   * service so callers can `.subscribe` with a typed HttpErrorResponse and
+   * react to specific codes (INVALID_PASSWORD, GOOGLE_ALREADY_LINKED, etc.).
+   */
+  linkGoogleWithPassword(password: string): Observable<AuthResponse> {
+    const idToken = this.linkGooglePendingSignal();
+    if (!idToken) {
+      // No staged token means the modal was opened out-of-band; nothing to
+      // do. Returning an error keeps the caller's subscribe contract clean.
+      return throwError(
+        () => new Error('No hay un inicio de sesión de Google pendiente para vincular.')
+      );
+    }
+
+    return this.http
+      .post<AuthResponse>(`${this.apiUrl}/link-google-with-password`, {
+        idToken,
+        password,
+      })
+      .pipe(
+        tap((response) => {
+          this.handleAuthSuccess(response);
+          this.linkGooglePendingSignal.set(null);
+          this.closeAuthModal();
+        }),
+        catchError((error: HttpErrorResponse) => {
+          // Reuse the blocked-account modal path; if the account got blocked
+          // between the original sign-in attempt and this link attempt, the
+          // user lands on the same UI as elsewhere in the app.
+          this.triggerAccountBlocked(error);
+          return throwError(() => error);
+        })
+      );
   }
 
   readonly currentUser = this.currentUserSignal.asReadonly();
@@ -388,10 +472,32 @@ export class AuthService {
       }
       idToken = result.idToken;
     } catch (err) {
-      // User cancelled the picker, or plugin failure. No-op silently —
-      // surfacing a toast for an intentional dismissal is annoying.
-      console.warn('[AuthService] Google native sign-in cancelled or failed:', err);
       this.nativeOAuthLoadingSignal.set(false);
+      // Distinguish two very different scenarios that the plugin reports
+      // through the same `throw`:
+      //   1) The user dismissed the Google account picker on purpose →
+      //      silent no-op (toasts on intentional cancellations are noise).
+      //   2) The plugin itself failed (Google Play Services missing or
+      //      outdated, SHA mismatch, no network, dev config error) →
+      //      visible toast, otherwise the user sees nothing and we get
+      //      no diagnostic from the field.
+      // Google Sign-In status code 12501 (SIGN_IN_CANCELLED) is the
+      // canonical signal; some Android OEMs only surface a message, so
+      // we also do a defensive substring match.
+      const errCode = String((err as { code?: unknown } | null)?.code ?? '').toLowerCase();
+      const errMsg = String((err as { message?: unknown } | null)?.message ?? err ?? '');
+      const isUserCancelled =
+        errCode === '12501' ||
+        /cancel/i.test(errMsg) ||
+        /dismiss/i.test(errMsg);
+
+      if (isUserCancelled) return;
+
+      console.warn('[AuthService] Google native sign-in failed:', err);
+      this.toast.error(
+        `No se pudo iniciar sesión con Google. Detalle: ${errMsg || 'Error desconocido'}`,
+        8000,
+      );
       return;
     }
 
@@ -419,9 +525,36 @@ export class AuthService {
           this.closeAuthModal();
           this.nativeOAuthLoadingSignal.set(false);
         },
-        error: (err) => {
+        error: (err: HttpErrorResponse) => {
           console.warn('[AuthService] Google native exchange failed:', err);
           this.nativeOAuthLoadingSignal.set(false);
+
+          // `triggerAccountBlocked` (in catchError above) already opened the
+          // dedicated blocked-account modal for ACCOUNT_BLOCKED/SUSPENDED/
+          // DELETED/NOT_FOUND. Avoid layering a toast on top of that modal.
+          if (this.blockedInfoSignal()) return;
+
+          const body = err?.error as { code?: string; message?: string } | undefined;
+          const code = body?.code;
+
+          // Symmetric account-linking entry point: the user has a local
+          // account for this email and is now signing in with Google. Open
+          // the link modal so they can supply their password and attach
+          // Google to their account. `idToken` is in the enclosing closure
+          // because we only reach the .subscribe.error AFTER a successful
+          // plugin sign-in (the earlier try/catch already exited otherwise).
+          if (code === 'EMAIL_ALREADY_REGISTERED_LOCAL') {
+            this.openLinkGoogleModal(idToken);
+            return;
+          }
+
+          // Any other backend failure: surface a visible message instead of
+          // dying silently. Without this, native Google sign-in errors look
+          // like the button does nothing — exactly the bug we just fixed.
+          this.toast.error(
+            body?.message ?? 'No se pudo completar el inicio de sesión con Google.',
+            8000,
+          );
         },
       });
   }

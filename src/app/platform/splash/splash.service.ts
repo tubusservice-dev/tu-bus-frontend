@@ -1,5 +1,6 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, effect, inject } from '@angular/core';
 import { PlatformService } from '../platform.service';
+import { ThemeService } from '@core/services/theme.service';
 
 /**
  * Splash + status bar lifecycle for native.
@@ -9,43 +10,67 @@ import { PlatformService } from '../platform.service';
  * AFTER Angular has bootstrapped, so the user never sees a flash of
  * blank WebView between splash and first paint.
  *
- * Status bar: we set color + style on every cold start. Without this,
- * Android shows the default OS bar (which clashes with the brand on
- * some devices). Capacitor reads the config at native init but the
- * runtime call ensures consistency across launches and theme changes.
+ * Status bar style: we react to `ThemeService.theme` so the OS icons
+ * stay legible regardless of light/dark mode. We deliberately do NOT
+ * call `setBackgroundColor`: on Android 15+ (targetSdk >= 35) that API
+ * is silently ignored — the WebView itself paints the inset area via
+ * the global header + `env(safe-area-inset-top)` in CSS, which is the
+ * source of truth across web, legacy Android, and edge-to-edge Android.
  *
  * On web: every method is a no-op. The web app uses CSS for branding.
  */
 @Injectable({ providedIn: 'root' })
 export class SplashService {
   private readonly platform = inject(PlatformService);
+  private readonly themeService = inject(ThemeService);
+
+  /** Cached plugin module; loaded once on first sync to avoid re-imports. */
+  private statusBarModule: typeof import('@capacitor/status-bar') | null = null;
+
+  constructor() {
+    // Keep the OS status-bar icon color in sync with the in-app theme.
+    // `Style.Dark` = light icons (for dark headers), `Style.Light` = dark
+    // icons (for light headers). The effect re-runs on every theme toggle
+    // so users who switch dark/light at runtime see the change instantly.
+    effect(() => {
+      const theme = this.themeService.theme();
+      void this.syncStatusBarStyle(theme === 'dark');
+    });
+  }
 
   /**
-   * Applies the status bar style and hides the splash. Invoked from
-   * APP_INITIALIZER once Angular bootstrap completes.
+   * Hides the splash screen after Angular bootstrap. Invoked from
+   * APP_INITIALIZER. The status-bar style is handled separately by the
+   * theme effect in the constructor and does not need to wait for boot.
    *
-   * Lazy imports keep the plugins out of the web bundle — `await import`
-   * branches are pruned when `isNative()` is false.
+   * Lazy import keeps the plugin out of the web bundle — the `await import`
+   * branch is pruned when `isNative()` is false.
    */
   async init(): Promise<void> {
     if (!this.platform.isNative()) return;
 
-    // Status bar first so the colored bar is in place by the time the
-    // splash hides; otherwise users would briefly see the default bar.
-    try {
-      const { StatusBar, Style } = await import('@capacitor/status-bar');
-      await StatusBar.setBackgroundColor({ color: '#001D56' });
-      await StatusBar.setStyle({ style: Style.Dark });
-    } catch (err) {
-      console.warn('[SplashService] StatusBar setup failed:', err);
-    }
-
-    // Hide splash. fadeOut for a smoother transition than an instant cut.
     try {
       const { SplashScreen } = await import('@capacitor/splash-screen');
       await SplashScreen.hide({ fadeOutDuration: 250 });
     } catch (err) {
       console.warn('[SplashService] SplashScreen.hide failed:', err);
+    }
+  }
+
+  /**
+   * Applies the matching status-bar icon style for the current theme.
+   * No-op on web. Errors are swallowed because a transient plugin failure
+   * must never block the UI thread or the boot sequence.
+   */
+  private async syncStatusBarStyle(isDark: boolean): Promise<void> {
+    if (!this.platform.isNative()) return;
+
+    try {
+      const mod = this.statusBarModule ??= await import('@capacitor/status-bar');
+      const style = isDark ? mod.Style.Dark : mod.Style.Light;
+      await mod.StatusBar.setStyle({ style });
+    } catch (err) {
+      console.warn('[SplashService] StatusBar.setStyle failed:', err);
     }
   }
 }

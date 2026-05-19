@@ -8,7 +8,13 @@
   top: 0;
   left: 0;
   right: 0;
-  height: var(--app-header-height);
+  // Total height = brand header chrome + status-bar inset. The bg fills
+  // the inset area too, giving the visual effect of a colored status bar
+  // even when the OS forces edge-to-edge (Android 15+, iOS with notch).
+  // `padding-top` pushes the inner shell content below the inset so the
+  // logo/buttons aren't hidden under system icons.
+  height: calc(var(--app-header-height) + var(--safe-area-top));
+  padding-top: var(--safe-area-top);
   background-color: var(--app-header-bg);
   color: var(--app-header-text);
   z-index: 50;
