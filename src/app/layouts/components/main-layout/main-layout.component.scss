@@ -2,13 +2,19 @@
   @apply min-h-screen flex flex-col;
   background-color: var(--bg-primary);
   transition: background-color var(--transition-normal);
+  // Reserve room under the gesture/navigation bar so trailing content
+  // (footer, CTAs, last row of cards) stays visible on edge-to-edge
+  // Android 15+ devices. Zero impact on web/legacy Android where the
+  // inset resolves to 0px.
+  padding-bottom: var(--safe-area-bottom);
 }
 
 .main-content {
   @apply flex-1;
-  // The header is `position: fixed` (see header-shell SCSS); reserve its
-  // height so content isn't hidden beneath it.
-  padding-top: var(--app-header-height);
+  // The header is `position: fixed` and spans header chrome + safe-area-top
+  // (see header-shell SCSS); mirror that total height here so content
+  // starts below it on every device.
+  padding-top: calc(var(--app-header-height) + var(--safe-area-top));
 }
 
 // Inside the checkout flow the global TuBus header is hidden in every

@@ -1,32 +1,41 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import type { MessagePayload, Messaging } from 'firebase/messaging';
 import { Observable, Subject } from 'rxjs';
 import { environment } from '@env';
+import { PlatformService } from '@platform';
 import { getFirebaseApp } from './firebase.config';
 import { isFcmSwMessage, PushEventData } from './push-event.types';
 
 /**
- * Lazy-loaded wrapper over `firebase/messaging`.
+ * Lazy-loaded wrapper over `firebase/messaging` (web) and
+ * `@capacitor-firebase/messaging` (native).
  *
- * The Firebase SDK is split into a separate async chunk via dynamic
- * `import()` — the only runtime references to `firebase/messaging`
- * happen here, behind methods that are themselves only invoked AFTER
- * a successful login. Type-only imports above (`import type`) are
- * erased at compile time and do NOT pull the SDK into the bundle.
+ * Strategy: a single facade so consumers (UserNotificationService,
+ * AdminNotificationsService) keep the same API across platforms. Internally
+ * the methods branch on `PlatformService.isNative()`:
+ *   - Web: uses the Firebase web SDK + Service Workers + VAPID. Service
+ *     Worker `firebase-messaging-sw.js` handles background pushes and
+ *     forwards to the page via postMessage (consumed by `attachSwMessageListener`).
+ *   - Native: uses `@capacitor-firebase/messaging` plugin. Native FCM
+ *     SDK handles background pushes and surfaces them via plugin events.
  *
- * Responsibilities:
- *  - Lazy-init the Messaging instance the first time push is requested.
- *  - Expose `requestToken()` for FCM token retrieval.
- *  - Expose `onForegroundMessage$` for handling pushes when the app is open.
+ * Both paths feed the same `pushSubject` so consumers do not branch.
+ *
+ * Type-only imports above (`import type`) are erased at compile time and
+ * do NOT pull the SDK into the bundle. Real `firebase/messaging` import
+ * happens dynamically inside `getMessagingInstance()` — only loaded when
+ * the user actually requests push permission on web.
  *
  * Token persistence on the backend is NOT this service's responsibility —
  * UserNotificationService and AdminNotificationsService own that lifecycle.
  */
 @Injectable({ providedIn: 'root' })
 export class FirebaseMessagingService {
+  private readonly platform = inject(PlatformService);
   private messagingPromise: Promise<Messaging> | null = null;
   private foregroundListenerAttached = false;
   private swListenerAttached = false;
+  private nativeListenersAttached = false;
   private readonly foregroundSubject = new Subject<MessagePayload>();
   /**
    * Unified push stream — emits whenever a push reaches this tab, no
@@ -47,15 +56,57 @@ export class FirebaseMessagingService {
   }
 
   /**
-   * Returns the FCM token for this browser, or null if:
+   * Returns the FCM token for this device.
+   *
+   * Native (Android): uses `@capacitor-firebase/messaging` plugin which
+   * binds to the native FCM SDK. The plugin handles permission +
+   * registration internally — no Service Workers, no VAPID needed.
+   *
+   * Web: uses Firebase web SDK + Service Worker + VAPID (legacy path).
+   * Returns null if:
    *  - The platform does not support Web Push (iOS Safari without PWA).
    *  - User denied permission.
    *  - Service Worker registration failed.
    *  - Firebase rejected the request (network error, project misconfig).
    *
-   * Wires up the foreground onMessage listener on first successful call.
+   * Wires up foreground listeners on first successful call.
    */
   async requestToken(): Promise<string | null> {
+    if (this.platform.isNative()) {
+      return this.requestTokenNative();
+    }
+    return this.requestTokenWeb();
+  }
+
+  private async requestTokenNative(): Promise<string | null> {
+    try {
+      console.log('[FCM-Native] importing @capacitor-firebase/messaging...');
+      const { FirebaseMessaging } = await import('@capacitor-firebase/messaging');
+      console.log('[FCM-Native] plugin loaded, requesting permissions...');
+
+      // The native plugin handles its own permission flow. Caller MUST
+      // invoke from a user gesture so the OS shows the system prompt
+      // (Android 13+ requires runtime POST_NOTIFICATIONS permission).
+      const perm = await FirebaseMessaging.requestPermissions();
+      console.log('[FCM-Native] requestPermissions result:', JSON.stringify(perm));
+      if (perm.receive !== 'granted') {
+        console.warn('[FCM-Native] Permission not granted:', perm.receive);
+        return null;
+      }
+
+      await this.attachNativeListeners();
+      console.log('[FCM-Native] listeners attached, getting token...');
+
+      const result = await FirebaseMessaging.getToken();
+      console.log('[FCM-Native] getToken result:', result.token ? 'token-OK' : 'null');
+      return result.token ?? null;
+    } catch (err) {
+      console.error('[FCM-Native] requestTokenNative failed:', err);
+      return null;
+    }
+  }
+
+  private async requestTokenWeb(): Promise<string | null> {
     if (!this.isMessagingSupportedSync()) return null;
 
     try {
@@ -81,9 +132,34 @@ export class FirebaseMessagingService {
       await this.attachForegroundListener();
       return token;
     } catch (err) {
-      console.warn('[FirebaseMessaging] requestToken failed:', err);
+      console.warn('[FirebaseMessaging] requestTokenWeb failed:', err);
       return null;
     }
+  }
+
+  /**
+   * Subscribes to the Capacitor Firebase Messaging plugin's events.
+   * Routes both `notificationReceived` (foreground) and
+   * `notificationActionPerformed` (user tap) into `pushSubject` keyed by
+   * the notification's `data` payload — same shape as the web SW
+   * postMessage path so consumers do not branch.
+   */
+  private async attachNativeListeners(): Promise<void> {
+    if (this.nativeListenersAttached) return;
+
+    const { FirebaseMessaging } = await import('@capacitor-firebase/messaging');
+
+    await FirebaseMessaging.addListener('notificationReceived', (event) => {
+      const data = (event.notification.data as Record<string, string>) ?? {};
+      this.pushSubject.next(data as PushEventData);
+    });
+
+    await FirebaseMessaging.addListener('notificationActionPerformed', (event) => {
+      const data = (event.notification.data as Record<string, string>) ?? {};
+      this.pushSubject.next(data as PushEventData);
+    });
+
+    this.nativeListenersAttached = true;
   }
 
   /**
@@ -126,14 +202,20 @@ export class FirebaseMessagingService {
   }
 
   /**
-   * Quick capability check — does the browser support Web Push at all?
-   * Use before requesting permission so the UI can hide the prompt
-   * gracefully on unsupported platforms (iOS Safari without PWA).
+   * Quick capability check — can the device receive push notifications?
+   *
+   * Native: always true. The Capacitor Firebase Messaging plugin works on
+   * every Android with Google Play Services (essentially all consumer
+   * Androids in our target market).
+   *
+   * Web: requires `Notification`, `serviceWorker` and `PushManager` APIs.
+   * Excludes iOS Safari without PWA installation, ancient browsers, etc.
    *
    * Synchronous and dependency-free: callable during the initial bundle
    * without forcing the SDK chunk to load.
    */
   isMessagingSupportedSync(): boolean {
+    if (this.platform.isNative()) return true;
     return (
       typeof window !== 'undefined' &&
       'Notification' in window &&

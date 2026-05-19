@@ -9,6 +9,7 @@ import {
   signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { EXTERNAL_LINK, IExternalLink } from '@platform';
 import { toVenezuelanE164, toWhatsAppDigits } from '@shared/utils/phone.util';
 
 /**
@@ -38,6 +39,7 @@ import { toVenezuelanE164, toWhatsAppDigits } from '@shared/utils/phone.util';
 })
 export class PhoneActionPopoverComponent {
   private readonly host = inject(ElementRef<HTMLElement>);
+  private readonly externalLink = inject<IExternalLink>(EXTERNAL_LINK);
 
   /** Raw phone string. Accepts local (`04XXXXXXXXX`), international
    *  (`+58XXXXXXXXXX`) or anything in between with dashes/spaces — the
@@ -69,14 +71,14 @@ export class PhoneActionPopoverComponent {
   protected callPhone(): void {
     const e164 = this.e164();
     if (!e164) return;
-    window.open(`tel:${e164}`, '_self');
+    void this.externalLink.open(`tel:${e164}`, '_self');
     this.isOpen.set(false);
   }
 
   protected openWhatsApp(): void {
     const digits = this.waDigits();
     if (!digits) return;
-    window.open(`https://wa.me/${digits}`, '_blank');
+    void this.externalLink.open(`https://wa.me/${digits}`, '_blank');
     this.isOpen.set(false);
   }
 

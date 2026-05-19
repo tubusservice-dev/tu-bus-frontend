@@ -47,3 +47,9 @@ testem.log
 # System files
 .DS_Store
 Thumbs.db
+
+# Capacitor — local config overrides only.
+# `capacitor.config.ts` IS tracked. `capacitor.config.local.ts` (if used)
+# is for per-developer overrides and must stay local.
+capacitor.config.local.ts
+.capacitor/

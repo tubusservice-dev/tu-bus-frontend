@@ -1,6 +1,7 @@
 import { Component, inject, input, computed } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { environment } from '@env';
+import { EXTERNAL_LINK, IExternalLink } from '@platform';
 import { ToastService } from '@shared/services/toast.service';
 import { SettingsService } from '@core/services/settings.service';
 
@@ -20,6 +21,7 @@ interface SocialLink {
 export class FooterComponent {
   private readonly toast = inject(ToastService);
   private readonly settings = inject(SettingsService);
+  private readonly externalLink = inject<IExternalLink>(EXTERNAL_LINK);
 
   /** En modo minimal solo muestra copyright (checkout mobile) */
   readonly minimal = input(false);
@@ -84,7 +86,9 @@ export class FooterComponent {
   protected onSocialClick(social: SocialLink): void {
     const url = social.url?.trim();
     if (url) {
-      window.open(url, '_blank', 'noopener,noreferrer');
+      // ExternalLink uses Browser.open (Custom Tabs) on native and
+      // window.open with noopener on web — same secure UX both sides.
+      void this.externalLink.open(url, '_blank');
     } else {
       this.toast.info('Próximamente');
     }

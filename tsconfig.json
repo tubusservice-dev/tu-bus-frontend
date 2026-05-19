@@ -22,6 +22,8 @@
       "@layouts/*":  ["src/app/layouts/*"],
       "@models/*":   ["src/app/models/*"],
       "@models":     ["src/app/models"],
+      "@platform/*": ["src/app/platform/*"],
+      "@platform":   ["src/app/platform"],
       "@env/*":      ["src/environments/*"],
       "@env":        ["src/environments/environment"]
     }

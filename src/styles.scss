@@ -129,6 +129,17 @@ router-outlet + * {
   /* Fuentes */
   --font-sans: 'Inter', system-ui, sans-serif;
   --font-heading: 'Poppins', system-ui, sans-serif;
+
+  /* Safe-area insets — populated by the OS when `viewport-fit=cover` is
+     declared in index.html. Required for Android 15+ which forces
+     edge-to-edge for any app with targetSdk >= 35: the OS renders the
+     WebView under the status bar and gesture bar, and these vars are how
+     CSS reserves space for that. Fallback `0px` keeps calc() expressions
+     valid on browsers without env() support (desktop web, old WebViews). */
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-left: env(safe-area-inset-left, 0px);
+  --safe-area-right: env(safe-area-inset-right, 0px);
 }
 
 /* Header height — 56px on mobile, 64px from `sm` upward.

@@ -21,17 +21,34 @@ import {
   isChunkLoadError,
   reloadOnceForStaleBuild,
 } from '@core/error-handlers/chunk-load-error.handler';
+import {
+  providePlatform,
+  BackButtonService,
+  DeepLinksService,
+  SplashService,
+  BiometricService,
+} from '@platform';
 
 // Register Spanish locale so the `date` pipe can format with 'es'
 registerLocaleData(localeEs, 'es');
 
 /**
- * Initializes user session if a stored token exists (non-blocking)
+ * Initializes the user session.
+ *
+ * BLOCKING: awaits `loadCacheFromStorage()` so the in-memory caches
+ * (`tokenCacheSignal`, `userCacheSignal`) are populated before the first
+ * HTTP request can fire. Without this, the auth interceptor would read
+ * `getToken() = null` for any synchronous request issued during the
+ * boot window and miss the Authorization header.
+ *
+ * The subsequent `loadUserProfile()` is NON-blocking — refreshing the
+ * profile from the server can happen in the background after the app
+ * is interactive.
  */
-function initializeAuth(): () => void {
+function initializeAuth(): () => Promise<void> {
   const authService = inject(AuthService);
-
-  return () => {
+  return async () => {
+    await authService.loadCacheFromStorage();
     const token = authService.getToken();
     if (token) {
       authService.loadUserProfile().subscribe();
@@ -64,6 +81,46 @@ function initializePwa(): () => void {
   return () => pwaService.init();
 }
 
+/**
+ * Attaches the Capacitor `App.backButton` listener so the Android hardware
+ * back button closes overlays / navigates back instead of exiting the app.
+ * No-op on web (the BackButtonService self-gates via PlatformService).
+ */
+function initializeBackButton(): () => void {
+  const backButton = inject(BackButtonService);
+  return () => void backButton.init();
+}
+
+/**
+ * Attaches the Capacitor `App.appUrlOpen` listener so https:// deep links
+ * (verify-email, reset-password, auth callback, etc.) routed by Android
+ * App Links navigate inside the app via Angular Router instead of opening
+ * the browser. No-op on web.
+ */
+function initializeDeepLinks(): () => void {
+  const deepLinks = inject(DeepLinksService);
+  return () => void deepLinks.init();
+}
+
+/**
+ * Configures the native status bar (color + icon style) and hides the
+ * Capacitor splash screen once Angular has bootstrapped. No-op on web —
+ * the web app uses CSS for branding.
+ */
+function initializeSplash(): () => void {
+  const splash = inject(SplashService);
+  return () => void splash.init();
+}
+
+/**
+ * Hydrates the biometric opt-in flag from native Preferences so the UI
+ * shows the correct toggle state at boot. No-op on web.
+ */
+function initializeBiometric(): () => void {
+  const biometric = inject(BiometricService);
+  return () => void biometric.loadEnrollmentState();
+}
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
@@ -90,6 +147,10 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withInterceptors([
       authInterceptor,
     ])),
+    // Platform layer: binds STORAGE / EXTERNAL_LINK / GOOGLE_AUTH / MESSAGING
+    // tokens to the correct strategy (web or native) based on PlatformService.
+    // Cero impacto web — strategies web envuelven el comportamiento actual.
+    providePlatform(),
     { provide: ErrorHandler, useClass: ChunkLoadErrorHandler },
     {
       provide: APP_INITIALIZER,
@@ -104,6 +165,26 @@ export const appConfig: ApplicationConfig = {
     {
       provide: APP_INITIALIZER,
       useFactory: initializePwa,
+      multi: true,
+    },
+    {
+      provide: APP_INITIALIZER,
+      useFactory: initializeBackButton,
+      multi: true,
+    },
+    {
+      provide: APP_INITIALIZER,
+      useFactory: initializeDeepLinks,
+      multi: true,
+    },
+    {
+      provide: APP_INITIALIZER,
+      useFactory: initializeSplash,
+      multi: true,
+    },
+    {
+      provide: APP_INITIALIZER,
+      useFactory: initializeBiometric,
       multi: true,
     },
     { provide: LOCALE_ID, useValue: 'es' },

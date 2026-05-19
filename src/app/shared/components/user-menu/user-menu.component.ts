@@ -6,6 +6,7 @@ import { UserNotificationService } from '@core/services/user-notification.servic
 import { ClickOutsideDirective } from '@shared/directives/click-outside.directive';
 import { BodyScrollLockService } from '@shared/services/body-scroll-lock.service';
 import { PushUnblockModalComponent } from '@shared/components/push-unblock-modal/push-unblock-modal.component';
+import { PlatformService } from '@platform';
 
 @Component({
   selector: 'app-user-menu',
@@ -19,6 +20,7 @@ export class UserMenuComponent implements OnDestroy {
   private readonly router = inject(Router);
   protected readonly themeService = inject(ThemeService);
   private readonly scrollLock = inject(BodyScrollLockService);
+  private readonly platform = inject(PlatformService);
   /** True while this component holds the body scroll lock for its logout modal. */
   private hasScrollLock = false;
 
@@ -36,18 +38,33 @@ export class UserMenuComponent implements OnDestroy {
   /**
    * Handler for the "Permitir" CTA inside the push-alert banner.
    *
-   * Branches on the current permission state:
-   *   - `'default'` (user never decided): triggers the native browser
-   *     prompt directly so the click counts as a user gesture.
-   *   - `'denied'` (user already refused or blocked from site settings):
-   *     the browser silently returns 'denied' without prompting, so
-   *     calling requestPermission again is pointless. Instead, open the
-   *     unblock-instructions modal that guides the user through the
-   *     browser settings.
-   *   - `'granted'` / `'unsupported'`: the banner is hidden by the
-   *     template guard, so this method should not run in those states.
+   * Branches first on platform, then on permission state:
+   *
+   *   Native (Android app):
+   *     The Capacitor Firebase Messaging plugin owns the OS-level prompt
+   *     for POST_NOTIFICATIONS. We delegate fully to
+   *     `userNotifService.requestNotificationPermission()` which already
+   *     contains the gated native flow (request → token → register).
+   *     The `Notification` global does NOT exist inside the Capacitor
+   *     WebView, so the legacy web check below would short-circuit and
+   *     leave the button doing nothing — that was the original bug.
+   *
+   *   Web (browser):
+   *     - `'default'`: trigger Notification.requestPermission directly so
+   *       the click counts as a user gesture (browsers ignore prompts
+   *       outside one).
+   *     - `'denied'`: the browser silently returns 'denied' without
+   *       prompting, so calling requestPermission again is pointless.
+   *       Open the unblock-instructions modal instead.
+   *     - `'granted'` / `'unsupported'`: the banner is hidden by the
+   *       template guard, so this method should not run in those states.
    */
   async activatePushNotifications(): Promise<void> {
+    if (this.platform.isNative()) {
+      await this.userNotifService.requestNotificationPermission();
+      return;
+    }
+
     if (typeof window === 'undefined' || !('Notification' in window)) return;
 
     if (Notification.permission === 'denied') {

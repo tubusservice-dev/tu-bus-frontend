@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.tubusexpress.app",
+      "sha256_cert_fingerprints": [
+        "F3:43:03:D5:57:86:1D:66:C7:C4:5D:47:8E:75:A0:7F:66:BF:B9:57:25:82:89:6E:1B:67:2F:84:90:FC:C0:88"
+      ]
+    }
+  }
+]

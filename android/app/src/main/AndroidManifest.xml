@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+        <activity
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"
+            android:name=".MainActivity"
+            android:label="@string/title_activity_main"
+            android:theme="@style/AppTheme.NoActionBarLaunch"
+            android:launchMode="singleTask"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!--
+                Android App Links: when this filter is verified by the OS via
+                /.well-known/assetlinks.json on tubusexpress.com, taps on
+                https://tubusexpress.com/* URLs from outside the app (Gmail,
+                browser, messaging apps) open inside the app instead of the
+                browser. The DeepLinksService consumes them via
+                App.appUrlOpen and routes through the Angular Router.
+
+                `android:autoVerify="true"` triggers OS verification on
+                install; failures fall back to the disambiguation chooser.
+            -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="tubusexpress.com" />
+                <data android:scheme="https" android:host="www.tubusexpress.com" />
+            </intent-filter>
+        </activity>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
+        </provider>
+    </application>
+
+    <!-- Permissions -->
+
+    <!-- Network access for the WebView and HTTP requests to the backend. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!--
+        Required by Android 13+ (API 33+) for the FCM SDK to display
+        notifications. Without this declaration the OS silently drops
+        push notifications even when the user granted the runtime prompt.
+        Older Android versions ignore this declaration.
+    -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!--
+        Allows the FCM service to wake the device long enough to deliver
+        a notification when the screen is off. Standard companion to
+        POST_NOTIFICATIONS for messaging-style apps.
+    -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!--
+        Camera permission for @capacitor/camera plugin. The plugin handles
+        the runtime prompt at first use; this declaration is what makes
+        that prompt appear. Without it the prompt is silently skipped and
+        camera access fails.
+    -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <!--
+        Photo library access on Android 13+ (API 33+). Replaces the
+        legacy READ_EXTERNAL_STORAGE for media files.
+    -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+
+    <!--
+        Legacy storage read for Android 12 (API 32) and below. The
+        `maxSdkVersion` attribute makes Android 13+ ignore it (so the
+        device only sees ONE storage permission at any time).
+    -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+
+    <!--
+        Geolocation permissions for @capacitor/geolocation plugin.
+        Both granted because FusedLocationProvider uses both:
+          - FINE_LOCATION → GPS-level accuracy (5-20m).
+          - COARSE_LOCATION → WiFi/cell triangulation fallback (50-2000m).
+        The user can grant only one in Android 12+; the plugin works with
+        whichever is granted.
+    -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <!--
+        Biometric prompt permission for @capgo/capacitor-native-biometric.
+        USE_BIOMETRIC is the modern (API 28+) declaration; USE_FINGERPRINT
+        is the legacy fallback for API 23-27 devices. Both are normal
+        permissions (no runtime prompt) — the OS handles authentication
+        UI internally.
+    -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <uses-permission android:name="android.permission.USE_FINGERPRINT" />
+</manifest>
