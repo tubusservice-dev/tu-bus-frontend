@@ -624,10 +624,20 @@ export class AuthService {
   private async performLogoutAsync(): Promise<void> {
     const isAdmin = this.isAdminContext();
 
-    // Best-effort: unregister FCM token before clearing the JWT. Capped
-    // at 1.5 s so a slow network can't make the logout button feel stuck.
+    // Best-effort cleanup BEFORE clearing the JWT:
+    //   - Unregister FCM token (so the backend stops pushing to this device).
+    //   - Sign out from the native Google session (so a subsequent
+    //     signInWithGoogle isn't rejected by Android Credential Manager
+    //     with "No credentials available" — see signOutGoogleSilent).
+    // Run them in parallel and cap the whole batch at 1.5 s so a slow
+    // network can't make the logout button feel stuck. `allSettled` lets a
+    // failure in one path proceed with the other; both methods are silent
+    // internally, this is belt-and-braces.
     await Promise.race([
-      this.unregisterFcmTokenSilent(isAdmin),
+      Promise.allSettled([
+        this.unregisterFcmTokenSilent(isAdmin),
+        this.signOutGoogleSilent(),
+      ]),
       new Promise<void>((resolve) => setTimeout(resolve, 1500)),
     ]);
 
@@ -646,6 +656,26 @@ export class AuthService {
     void this.storage.remove('oauth_return_url');
     this.currentUserSignal.set(null);
     this.router.navigate(isAdmin ? ['/admin/login'] : ['/']);
+  }
+
+  /**
+   * Best-effort native Google sign-out. The Capacitor Firebase
+   * Authentication plugin keeps a SDK-level session (FirebaseAuth.currentUser)
+   * independent of our backend JWT. Without clearing it, the next call to
+   * `FirebaseAuthentication.signInWithGoogle()` fails with
+   * "No credentials available" — the Android Credential Manager refuses to
+   * issue new credentials while a stale session lingers. On web the strategy
+   * is a no-op (web has no native Google session of its own).
+   *
+   * Errors are swallowed because a sign-out failure must never block the
+   * app-level logout — same contract as `unregisterFcmTokenSilent`.
+   */
+  private async signOutGoogleSilent(): Promise<void> {
+    try {
+      await this.googleAuth.signOut();
+    } catch {
+      /* silent — Google sign-out failure must not block app logout */
+    }
   }
 
   /**
