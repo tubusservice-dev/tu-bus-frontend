@@ -6,11 +6,12 @@ import { AdminNotificationsService } from '../../../core/services/admin-notifica
 import { AdminNotification } from '../../../models/notification.model';
 import { environment } from '../../../../environments/environment';
 import { AdminNotificationDetailModalComponent } from '../../../shared/components/admin-notification-detail-modal/admin-notification-detail-modal.component';
+import { ThemeToggleComponent } from '../../../shared/components/theme-toggle/theme-toggle.component';
 
 @Component({
   selector: 'app-admin-layout',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, AdminNotificationDetailModalComponent],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, AdminNotificationDetailModalComponent, ThemeToggleComponent],
   templateUrl: './admin-layout.component.html',
   styleUrl: './admin-layout.component.scss',
 })
