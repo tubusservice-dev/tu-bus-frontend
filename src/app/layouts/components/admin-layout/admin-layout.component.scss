@@ -29,6 +29,14 @@
     @apply w-10 h-10;
     color: var(--accent-primary);
   }
+
+  // Brand image — sized identically to the SVG it replaced so layout
+  // (gap, alignment, header height) stays untouched. `object-contain`
+  // protects the aspect ratio if the asset is ever swapped for a
+  // non-square one.
+  .logo-img {
+    @apply w-10 h-10 object-contain;
+  }
 }
 
 .logo-text {
