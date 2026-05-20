@@ -1,4 +1,12 @@
-.notif-modal-overlay { @apply fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4; }
+.notif-modal-overlay {
+  @apply fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4;
+  // Override the Tailwind `p-4` with safe-area-aware padding to keep the
+  // centered modal away from the OS status bar / gesture bar.
+  padding: max(1rem, env(safe-area-inset-top, 0px))
+           max(1rem, env(safe-area-inset-right, 0px))
+           max(1rem, env(safe-area-inset-bottom, 0px))
+           max(1rem, env(safe-area-inset-left, 0px));
+}
 .notif-modal { @apply bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md overflow-hidden max-h-[90vh] flex flex-col; }
 
 .notif-modal-header {

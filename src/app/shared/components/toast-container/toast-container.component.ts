@@ -59,10 +59,12 @@ import { ToastService } from '../../services/toast.service';
   styles: [`
     :host {
       position: fixed;
-      // Anchored top-right, just below the fixed app header. Falls back to
-      // a sane top offset when the variable is not defined (e.g. layouts
-      // without a header).
-      top: calc(var(--app-header-height, 56px) + 1rem);
+      // Anchored top-right, just below the fixed app header. The header now
+      // covers the OS status-bar inset (see header-shell SCSS), so the toast
+      // must add it too — otherwise on edge-to-edge Android the toast paints
+      // partially under the header. The --safe-area-top var falls back to
+      // 0px on platforms that don't expose insets so web/desktop is OK.
+      top: calc(var(--app-header-height, 56px) + var(--safe-area-top, 0px) + 1rem);
       right: 1rem;
       z-index: 9999;
       pointer-events: none;

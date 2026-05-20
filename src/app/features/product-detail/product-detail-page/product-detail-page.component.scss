@@ -8,8 +8,14 @@
   overflow-y: auto;
   background-color: var(--bg-primary, #ffffff);
   animation: overlayFadeIn 0.2s ease-out;
-  // Reserve space for the fixed `app-header-shell` rendered above.
-  padding-top: var(--app-header-height);
+  // Reserve space for the fixed `app-header-shell` (header chrome +
+  // safe-area-top so the overlay content starts below the OS status bar,
+  // not under it on edge-to-edge Android).
+  padding-top: calc(var(--app-header-height) + var(--safe-area-top));
+  // Reserve room under the OS gesture/navigation bar so the last row of
+  // related products / CTAs doesn't paint under the 3-button nav. The
+  // 1rem floor guarantees breathing room on devices that report 0px.
+  padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
   // Prevent scroll-chaining: when the backdrop's scroll hits top/bottom,
   // the wheel/touch event must not leak to the body underneath. Combined
   // with no body lock, this keeps the catalog's scroll position pinned

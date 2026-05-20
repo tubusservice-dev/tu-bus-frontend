@@ -60,7 +60,12 @@ import { BodyScrollLockService } from '@shared/services/body-scroll-lock.service
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 1rem;
+      /* Safe-area-aware padding so the dialog stays clear of the OS
+         status bar and gesture/nav bar on edge-to-edge Android. */
+      padding: max(1rem, env(safe-area-inset-top, 0px))
+               max(1rem, env(safe-area-inset-right, 0px))
+               max(1rem, env(safe-area-inset-bottom, 0px))
+               max(1rem, env(safe-area-inset-left, 0px));
       background-color: rgba(0, 0, 0, 0.5);
       backdrop-filter: blur(4px);
       animation: pumFadeIn 0.15s ease-out;

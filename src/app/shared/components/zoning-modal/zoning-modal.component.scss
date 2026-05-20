@@ -4,6 +4,12 @@
 
 .zoning-overlay {
   @apply fixed inset-0 z-50 flex items-center justify-center p-4;
+  // Override the Tailwind `p-4` with safe-area-aware padding so the
+  // zoning dialog never paints under the OS status bar / nav bar.
+  padding: max(1rem, env(safe-area-inset-top, 0px))
+           max(1rem, env(safe-area-inset-right, 0px))
+           max(1rem, env(safe-area-inset-bottom, 0px))
+           max(1rem, env(safe-area-inset-left, 0px));
   background-color: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(4px);
   animation: fadeIn 0.3s ease-out;
