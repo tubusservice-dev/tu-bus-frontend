@@ -278,7 +278,10 @@ type ViewMode = 'days' | 'months' | 'years';
       z-index: 80;
       width: calc(100vw - 32px);
       max-width: 360px;
-      max-height: calc(100vh - 32px);
+      /* Discount the OS safe-area insets from the available height so the
+         centered panel never overlaps the status bar or gesture/nav bar
+         on edge-to-edge Android. Internal scroll handles tall content. */
+      max-height: calc(100vh - 32px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
       overflow-y: auto;
       padding: 20px 16px 16px;
       background: var(--bg-primary, #ffffff);

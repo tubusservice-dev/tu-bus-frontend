@@ -32,14 +32,29 @@
 }
 
 @media (max-width: 639px) {
+  // Fullscreen sheet on phones — overlay padding equals the OS safe-area
+  // insets so the modal-container stretches to cover the screen MINUS the
+  // status bar and gesture/nav bar. Without these, the modal header is
+  // painted under the OS clock and the footer CTAs ("Cancelar" /
+  // "Confirmar Pago") are clipped by the 3-button nav on edge-to-edge
+  // Android. No `max()` floor here on purpose: on desktop / web where
+  // env() resolves to 0, we want zero padding so the sheet stays visually
+  // fullscreen as designed.
   .modal-overlay {
-    padding: 0;
+    padding: env(safe-area-inset-top, 0px)
+             env(safe-area-inset-right, 0px)
+             env(safe-area-inset-bottom, 0px)
+             env(safe-area-inset-left, 0px);
     align-items: stretch;
   }
 
   .modal-container {
     max-width: 100%;
-    max-height: 100vh;
+    // Bound the container to the available area AFTER the safe-area
+    // insets have been reserved by the overlay padding. Without this the
+    // container would stretch to 100vh (raw viewport) and inherit the
+    // same overflow problem.
+    max-height: calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
     height: 100%;
     border-radius: 0;
     border: none;

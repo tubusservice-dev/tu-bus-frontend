@@ -7,8 +7,15 @@
   overflow-y: auto;
   background-color: var(--bg-primary, #ffffff);
   animation: overlayFadeIn 0.2s ease-out;
-  // Reserve space for the fixed header.
-  padding-top: var(--app-header-height);
+  // Reserve space for the fixed header (which itself spans header chrome +
+  // safe-area-top — see header-shell SCSS), so the overlay content starts
+  // BELOW the OS status bar instead of being clipped by the header strip.
+  padding-top: calc(var(--app-header-height) + var(--safe-area-top));
+  // Reserve room under the OS gesture/navigation bar so the footer CTAs
+  // (e.g. "Seguir comprando") don't paint under the 3-button nav. The
+  // 1rem floor guarantees breathing room even on devices where the WebView
+  // reports `env(safe-area-inset-bottom)` as 0.
+  padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
   // No scroll-chain leak to the body; keeps the underlying route's scroll
   // position untouched while the overlay is open.
   overscroll-behavior: contain;

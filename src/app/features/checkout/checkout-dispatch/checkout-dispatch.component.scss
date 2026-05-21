@@ -1,8 +1,11 @@
 .dispatch-page {
   @apply min-h-screen;
-  // Reserve space for the fixed `app-header-shell` rendered by
-  // `<app-checkout-header>`.
-  padding-top: var(--app-header-height);
+  // Reserve header chrome + OS status-bar inset (edge-to-edge Android 15+
+  // forces edge-to-edge regardless of `setDecorFitsSystemWindows`).
+  // Bottom reserves the OS gesture/nav-bar inset with a 1rem floor so the
+  // last CTA stays visible above the 3-button nav.
+  padding-top: calc(var(--app-header-height) + var(--safe-area-top));
+  padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
   background-color: var(--bg-secondary);
 }
 

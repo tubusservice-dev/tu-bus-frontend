@@ -8,6 +8,13 @@
 .modal-overlay {
   @apply fixed inset-0 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm;
   z-index: 1100;
+  // Override the Tailwind `p-4` with safe-area-aware padding so the
+  // centered modal container never paints under the OS status bar or
+  // gesture/nav bar on edge-to-edge Android.
+  padding: max(1rem, env(safe-area-inset-top, 0px))
+           max(1rem, env(safe-area-inset-right, 0px))
+           max(1rem, env(safe-area-inset-bottom, 0px))
+           max(1rem, env(safe-area-inset-left, 0px));
   animation: fadeIn 0.2s ease-out;
 }
 

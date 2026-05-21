@@ -1,9 +1,10 @@
 // ========== Page layout ==========
 .in-store-form-page {
   @apply min-h-screen;
-  // Reserve space for the fixed `app-header-shell` rendered by
-  // `<app-checkout-header>`.
-  padding-top: var(--app-header-height);
+  // Reserve header chrome + OS status-bar inset on edge-to-edge Android,
+  // and gesture/nav-bar inset at the bottom (1rem floor as a baseline).
+  padding-top: calc(var(--app-header-height) + var(--safe-area-top));
+  padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
   background-color: var(--bg-secondary);
 }
 

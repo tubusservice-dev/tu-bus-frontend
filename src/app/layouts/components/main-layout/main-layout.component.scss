@@ -2,11 +2,13 @@
   @apply min-h-screen flex flex-col;
   background-color: var(--bg-primary);
   transition: background-color var(--transition-normal);
-  // Reserve room under the gesture/navigation bar so trailing content
-  // (footer, CTAs, last row of cards) stays visible on edge-to-edge
-  // Android 15+ devices. Zero impact on web/legacy Android where the
-  // inset resolves to 0px.
-  padding-bottom: var(--safe-area-bottom);
+  // `max(1rem, env(...))` guarantees at least 16px of breathing room
+  // at the bottom of the scroll on EVERY device:
+  //   1) edge-to-edge Android 15+ → env() returns ~16-48dp, wins.
+  //   2) Android 13 without edge-to-edge → env() returns 0px, the
+  //      1rem floor kicks in so the footer never touches the OS nav bar.
+  //   3) Web desktop → env() returns 0px, 1rem floor still applied.
+  padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
 }
 
 .main-content {

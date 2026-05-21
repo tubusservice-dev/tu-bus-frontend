@@ -434,7 +434,9 @@
 .scroll-top-btn {
   @apply fixed z-40 flex items-center justify-center rounded-full shadow-lg;
   @apply transition-all duration-300;
-  bottom: 1.5rem;
+  // Anchor to viewport-bottom + the system gesture/nav-bar inset so the
+  // button never paints under Android's 3-button nav or the gesture pill.
+  bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
   right: 1.5rem;
   width: 40px;
   height: 40px;

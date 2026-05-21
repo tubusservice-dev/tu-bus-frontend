@@ -8,7 +8,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
+  // Respect OS safe-area on all four sides. The 1rem floor keeps the
+  // original visual breathing room on desktop; on edge-to-edge Android
+  // the OS reports larger insets and they win, so the modal title is
+  // never painted under the status bar and the Cancel/Confirm CTAs are
+  // never clipped by the gesture / 3-button nav at the bottom.
+  padding: max(1rem, env(safe-area-inset-top, 0px))
+           max(1rem, env(safe-area-inset-right, 0px))
+           max(1rem, env(safe-area-inset-bottom, 0px))
+           max(1rem, env(safe-area-inset-left, 0px));
   background-color: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(4px);
   overflow: hidden;
