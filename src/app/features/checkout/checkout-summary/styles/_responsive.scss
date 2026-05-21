@@ -41,10 +41,10 @@
   // env() resolves to 0, we want zero padding so the sheet stays visually
   // fullscreen as designed.
   .modal-overlay {
-    padding: env(safe-area-inset-top, 0px)
-             env(safe-area-inset-right, 0px)
-             env(safe-area-inset-bottom, 0px)
-             env(safe-area-inset-left, 0px);
+    padding: var(--safe-area-top, 0px)
+             var(--safe-area-right, 0px)
+             var(--safe-area-bottom, 0px)
+             var(--safe-area-left, 0px);
     align-items: stretch;
   }
 
@@ -54,7 +54,7 @@
     // insets have been reserved by the overlay padding. Without this the
     // container would stretch to 100vh (raw viewport) and inherit the
     // same overflow problem.
-    max-height: calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    max-height: calc(100vh - var(--safe-area-top, 0px) - var(--safe-area-bottom, 0px));
     height: 100%;
     border-radius: 0;
     border: none;

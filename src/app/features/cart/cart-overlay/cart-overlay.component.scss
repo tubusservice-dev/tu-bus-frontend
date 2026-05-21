@@ -14,8 +14,8 @@
   // Reserve room under the OS gesture/navigation bar so the footer CTAs
   // (e.g. "Seguir comprando") don't paint under the 3-button nav. The
   // 1rem floor guarantees breathing room even on devices where the WebView
-  // reports `env(safe-area-inset-bottom)` as 0.
-  padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+  // reports `var(--safe-area-bottom, 0px)` as 0.
+  padding-bottom: max(1rem, var(--safe-area-bottom, 0px));
   // No scroll-chain leak to the body; keeps the underlying route's scroll
   // position untouched while the overlay is open.
   overscroll-behavior: contain;

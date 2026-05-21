@@ -7,7 +7,7 @@
   //   2) Android 13 without edge-to-edge → env() returns 0px, the 1rem
   //      floor kicks in.
   //   3) Web desktop → env() returns 0px, 1rem floor still applied.
-  padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+  padding-bottom: max(1rem, var(--safe-area-bottom, 0px));
 }
 
 .tubus-main {
@@ -25,7 +25,7 @@
   // padding-bottom, so it doesn't inherit the safe-area reservation. Add
   // it explicitly here or the button paints under the OS gesture/nav bar
   // on edge-to-edge Android.
-  bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+  bottom: calc(1.5rem + var(--safe-area-bottom, 0px));
   right: 1.5rem;
   width: 40px;
   height: 40px;

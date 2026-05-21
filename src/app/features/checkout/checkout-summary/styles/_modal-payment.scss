@@ -13,10 +13,10 @@
   // the OS reports larger insets and they win, so the modal title is
   // never painted under the status bar and the Cancel/Confirm CTAs are
   // never clipped by the gesture / 3-button nav at the bottom.
-  padding: max(1rem, env(safe-area-inset-top, 0px))
-           max(1rem, env(safe-area-inset-right, 0px))
-           max(1rem, env(safe-area-inset-bottom, 0px))
-           max(1rem, env(safe-area-inset-left, 0px));
+  padding: max(1rem, var(--safe-area-top, 0px))
+           max(1rem, var(--safe-area-right, 0px))
+           max(1rem, var(--safe-area-bottom, 0px))
+           max(1rem, var(--safe-area-left, 0px));
   background-color: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(4px);
   overflow: hidden;

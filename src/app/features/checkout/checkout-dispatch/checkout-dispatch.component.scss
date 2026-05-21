@@ -5,7 +5,7 @@
   // Bottom reserves the OS gesture/nav-bar inset with a 1rem floor so the
   // last CTA stays visible above the 3-button nav.
   padding-top: calc(var(--app-header-height) + var(--safe-area-top));
-  padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+  padding-bottom: max(1rem, var(--safe-area-bottom, 0px));
   background-color: var(--bg-secondary);
 }
 
