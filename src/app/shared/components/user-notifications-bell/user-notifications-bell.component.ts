@@ -151,7 +151,7 @@ import { UserNotificationDetailModalComponent } from '../user-notification-detai
     // Header
     .panel-header {
       @apply flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex-shrink-0;
-      padding-top: max(0.75rem, env(safe-area-inset-top));
+      padding-top: max(0.75rem, var(--safe-area-top, 0px));
     }
     .panel-title { @apply text-sm font-semibold text-gray-900 dark:text-white; }
     .mark-all-btn { @apply ml-auto text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline; }

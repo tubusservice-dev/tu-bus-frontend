@@ -436,7 +436,7 @@
   @apply transition-all duration-300;
   // Anchor to viewport-bottom + the system gesture/nav-bar inset so the
   // button never paints under Android's 3-button nav or the gesture pill.
-  bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+  bottom: calc(1.5rem + var(--safe-area-bottom, 0px));
   right: 1.5rem;
   width: 40px;
   height: 40px;

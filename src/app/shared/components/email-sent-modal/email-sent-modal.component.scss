@@ -9,10 +9,10 @@
   z-index: 1100;
   // Override the Tailwind `p-4` with safe-area-aware padding (Android
   // edge-to-edge would otherwise push the modal under the system bars).
-  padding: max(1rem, env(safe-area-inset-top, 0px))
-           max(1rem, env(safe-area-inset-right, 0px))
-           max(1rem, env(safe-area-inset-bottom, 0px))
-           max(1rem, env(safe-area-inset-left, 0px));
+  padding: max(1rem, var(--safe-area-top, 0px))
+           max(1rem, var(--safe-area-right, 0px))
+           max(1rem, var(--safe-area-bottom, 0px))
+           max(1rem, var(--safe-area-left, 0px));
   animation: fadeIn 0.2s ease-out;
 }
 

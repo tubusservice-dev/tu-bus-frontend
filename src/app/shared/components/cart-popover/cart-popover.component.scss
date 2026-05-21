@@ -92,7 +92,7 @@
   @media (max-width: 639px) {
     @apply py-4 px-4;
     // Safe area para notch
-    padding-top: max(1rem, env(safe-area-inset-top));
+    padding-top: max(1rem, var(--safe-area-top, 0px));
   }
 }
 
@@ -281,7 +281,7 @@
   @media (max-width: 639px) {
     @apply p-4 pb-6;
     // Safe area para home indicator
-    padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+    padding-bottom: max(1.5rem, var(--safe-area-bottom, 0px));
   }
 }
 

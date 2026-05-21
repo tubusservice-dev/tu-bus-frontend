@@ -14,7 +14,7 @@ import { ThemeService } from '@core/services/theme.service';
  * stay legible regardless of light/dark mode. We deliberately do NOT
  * call `setBackgroundColor`: on Android 15+ (targetSdk >= 35) that API
  * is silently ignored — the WebView itself paints the inset area via
- * the global header + `env(safe-area-inset-top)` in CSS, which is the
+ * the global header + `var(--safe-area-top, 0px)` in CSS, which is the
  * source of truth across web, legacy Android, and edge-to-edge Android.
  *
  * On web: every method is a no-op. The web app uses CSS for branding.

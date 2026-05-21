@@ -8,7 +8,7 @@
   //   2) Android 13 without edge-to-edge → env() returns 0px, the
   //      1rem floor kicks in so the footer never touches the OS nav bar.
   //   3) Web desktop → env() returns 0px, 1rem floor still applied.
-  padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+  padding-bottom: max(1rem, var(--safe-area-bottom, 0px));
 }
 
 .main-content {

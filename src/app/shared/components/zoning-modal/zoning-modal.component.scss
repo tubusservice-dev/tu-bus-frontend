@@ -6,10 +6,10 @@
   @apply fixed inset-0 z-50 flex items-center justify-center p-4;
   // Override the Tailwind `p-4` with safe-area-aware padding so the
   // zoning dialog never paints under the OS status bar / nav bar.
-  padding: max(1rem, env(safe-area-inset-top, 0px))
-           max(1rem, env(safe-area-inset-right, 0px))
-           max(1rem, env(safe-area-inset-bottom, 0px))
-           max(1rem, env(safe-area-inset-left, 0px));
+  padding: max(1rem, var(--safe-area-top, 0px))
+           max(1rem, var(--safe-area-right, 0px))
+           max(1rem, var(--safe-area-bottom, 0px))
+           max(1rem, var(--safe-area-left, 0px));
   background-color: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(4px);
   animation: fadeIn 0.3s ease-out;
@@ -113,13 +113,13 @@
   }
 }
 
-// Municipalities grid
+// Municipalities grid — always 2 columns on every viewport. The previous
+// `@media (max-width: 400px) { grid-cols-1 }` collapsed HD phones (~360 dp)
+// into a single column while HD+ kept 2, producing inconsistent UX across
+// devices. 2 columns fit comfortably even on 320 dp viewports (~114 dp
+// per cell, plenty for the icon + short municipality labels).
 .municipalities-grid {
   @apply grid grid-cols-2 gap-3;
-
-  @media (max-width: 400px) {
-    @apply grid-cols-1;
-  }
 }
 
 // Zone button

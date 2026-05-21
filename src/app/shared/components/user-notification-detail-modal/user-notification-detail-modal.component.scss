@@ -55,7 +55,7 @@
 
 .un-modal-footer {
   @apply flex items-center justify-end gap-2 px-5 py-3 border-t border-gray-200 dark:border-gray-700 flex-shrink-0;
-  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  padding-bottom: max(0.75rem, var(--safe-area-bottom, 0px));
 }
 .un-btn-order {
   @apply px-5 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors;
