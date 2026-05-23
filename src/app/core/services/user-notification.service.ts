@@ -88,6 +88,7 @@ export class UserNotificationService {
   private readonly _unreadCount = signal(0);
   private readonly _notifications = signal<UserNotification[]>([]);
   private readonly _showPopover = signal(false);
+  private readonly _isLoadingRecent = signal(false);
   private readonly _currentToken = signal<string | null>(null);
   private readonly _permissionState = signal<NotificationPermissionState>(
     // Initial value uses the platform-aware reader so native does NOT
@@ -99,6 +100,8 @@ export class UserNotificationService {
   readonly unreadCount = this._unreadCount.asReadonly();
   readonly notifications = this._notifications.asReadonly();
   readonly showPopover = this._showPopover.asReadonly();
+  /** True while the popover list is fetching `/user-notifications?limit=5`. */
+  readonly isLoadingRecent = this._isLoadingRecent.asReadonly();
   /** True when this browser has an active FCM token registered with the backend. */
   readonly hasFcmToken = computed(() => this._currentToken() !== null);
   /** Current `Notification.permission` view exposed as a signal so the UI can react. */
@@ -238,9 +241,15 @@ export class UserNotificationService {
   }
 
   fetchRecent(): void {
+    this._isLoadingRecent.set(true);
     this.http.get<UserNotificationListResponse>(`${this.apiUrl}?limit=5&isRead=false`).subscribe({
-      next: (res) => this._notifications.set(res.data),
-      error: () => {},
+      next: (res) => {
+        this._notifications.set(res.data);
+        this._isLoadingRecent.set(false);
+      },
+      error: () => {
+        this._isLoadingRecent.set(false);
+      },
     });
   }
 

@@ -60,6 +60,38 @@ input[type="number"] {
 }
 
 /* ========================================
+   Native picker indicator spacing (time / date / datetime-local)
+   ========================================
+   Chromium / Android WebView paints the `::-webkit-calendar-picker-indicator`
+   chevron flush against the right edge of the input. That looks cramped on
+   our rounded form controls and hugs the border in mobile. Push it inward
+   with a small inline margin and reserve a touch more padding-right on the
+   host so the value never overlaps the indicator. Applied globally so any
+   future date/time input inherits correct spacing without per-component CSS. */
+input[type="time"],
+input[type="date"],
+input[type="datetime-local"] {
+  padding-right: 0.75rem;
+}
+
+input[type="time"]::-webkit-calendar-picker-indicator,
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  margin-left: 0.5rem;
+  margin-right: 0.25rem;
+  padding: 2px;
+  cursor: pointer;
+  opacity: 0.65;
+  transition: opacity 0.2s ease;
+}
+
+input[type="time"]:hover::-webkit-calendar-picker-indicator,
+input[type="date"]:hover::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]:hover::-webkit-calendar-picker-indicator {
+  opacity: 1;
+}
+
+/* ========================================
    Transición global de rutas (slide-in)
    ======================================== */
 @keyframes routeSlideIn {
@@ -238,6 +270,21 @@ router-outlet + * {
   button {
     cursor: pointer;
     transition: all var(--transition-fast);
+    // Android WebView defaults: long-press on a <button> triggers native
+    // text selection (with floating selection handles), the tap-highlight
+    // overlay (rgba(0,0,0,0.18)) and the OS context menu. On dark mode the
+    // overlay fuses the button background with the page background and
+    // makes the control visually disappear (R20 pattern: bug lives in the
+    // WebView default contract, not in app CSS). Buttons are interactive
+    // controls, not selectable content — these four declarations restore
+    // the expected mobile UX without touching the native bridge.
+    // Desktop is unaffected: `-webkit-touch-callout` is no-op outside
+    // WebKit/Chromium mobile, and `user-select: none` on a button has no
+    // visible effect on web (nobody selects button text intentionally).
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
   }
 
   img {
@@ -309,7 +356,10 @@ router-outlet + * {
   }
 
   .btn-primary:focus {
-    @apply ring-primary-500;
+    // Ring color must follow the brand (TuBus blue) — never the legacy
+    // `primary-500` red that ships in tailwind.config.js. A red focus ring
+    // on a non-error control reads as "validation failed" to the user.
+    --tw-ring-color: var(--accent-primary);
   }
 
   .btn-secondary {
@@ -356,7 +406,10 @@ router-outlet + * {
 
   .input:focus {
     border-color: var(--accent-primary);
-    @apply ring-primary-500/20;
+    // Subtle brand-tinted ring (already defined as rgba(0,29,86,0.1) in
+    // :root). Replaces the legacy red `primary-500/20` that conflicted
+    // with the actual error-state ring used by form fields.
+    --tw-ring-color: var(--accent-light);
   }
 
   .input::placeholder {

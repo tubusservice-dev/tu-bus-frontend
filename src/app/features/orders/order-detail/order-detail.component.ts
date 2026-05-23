@@ -8,6 +8,7 @@ import { ExchangeRateService } from '@core/services/exchange-rate.service';
 import { UploadService } from '@core/services/upload.service';
 import { ReviewService } from '@core/services/review.service';
 import { UserNotificationService } from '@core/services/user-notification.service';
+import { PRINT } from '@platform';
 import {
   Order, OrderStatus, DispatchStatus,
   ORDER_STATUS_LABELS, ORDER_STATUS_COLORS, ORDER_STATUS_DESCRIPTIONS,
@@ -54,6 +55,9 @@ export class OrderDetailComponent implements OnInit {
   private readonly reviewService = inject(ReviewService);
   private readonly userNotifications = inject(UserNotificationService);
   private readonly destroyRef = inject(DestroyRef);
+  // Platform-aware print abstraction: window.print() on web, native
+  // PrintManager (PDF / printer / share) on Android WebView.
+  private readonly printer = inject(PRINT);
   protected readonly exchangeRateService = inject(ExchangeRateService);
 
   // ========== ESTADO PRINCIPAL ==========
@@ -680,6 +684,19 @@ export class OrderDetailComponent implements OnInit {
     this.isPaymentExpanded.update((v) => !v);
   }
 
+  /**
+   * True only when the submission carries at least one of the fields gated
+   * behind the eye-toggle (`referenceNumber`, `sourceBank`, `senderName`,
+   * `paymentDate`). Card / cash payments expose only `methodLabel` and
+   * `amount`, which are already rendered unconditionally — for those the
+   * toggle would expand nothing, so we hide it entirely.
+   */
+  hasExpandablePaymentDetails(order: Order): boolean {
+    const ps = order.paymentSubmission;
+    if (!ps) return false;
+    return !!(ps.referenceNumber || ps.sourceBank || ps.senderName || ps.paymentDate);
+  }
+
   // ============================================
   // RE-SUBIDA DE COMPROBANTE DE PAGO
   // ============================================
@@ -786,7 +803,12 @@ export class OrderDetailComponent implements OnInit {
   // ============================================
   printOrder(): void {
     this.printedAt = new Date().toISOString();
-    // Damos un tick a Angular para renderizar el header de impresión antes de abrir el diálogo
-    setTimeout(() => window.print(), 50);
+    // Give Angular one tick to render the print-only header before the OS
+    // dialog grabs the document snapshot. The platform strategy dispatches
+    // to window.print() on web and to the native PrintManager on Android.
+    setTimeout(() => {
+      const orderNumber = this.order()?.orderNumber ?? 'documento';
+      void this.printer.print({ title: `orden_${orderNumber}` });
+    }, 50);
   }
 }

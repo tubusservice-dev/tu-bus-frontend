@@ -35,7 +35,12 @@ import { UserNotificationDetailModalComponent } from '../user-notification-detai
 
           <!-- List View -->
             <div class="panel-list">
-              @if (notifService.notifications().length === 0) {
+              @if (notifService.isLoadingRecent() && notifService.notifications().length === 0) {
+                <div class="panel-loading" role="status" aria-live="polite">
+                  <div class="panel-spinner" aria-hidden="true"></div>
+                  <span>Cargando notificaciones...</span>
+                </div>
+              } @else if (notifService.notifications().length === 0) {
                 <div class="panel-empty">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="empty-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" /></svg>
                   <span>No tienes notificaciones</span>
@@ -162,6 +167,22 @@ import { UserNotificationDetailModalComponent } from '../user-notification-detai
       @apply flex flex-col items-center justify-center py-16 text-gray-400 dark:text-gray-500 gap-3;
       .empty-icon { @apply w-10 h-10; }
       span { @apply text-sm; }
+    }
+    // Loading state — shown only on the first fetch (when the list cache is
+    // still empty). Subsequent re-opens keep the cached list visible while
+    // the background refresh runs, avoiding a jarring spinner flash.
+    .panel-loading {
+      @apply flex flex-col items-center justify-center py-16 gap-3;
+      @apply text-sm text-gray-500 dark:text-gray-400;
+    }
+    .panel-spinner {
+      @apply w-8 h-8 rounded-full;
+      border: 2.5px solid var(--border-color);
+      border-top-color: var(--accent-primary);
+      animation: notifSpin 0.7s linear infinite;
+    }
+    @keyframes notifSpin {
+      to { transform: rotate(360deg); }
     }
 
     .notif-item {

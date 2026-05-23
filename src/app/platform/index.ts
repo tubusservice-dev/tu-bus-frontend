@@ -51,6 +51,13 @@ export {
   type Coordinates,
 } from './geolocation/geolocation.service';
 
+// Print (window.print on web, native PrintManager on Android)
+export {
+  PRINT,
+  type IPrint,
+  type PrintOptions,
+} from './print/print.service';
+
 // Lifecycle services (no strategy split — single class with internal gating)
 export { BackButtonService } from './back-button/back-button.service';
 export { DeepLinksService } from './deep-links/deep-links.service';

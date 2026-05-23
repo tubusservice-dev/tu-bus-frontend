@@ -31,6 +31,7 @@
     "@angular/forms": "^20.1.0",
     "@angular/platform-browser": "^20.1.0",
     "@angular/router": "^20.1.0",
+    "@bcyesil/capacitor-plugin-printer": "^0.0.6",
     "@capacitor-firebase/authentication": "^8.2.0",
     "@capacitor-firebase/messaging": "^8.2.0",
     "@capacitor/app": "^8.1.0",

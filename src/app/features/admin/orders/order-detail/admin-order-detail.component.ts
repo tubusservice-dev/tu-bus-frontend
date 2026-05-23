@@ -127,6 +127,53 @@ export class AdminOrderDetailComponent implements OnInit {
     return n.length > 40;
   });
 
+  /**
+   * Compact log of every admin-authored note attached to the order. Combines
+   * `statusHistory` (approval, cancellation, completion) with `serviceEvents`
+   * (date reschedules, mechanic reassignments) and keeps only entries that
+   * actually carry a note. Newest first.
+   *
+   * Rendered as a sub-block inside the "Informacion General" card so admins
+   * can audit what was written, when, and from which action — without losing
+   * notes when a new one is added (the backend already accumulates them; the
+   * admin UI was the only side not surfacing them).
+   */
+  protected readonly noteHistory = computed(() => {
+    const o = this.order();
+    if (!o) return [] as Array<{ origin: string; tone: string; note: string; timestamp: string | Date }>;
+
+    const statusOrigin: Partial<Record<OrderStatus, { origin: string; tone: string }>> = {
+      [OrderStatus.PENDING]:                 { origin: 'Pendiente',              tone: 'tone-gray' },
+      [OrderStatus.APPROVED]:                { origin: 'Aprobada',               tone: 'tone-emerald' },
+      [OrderStatus.COMPLETED]:               { origin: 'Completada',             tone: 'tone-blue' },
+      [OrderStatus.CANCELLATION_REQUESTED]:  { origin: 'Cancelacion solicitada', tone: 'tone-amber' },
+      [OrderStatus.CANCELLED]:               { origin: 'Cancelada',              tone: 'tone-red' },
+    };
+
+    const statusEntries = (o.statusHistory || [])
+      .filter(s => s.note && s.note.trim().length > 0)
+      .map(s => {
+        const meta = statusOrigin[s.status as OrderStatus] || { origin: 'Cambio de estado', tone: 'tone-gray' };
+        return { origin: meta.origin, tone: meta.tone, note: s.note!, timestamp: s.timestamp };
+      });
+
+    const eventEntries = (o.serviceEvents || [])
+      .filter(ev => ev.note && ev.note.trim().length > 0)
+      .map(ev => {
+        if (ev.type === 'date_rescheduled') {
+          return { origin: 'Reprogramacion', tone: 'tone-amber', note: ev.note!, timestamp: ev.timestamp };
+        }
+        if (ev.type === 'mechanic_reassigned') {
+          return { origin: 'Mecanico reasignado', tone: 'tone-blue', note: ev.note!, timestamp: ev.timestamp };
+        }
+        return { origin: 'Nota', tone: 'tone-gray', note: ev.note!, timestamp: ev.timestamp };
+      });
+
+    return [...statusEntries, ...eventEntries].sort(
+      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+  });
+
   // ========== IMAGE LIGHTBOX ==========
   protected readonly proofPreview = signal<string | null>(null);
 

@@ -171,7 +171,12 @@
                 }
               </div>
               <div class="notif-popover-list">
-                @if (adminNotifications.notifications().length === 0) {
+                @if (adminNotifications.isLoadingRecent() && adminNotifications.notifications().length === 0) {
+                  <div class="notif-loading" role="status" aria-live="polite">
+                    <div class="notif-spinner" aria-hidden="true"></div>
+                    <span>Cargando notificaciones...</span>
+                  </div>
+                } @else if (adminNotifications.notifications().length === 0) {
                   <div class="notif-empty">No hay notificaciones</div>
                 } @else {
                   @for (n of adminNotifications.notifications(); track n.id) {

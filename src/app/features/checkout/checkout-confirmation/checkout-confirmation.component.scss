@@ -108,9 +108,14 @@
 }
 
 .detail-section-header {
-  @apply flex items-center gap-2.5 px-4 sm:px-5 py-3;
+  @apply flex items-center gap-x-2.5 gap-y-1.5 px-4 sm:px-5 py-3;
   @apply border-b border-gray-200 dark:border-gray-700;
   @apply bg-white/50 dark:bg-black/20;
+  // Allow the source badge (e.g. "Misma dirección de envío") to wrap onto
+  // a second line on narrow viewports instead of overflowing past the card
+  // edge. Without flex-wrap, the badge's `white-space: nowrap` clipped the
+  // text on mobile (Android WebView ~360 dp width).
+  flex-wrap: wrap;
 
   h3 {
     @apply text-sm font-semibold;
@@ -123,9 +128,11 @@
   color: var(--accent-primary);
 }
 
-// Source badge — indicates where the billing data came from
+// Source badge — indicates where the billing data came from. Pushed to
+// the right edge only at `sm` and above; on mobile it flows naturally on
+// its own line below the title (see `flex-wrap` on .detail-section-header).
 .billing-source-badge {
-  @apply ml-auto px-2 py-0.5 rounded-full text-[11px] font-medium;
+  @apply sm:ml-auto px-2 py-0.5 rounded-full text-[11px] font-medium;
   background-color: var(--accent-light, rgba(0, 29, 86, 0.1));
   color: var(--accent-primary);
   white-space: nowrap;

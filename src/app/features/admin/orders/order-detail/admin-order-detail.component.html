@@ -752,6 +752,24 @@
               }
             </div>
           </div>
+
+          <!-- Historial de notas (solo se renderiza cuando hay al menos una nota
+               escrita en statusHistory o serviceEvents — no contamina con un
+               estado vacío). Cada item identifica origen + texto + timestamp. -->
+          @if (noteHistory().length > 0) {
+            <div class="note-history">
+              <div class="note-history-label">Historial de notas</div>
+              @for (item of noteHistory(); track $index) {
+                <div class="note-history-item">
+                  <div class="note-history-head">
+                    <span class="note-history-origin" [ngClass]="item.tone">{{ item.origin }}</span>
+                    <span class="note-history-date">{{ formatDate(item.timestamp) }}</span>
+                  </div>
+                  <p class="note-history-text">{{ item.note }}</p>
+                </div>
+              }
+            </div>
+          }
         </section>
 
       </div>

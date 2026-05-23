@@ -163,6 +163,20 @@
 .notif-count-label { @apply text-[10px] font-medium text-red-500; }
 .notif-popover-list { @apply max-h-80 overflow-y-auto; }
 .notif-empty { @apply py-8 text-center text-sm text-gray-400 dark:text-gray-500; }
+.notif-loading {
+  @apply flex flex-col items-center justify-center py-8 gap-2.5;
+  @apply text-xs text-gray-500 dark:text-gray-400;
+}
+.notif-spinner {
+  @apply w-6 h-6 rounded-full;
+  // Two-tone ring — the accent-coloured top arc is what visually rotates.
+  border: 2px solid var(--border-color);
+  border-top-color: var(--accent-primary);
+  animation: notifSpin 0.7s linear infinite;
+}
+@keyframes notifSpin {
+  to { transform: rotate(360deg); }
+}
 .notif-item {
   @apply w-full flex items-start gap-3 p-3 text-left border-b border-gray-100 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors;
   &.unread { @apply bg-blue-50/50 dark:bg-blue-900/10; }
