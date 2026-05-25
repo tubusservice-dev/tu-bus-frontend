@@ -186,6 +186,14 @@ export class AdminOrderDetailComponent implements OnInit {
   protected readonly highlightCommentId = signal<string | null>(null);
   private highlightTimer: ReturnType<typeof setTimeout> | null = null;
 
+  /**
+   * True when the admin landed on this route from a notification tap with
+   * `?openMessages=1` but the order data has not yet loaded. Once the
+   * order resolves we scroll the comments thread into view so the admin
+   * sees the customer's reply without manual scrolling.
+   */
+  private pendingScrollToMessages = false;
+
   // ========== CONSTANTS ==========
   protected readonly ORDER_STATUS_LABELS = ORDER_STATUS_LABELS;
   protected readonly DISPATCH_STATUS_LABELS = DISPATCH_STATUS_LABELS;
@@ -343,10 +351,48 @@ export class AdminOrderDetailComponent implements OnInit {
         this.loadOrder(id);
       });
 
+    // Notification-tap query params. When the admin taps a push targeted
+    // at this order, the backend stamps `?notif=<id>` (and, for comment
+    // notifications, `?openMessages=1`) so we can mark it read silently
+    // and scroll the comments thread into view.
+    this.route.queryParamMap
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((params) => {
+        const notifId = params.get('notif');
+        if (notifId) {
+          this.adminNotifications.markAsRead(notifId).subscribe({
+            error: () => { /* silent — non-critical */ },
+          });
+        }
+        if (params.get('openMessages') === '1') {
+          this.pendingScrollToMessages = true;
+          this.tryScrollToMessages();
+        }
+      });
+
     // Push subscription registered once for the component's lifetime; the
     // handler reads `this.order()?.id` at fire time so it always filters
     // against the *currently loaded* order, not the original one.
     this.subscribeToPushEvents();
+  }
+
+  /**
+   * Scrolls the comments card into view if both conditions hold:
+   *   1. A pending request from the notification-tap query param exists.
+   *   2. The order data has loaded (so the comments component is mounted).
+   *
+   * The admin layout renders comments inline (not as a modal) so the
+   * affordance is "draw the eye to the thread", not "open something".
+   */
+  private tryScrollToMessages(): void {
+    if (!this.pendingScrollToMessages) return;
+    if (!this.order()) return;
+    this.pendingScrollToMessages = false;
+    if (typeof document === 'undefined') return;
+    requestAnimationFrame(() => {
+      const el = document.querySelector('app-order-comments');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
   }
 
   private loadOrder(id: string): void {
@@ -358,6 +404,9 @@ export class AdminOrderDetailComponent implements OnInit {
         if (this.isOilChange()) {
           this.loadServiceTracking(id);
         }
+        // Honour pending `?openMessages=1` request from a notification tap
+        // now that the comments thread is part of the rendered DOM.
+        this.tryScrollToMessages();
       },
       error: () => {
         this.error.set('No se pudo cargar la orden');

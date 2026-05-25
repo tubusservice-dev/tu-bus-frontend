@@ -72,6 +72,12 @@ export class OrderDetailComponent implements OnInit {
   // ========== MESSAGING MODAL ==========
   protected readonly showMessagingModal = signal(false);
   protected readonly hasUnreadMessages = signal(false);
+  /**
+   * True when the route was entered with `?openMessages=1` but the order
+   * data has not finished loading yet. Cleared once the modal opens. Lets
+   * the notification-tap flow defer the modal until comments are available.
+   */
+  private pendingOpenMessages = false;
 
   // ========== LIGHTBOX COMPROBANTE ==========
   protected readonly proofPreview = signal<string | null>(null);
@@ -256,8 +262,45 @@ export class OrderDetailComponent implements OnInit {
         this.loadOrder(id);
       });
 
+    // Notification-tap query params. Set by the backend on the FCM
+    // `data.url` so a tap on a notification lands the user already in
+    // the right context — and, for comment-type notifications, opens
+    // the messaging modal automatically.
+    this.route.queryParamMap
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((params) => {
+        const notifId = params.get('notif');
+        if (notifId) {
+          // Best-effort mark-as-read; the popover/list will resync on next view.
+          this.userNotifications.markAsRead(notifId).subscribe({
+            error: () => { /* silent — non-critical */ },
+          });
+        }
+        if (params.get('openMessages') === '1') {
+          this.pendingOpenMessages = true;
+          this.tryOpenPendingMessaging();
+        }
+      });
+
     this.subscribeToPushEvents();
     this.startThreadPolling();
+  }
+
+  /**
+   * Opens the messaging modal if both conditions hold:
+   *   1. A pending request from the notification-tap query param exists.
+   *   2. The order data has finished loading (so the modal renders with
+   *      the actual thread, not an empty placeholder).
+   *
+   * Called twice: when the query param arrives (may be too early) and
+   * from `loadOrder`'s success handler (may be too late if the param
+   * arrives later). The `pendingOpenMessages` guard makes both calls idempotent.
+   */
+  private tryOpenPendingMessaging(): void {
+    if (!this.pendingOpenMessages) return;
+    if (!this.order()) return;
+    this.pendingOpenMessages = false;
+    this.openMessaging();
   }
 
   /**
@@ -290,6 +333,9 @@ export class OrderDetailComponent implements OnInit {
           this.checkReviewAndMaybeOpenModal(res.data.id);
         }
         this.refreshUnreadMessages(id);
+        // Honour pending `?openMessages=1` request from a notification tap
+        // now that the comments thread is loaded.
+        this.tryOpenPendingMessaging();
       },
       error: (err) => {
         this.error.set(err.error?.message || 'Error al cargar la orden');
@@ -603,6 +649,53 @@ export class OrderDetailComponent implements OnInit {
     const status = a && typeof a === 'object' ? a.status : null;
     return status === 'en_camino' || status === 'in_progress';
   }
+
+  /**
+   * Returns the display label + color classes for the mechanic assignment
+   * status. This is the source for the badge on the "Mecánico Asignado"
+   * card — it reflects the service lifecycle (asignado → en camino → en
+   * servicio → completado), NOT the order's own status (pending/approved/
+   * completed/cancelled). Keeping the two badges semantically separate
+   * removes the ambiguity the owner reported.
+   *
+   * Falls back to a neutral "Asignado" pill when the order has a mechanic
+   * but no assignment object (legacy data path or partial population).
+   */
+  assignmentStatusBadge(order: Order): { label: string; colorClass: string } {
+    const a = order.mechanicAssignment as any;
+    const status = a && typeof a === 'object' ? a.status : null;
+    const map: Record<string, { label: string; colorClass: string }> = {
+      scheduled:   { label: 'Mecánico Asignado', colorClass: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' },
+      en_camino:   { label: 'En Camino',         colorClass: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300' },
+      in_progress: { label: 'En Servicio',       colorClass: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' },
+      completed:   { label: 'Servicio Completo', colorClass: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300' },
+      paused:      { label: 'En Pausa',          colorClass: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' },
+      cancelled:   { label: 'Cancelado',         colorClass: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' },
+      expired:     { label: 'Expirado',          colorClass: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200' },
+    };
+    return status && map[status]
+      ? map[status]
+      : { label: 'Asignado', colorClass: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' };
+  }
+
+  /**
+   * True when the "Mecánico Asignado" card should be promoted to the top
+   * of the detail layout (above the two-column grid). Conditions:
+   *   1. The order has a mechanic populated.
+   *   2. The order is still in progress — not completed and not cancelled.
+   *
+   * The card stays in its original position (right column, sección 7) for
+   * historical orders so the layout doesn't draw the eye to a service
+   * that already finished or got cancelled.
+   */
+  protected readonly mechanicCardOnTop = computed(() => {
+    const o = this.order();
+    if (!o) return false;
+    if (!this.hasMechanic(o)) return false;
+    if (o.status === OrderStatus.COMPLETED) return false;
+    if (o.status === OrderStatus.CANCELLED) return false;
+    return true;
+  });
 
   mechanicAvatar(order: Order): string {
     const m = order.mechanic as any;

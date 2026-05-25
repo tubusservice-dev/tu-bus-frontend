@@ -16,6 +16,8 @@ import { authInterceptor } from '@core/interceptors';
 import { AuthService, SettingsService } from '@core/services';
 import { ExchangeRateService } from '@core/services/exchange-rate.service';
 import { PwaService } from '@core/services/pwa.service';
+import { NotificationRouterService } from '@core/services/notification-router.service';
+import { UserNotificationService } from '@core/services/user-notification.service';
 import {
   ChunkLoadErrorHandler,
   isChunkLoadError,
@@ -121,6 +123,40 @@ function initializeBiometric(): () => void {
   return () => void biometric.loadEnrollmentState();
 }
 
+/**
+ * Subscribes the central notification-tap router so taps on system
+ * notifications (Android tray + web PWA banners) navigate to the deep
+ * URL stamped on the FCM payload. Must run early in bootstrap so the
+ * ReplaySubject behind `notificationTap$` replays any tap that fired
+ * during cold-start (app opened from a tap on a closed app).
+ */
+function initializeNotificationRouter(): () => void {
+  const notificationRouter = inject(NotificationRouterService);
+  return () => notificationRouter.start();
+}
+
+/**
+ * Syncs the OS-level notification permission state at boot.
+ *
+ * Native (Android/iOS): queries `FirebaseMessaging.checkPermissions()` so
+ * the "¿Recibir notificaciones?" banner reflects the *real* state from
+ * the first paint — not the optimistic `'default'` placeholder. Without
+ * this, the banner reappears every cold-start even when the user already
+ * granted permission, because the cached token is in-memory only.
+ *
+ * Web: returns the current `Notification.permission` synchronously —
+ * essentially free.
+ *
+ * Fire-and-forget. We don't block the bootstrap on the async branch —
+ * the initial paint may briefly show the banner before the sync resolves,
+ * which is fine. Most users notice the difference only after the second
+ * launch.
+ */
+function initializeNotificationPermissionSync(): () => void {
+  const userNotifications = inject(UserNotificationService);
+  return () => { void userNotifications.syncPermissionState(); };
+}
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
@@ -185,6 +221,16 @@ export const appConfig: ApplicationConfig = {
     {
       provide: APP_INITIALIZER,
       useFactory: initializeBiometric,
+      multi: true,
+    },
+    {
+      provide: APP_INITIALIZER,
+      useFactory: initializeNotificationRouter,
+      multi: true,
+    },
+    {
+      provide: APP_INITIALIZER,
+      useFactory: initializeNotificationPermissionSync,
       multi: true,
     },
     { provide: LOCALE_ID, useValue: 'es' },

@@ -61,6 +61,25 @@ export class UserMenuComponent implements OnDestroy {
    */
   async activatePushNotifications(): Promise<void> {
     if (this.platform.isNative()) {
+      // Re-sync first so the branch below uses the *real* OS state, not
+      // whatever stale value the signal had from a previous render.
+      // Android 13+ silently rejects re-prompts when the user already
+      // tapped "Don't allow" — calling requestPermissions() in that case
+      // would make the button feel broken.
+      const state = await this.userNotifService.syncPermissionState();
+      if (state === 'denied') {
+        this.closeMenu();
+        this.showUnblockModal.set(true);
+        return;
+      }
+      if (state === 'granted') {
+        // Already granted at OS level but the in-memory token may be
+        // missing — request triggers the rehydration path inside the
+        // service. Safe to call: idempotent on the plugin side.
+        await this.userNotifService.requestNotificationPermission();
+        return;
+      }
+      // 'default' → first-time prompt path.
       await this.userNotifService.requestNotificationPermission();
       return;
     }
@@ -78,7 +97,7 @@ export class UserMenuComponent implements OnDestroy {
     } catch {
       /* user cancelled the prompt — nothing to do */
     }
-    this.userNotifService.syncPermissionState();
+    void this.userNotifService.syncPermissionState();
   }
 
   protected closeUnblockModal(): void {
