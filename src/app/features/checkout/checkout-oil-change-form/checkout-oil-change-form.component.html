@@ -197,8 +197,12 @@
                     (click)="toggleVehicle(vehicle)"
                   >
                     <div class="vehicle-select-info">
-                      <span class="vehicle-select-name">{{ vehicle.marca }} {{ vehicle.modelo }} {{ vehicle.year }}</span>
-                      <span class="vehicle-select-plate">{{ vehicle.placa }}</span>
+                      <span class="vehicle-select-name">
+                        {{ vehicle.marca }} {{ vehicle.modelo }}@if (vehicle.year) { {{ vehicle.year }} }
+                      </span>
+                      @if (vehicle.placa) {
+                        <span class="vehicle-select-plate">{{ vehicle.placa }}</span>
+                      }
                       @if (vehicle.engineType?.displacement || vehicle.engineType?.cylinders) {
                         <span class="vehicle-select-specs">
                           {{ vehicle.engineType?.displacement }} {{ vehicle.engineType?.fuelType }}@if (vehicle.engineType?.cylinders) { {{ vehicle.engineType?.cylinders }} cil. }

@@ -88,6 +88,7 @@ export class UserNotificationService {
   private readonly _unreadCount = signal(0);
   private readonly _notifications = signal<UserNotification[]>([]);
   private readonly _showPopover = signal(false);
+  private readonly _isLoadingRecent = signal(false);
   private readonly _currentToken = signal<string | null>(null);
   private readonly _permissionState = signal<NotificationPermissionState>(
     // Initial value uses the platform-aware reader so native does NOT
@@ -99,6 +100,8 @@ export class UserNotificationService {
   readonly unreadCount = this._unreadCount.asReadonly();
   readonly notifications = this._notifications.asReadonly();
   readonly showPopover = this._showPopover.asReadonly();
+  /** True while the popover list is fetching `/user-notifications?limit=5`. */
+  readonly isLoadingRecent = this._isLoadingRecent.asReadonly();
   /** True when this browser has an active FCM token registered with the backend. */
   readonly hasFcmToken = computed(() => this._currentToken() !== null);
   /** Current `Notification.permission` view exposed as a signal so the UI can react. */
@@ -154,19 +157,44 @@ export class UserNotificationService {
     // the prompt path now; that click is the gesture the browser needs.
     effect(() => {
       const user = this.authService.currentUser();
-      this._permissionState.set(this.readPermission());
+      // Web: synchronous read is cheap and accurate. Native: defer to the
+      // async branch below which queries the plugin.
+      if (!this.platform.isNative()) {
+        this._permissionState.set(this.readPermission());
+      }
       if (!user) return;
       // Skip on admin context — AdminNotificationsService handles that subject.
       if (user.role === 'admin') return;
       if (this._currentToken() !== null) return;
+
+      if (this.platform.isNative()) {
+        // Native rehydration path: query the OS permission state via the
+        // plugin (the only source of truth — `Notification` doesn't exist
+        // in the Capacitor WebView and our cached token is wiped on every
+        // kill of the app). If the OS already granted, rehydrate the FCM
+        // token silently so the UI stops nagging the user with the
+        // "¿Recibir notificaciones?" banner on every cold-start.
+        void this.syncAndRehydrateNative();
+        return;
+      }
+
       // Web: only rehydrate if browser already granted (the user opted in
-      // a previous session). Native: skip silent rehydration entirely
-      // because we cannot query OS permission synchronously without a
-      // plugin call; the explicit toggle is the source of truth.
-      if (this.platform.isNative()) return;
+      // a previous session). The toggle owns the prompt path otherwise.
       if (readBrowserPermission() !== 'granted') return;
       void this.rehydrateFcmToken();
     });
+  }
+
+  /**
+   * Native cold-start helper. Reads the real OS permission state via the
+   * plugin, mirrors it into `_permissionState`, and — if the SO already
+   * granted — rehydrates the FCM token so the backend keeps an active
+   * registration for this device. Idempotent.
+   */
+  private async syncAndRehydrateNative(): Promise<void> {
+    await this.syncPermissionState();
+    if (this._permissionState() !== 'granted') return;
+    await this.rehydrateFcmToken();
   }
 
   /**
@@ -238,9 +266,15 @@ export class UserNotificationService {
   }
 
   fetchRecent(): void {
+    this._isLoadingRecent.set(true);
     this.http.get<UserNotificationListResponse>(`${this.apiUrl}?limit=5&isRead=false`).subscribe({
-      next: (res) => this._notifications.set(res.data),
-      error: () => {},
+      next: (res) => {
+        this._notifications.set(res.data);
+        this._isLoadingRecent.set(false);
+      },
+      error: () => {
+        this._isLoadingRecent.set(false);
+      },
     });
   }
 
@@ -309,15 +343,36 @@ export class UserNotificationService {
    * Re-read the permission state and publish it on `permissionState`.
    * Standalone helper: does NOT prompt, does NOT touch the FCM token.
    *
-   * Web: queries `Notification.permission`.
-   * Native: cannot query the OS permission synchronously without a
-   * dedicated plugin call; we infer from token presence (token implies
-   * permission was granted). The async truth is established when the
-   * user actually taps the toggle and `requestNotificationPermission`
-   * runs through the plugin.
+   * Web: queries `Notification.permission` synchronously (cheap).
+   *
+   * Native: queries `FirebaseMessaging.checkPermissions()` — the only way
+   * to know the real OS state. Translates `'prompt'` to our `'default'`
+   * sentinel so the same downstream guards work for both platforms. If
+   * the plugin call fails (rare), falls back to `'default'` so the UI
+   * shows the "Permitir" CTA rather than hiding it.
+   *
+   * Returns the resolved state so callers that need to branch can await
+   * it. Existing callers that ignore the return value still work.
    */
-  syncPermissionState(): void {
-    this._permissionState.set(this.readPermission());
+  async syncPermissionState(): Promise<NotificationPermissionState> {
+    if (this.platform.isNative()) {
+      try {
+        const { FirebaseMessaging } = await import('@capacitor-firebase/messaging');
+        const result = await FirebaseMessaging.checkPermissions();
+        const mapped: NotificationPermissionState =
+          result.receive === 'prompt' ? 'default' :
+          (result.receive as NotificationPermissionState);
+        this._permissionState.set(mapped);
+        return mapped;
+      } catch (err) {
+        console.warn('[UserNotif] checkPermissions failed:', err);
+        this._permissionState.set('default');
+        return 'default';
+      }
+    }
+    const state = this.readPermission();
+    this._permissionState.set(state);
+    return state;
   }
 
   /**

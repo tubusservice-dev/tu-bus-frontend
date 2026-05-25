@@ -425,4 +425,30 @@
       @apply w-5 h-5;
     }
   }
+
+  // Stack brand/line/category vertically on mobile to prevent the three
+  // labels from competing for horizontal space and getting truncated with
+  // ellipsis. Each label gets its own line and can render in full.
+  .card-header {
+    @apply flex-col items-start gap-0.5 mb-1.5;
+  }
+
+  .card-header-left {
+    @apply flex-wrap;
+    width: 100%;
+  }
+
+  // Disable the truncate behaviour inherited from the desktop layout —
+  // when stacked vertically each label has the full card width to grow.
+  .brand-name,
+  .line-name {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+  }
+
+  .category-name {
+    @apply text-[10px];
+    white-space: normal;
+  }
 }

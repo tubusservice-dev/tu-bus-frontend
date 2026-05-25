@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import type { MessagePayload, Messaging } from 'firebase/messaging';
-import { Observable, Subject } from 'rxjs';
+import { Observable, ReplaySubject, Subject } from 'rxjs';
 import { environment } from '@env';
 import { PlatformService } from '@platform';
 import { getFirebaseApp } from './firebase.config';
@@ -46,10 +46,27 @@ export class FirebaseMessagingService {
    * to this, not to `onForegroundMessage$`.
    */
   private readonly pushSubject = new Subject<PushEventData>();
+  /**
+   * Cold-start safe channel for "user tapped a notification" events.
+   *
+   * Uses `ReplaySubject(1)` so that a tap arriving BEFORE any subscriber
+   * is registered (typical when the app boots from a tap on a system
+   * notification) is replayed to the first subscriber instead of being
+   * dropped. The `NotificationRouterService` consumes this stream and
+   * navigates the Router accordingly.
+   *
+   * Separate from `pushSubject` because the consumer reactions differ
+   * fundamentally:
+   *  - Push received in background → refresh UI silently, light unread dot.
+   *  - User tapped a notification  → navigate to destination, open modal.
+   */
+  private readonly tapSubject = new ReplaySubject<PushEventData>(1);
   readonly onForegroundMessage$: Observable<MessagePayload> =
     this.foregroundSubject.asObservable();
   readonly onPushReceived$: Observable<PushEventData> =
     this.pushSubject.asObservable();
+  readonly notificationTap$: Observable<PushEventData> =
+    this.tapSubject.asObservable();
 
   constructor() {
     this.attachSwMessageListener();
@@ -138,28 +155,52 @@ export class FirebaseMessagingService {
   }
 
   /**
-   * Subscribes to the Capacitor Firebase Messaging plugin's events.
-   * Routes both `notificationReceived` (foreground) and
-   * `notificationActionPerformed` (user tap) into `pushSubject` keyed by
-   * the notification's `data` payload — same shape as the web SW
-   * postMessage path so consumers do not branch.
+   * Attaches the Capacitor Firebase Messaging plugin listeners.
+   *
+   * MUST be called at bootstrap time (via APP_INITIALIZER), not lazily on
+   * `requestToken()`. The Android plugin retains the
+   * `notificationActionPerformed` event in an internal queue with
+   * `retainUntilConsumed = true`, but only delivers it to JS once a
+   * listener is attached. If the user opens the app from a cold-start
+   * tap and we only attach listeners when they manually opt-in to push,
+   * the tap event sits in the plugin queue forever — the app appears
+   * to "just open" without navigating to the deep target.
+   *
+   * Idempotent: subsequent calls are no-ops thanks to the guard.
+   *
+   *  - `notificationReceived`         → emitted on `pushSubject` (foreground
+   *    delivery while the user is inside the app; consumer refreshes UI
+   *    silently, lights the unread dot).
+   *  - `notificationActionPerformed`  → emitted on `tapSubject` (user
+   *    explicitly tapped a notification; consumer must navigate to the
+   *    target URL and open the relevant modal).
+   *
+   * Why separate streams: the two actions have opposite UX intents. A
+   * background push that triggers a tap was already routed by the OS to
+   * the tray — the user picked it up later. A foreground push is silent
+   * data that should NOT navigate or interrupt the current screen.
    */
-  private async attachNativeListeners(): Promise<void> {
+  async attachNativeListeners(): Promise<void> {
     if (this.nativeListenersAttached) return;
+    if (!this.platform.isNative()) return;
 
+    console.log('[FCM-Native] Attaching listeners on bootstrap...');
     const { FirebaseMessaging } = await import('@capacitor-firebase/messaging');
 
     await FirebaseMessaging.addListener('notificationReceived', (event) => {
       const data = (event.notification.data as Record<string, string>) ?? {};
+      console.log('[FCM-Native] notificationReceived:', data);
       this.pushSubject.next(data as PushEventData);
     });
 
     await FirebaseMessaging.addListener('notificationActionPerformed', (event) => {
       const data = (event.notification.data as Record<string, string>) ?? {};
-      this.pushSubject.next(data as PushEventData);
+      console.log('[FCM-Native] notificationActionPerformed (TAP):', data);
+      this.tapSubject.next(data as PushEventData);
     });
 
     this.nativeListenersAttached = true;
+    console.log('[FCM-Native] Listeners attached.');
   }
 
   /**
@@ -248,18 +289,27 @@ export class FirebaseMessagingService {
   }
 
   /**
-   * Bridge for pushes that arrive while the page is in background and
-   * are handled by `firebase-messaging-sw.js`. The SW broadcasts the
-   * payload to every open client via `postMessage`; this listener
-   * funnels those messages into the same `pushReceived$` stream so
-   * consumers don't need to care which path the push took.
+   * Bridge for events that arrive from `firebase-messaging-sw.js` via
+   * `postMessage`. The SW broadcasts two distinct event types:
+   *
+   *  - `'fcm-push'`              → background data push received. Funneled
+   *    into `pushSubject` so the open tab can refresh its UI silently.
+   *  - `'fcm-notification-click'`→ user tapped the notification in the OS
+   *    tray. Funneled into `tapSubject` (ReplaySubject) so the router can
+   *    navigate even if the listener attaches AFTER the message arrived
+   *    (cold-start race: SW posts the message before any component has
+   *    subscribed).
    */
   private attachSwMessageListener(): void {
     if (this.swListenerAttached) return;
     if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
     navigator.serviceWorker.addEventListener('message', (event: MessageEvent) => {
       if (!isFcmSwMessage(event.data)) return;
-      this.pushSubject.next(event.data.payload);
+      if (event.data.type === 'fcm-notification-click') {
+        this.tapSubject.next(event.data.payload);
+      } else {
+        this.pushSubject.next(event.data.payload);
+      }
     });
     this.swListenerAttached = true;
   }

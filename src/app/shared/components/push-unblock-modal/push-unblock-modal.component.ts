@@ -8,6 +8,7 @@ import {
   output,
 } from '@angular/core';
 import { BodyScrollLockService } from '@shared/services/body-scroll-lock.service';
+import { PlatformService } from '@platform';
 
 /**
  * Reusable modal that explains how to re-enable push notifications when
@@ -43,11 +44,28 @@ import { BodyScrollLockService } from '@shared/services/body-scroll-lock.service
             </svg>
           </button>
           <h4 id="pum-title" class="pum-title">Cómo desbloquear las notificaciones</h4>
-          <ol class="pum-steps">
-            <li>Abre la configuración del navegador en este sitio (candado <strong>🔒</strong> a la izquierda de la URL).</li>
-            <li>Busca <strong>Notificaciones</strong> y cambia a <strong>Permitir</strong>.</li>
-            <li>Recarga esta página y vuelve a activar el toggle.</li>
-          </ol>
+
+          @if (platform.isAndroid()) {
+            <ol class="pum-steps">
+              <li>Abre <strong>Ajustes</strong> de tu teléfono.</li>
+              <li>Entra en <strong>Aplicaciones</strong> y busca <strong>TuBus Express</strong>.</li>
+              <li>Toca <strong>Notificaciones</strong> y actívalas.</li>
+              <li>Vuelve a la app y toca <strong>Permitir</strong> de nuevo.</li>
+            </ol>
+          } @else if (platform.isIos()) {
+            <ol class="pum-steps">
+              <li>Abre <strong>Ajustes</strong> del iPhone.</li>
+              <li>Entra en <strong>Notificaciones</strong> y busca <strong>TuBus Express</strong>.</li>
+              <li>Activa <strong>Permitir notificaciones</strong>.</li>
+              <li>Vuelve a la app y toca <strong>Permitir</strong> de nuevo.</li>
+            </ol>
+          } @else {
+            <ol class="pum-steps">
+              <li>Abre la configuración del navegador en este sitio (candado <strong>🔒</strong> a la izquierda de la URL).</li>
+              <li>Busca <strong>Notificaciones</strong> y cambia a <strong>Permitir</strong>.</li>
+              <li>Recarga esta página y vuelve a activar el toggle.</li>
+            </ol>
+          }
         </div>
       </div>
     }
@@ -143,6 +161,9 @@ import { BodyScrollLockService } from '@shared/services/body-scroll-lock.service
 export class PushUnblockModalComponent implements OnDestroy {
   readonly isOpen = input.required<boolean>();
   readonly close = output<void>();
+
+  /** Exposes platform flags to the template so the steps adapt to the OS. */
+  protected readonly platform = inject(PlatformService);
 
   private readonly scrollLock = inject(BodyScrollLockService);
   private hasScrollLock = false;

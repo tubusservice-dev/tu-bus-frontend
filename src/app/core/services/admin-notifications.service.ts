@@ -50,6 +50,7 @@ export class AdminNotificationsService {
   private readonly _unreadCount = signal(0);
   private readonly _notifications = signal<AdminNotification[]>([]);
   private readonly _showPopover = signal(false);
+  private readonly _isLoadingRecent = signal(false);
   private readonly _currentToken = signal<string | null>(null);
   private readonly _permissionState = signal<NotificationPermissionState>(
     readBrowserPermission()
@@ -58,6 +59,8 @@ export class AdminNotificationsService {
   readonly unreadCount = this._unreadCount.asReadonly();
   readonly notifications = this._notifications.asReadonly();
   readonly showPopover = this._showPopover.asReadonly();
+  /** True while the popover list is fetching `/admin/notifications?limit=5`. */
+  readonly isLoadingRecent = this._isLoadingRecent.asReadonly();
   /** True when this admin browser has an active FCM token on the backend. */
   readonly hasFcmToken = computed(() => this._currentToken() !== null);
   /** Reactive view of `Notification.permission`. Updates after each prompt. */
@@ -158,9 +161,15 @@ export class AdminNotificationsService {
 
   fetchRecent(): void {
     if (!this.hasAdminToken()) return;
+    this._isLoadingRecent.set(true);
     this.http.get<NotificationListResponse>(`${this.apiUrl}?limit=5`).subscribe({
-      next: (res) => this._notifications.set(res.data),
-      error: () => {},
+      next: (res) => {
+        this._notifications.set(res.data);
+        this._isLoadingRecent.set(false);
+      },
+      error: () => {
+        this._isLoadingRecent.set(false);
+      },
     });
   }
 

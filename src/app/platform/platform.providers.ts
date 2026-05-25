@@ -19,6 +19,9 @@ import { NativeCameraStrategy } from './camera/native-camera.strategy';
 import { GEOLOCATION, IGeolocation } from './geolocation/geolocation.service';
 import { WebGeolocationStrategy } from './geolocation/web-geolocation.strategy';
 import { NativeGeolocationStrategy } from './geolocation/native-geolocation.strategy';
+import { PRINT, IPrint } from './print/print.service';
+import { WebPrintStrategy } from './print/web-print.strategy';
+import { NativePrintStrategy } from './print/native-print.strategy';
 
 /**
  * Returns the providers that bind every platform abstraction token to its
@@ -93,6 +96,13 @@ export function providePlatform(): EnvironmentProviders {
       provide: GEOLOCATION,
       useFactory: (platform: PlatformService): IGeolocation =>
         platform.isNative() ? new NativeGeolocationStrategy() : new WebGeolocationStrategy(),
+      deps: [PlatformService],
+    },
+
+    {
+      provide: PRINT,
+      useFactory: (platform: PlatformService): IPrint =>
+        platform.isNative() ? new NativePrintStrategy() : new WebPrintStrategy(),
       deps: [PlatformService],
     },
   ] satisfies Provider[]);

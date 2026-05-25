@@ -14,19 +14,25 @@ module.exports = {
           light: 'var(--accent-light)',
           secondary: 'var(--accent-secondary, var(--accent-primary))',
         },
-        // Color primario - Rojo vino (fallback estático)
+        // Color primario - Azul TuBus (alineado con var(--accent-primary)
+        // = rgb(0, 29, 86)). Reemplaza la paleta "Rojo vino" legacy del
+        // diseño original. Cualquier uso de `bg-primary-*`, `ring-primary-*`,
+        // `border-primary-*`, `text-primary-*` ahora produce un tono del
+        // brand, evitando rings rojos accidentales que se confundían con
+        // estados de error de validación. Los rojos legítimos (validación
+        // fallida) siguen disponibles en la paleta `error.*` más abajo.
         primary: {
-          50: '#fef2f2',
-          100: '#fee2e2',
-          200: '#fecaca',
-          300: '#fca5a5',
-          400: '#f87171',
-          500: '#ef4444',
-          600: '#dc2626',
-          700: '#b91c1c',
-          800: '#991b1b',  // Rojo vino principal
-          900: '#7f1d1d',
-          950: '#450a0a',
+          50:  '#e6ecf4',
+          100: '#ccd9e8',
+          200: '#99b3d2',
+          300: '#668cbb',
+          400: '#3366a4',
+          500: '#003e99',  // = accent-primary (dark mode)
+          600: '#002d70',
+          700: '#001d56',  // = accent-primary (light mode) — brand principal
+          800: '#00143c',
+          900: '#000b22',
+          950: '#000511',
         },
         // Colores neutros - Negro/Gris
         neutral: {
