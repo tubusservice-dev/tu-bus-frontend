@@ -65,10 +65,12 @@ const config: CapacitorConfig = {
       // SDK (vs falling back to the Firebase web SDK in the WebView, which
       // breaks because Google blocks WebView-based OAuth since 2021).
       skipNativeAuth: false,
-      // Enabled providers for this app. Adding 'apple.com' / 'facebook.com'
-      // later just requires an entry here plus enabling them in Firebase
-      // Console → Authentication → Sign-in method.
-      providers: ['google.com'],
+      // Enabled providers. 'apple.com' is iOS-only at runtime — the plugin
+      // throws on Android if invoked, but listing it here is mandatory for
+      // the iOS native SDK to register the Sign in with Apple capability.
+      // Must also be enabled in Firebase Console → Authentication → Sign-in
+      // method → Apple (requires Apple Service ID + key configured).
+      providers: ['google.com', 'apple.com'],
     },
   },
 };

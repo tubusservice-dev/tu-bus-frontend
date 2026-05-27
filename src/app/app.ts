@@ -16,6 +16,7 @@ import { EmailSentModalComponent } from '@shared/components/email-sent-modal/ema
 import { VerifyEmailPendingModalComponent } from '@shared/components/verify-email-pending-modal/verify-email-pending-modal.component';
 import { AccountLinkPendingModalComponent } from '@shared/components/account-link-pending-modal/account-link-pending-modal.component';
 import { LinkGooglePasswordModalComponent } from '@shared/components/link-google-password-modal/link-google-password-modal.component';
+import { LinkApplePasswordModalComponent } from '@shared/components/link-apple-password-modal/link-apple-password-modal.component';
 
 @Component({
   selector: 'app-root',
@@ -32,6 +33,7 @@ import { LinkGooglePasswordModalComponent } from '@shared/components/link-google
     VerifyEmailPendingModalComponent,
     AccountLinkPendingModalComponent,
     LinkGooglePasswordModalComponent,
+    LinkApplePasswordModalComponent,
     PwaUpdateBannerComponent,
     PwaInstallModalComponent,
   ],

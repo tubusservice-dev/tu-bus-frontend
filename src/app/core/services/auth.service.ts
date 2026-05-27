@@ -8,6 +8,8 @@ import {
   IStorage,
   GOOGLE_AUTH,
   IGoogleAuth,
+  APPLE_AUTH,
+  IAppleAuth,
   PlatformService,
 } from '@platform';
 import {
@@ -73,6 +75,14 @@ export class AuthService {
    * Capacitor Firebase Authentication plugin.
    */
   private readonly googleAuth = inject<IGoogleAuth>(GOOGLE_AUTH);
+
+  /**
+   * iOS-only Apple sign-in (App Store Guideline 4.8 compliance). On web
+   * and Android the injected strategy is a no-op that returns false from
+   * `isAvailable()` — callers must always gate on `platform.isIos()` (or
+   * `appleAuth.isAvailable()`) before invoking `signIn()`.
+   */
+  private readonly appleAuth = inject<IAppleAuth>(APPLE_AUTH);
 
   /**
    * Platform detector — used to gate the OAuth flow between web (redirect)
@@ -169,6 +179,20 @@ export class AuthService {
   private readonly linkGooglePendingSignal = signal<string | null>(null);
   readonly linkGoogleModalOpen = computed(() => this.linkGooglePendingSignal() !== null);
 
+  /**
+   * Symmetric pending-link payload for Apple. Unlike Google we carry name
+   * fields alongside the identityToken because Apple only returns them on
+   * the FIRST sign-in for this app — losing them between the initial 409
+   * and the link-with-password call would leave the linked account with
+   * empty firstName/lastName until the user re-fills the profile manually.
+   *
+   * Null means no Apple link flow is in progress — the modal stays hidden.
+   */
+  private readonly linkApplePendingSignal = signal<
+    { identityToken: string; firstName?: string; lastName?: string } | null
+  >(null);
+  readonly linkAppleModalOpen = computed(() => this.linkApplePendingSignal() !== null);
+
   openAuthModal(mode: AuthModalMode = 'login', prefillEmail = ''): void {
     this.authModalInitialModeSignal.set(mode);
     this.authModalPrefillEmailSignal.set(prefillEmail);
@@ -249,6 +273,58 @@ export class AuthService {
           this.triggerAccountBlocked(error);
           return throwError(() => error);
         })
+      );
+  }
+
+  /**
+   * Apple counterpart of `openLinkGoogleModal`. Stages the identityToken
+   * plus the (optional) name fields received from Apple's first sign-in,
+   * then closes the auth modal so the user sees a single modal at a time.
+   */
+  openLinkAppleModal(
+    identityToken: string,
+    firstName?: string,
+    lastName?: string,
+  ): void {
+    this.linkApplePendingSignal.set({ identityToken, firstName, lastName });
+    this.closeAuthModal();
+  }
+
+  closeLinkAppleModal(): void {
+    this.linkApplePendingSignal.set(null);
+  }
+
+  /**
+   * Apple counterpart of `linkGoogleWithPassword`. Posts the staged
+   * identityToken + name fields + the user-supplied local password to
+   * `/api/auth/link-apple-with-password`. On success the backend returns
+   * the same { token, user } shape as a regular sign-in.
+   */
+  linkAppleWithPassword(password: string): Observable<AuthResponse> {
+    const pending = this.linkApplePendingSignal();
+    if (!pending) {
+      return throwError(
+        () => new Error('No hay un inicio de sesión de Apple pendiente para vincular.'),
+      );
+    }
+
+    return this.http
+      .post<AuthResponse>(`${this.apiUrl}/link-apple-with-password`, {
+        identityToken: pending.identityToken,
+        password,
+        firstName: pending.firstName,
+        lastName: pending.lastName,
+      })
+      .pipe(
+        tap((response) => {
+          this.handleAuthSuccess(response);
+          this.linkApplePendingSignal.set(null);
+          this.closeAuthModal();
+        }),
+        catchError((error: HttpErrorResponse) => {
+          this.triggerAccountBlocked(error);
+          return throwError(() => error);
+        }),
       );
   }
 
@@ -560,6 +636,116 @@ export class AuthService {
   }
 
   /**
+   * Public entry point for the iOS "Continue with Apple" button. Mirrors
+   * `loginWithOAuth('google')` in shape — fire-and-forget; the button is
+   * already gated by `platform.isIos()` in auth-modal so we don't repeat
+   * the check (defensive `appleAuth.isAvailable()` is in the strategy).
+   *
+   * No web fallback: Apple Sign-In via JS SDK is out of scope for v1. If a
+   * web user somehow reaches this method (shouldn't be possible), the
+   * native strategy throws and surfaces a toast via the existing handler.
+   */
+  loginWithApple(): void {
+    void this.signInWithAppleNative();
+  }
+
+  /**
+   * Native Apple sign-in pipeline — exact symmetric of `signInWithGoogleNative`:
+   *   1. Open the OS Sign in with Apple sheet via the Capacitor plugin.
+   *   2. Receive the identityToken + (first-sign-in-only) firstName/lastName.
+   *   3. POST to /api/auth/apple/native — backend verifies and returns
+   *      the app's own JWT + user payload.
+   *   4. Persist as a normal client session via handleAuthSuccess.
+   *
+   * Error handling mirrors the Google flow: cancel = silent, plugin
+   * failure = toast, EMAIL_ALREADY_REGISTERED_LOCAL = open link modal.
+   */
+  private async signInWithAppleNative(): Promise<void> {
+    this.nativeOAuthLoadingSignal.set(true);
+
+    let identityToken: string;
+    let firstName: string | undefined;
+    let lastName: string | undefined;
+    try {
+      const result = await this.appleAuth.signIn();
+      if (result.flow !== 'native') {
+        this.nativeOAuthLoadingSignal.set(false);
+        return; // defensive — should not happen
+      }
+      identityToken = result.identityToken;
+      firstName = result.firstName;
+      lastName = result.lastName;
+    } catch (err) {
+      this.nativeOAuthLoadingSignal.set(false);
+      // Apple's cancellation codes differ from Google's. The native plugin
+      // surfaces `1001` (ASAuthorizationErrorCanceled) on user dismiss, plus
+      // a "cancelled"/"canceled" string in the message on some bridge paths.
+      const errCode = String((err as { code?: unknown } | null)?.code ?? '').toLowerCase();
+      const errMsg = String((err as { message?: unknown } | null)?.message ?? err ?? '');
+      const isUserCancelled =
+        errCode === '1001' ||
+        /cancel/i.test(errMsg) ||
+        /dismiss/i.test(errMsg);
+
+      if (isUserCancelled) return;
+
+      console.warn('[AuthService] Apple native sign-in failed:', err);
+      this.toast.error(
+        `No se pudo iniciar sesión con Apple. Detalle: ${errMsg || 'Error desconocido'}`,
+        8000,
+      );
+      return;
+    }
+
+    this.http
+      .post<AuthResponse>(`${this.apiUrl}/apple/native`, {
+        identityToken,
+        firstName,
+        lastName,
+      })
+      .pipe(
+        tap((response) => this.handleAuthSuccess(response)),
+        catchError((error: HttpErrorResponse) => {
+          this.triggerAccountBlocked(error);
+          return throwError(() => error);
+        }),
+      )
+      .subscribe({
+        next: () => {
+          const user = this.currentUserSignal();
+          if (user && user.profileCompleted === false) {
+            this.router.navigate(['/perfil'], { queryParams: { completeProfile: 'true' } });
+          } else {
+            this.router.navigate(['/']);
+          }
+          this.closeAuthModal();
+          this.nativeOAuthLoadingSignal.set(false);
+        },
+        error: (err: HttpErrorResponse) => {
+          console.warn('[AuthService] Apple native exchange failed:', err);
+          this.nativeOAuthLoadingSignal.set(false);
+
+          if (this.blockedInfoSignal()) return;
+
+          const body = err?.error as { code?: string; message?: string } | undefined;
+          const code = body?.code;
+
+          // Symmetric account-linking entry point for Apple — same contract
+          // as the Google branch above.
+          if (code === 'EMAIL_ALREADY_REGISTERED_LOCAL') {
+            this.openLinkAppleModal(identityToken, firstName, lastName);
+            return;
+          }
+
+          this.toast.error(
+            body?.message ?? 'No se pudo completar el inicio de sesión con Apple.',
+            8000,
+          );
+        },
+      });
+  }
+
+  /**
    * Saves an admin session in admin-only storage keys, leaving the client
    * keys untouched.
    */
@@ -637,6 +823,7 @@ export class AuthService {
       Promise.allSettled([
         this.unregisterFcmTokenSilent(isAdmin),
         this.signOutGoogleSilent(),
+        this.signOutAppleSilent(),
       ]),
       new Promise<void>((resolve) => setTimeout(resolve, 1500)),
     ]);
@@ -675,6 +862,21 @@ export class AuthService {
       await this.googleAuth.signOut();
     } catch {
       /* silent — Google sign-out failure must not block app logout */
+    }
+  }
+
+  /**
+   * Best-effort native Apple sign-out. Same rationale as
+   * `signOutGoogleSilent` — Firebase Authentication holds an SDK-level
+   * session for Sign in with Apple independent of our JWT, and a stale
+   * session can break the next sign-in attempt. The strategy is a no-op
+   * on web and Android, so calling this unconditionally is safe.
+   */
+  private async signOutAppleSilent(): Promise<void> {
+    try {
+      await this.appleAuth.signOut();
+    } catch {
+      /* silent — Apple sign-out failure must not block app logout */
     }
   }
 
