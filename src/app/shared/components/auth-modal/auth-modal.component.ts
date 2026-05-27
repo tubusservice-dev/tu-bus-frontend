@@ -21,7 +21,12 @@ export class AuthModalComponent implements OnInit, OnDestroy {
   private readonly authService = inject(AuthService);
   private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
-  private readonly platform = inject(PlatformService);
+  /**
+   * Exposed as `protected` so the template can gate the "Continue with
+   * Apple" button on iOS only (App Store Guideline 4.8 requires it on
+   * iOS but Apple Sign-In has no Android/web flow in v1).
+   */
+  protected readonly platform = inject(PlatformService);
   private emailCheckSub: Subscription | null = null;
 
   constructor() {
@@ -335,6 +340,19 @@ export class AuthModalComponent implements OnInit, OnDestroy {
     this.isOAuthLoading.set(true);
     this.installOAuthFailsafe();
     this.authService.loginWithOAuth('google');
+  }
+
+  /**
+   * iOS-only Apple sign-in. No web fallback exists in v1, so the button
+   * itself is gated by `platform.isIos()` in the template — this method
+   * is never reached on web or Android. The bfcache failsafe used for
+   * Google is not needed here because the native flow stays in the app
+   * (no browser redirect), so `nativeOAuthLoading` (synced via effect)
+   * is the only spinner control needed.
+   */
+  loginWithApple(): void {
+    this.isOAuthLoading.set(true);
+    this.authService.loginWithApple();
   }
 
   /**

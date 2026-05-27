@@ -10,6 +10,9 @@ import { NativeExternalLinkStrategy } from './external-link/native-external-link
 import { GOOGLE_AUTH, IGoogleAuth } from './google-auth/google-auth.service';
 import { WebGoogleAuthStrategy } from './google-auth/web-google-auth.strategy';
 import { NativeGoogleAuthStrategy } from './google-auth/native-google-auth.strategy';
+import { APPLE_AUTH, IAppleAuth } from './apple-auth/apple-auth.service';
+import { WebAppleAuthStrategy } from './apple-auth/web-apple-auth.strategy';
+import { NativeAppleAuthStrategy } from './apple-auth/native-apple-auth.strategy';
 import { MESSAGING, IMessaging } from './messaging/messaging.service';
 import { WebMessagingStrategy } from './messaging/web-messaging.strategy';
 import { NativeMessagingStrategy } from './messaging/native-messaging.strategy';
@@ -72,6 +75,16 @@ export function providePlatform(): EnvironmentProviders {
       provide: GOOGLE_AUTH,
       useFactory: (platform: PlatformService): IGoogleAuth =>
         platform.isNative() ? new NativeGoogleAuthStrategy() : new WebGoogleAuthStrategy(),
+      deps: [PlatformService],
+    },
+
+    {
+      // Gated by isIos() — Apple Sign-In has no Android or web counterpart
+      // in v1. Android instantiates the Web (no-op) strategy so consumers
+      // can always inject APPLE_AUTH without conditional guards.
+      provide: APPLE_AUTH,
+      useFactory: (platform: PlatformService): IAppleAuth =>
+        platform.isIos() ? new NativeAppleAuthStrategy() : new WebAppleAuthStrategy(),
       deps: [PlatformService],
     },
 

@@ -74,6 +74,15 @@
 -->
 <app-link-google-password-modal />
 
+<!--
+  Modal: Vinculación inversa (cuenta LOCAL + Apple nativo).
+  iOS-only at the UX level (the auth-modal button is gated by isIos()),
+  but the modal itself is mounted unconditionally and stays hidden until
+  authService.linkAppleModalOpen() returns true — matches the Google
+  pattern above for consistency.
+-->
+<app-link-apple-password-modal />
+
 <app-toast-container />
 <app-blocked-account-modal />
 <app-pwa-install-modal />

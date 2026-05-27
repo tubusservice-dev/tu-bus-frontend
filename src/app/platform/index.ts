@@ -29,6 +29,13 @@ export {
   type GoogleSignInResult,
 } from './google-auth/google-auth.service';
 
+// Apple Auth (iOS native only — no-op elsewhere)
+export {
+  APPLE_AUTH,
+  type IAppleAuth,
+  type AppleSignInResult,
+} from './apple-auth/apple-auth.service';
+
 // Messaging (push notifications)
 export {
   MESSAGING,

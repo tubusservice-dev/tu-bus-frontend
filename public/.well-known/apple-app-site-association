@@ -1,0 +1,20 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "TEAMID.com.tubusexpress.app",
+        "paths": [
+          "/verify-email",
+          "/reset-password",
+          "/verify-account-link",
+          "/auth/callback",
+          "/perfil/*",
+          "/checkout/*",
+          "/catalogo/*",
+          "*"
+        ]
+      }
+    ]
+  }
+}
