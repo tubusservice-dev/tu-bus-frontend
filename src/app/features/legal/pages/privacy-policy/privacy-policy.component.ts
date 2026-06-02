@@ -16,7 +16,7 @@ import { LegalPageLayoutComponent } from '../../components/legal-page-layout/leg
     <app-legal-page-layout
       title="Política de Privacidad"
       subtitle="Cómo recolectamos, usamos y protegemos tus datos personales en TuBus Express. Tu privacidad es parte esencial de la confianza que nos das."
-      lastUpdated="2026-05-05"
+      lastUpdated="2026-06-02"
     >
       <section>
         <h2>1. Responsable del tratamiento</h2>
@@ -65,6 +65,30 @@ import { LegalPageLayoutComponent } from '../../components/legal-page-layout/leg
           <li>Páginas visitadas, fecha y hora de acceso.</li>
           <li>Cookies y tecnologías equivalentes (ver Política de Cookies).</li>
         </ul>
+
+        <h3>2.6 Datos de uso y diagnóstico</h3>
+        <p>
+          Para entender cómo se usa la plataforma y mejorar su estabilidad,
+          utilizamos los servicios <strong>Google Analytics para Firebase</strong>
+          y <strong>Firebase Crashlytics</strong> (este último solo en la
+          aplicación móvil):
+        </p>
+        <ul>
+          <li>
+            <strong>Estadísticas de uso:</strong> pantallas visitadas, productos
+            vistos, búsquedas, adiciones al carrito y compras, de forma
+            agregada y estadística.
+          </li>
+          <li>
+            <strong>Reportes de errores:</strong> cuando la aplicación falla,
+            se envía un informe técnico con el modelo del dispositivo, la
+            versión de la app y el detalle del error, para poder corregirlo.
+          </li>
+          <li>
+            Estos datos se usan con fines analíticos y de calidad, no para
+            identificarte personalmente ni con fines publicitarios.
+          </li>
+        </ul>
       </section>
 
       <section>
@@ -98,6 +122,7 @@ import { LegalPageLayoutComponent } from '../../components/legal-page-layout/leg
           <li><strong>Mecánicos y sucursales autorizadas</strong> que ejecutan el servicio (nombre, contacto, dirección, datos del vehículo).</li>
           <li><strong>Agencias de envío</strong> que despachan tus productos (nombre, teléfono, dirección, descripción del envío).</li>
           <li><strong>Proveedores de infraestructura</strong> (hosting, almacenamiento de imágenes, mensajería transaccional) bajo acuerdos de confidencialidad.</li>
+          <li><strong>Google (Firebase)</strong> como proveedor de analítica de uso y reportes de errores (Google Analytics para Firebase y Crashlytics), conforme a sus propias políticas de privacidad.</li>
           <li><strong>Autoridades competentes</strong> cuando la ley así lo exija.</li>
         </ul>
         <p>

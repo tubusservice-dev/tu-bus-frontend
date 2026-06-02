@@ -403,6 +403,11 @@ export class AuthService {
   register(data: RegisterRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/register`, data).pipe(
       tap((response) => {
+        if (response.success) {
+          // Track the account creation regardless of whether email
+          // verification is required (the sign-up itself succeeded).
+          void this.analytics.logEvent(AnalyticsEvent.SignUp, { method: 'email' });
+        }
         if (
           !response.data?.requiresVerification &&
           !response.data?.requiresLinkVerification &&

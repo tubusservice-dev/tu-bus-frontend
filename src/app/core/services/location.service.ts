@@ -1,4 +1,5 @@
-import { Injectable, inject, signal, computed } from '@angular/core';
+import { Injectable, inject, signal, computed, effect } from '@angular/core';
+import { ANALYTICS } from '@platform';
 import { forkJoin } from 'rxjs';
 import { BranchZoneService } from './branch-zone.service';
 import { ScheduleDay, Coordinates } from '../../models/branch.model';
@@ -50,6 +51,7 @@ const STORAGE_KEY = 'user_location';
 })
 export class LocationService {
   private readonly branchZoneService = inject(BranchZoneService);
+  private readonly analytics = inject(ANALYTICS);
 
   // ==================== PRIVATE STATE ====================
 
@@ -109,6 +111,16 @@ export class LocationService {
       // No saved location — mark as resolved immediately so consumers don't hang
       this._isResolved.set(true);
     }
+
+    // Tag every analytics event with the user's zone + primary branch so all
+    // reports can be segmented by location. Re-runs whenever the user changes
+    // zone. Requires `zone` / `branch` custom dimensions registered in GA4.
+    effect(() => {
+      const zone = this.locationLabel();
+      const branch = this.branchIds()[0] ?? null;
+      void this.analytics.setUserProperty('zone', zone || null);
+      void this.analytics.setUserProperty('branch', branch);
+    });
   }
 
   // ==================== PUBLIC METHODS ====================

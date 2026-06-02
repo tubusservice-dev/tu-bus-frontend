@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { CheckoutService, DispatchOption } from '../services/checkout.service';
 import { CartService } from '@core/services/cart.service';
 import { CheckoutHeaderComponent } from '../components/checkout-header/checkout-header.component';
+import { ANALYTICS, AnalyticsEvent } from '@platform';
 
 @Component({
   selector: 'app-checkout-dispatch',
@@ -15,6 +16,7 @@ export class CheckoutDispatchComponent implements OnInit {
   protected readonly checkoutService = inject(CheckoutService);
   protected readonly cartService = inject(CartService);
   private readonly router = inject(Router);
+  private readonly analytics = inject(ANALYTICS);
 
   /** Dispatch options (reactive — computed from LocationService + CartService) */
   protected readonly dispatchOptions = this.checkoutService.dispatchOptions;
@@ -27,6 +29,13 @@ export class CheckoutDispatchComponent implements OnInit {
     if (!this.selectedType() && this.cartService.hasOilChangeService()) {
       this.checkoutService.selectDispatchType('oil_change_service');
     }
+
+    // Funnel entry: reaching the dispatch step is the start of checkout.
+    void this.analytics.logEvent(AnalyticsEvent.BeginCheckout, {
+      currency: 'USD',
+      value: this.cartService.subtotal(),
+      items: this.cartService.getAnalyticsItems(),
+    });
   }
 
   selectOption(option: DispatchOption): void {
@@ -50,6 +59,17 @@ export class CheckoutDispatchComponent implements OnInit {
 
   onContinue(): void {
     const dispatchType = this.selectedType();
+
+    // Funnel: dispatch method chosen. `shipping_tier` lets GA4 break the
+    // funnel down by dispatch type (pickup vs delivery vs agency, etc.).
+    if (dispatchType) {
+      void this.analytics.logEvent(AnalyticsEvent.AddShippingInfo, {
+        currency: 'USD',
+        value: this.cartService.subtotal(),
+        shipping_tier: dispatchType,
+        items: this.cartService.getAnalyticsItems(),
+      });
+    }
 
     switch (dispatchType) {
       case 'store_pickup':

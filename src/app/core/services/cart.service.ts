@@ -285,9 +285,9 @@ export class CartService {
     void this.analytics.logEvent(AnalyticsEvent.AddToCart, {
       currency: 'USD',
       value: item.price * quantity,
-      item_id: item.id,
-      item_name: item.name,
-      quantity,
+      items: [
+        { item_id: item.id, item_name: item.name, price: item.price, quantity },
+      ],
     });
 
     return {
@@ -298,14 +298,48 @@ export class CartService {
   }
 
   /**
+   * Maps the current cart to the GA4 `items[]` shape. Single source of truth
+   * so every analytics event (add_to_cart, view_cart, begin_checkout,
+   * purchase) reports a consistent product payload — required for GA4's
+   * monetisation reports (item views, best sellers, item revenue).
+   */
+  getAnalyticsItems(): { item_id: string; item_name: string; price: number; quantity: number }[] {
+    return this._items().map((i) => ({
+      item_id: i.id,
+      item_name: i.name,
+      price: i.price,
+      quantity: i.quantity,
+    }));
+  }
+
+  /**
    * Remover item del carrito
    */
   removeItem(itemId: string): void {
+    // Capture the item before it is filtered out so the analytics event can
+    // report what was removed (GA4 remove_from_cart needs the items payload).
+    const removed = this._items().find((item) => item.id === itemId);
+
     this._items.update((items) => {
       const newItems = items.filter((item) => item.id !== itemId);
       this.saveToStorage(newItems);
       return newItems;
     });
+
+    if (removed) {
+      void this.analytics.logEvent(AnalyticsEvent.RemoveFromCart, {
+        currency: 'USD',
+        value: removed.price * removed.quantity,
+        items: [
+          {
+            item_id: removed.id,
+            item_name: removed.name,
+            price: removed.price,
+            quantity: removed.quantity,
+          },
+        ],
+      });
+    }
   }
 
   /**

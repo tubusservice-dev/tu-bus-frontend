@@ -706,6 +706,14 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
       customerNote: this.buildCustomerNote(),
     };
 
+    // Funnel: payment method chosen, right before order creation.
+    void this.analytics.logEvent(AnalyticsEvent.AddPaymentInfo, {
+      currency: 'USD',
+      value: this.total,
+      payment_type: this.submittedPayment()?.methodType,
+      items: this.cartService.getAnalyticsItems(),
+    });
+
     this.orderService.createOrder(orderData).subscribe({
       next: (response) => {
         this.isGenerating.set(false);
@@ -717,7 +725,7 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
           value: this.total,
           shipping: this.shippingCost,
           dispatch_type: this.dispatchType,
-          items_count: items.length,
+          items: this.cartService.getAnalyticsItems(),
         });
         this.cartService.clearCart();
         this.checkoutService.resetCheckout();

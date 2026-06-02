@@ -75,6 +75,18 @@ export class WebAnalyticsStrategy implements IAnalytics {
     }
   }
 
+  async setUserProperty(name: string, value: string | null): Promise<void> {
+    const analytics = await this.getAnalyticsInstance();
+    if (!analytics) return;
+    try {
+      const { setUserProperties } = await import('firebase/analytics');
+      // The modular SDK takes a flat map of string values; '' clears it.
+      setUserProperties(analytics, { [name]: value ?? '' });
+    } catch (err) {
+      console.warn('[Analytics] setUserProperty failed:', err);
+    }
+  }
+
   async setScreen(screenName: string): Promise<void> {
     const analytics = await this.getAnalyticsInstance();
     if (!analytics) return;
