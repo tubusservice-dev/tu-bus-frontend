@@ -1,5 +1,5 @@
 import { Injectable, computed, signal, inject, effect } from '@angular/core';
-import { EXTERNAL_LINK, IExternalLink } from '@platform';
+import { EXTERNAL_LINK, IExternalLink, ANALYTICS, AnalyticsEvent } from '@platform';
 import { AuthService } from './auth.service';
 import { SettingsService } from './settings.service';
 
@@ -42,6 +42,7 @@ export class CartService {
   private readonly authService = inject(AuthService);
   private readonly settingsService = inject(SettingsService);
   private readonly externalLink = inject<IExternalLink>(EXTERNAL_LINK);
+  private readonly analytics = inject(ANALYTICS);
 
   /** Trackea el estado previo de autenticación para detectar logout */
   private wasAuthenticated = false;
@@ -279,6 +280,14 @@ export class CartService {
 
       this.saveToStorage(newItems);
       return newItems;
+    });
+
+    void this.analytics.logEvent(AnalyticsEvent.AddToCart, {
+      currency: 'USD',
+      value: item.price * quantity,
+      item_id: item.id,
+      item_name: item.name,
+      quantity,
     });
 
     return {

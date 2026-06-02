@@ -29,6 +29,7 @@ import {
   DeepLinksService,
   SplashService,
   BiometricService,
+  AnalyticsBootstrapService,
 } from '@platform';
 
 // Register Spanish locale so the `date` pipe can format with 'es'
@@ -157,6 +158,17 @@ function initializeNotificationPermissionSync(): () => void {
   return () => { void userNotifications.syncPermissionState(); };
 }
 
+/**
+ * Enables Analytics + Crashlytics data collection and starts automatic
+ * `screen_view` tracking on Router navigations. Native-only effects on
+ * Crashlytics; web Analytics activates only when a `measurementId` is set.
+ * Non-blocking — telemetry must never delay the first paint.
+ */
+function initializeAnalytics(): () => void {
+  const analyticsBootstrap = inject(AnalyticsBootstrapService);
+  return () => analyticsBootstrap.start();
+}
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
@@ -231,6 +243,11 @@ export const appConfig: ApplicationConfig = {
     {
       provide: APP_INITIALIZER,
       useFactory: initializeNotificationPermissionSync,
+      multi: true,
+    },
+    {
+      provide: APP_INITIALIZER,
+      useFactory: initializeAnalytics,
       multi: true,
     },
     { provide: LOCALE_ID, useValue: 'es' },

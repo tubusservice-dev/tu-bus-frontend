@@ -1,4 +1,5 @@
-import { ErrorHandler, Injectable } from '@angular/core';
+import { ErrorHandler, Injectable, Injector, inject } from '@angular/core';
+import { CRASHLYTICS, ICrashlytics } from '@platform';
 
 const CHUNK_RELOAD_KEY = '__chunkReloadAt__';
 const RELOAD_LOOP_GUARD_MS = 10_000;
@@ -34,11 +35,31 @@ export function reloadOnceForStaleBuild(): void {
 
 @Injectable()
 export class ChunkLoadErrorHandler implements ErrorHandler {
+  /**
+   * Resolved lazily on the first non-chunk error rather than injected
+   * eagerly: the ErrorHandler can be constructed before the platform
+   * providers are ready, and we must never let DI ordering turn the global
+   * error handler into a crash itself.
+   */
+  private readonly injector = inject(Injector);
+  private crashlytics: ICrashlytics | null = null;
+
   handleError(error: unknown): void {
     if (isChunkLoadError(error)) {
       reloadOnceForStaleBuild();
       return;
     }
+
+    // Report to Crashlytics on native (no-op on web). Best-effort and fully
+    // guarded so a telemetry failure can never mask the original error.
+    try {
+      this.crashlytics ??= this.injector.get(CRASHLYTICS, null);
+      const message = error instanceof Error ? error.message : String(error);
+      void this.crashlytics?.recordException(message, error);
+    } catch {
+      /* never let crash reporting throw out of the global handler */
+    }
+
     console.error(error);
   }
 }

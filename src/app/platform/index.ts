@@ -65,8 +65,20 @@ export {
   type PrintOptions,
 } from './print/print.service';
 
+// Analytics (GA4 on web, native GA SDK on Android/iOS)
+export {
+  ANALYTICS,
+  AnalyticsEvent,
+  type IAnalytics,
+  type AnalyticsEventName,
+} from './analytics/analytics.service';
+
+// Crashlytics (native-only; no-op on web)
+export { CRASHLYTICS, type ICrashlytics } from './crashlytics/crashlytics.service';
+
 // Lifecycle services (no strategy split — single class with internal gating)
 export { BackButtonService } from './back-button/back-button.service';
 export { DeepLinksService } from './deep-links/deep-links.service';
 export { BiometricService } from './biometric/biometric.service';
 export { SplashService } from './splash/splash.service';
+export { AnalyticsBootstrapService } from './analytics/analytics-bootstrap.service';

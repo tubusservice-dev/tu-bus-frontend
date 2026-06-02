@@ -11,6 +11,7 @@ import { ProductCardComponent, ProductCardData } from '@shared/components/produc
 import { CartPopoverComponent } from '@shared/components/cart-popover/cart-popover.component';
 import { HeaderShellComponent } from '@shared/components/header-shell/header-shell.component';
 import { VEHICLE_TYPE_LABELS, VehicleType } from '@models/product.model';
+import { ANALYTICS, AnalyticsEvent } from '@platform';
 
 const PLACEHOLDER = 'https://placehold.co/400x400/e5e7eb/9ca3af?text=Sin+imagen';
 
@@ -43,6 +44,7 @@ export class ProductDetailPageComponent implements OnInit {
   private readonly locationService = inject(LocationService);
   protected readonly exchangeRateService = inject(ExchangeRateService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly analytics = inject(ANALYTICS);
 
   // ============================================================
   // Granular loading / error state — one flag per phase so the UI can
@@ -205,6 +207,13 @@ export class ProductDetailPageComponent implements OnInit {
         next: ({ data }) => {
           this.product.set(data);
           this.isLoadingProduct.set(false);
+
+          void this.analytics.logEvent(AnalyticsEvent.ViewItem, {
+            currency: 'USD',
+            value: data.price,
+            item_id: data.id,
+            item_name: data.name,
+          });
 
           // Chain Phase 3 only after Phase 1 succeeds — Phase 3 needs the
           // first category id which only arrives with the product info.

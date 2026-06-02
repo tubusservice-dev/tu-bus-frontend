@@ -11,6 +11,9 @@ import {
   APPLE_AUTH,
   IAppleAuth,
   PlatformService,
+  ANALYTICS,
+  CRASHLYTICS,
+  AnalyticsEvent,
 } from '@platform';
 import {
   User,
@@ -89,6 +92,14 @@ export class AuthService {
    * and native (idToken exchange via POST /api/auth/google/native).
    */
   private readonly platform = inject(PlatformService);
+
+  /**
+   * Telemetry: associates analytics/crashlytics reports with the logged-in
+   * user and tracks login/logout funnel events. Best-effort — every call
+   * is fire-and-forget so telemetry never blocks the auth flow.
+   */
+  private readonly analytics = inject(ANALYTICS);
+  private readonly crashlytics = inject(CRASHLYTICS);
 
   /**
    * User-facing toast surface. Used to translate silent plugin failures
@@ -842,6 +853,13 @@ export class AuthService {
     this.clearStoredSession({ tokenKey, userKey });
     void this.storage.remove('oauth_return_url');
     this.currentUserSignal.set(null);
+
+    // Telemetry: drop the user correlation so post-logout reports are
+    // anonymous, and track the logout event.
+    void this.analytics.logEvent(AnalyticsEvent.Logout);
+    void this.analytics.setUserId(null);
+    void this.crashlytics.setUserId(null);
+
     this.router.navigate(isAdmin ? ['/admin/login'] : ['/']);
   }
 
@@ -977,6 +995,13 @@ export class AuthService {
       });
       this.currentUserSignal.set(response.data.user);
       this.sessionExpiredSignal.set(false);
+
+      // Telemetry: single funnel for every client login (local, OAuth,
+      // account-link). Correlate reports with the user, then track the event.
+      const userId = response.data.user.id;
+      void this.analytics.setUserId(userId);
+      void this.crashlytics.setUserId(userId);
+      void this.analytics.logEvent(AnalyticsEvent.Login);
     }
   }
 

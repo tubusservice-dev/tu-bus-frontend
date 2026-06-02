@@ -25,6 +25,12 @@ import { NativeGeolocationStrategy } from './geolocation/native-geolocation.stra
 import { PRINT, IPrint } from './print/print.service';
 import { WebPrintStrategy } from './print/web-print.strategy';
 import { NativePrintStrategy } from './print/native-print.strategy';
+import { ANALYTICS, IAnalytics } from './analytics/analytics.service';
+import { WebAnalyticsStrategy } from './analytics/web-analytics.strategy';
+import { NativeAnalyticsStrategy } from './analytics/native-analytics.strategy';
+import { CRASHLYTICS, ICrashlytics } from './crashlytics/crashlytics.service';
+import { WebCrashlyticsStrategy } from './crashlytics/web-crashlytics.strategy';
+import { NativeCrashlyticsStrategy } from './crashlytics/native-crashlytics.strategy';
 
 /**
  * Returns the providers that bind every platform abstraction token to its
@@ -116,6 +122,20 @@ export function providePlatform(): EnvironmentProviders {
       provide: PRINT,
       useFactory: (platform: PlatformService): IPrint =>
         platform.isNative() ? new NativePrintStrategy() : new WebPrintStrategy(),
+      deps: [PlatformService],
+    },
+
+    {
+      provide: ANALYTICS,
+      useFactory: (platform: PlatformService): IAnalytics =>
+        platform.isNative() ? new NativeAnalyticsStrategy() : new WebAnalyticsStrategy(),
+      deps: [PlatformService],
+    },
+
+    {
+      provide: CRASHLYTICS,
+      useFactory: (platform: PlatformService): ICrashlytics =>
+        platform.isNative() ? new NativeCrashlyticsStrategy() : new WebCrashlyticsStrategy(),
       deps: [PlatformService],
     },
   ] satisfies Provider[]);
