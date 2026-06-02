@@ -3,6 +3,7 @@ import { OverlayStackService } from '@core/services/overlay-stack.service';
 import { CartService } from '@core/services/cart.service';
 import { CartComponent } from '../cart.component';
 import { HeaderShellComponent } from '@shared/components/header-shell/header-shell.component';
+import { ANALYTICS, AnalyticsEvent } from '@platform';
 
 /**
  * Full-screen overlay wrapper around `CartComponent`. Shares the exact chrome
@@ -22,8 +23,19 @@ import { HeaderShellComponent } from '@shared/components/header-shell/header-she
 export class CartOverlayComponent {
   protected readonly overlayService = inject(OverlayStackService);
   private readonly cartService = inject(CartService);
+  private readonly analytics = inject(ANALYTICS);
 
   protected readonly totalItems = computed(() => this.cartService.totalItems());
+
+  constructor() {
+    // A fresh instance is mounted every time the cart overlay opens, so the
+    // constructor is the natural place to log the cart view.
+    void this.analytics.logEvent(AnalyticsEvent.ViewCart, {
+      currency: 'USD',
+      value: this.cartService.subtotal(),
+      items: this.cartService.getAnalyticsItems(),
+    });
+  }
 
   @HostListener('document:keydown.escape')
   onEscape(): void {

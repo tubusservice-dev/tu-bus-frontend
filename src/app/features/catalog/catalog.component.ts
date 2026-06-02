@@ -19,6 +19,7 @@ import {
   VEHICLE_TYPE_LABELS,
 } from '../../models';
 import { PAGINATION_OPTIONS } from '../../models/settings.model';
+import { ANALYTICS, AnalyticsEvent } from '@platform';
 
 interface FilterState {
   search: string;
@@ -48,6 +49,7 @@ export class CatalogComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly analytics = inject(ANALYTICS);
 
   /**
    * Trigger for the catalog request pipeline. Each `next()` cancels the
@@ -195,6 +197,17 @@ export class CatalogComponent implements OnInit {
         this.totalProducts.set(response.pagination?.total || 0);
         this.isLoading.set(false);
         this.isSearching.set(false);
+
+        if (mapped.length > 0) {
+          void this.analytics.logEvent(AnalyticsEvent.ViewItemList, {
+            item_list_name: 'catalog',
+            items: mapped.map((p) => ({
+              item_id: p.id,
+              item_name: p.name,
+              price: p.price,
+            })),
+          });
+        }
       });
   }
 
@@ -323,6 +336,11 @@ export class CatalogComponent implements OnInit {
     this.filters.update((f) => ({ ...f, search: value }));
     this.currentPage.set(1);
     this.loadProducts();
+
+    const term = value.trim();
+    if (term) {
+      void this.analytics.logEvent(AnalyticsEvent.Search, { search_term: term });
+    }
   }
 
   updateFilter<K extends keyof FilterState>(key: K, value: FilterState[K]): void {

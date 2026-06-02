@@ -11,9 +11,16 @@ import { InjectionToken } from '@angular/core';
 export const AnalyticsEvent = {
   Login: 'login',
   Logout: 'logout',
+  SignUp: 'sign_up',
+  ViewItemList: 'view_item_list',
+  SelectItem: 'select_item',
   ViewItem: 'view_item',
   AddToCart: 'add_to_cart',
+  RemoveFromCart: 'remove_from_cart',
+  ViewCart: 'view_cart',
   BeginCheckout: 'begin_checkout',
+  AddShippingInfo: 'add_shipping_info',
+  AddPaymentInfo: 'add_payment_info',
   Purchase: 'purchase',
   Search: 'search',
 } as const;
@@ -44,6 +51,14 @@ export interface IAnalytics {
 
   /** Associates subsequent events with a user id (or clears it on `null`). */
   setUserId(userId: string | null): Promise<void>;
+
+  /**
+   * Sets a user-scoped property (e.g. `zone`, `branch`) attached to ALL
+   * subsequent events, enabling segmentation across every report. Pass
+   * `null` to clear. Requires registering a matching custom dimension in
+   * the GA4 console for the property to surface as a reportable column.
+   */
+  setUserProperty(name: string, value: string | null): Promise<void>;
 
   /**
    * Records a screen view. Native uses `setCurrentScreen`; web emits the

@@ -37,6 +37,15 @@ export class NativeAnalyticsStrategy implements IAnalytics {
     }
   }
 
+  async setUserProperty(name: string, value: string | null): Promise<void> {
+    try {
+      const { FirebaseAnalytics } = await import('@capacitor-firebase/analytics');
+      await FirebaseAnalytics.setUserProperty({ key: name, value });
+    } catch (err) {
+      console.warn('[Analytics] setUserProperty failed:', err);
+    }
+  }
+
   async setScreen(screenName: string): Promise<void> {
     try {
       const { FirebaseAnalytics } = await import('@capacitor-firebase/analytics');

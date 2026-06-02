@@ -211,8 +211,16 @@ export class ProductDetailPageComponent implements OnInit {
           void this.analytics.logEvent(AnalyticsEvent.ViewItem, {
             currency: 'USD',
             value: data.price,
-            item_id: data.id,
-            item_name: data.name,
+            items: [
+              {
+                item_id: data.id,
+                item_name: data.name,
+                item_brand: data.brand?.name,
+                item_category: data.categories?.[0]?.name,
+                price: data.price,
+                quantity: 1,
+              },
+            ],
           });
 
           // Chain Phase 3 only after Phase 1 succeeds — Phase 3 needs the

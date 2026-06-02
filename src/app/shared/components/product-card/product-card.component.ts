@@ -6,6 +6,7 @@ import { CartService } from '../../../core/services/cart.service';
 import { OverlayStackService } from '../../../core/services/overlay-stack.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { ExchangeRateService } from '../../../core/services/exchange-rate.service';
+import { ANALYTICS, AnalyticsEvent } from '@platform';
 import { Line, Category, Brand } from '../../../models';
 
 /**
@@ -181,9 +182,20 @@ export class ProductCardComponent {
   }
 
   private readonly overlayService = inject(OverlayStackService);
+  private readonly analytics = inject(ANALYTICS);
 
   navigateToDetail(): void {
     if (this.linkToDetail) {
+      void this.analytics.logEvent(AnalyticsEvent.SelectItem, {
+        item_list_name: 'catalog',
+        items: [
+          {
+            item_id: this.product.id,
+            item_name: this.product.name,
+            price: this.product.price,
+          },
+        ],
+      });
       this.overlayService.openProduct(this.product.id);
     }
   }
