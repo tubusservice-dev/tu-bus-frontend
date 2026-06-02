@@ -21,6 +21,11 @@ export const environment = {
     storageBucket: 'tubusexpress.firebasestorage.app',
     messagingSenderId: '1071922885496',
     appId: '1:1071922885496:web:d84becd2da3f1c21930e8d',
+    // GA4 measurement id (G-XXXXXXXXXX). Required for Firebase Analytics on
+    // WEB only. TODO(owner): paste it from Firebase Console → Project
+    // Settings → Web app → SDK config after enabling Analytics. Until set,
+    // web analytics stays disabled (graceful no-op); native is unaffected.
+    measurementId: 'G-ZCFBGB0C3R',
   },
 
   // VAPID public key — Firebase Console → Cloud Messaging → Web Push certificates

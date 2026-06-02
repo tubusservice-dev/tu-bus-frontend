@@ -22,6 +22,7 @@ import { businessTodayIso } from '@shared/utils/business-date.util';
 import { CheckoutPaymentUiService } from './services/checkout-payment-ui.service';
 import { CheckoutBillingService } from './services/checkout-billing.service';
 import { CheckoutBranchStockService } from './services/checkout-branch-stock.service';
+import { ANALYTICS, AnalyticsEvent } from '@platform';
 
 @Component({
   selector: 'app-checkout-summary',
@@ -42,6 +43,7 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
   protected readonly exchangeRateService = inject(ExchangeRateService);
   private readonly scrollLock = inject(BodyScrollLockService);
   private readonly branchAvailabilityService = inject(BranchAvailabilityService);
+  private readonly analytics = inject(ANALYTICS);
 
   // ── Sub-services (per-component lifetime via providers above) ───────────
   private readonly paymentUi = inject(CheckoutPaymentUiService);
@@ -707,6 +709,16 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
     this.orderService.createOrder(orderData).subscribe({
       next: (response) => {
         this.isGenerating.set(false);
+        // Purchase conversion: log BEFORE clearing the cart so item context
+        // is still available. GA4 `purchase` semantics (transaction_id + value).
+        void this.analytics.logEvent(AnalyticsEvent.Purchase, {
+          transaction_id: response.data.id,
+          currency: 'USD',
+          value: this.total,
+          shipping: this.shippingCost,
+          dispatch_type: this.dispatchType,
+          items_count: items.length,
+        });
         this.cartService.clearCart();
         this.checkoutService.resetCheckout();
         this.router.navigate(['/checkout/confirmacion', response.data.id]);
