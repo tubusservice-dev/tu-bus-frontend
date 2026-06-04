@@ -32,7 +32,24 @@ export class AnalyticsBootstrapService {
     this.router.events
       .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
       .subscribe((event) => {
-        void this.analytics.setScreen(event.urlAfterRedirects);
+        void this.analytics.setScreen(this.toScreenName(event.urlAfterRedirects));
       });
+  }
+
+  /**
+   * Normalises a router URL into a stable, readable screen name:
+   *  - drops query string and fragment,
+   *  - collapses id-like segments (Mongo ObjectId / numeric) to `:id` so
+   *    `/perfil/pedidos/123` and `/perfil/pedidos/456` report as one screen
+   *    instead of fragmenting the "Pages and screens" report and funnels.
+   */
+  private toScreenName(url: string): string {
+    const path = url.split(/[?#]/)[0];
+    const cleaned = path
+      .split('/')
+      .filter(Boolean)
+      .map((seg) => (/^[0-9a-f]{24}$/i.test(seg) || /^\d+$/.test(seg) ? ':id' : seg))
+      .join('/');
+    return cleaned || 'home';
   }
 }

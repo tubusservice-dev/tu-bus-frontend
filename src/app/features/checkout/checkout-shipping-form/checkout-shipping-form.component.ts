@@ -13,6 +13,7 @@ import {
 } from '@shared/validators/form-validators';
 import { CheckoutHeaderComponent } from '../components/checkout-header/checkout-header.component';
 import { PhoneMaskDirective } from '@shared/directives/phone-mask.directive';
+import { ANALYTICS, AnalyticsEvent } from '@platform';
 
 @Component({
   selector: 'app-checkout-shipping-form',
@@ -27,6 +28,7 @@ export class CheckoutShippingFormComponent implements OnInit {
   protected readonly authService = inject(AuthService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
+  private readonly analytics = inject(ANALYTICS);
 
   protected shippingForm!: FormGroup;
   protected readonly selectedAgency = this.checkoutService.selectedShippingAgency;
@@ -249,6 +251,7 @@ export class CheckoutShippingFormComponent implements OnInit {
   onSubmit(): void {
     if (this.shippingForm.invalid) {
       this.shippingForm.markAllAsTouched();
+      void this.analytics.logEvent(AnalyticsEvent.FormError, { screen: 'checkout_shipping' });
       scrollToFirstFormError();
       return;
     }

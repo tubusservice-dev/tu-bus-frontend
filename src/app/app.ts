@@ -3,6 +3,7 @@ import { RouterOutlet } from '@angular/router';
 import { OverlayStackService } from '@core/services/overlay-stack.service';
 import { AuthService } from '@core/services/auth.service';
 import { UserNotificationService } from '@core/services/user-notification.service';
+import { ANALYTICS } from '@platform';
 import { ProductDetailPageComponent } from '@features/product-detail/product-detail-page/product-detail-page.component';
 import { CartOverlayComponent } from '@features/cart/cart-overlay/cart-overlay.component';
 import { ToastContainerComponent } from '@shared/components/toast-container/toast-container.component';
@@ -44,6 +45,7 @@ export class App {
   protected readonly overlayService = inject(OverlayStackService);
   protected readonly authService = inject(AuthService);
   private readonly userNotifications = inject(UserNotificationService);
+  private readonly analytics = inject(ANALYTICS);
 
   // Auth modal hosted here so it stacks above any feature overlay (product
   // detail, cart) which mount with z-index 1000.
@@ -66,6 +68,14 @@ export class App {
     effect(() => {
       if (this.authService.sessionExpired()) {
         this.authService.openAuthModal();
+      }
+    });
+
+    // Track the auth modal as a screen so login/registration friction shows
+    // up in GA4 funnels (the modal isn't a route, so screen_view won't fire).
+    effect(() => {
+      if (this.isAuthModalOpen()) {
+        void this.analytics.setScreen('auth_modal');
       }
     });
 

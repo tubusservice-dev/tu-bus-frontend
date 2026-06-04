@@ -1,5 +1,5 @@
 import { ErrorHandler, Injectable, Injector, inject } from '@angular/core';
-import { CRASHLYTICS, ICrashlytics } from '@platform';
+import { CRASHLYTICS, ICrashlytics, ANALYTICS, IAnalytics, AnalyticsEvent } from '@platform';
 
 const CHUNK_RELOAD_KEY = '__chunkReloadAt__';
 const RELOAD_LOOP_GUARD_MS = 10_000;
@@ -43,6 +43,7 @@ export class ChunkLoadErrorHandler implements ErrorHandler {
    */
   private readonly injector = inject(Injector);
   private crashlytics: ICrashlytics | null = null;
+  private analytics: IAnalytics | null = null;
 
   handleError(error: unknown): void {
     if (isChunkLoadError(error)) {
@@ -50,12 +51,19 @@ export class ChunkLoadErrorHandler implements ErrorHandler {
       return;
     }
 
-    // Report to Crashlytics on native (no-op on web). Best-effort and fully
-    // guarded so a telemetry failure can never mask the original error.
+    // Report to Crashlytics (native) and GA4 (web + native). Best-effort and
+    // fully guarded so a telemetry failure can never mask the original error.
     try {
-      this.crashlytics ??= this.injector.get(CRASHLYTICS, null);
       const message = error instanceof Error ? error.message : String(error);
+      this.crashlytics ??= this.injector.get(CRASHLYTICS, null);
       void this.crashlytics?.recordException(message, error);
+      // GA4 `exception` event so runtime errors surface alongside screens in
+      // Analytics — lets us see WHICH screen errors cluster on.
+      this.analytics ??= this.injector.get(ANALYTICS, null);
+      void this.analytics?.logEvent(AnalyticsEvent.Exception, {
+        description: message,
+        fatal: false,
+      });
     } catch {
       /* never let crash reporting throw out of the global handler */
     }

@@ -5,6 +5,7 @@ import { LocationService } from '../../../core/services/location.service';
 import { City, Municipality } from '../../../models/city.model';
 import { SearchInputComponent } from '../search-input/search-input.component';
 import { BodyScrollLockService } from '../../services/body-scroll-lock.service';
+import { ANALYTICS } from '@platform';
 
 type ModalStep = 'city' | 'municipality' | 'no-coverage';
 
@@ -19,6 +20,7 @@ export class ZoningModalComponent implements OnInit, OnDestroy {
   private readonly cityService = inject(CityService);
   protected readonly locationService = inject(LocationService);
   private readonly scrollLock = inject(BodyScrollLockService);
+  private readonly analytics = inject(ANALYTICS);
   private hasScrollLock = false;
 
   // ==================== INPUTS / OUTPUTS ====================
@@ -67,6 +69,15 @@ export class ZoningModalComponent implements OnInit, OnDestroy {
         this.scrollLock.unlock();
         this.hasScrollLock = false;
       }
+    });
+
+    // Track each step of the mandatory zone selection as its own screen so
+    // GA4 reveals where users drop off (city pick vs municipality vs the
+    // no-coverage dead-end). Re-runs whenever the modal opens or the step
+    // advances.
+    effect(() => {
+      if (!this.isOpen()) return;
+      void this.analytics.setScreen(`zoning_${this.step().replace('-', '_')}`);
     });
 
     // Watch for location resolution to close modal or show no-coverage

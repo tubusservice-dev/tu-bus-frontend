@@ -22,7 +22,10 @@ export const AnalyticsEvent = {
   AddShippingInfo: 'add_shipping_info',
   AddPaymentInfo: 'add_payment_info',
   Purchase: 'purchase',
+  PurchaseFailed: 'purchase_failed',
   Search: 'search',
+  FormError: 'form_error',
+  Exception: 'exception',
 } as const;
 
 export type AnalyticsEventName =

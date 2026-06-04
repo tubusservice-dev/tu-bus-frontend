@@ -15,6 +15,7 @@ import {
 } from '@shared/validators/form-validators';
 import { CheckoutHeaderComponent } from '../components/checkout-header/checkout-header.component';
 import { PhoneMaskDirective } from '@shared/directives/phone-mask.directive';
+import { ANALYTICS, AnalyticsEvent } from '@platform';
 
 @Component({
   selector: 'app-checkout-local-delivery-form',
@@ -31,6 +32,7 @@ export class CheckoutLocalDeliveryFormComponent implements OnInit {
   private readonly branchZoneService = inject(BranchZoneService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
+  private readonly analytics = inject(ANALYTICS);
 
   protected deliveryForm!: FormGroup;
   protected readonly branchCities = signal<{ code: string; name: string }[]>([]);
@@ -271,6 +273,7 @@ export class CheckoutLocalDeliveryFormComponent implements OnInit {
   onSubmit(): void {
     if (this.deliveryForm.invalid) {
       this.deliveryForm.markAllAsTouched();
+      void this.analytics.logEvent(AnalyticsEvent.FormError, { screen: 'checkout_delivery' });
       scrollToFirstFormError();
       return;
     }

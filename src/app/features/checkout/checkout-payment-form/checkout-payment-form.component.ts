@@ -8,6 +8,7 @@ import { DateInputComponent } from '@shared/components/date-input/date-input.com
 import { HeaderShellComponent } from '@shared/components/header-shell/header-shell.component';
 import { scrollToFirstFormError } from '@shared/validators/form-validators';
 import { businessTodayIso } from '@shared/utils/business-date.util';
+import { ANALYTICS, AnalyticsEvent } from '@platform';
 
 @Component({
   selector: 'app-checkout-payment-form',
@@ -148,6 +149,7 @@ export class CheckoutPaymentFormComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly paymentService = inject(PaymentService);
   private readonly uploadService = inject(UploadService);
+  private readonly analytics = inject(ANALYTICS);
 
   protected readonly todayStr = businessTodayIso();
   protected readonly isSubmitting = signal(false);
@@ -211,6 +213,7 @@ export class CheckoutPaymentFormComponent implements OnInit {
   onSubmit(): void {
     if (this.paymentForm.invalid) {
       this.paymentForm.markAllAsTouched();
+      void this.analytics.logEvent(AnalyticsEvent.FormError, { screen: 'checkout_payment' });
       scrollToFirstFormError();
       return;
     }
