@@ -38,6 +38,15 @@
   &:hover svg { color: var(--accent-primary); }
 }
 
+// Destructive action (Eliminar Cuenta): red affordance so it can't be
+// mistaken for the neutral profile actions above it.
+.sidebar-btn--danger {
+  @apply text-red-600 dark:text-red-400;
+  @apply hover:bg-red-50 dark:hover:bg-red-900/20;
+  svg { @apply text-red-500 dark:text-red-400; }
+  &:hover svg { color: #dc2626; }
+}
+
 .account-info { @apply p-5 space-y-4; }
 .account-item { @apply flex flex-col gap-0.5; }
 .account-label { @apply text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide; }

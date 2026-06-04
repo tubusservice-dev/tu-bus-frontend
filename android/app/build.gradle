@@ -1,5 +1,16 @@
 apply plugin: 'com.android.application'
 
+// ─── Release signing ────────────────────────────────────────────────
+// Upload-key credentials live in android/keystore.properties (gitignored,
+// see keystore.properties.example). Loaded defensively so debug builds and
+// fresh clones WITHOUT the file still configure and build successfully —
+// only `bundleRelease`/`assembleRelease` need it.
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace = "com.tubusexpress.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -16,8 +27,30 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            // Populated only on a machine that has keystore.properties + the
+            // .jks (the release/owner machine). Absent elsewhere → block stays
+            // empty and the release build is simply left unsigned.
+            if (keystorePropertiesFile.exists()) {
+                storeFile rootProject.file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            }
+        }
+    }
     buildTypes {
         release {
+            // Sign with the upload key only when credentials are present.
+            // Play App Signing re-signs the AAB with Google's managed release
+            // key on upload (decision 1.7).
+            if (keystorePropertiesFile.exists()) {
+                signingConfig signingConfigs.release
+            }
+            // Kept OFF for v1: R8/ProGuard can strip Capacitor plugin classes
+            // accessed via reflection and break them at runtime. Enabling it
+            // later requires device QA + plugin keep rules in proguard-rules.pro.
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

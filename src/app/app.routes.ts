@@ -459,6 +459,14 @@ export const routes: Routes = [
           ),
         title: 'Política de Cookies · TuBus Express',
       },
+      {
+        path: 'legal/eliminar-cuenta',
+        loadComponent: () =>
+          import('./features/legal/pages/account-deletion/account-deletion.component').then(
+            (m) => m.AccountDeletionComponent
+          ),
+        title: 'Eliminar tu cuenta · TuBus Express',
+      },
     ],
   },
   // Pagina publica de progreso del mecanico (sin layout, sin auth)

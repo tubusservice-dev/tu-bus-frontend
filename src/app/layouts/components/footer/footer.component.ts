@@ -55,6 +55,7 @@ export class FooterComponent {
     { label: 'Términos y Condiciones', route: '/legal/terminos' },
     { label: 'Política de Privacidad', route: '/legal/privacidad' },
     { label: 'Política de Cookies', route: '/legal/cookies' },
+    { label: 'Eliminar mi cuenta', route: '/legal/eliminar-cuenta' },
   ];
 
   /**

@@ -11,6 +11,7 @@ import {
   noNumbersValidator,
 } from '../../../shared/validators/form-validators';
 import { ChangePasswordModalComponent } from '../change-password-modal/change-password-modal.component';
+import { DeleteAccountModalComponent } from '../delete-account-modal/delete-account-modal.component';
 import { CopyableValueComponent } from '../../../shared/components/copyable-value/copyable-value.component';
 import { DateInputComponent } from '../../../shared/components/date-input/date-input.component';
 import { PushUnblockModalComponent } from '../../../shared/components/push-unblock-modal/push-unblock-modal.component';
@@ -18,7 +19,7 @@ import { PushUnblockModalComponent } from '../../../shared/components/push-unblo
 @Component({
   selector: 'app-profile-info',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ChangePasswordModalComponent, CopyableValueComponent, DateInputComponent, PushPermissionToggleComponent, PushUnblockModalComponent],
+  imports: [CommonModule, ReactiveFormsModule, ChangePasswordModalComponent, DeleteAccountModalComponent, CopyableValueComponent, DateInputComponent, PushPermissionToggleComponent, PushUnblockModalComponent],
   templateUrl: './profile-info.component.html',
   styleUrl: './profile-info.component.scss',
 })
@@ -62,6 +63,7 @@ export class ProfileInfoComponent implements OnInit {
   protected readonly todayStr = new Date().toISOString().split('T')[0];
   protected readonly isEditing = signal(false);
   protected readonly isPasswordModalOpen = signal(false);
+  protected readonly isDeleteAccountModalOpen = signal(false);
   protected readonly isLoading = signal(false);
   protected readonly isUploadingAvatar = signal(false);
   protected readonly successMessage = signal<string | null>(null);
@@ -278,6 +280,14 @@ export class ProfileInfoComponent implements OnInit {
 
   closePasswordModal(): void {
     this.isPasswordModalOpen.set(false);
+  }
+
+  openDeleteAccountModal(): void {
+    this.isDeleteAccountModalOpen.set(true);
+  }
+
+  closeDeleteAccountModal(): void {
+    this.isDeleteAccountModalOpen.set(false);
   }
 
   onAvatarSelected(event: Event): void {
