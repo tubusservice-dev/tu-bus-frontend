@@ -7,6 +7,7 @@ import {
   NavigationStart,
 } from '@angular/router';
 import { filter } from 'rxjs';
+import { ANALYTICS } from '@platform';
 
 /** One entry in the overlay stack. */
 export type OverlayEntry =
@@ -29,6 +30,7 @@ export type OverlayEntry =
 @Injectable({ providedIn: 'root' })
 export class OverlayStackService {
   private readonly router = inject(Router);
+  private readonly analytics = inject(ANALYTICS);
 
   private readonly stackSignal = signal<OverlayEntry[]>([]);
   readonly stack = this.stackSignal.asReadonly();
@@ -124,6 +126,11 @@ export class OverlayStackService {
   private push(entry: OverlayEntry): void {
     const newStack = [...this.stackSignal(), entry];
     this.stackSignal.set(newStack);
+
+    // Overlays reuse the current URL (pushState), so the Router never emits
+    // NavigationEnd and the automatic screen_view never fires. Emit it here
+    // so product/cart views appear as screens in GA4 (engagement + funnels).
+    void this.analytics.setScreen(entry.type === 'cart' ? 'cart' : 'product_detail');
 
     if (typeof history !== 'undefined' && typeof window !== 'undefined') {
       // Same URL + our marker. Angular's `onSameUrlNavigation: 'ignore'`

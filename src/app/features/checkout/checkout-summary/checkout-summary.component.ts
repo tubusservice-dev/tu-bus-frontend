@@ -734,6 +734,12 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
       error: (err) => {
         this.isGenerating.set(false);
         this.errorMessage.set(err.error?.message || 'Error al procesar la orden');
+        // Conversion failure: the user tried to buy but order creation failed.
+        void this.analytics.logEvent(AnalyticsEvent.PurchaseFailed, {
+          screen: 'checkout_summary',
+          dispatch_type: this.dispatchType,
+          reason: err?.error?.message || err?.status || 'unknown',
+        });
       },
     });
   }

@@ -97,6 +97,19 @@ platform/index.ts                 barrel exports (ANALYTICS, CRASHLYTICS, Analyt
 | `add_shipping_info` | `CheckoutDispatchComponent.onContinue` | `shipping_tier = dispatchType` |
 | `add_payment_info` | `CheckoutSummaryComponent.executeOrder` | `payment_type` |
 | `purchase` | `CheckoutSummaryComponent` (order created) | `transaction_id`, `value`, `shipping`, `dispatch_type`, `items[]` |
+| `purchase_failed` | `CheckoutSummaryComponent` (order error callback) | `screen`, `reason`, `dispatch_type` |
+| `form_error` | 5 checkout forms (invalid submit) | `screen` (`checkout_shipping`/`_delivery`/`_oil_change`/`_seller_agreement`/`_payment`) |
+| `exception` | `ChunkLoadErrorHandler` (uncaught runtime errors) | `description`, `fatal:false` (also reported to Crashlytics on native) |
+
+### 3.4.1 Screen-view coverage (drop-off / abandonment analysis)
+Automatic `screen_view` fires on every **routed** navigation, with names normalised by `AnalyticsBootstrapService.toScreenName()` (id segments collapsed to `:id`, query/hash stripped) so funnels and the "Pages and screens" report don't fragment.
+
+Overlays and modals reuse the current URL (no `NavigationEnd`), so they emit `setScreen()` **manually**:
+- `product_detail`, `cart` → `OverlayStackService.push()` (one central place).
+- `auth_modal` → root `App` effect on `authModalOpen`.
+- `zoning_city` / `zoning_municipality` / `zoning_no_coverage` → `ZoningModalComponent` effect (one screen per step, to pinpoint where users abandon the mandatory zone selection).
+
+Because every `screen_view` carries GA4's automatic `engagement_time_msec`, "where users linger" works out of the box; abandonment is read via Funnel Exploration over the screen/event sequence.
 
 ### 3.5 User properties (segmentation)
 `LocationService` constructor runs an `effect()` that sets two user properties whenever the user's zone changes:
@@ -120,9 +133,9 @@ These tag **every** subsequent event, enabling per-zone / per-branch segmentatio
 
 - **Crashlytics on web does nothing** — by design. Web error visibility relies on `ChunkLoadErrorHandler` + console.
 - **Web Analytics needs `measurementId`** — empty value ⇒ web strategy is an inert no-op (native unaffected). Currently set to `G-ZCFBGB0C3R`.
-- **Custom dimensions must be registered in the GA4 console** — `zone`, `branch` (User scope) and `dispatch_type`, `payment_type` (Event scope). The params/properties travel regardless, but won't appear as report columns until registered. `shipping_tier`, `search_term`, `item_*` are GA4-standard and surface automatically. **(Already registered by the owner.)**
-- **Product detail is an overlay, not a route** — `screen_view` does NOT fire for it. Product views are captured by `view_item` instead.
-- **Routes with `:id`** (e.g. `/perfil/pedidos/123`) produce fragmented screen names. Cosmetic; not normalised.
+- **Custom dimensions must be registered in the GA4 console** — User scope: `zone`, `branch`. Event scope: `dispatch_type`, `payment_type`, `screen`, `reason`. The params/properties travel regardless, but won't appear as report columns until registered. `shipping_tier`, `search_term`, `item_*`, `description`, `fatal` are GA4-standard and surface automatically. **(Registered by the owner.)**
+- **Overlays/modals emit `screen_view` manually** — product detail, cart, auth modal and the zoning steps are NOT routes, so they call `setScreen()` explicitly (see 3.4.1). If a new overlay/modal is added, remember to emit its screen.
+- **`form_error` covers 5 forms** — shipping, delivery, oil-change, seller-agreement, payment. The agency *selection* step and the in-store oil-change (vehicle-only) step have no blocking form validation, so they emit no `form_error`.
 - **`sign_up` + `login` both fire on auto-login registration** — acceptable (the user did sign up *and* log in).
 - **Data latency** — Realtime ≈ minutes; standard reports & newly-registered dimensions ≈ 24–48 h (not retroactive).
 - **Pre-existing initial-bundle budget warning** (~847 kB vs 800 kB) is NOT caused by this feature (baseline was 841 kB). Separate tech-debt decision.
@@ -144,7 +157,9 @@ These tag **every** subsequent event, enabling per-zone / per-branch segmentatio
 ### Register custom dimensions in GA4 (owner / console)
 GA4 → Admin → Custom definitions → Create:
 - User scope: `zone`, `branch`.
-- Event scope: `dispatch_type`, `payment_type`.
+- Event scope: `dispatch_type`, `payment_type`, `screen`, `reason`.
+
+(`shipping_tier`, `search_term`, `item_*`, `description`, `fatal` are standard — no registration needed.)
 
 ### Verify
 - Analytics: GA4 → Realtime (or DebugView via `adb shell setprop debug.firebase.analytics.app com.tubusexpress.app`).

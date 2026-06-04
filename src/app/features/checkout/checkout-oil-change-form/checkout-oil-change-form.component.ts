@@ -19,6 +19,7 @@ import {
 import { VehicleFormComponent } from '@features/garage/vehicle-form/vehicle-form.component';
 import { CheckoutHeaderComponent } from '../components/checkout-header/checkout-header.component';
 import { PhoneMaskDirective } from '@shared/directives/phone-mask.directive';
+import { ANALYTICS, AnalyticsEvent } from '@platform';
 
 @Component({
   selector: 'app-checkout-oil-change-form',
@@ -37,6 +38,7 @@ export class CheckoutOilChangeFormComponent implements OnInit {
   private readonly productService = inject(ProductService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
+  private readonly analytics = inject(ANALYTICS);
 
   protected readonly lockedFields = signal<Record<string, boolean>>({});
 
@@ -411,6 +413,7 @@ export class CheckoutOilChangeFormComponent implements OnInit {
 
     if (this.oilChangeForm.invalid) {
       this.oilChangeForm.markAllAsTouched();
+      void this.analytics.logEvent(AnalyticsEvent.FormError, { screen: 'checkout_oil_change' });
       scrollToFirstFormError();
       return;
     }

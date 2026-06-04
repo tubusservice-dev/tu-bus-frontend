@@ -7,6 +7,7 @@ import { AuthService } from '@core/services/auth.service';
 import { scrollToFirstFormError } from '@shared/validators/form-validators';
 import { CheckoutHeaderComponent } from '../components/checkout-header/checkout-header.component';
 import { PhoneMaskDirective } from '@shared/directives/phone-mask.directive';
+import { ANALYTICS, AnalyticsEvent } from '@platform';
 
 @Component({
   selector: 'app-checkout-seller-agreement-form',
@@ -20,6 +21,7 @@ export class CheckoutSellerAgreementFormComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
+  private readonly analytics = inject(ANALYTICS);
 
   protected contactForm!: FormGroup;
   protected readonly lockedFields = signal<Record<string, boolean>>({});
@@ -137,6 +139,7 @@ export class CheckoutSellerAgreementFormComponent implements OnInit {
   onSubmit(): void {
     if (this.contactForm.invalid) {
       this.contactForm.markAllAsTouched();
+      void this.analytics.logEvent(AnalyticsEvent.FormError, { screen: 'checkout_seller_agreement' });
       scrollToFirstFormError();
       return;
     }
