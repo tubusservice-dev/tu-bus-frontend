@@ -38,6 +38,18 @@ export interface SetPasswordRequest {
   newPassword: string;
 }
 
+export interface DeleteAccountRequest {
+  /** Required for local accounts (those with a password). */
+  currentPassword?: string;
+  /** Required for OAuth-only accounts: the literal confirmation phrase. */
+  confirmationPhrase?: string;
+}
+
+export interface DeleteAccountResponse {
+  success: boolean;
+  message?: string;
+}
+
 export interface UserResponse {
   success: boolean;
   message?: string;
@@ -92,5 +104,15 @@ export class UserService {
    */
   setPassword(data: SetPasswordRequest): Observable<UserResponse> {
     return this.http.put<UserResponse>(`${this.apiUrl}/set-password`, data);
+  }
+
+  /**
+   * Permanently deletes (anonymizes) the current user's account. The backend
+   * scrubs all PII and invalidates the session, so the caller MUST log the
+   * user out afterwards. Local accounts verify via `currentPassword`;
+   * OAuth-only accounts verify via `confirmationPhrase`.
+   */
+  deleteAccount(data: DeleteAccountRequest): Observable<DeleteAccountResponse> {
+    return this.http.delete<DeleteAccountResponse>(`${this.apiUrl}/account`, { body: data });
   }
 }
