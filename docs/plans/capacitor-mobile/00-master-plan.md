@@ -28,6 +28,9 @@
 | 12 | [`12-phase-6-qa.md`](./12-phase-6-qa.md) | Fase 6 ejecutada: QA en POCO + 5 bugs corregidos + ícono TuBus |
 | 13 | [`13-phase-6.5-post-qa-fixes.md`](./13-phase-6.5-post-qa-fixes.md) | Phase 6.5 ejecutada: 9 bugs descubiertos post-distribución (Android 15+ edge-to-edge + auth Google + admin agnóstico) + 1 feature nuevo (bidirectional Google linking) |
 | 14 | [`14-phase-6.6-native-insets-bridge.md`](./14-phase-6.6-native-insets-bridge.md) | Phase 6.6 ejecutada: descubrimiento del bug raíz (Android WebView no propaga `WindowInsets` al CSS) + bridge nativo `MainActivity.java` + normalización masiva `env()` → `var(--safe-area-*)` en 36 archivos + grid de municipios siempre 2 columnas |
+| 16 | [`16-phase-B-windows-track.md`](./16-phase-B-windows-track.md) | Phase B (iOS) ejecutada al ~70% desde Windows: Apple Sign-In backend+frontend, assets iOS, AASA, copy/legal |
+| 17 | [`17-mac-handoff-checklist.md`](./17-mac-handoff-checklist.md) | Checklist exacto del día del Mac para terminar iOS (Xcode, pods, TestFlight, submit) |
+| 18 | [`18-phase-7-play-release.md`](./18-phase-7-play-release.md) | Phase 7 en ejecución: AAB `versionCode 2` firmado + subido a Play; resolución de bloqueadores de política (permiso fotos, Ad ID, política de privacidad) + hallazgo dominio canónico `www`; en Closed Testing pendiente de enviar a revisión |
 
 > **Antes de aprobar la implementación:** lee los 6 primeros documentos en orden. El 04 te pide decisiones explícitas; el 05 las registra como cerradas. Los documentos 06-13 son bitácoras ejecutadas que se consultan para entender el estado actual del proyecto.
 
