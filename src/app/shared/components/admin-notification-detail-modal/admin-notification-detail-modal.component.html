@@ -140,8 +140,8 @@
 
       <!-- FOOTER -->
       <div class="notif-modal-footer">
-        @if (orderId()) {
-          <button type="button" class="notif-btn-order" (click)="goToOrder()">Ver orden</button>
+        @if (cta(); as c) {
+          <button type="button" class="notif-btn-order" (click)="goToCta()">{{ c.label }}</button>
         }
         <button type="button" class="notif-btn-close" (click)="close()">Cerrar</button>
       </div>

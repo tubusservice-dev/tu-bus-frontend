@@ -194,6 +194,13 @@ export class AdminOrderDetailComponent implements OnInit {
    */
   private pendingScrollToMessages = false;
 
+  /**
+   * True when the admin landed here from a service-related notification tap
+   * with `?openService=1`. Once the order resolves we scroll the service
+   * tracking card into view, mirroring the comments-thread behaviour.
+   */
+  private pendingScrollToService = false;
+
   // ========== CONSTANTS ==========
   protected readonly ORDER_STATUS_LABELS = ORDER_STATUS_LABELS;
   protected readonly DISPATCH_STATUS_LABELS = DISPATCH_STATUS_LABELS;
@@ -368,6 +375,10 @@ export class AdminOrderDetailComponent implements OnInit {
           this.pendingScrollToMessages = true;
           this.tryScrollToMessages();
         }
+        if (params.get('openService') === '1') {
+          this.pendingScrollToService = true;
+          this.tryScrollToService();
+        }
       });
 
     // Push subscription registered once for the component's lifetime; the
@@ -395,6 +406,23 @@ export class AdminOrderDetailComponent implements OnInit {
     });
   }
 
+  /**
+   * Scrolls the service-tracking card into view when the admin arrives from a
+   * service-related notification (`?openService=1`). The card only renders for
+   * oil-change orders once the assignment is loaded; if it is absent the scroll
+   * is a no-op rather than an error.
+   */
+  private tryScrollToService(): void {
+    if (!this.pendingScrollToService) return;
+    if (!this.order()) return;
+    this.pendingScrollToService = false;
+    if (typeof document === 'undefined') return;
+    requestAnimationFrame(() => {
+      const el = document.getElementById('service-tracking-card');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
+
   private loadOrder(id: string): void {
     this.isLoading.set(true);
     this.orderService.getAdminOrderById(id).subscribe({
@@ -403,6 +431,11 @@ export class AdminOrderDetailComponent implements OnInit {
         this.isLoading.set(false);
         if (this.isOilChange()) {
           this.loadServiceTracking(id);
+        } else {
+          // No service card will ever render for this order, so resolve any
+          // pending `?openService=1` request now (no-op scroll that clears
+          // the flag). Oil-change orders defer to `loadServiceTracking`.
+          this.tryScrollToService();
         }
         // Honour pending `?openMessages=1` request from a notification tap
         // now that the comments thread is part of the rendered DOM.
@@ -484,8 +517,16 @@ export class AdminOrderDetailComponent implements OnInit {
         const active = res.data?.find((a) => !['cancelled', 'expired'].includes(a.status));
         this.serviceAssignment.set(active || null);
         this.isLoadingService.set(false);
+        // The service card is now part of the DOM (when an assignment exists);
+        // honour a pending `?openService=1` request from a notification tap.
+        this.tryScrollToService();
       },
-      error: () => this.isLoadingService.set(false),
+      error: () => {
+        this.isLoadingService.set(false);
+        // Even on failure, clear any pending scroll so it doesn't leak into a
+        // later, unrelated render.
+        this.tryScrollToService();
+      },
     });
   }
 

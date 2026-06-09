@@ -18,8 +18,8 @@ android {
         applicationId "com.tubusexpress.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode 3
+        versionName "1.1"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -53,6 +53,15 @@ android {
             // later requires device QA + plugin keep rules in proguard-rules.pro.
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+
+            // Upload native debug symbols (.so symbol tables) inside the AAB so
+            // Play / Crashlytics can symbolicate native crash stack traces.
+            // 'FULL' embeds full debug info; symbols are stripped from the APK
+            // delivered to users (they live only in the AAB for Google's use),
+            // so there is no size impact on the installed app. Requires the NDK.
+            ndk {
+                debugSymbolLevel = 'FULL'
+            }
         }
     }
 }

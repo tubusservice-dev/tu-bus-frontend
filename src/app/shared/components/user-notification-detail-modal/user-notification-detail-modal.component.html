@@ -55,8 +55,8 @@
 
       <!-- FOOTER -->
       <div class="un-modal-footer">
-        @if (orderId()) {
-          <button type="button" class="un-btn-order" (click)="goToOrder()">Ver pedido</button>
+        @if (cta(); as c) {
+          <button type="button" class="un-btn-order" (click)="goToCta()">{{ c.label }}</button>
         }
         <button type="button" class="un-btn-close" (click)="close()">Cerrar</button>
       </div>

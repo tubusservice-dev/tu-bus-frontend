@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { AdminNotification, NotificationType } from '../../../models/notification.model';
 import { DISPATCH_TYPE_LABELS, DispatchType } from '../../../models/order.model';
 import { PAYMENT_METHOD_TYPE_LABELS, PaymentMethodType } from '../../../models/payment-method.model';
+import { resolveAdminNotificationCta } from '../../utils/notification-cta.util';
 
 /**
  * Admin-facing modal that renders the full payload of an admin notification.
@@ -37,6 +38,7 @@ export class AdminNotificationDetailModalComponent {
     const type = this._notification()?.type;
     switch (type) {
       case 'mechanic_rejection': return 'mechanic';
+      case 'assignment_expired': return 'mechanic';
       case 'customer_cancellation': return 'customer';
       case 'new_order': return 'new-order';
       case 'payment_note': return 'payment-note';
@@ -48,18 +50,16 @@ export class AdminNotificationDetailModalComponent {
     }
   });
 
-  protected readonly orderId = computed(() => {
-    const notif = this._notification();
-    if (!notif?.relatedOrder) return '';
-    if (typeof notif.relatedOrder === 'object') {
-      return notif.relatedOrder.id || notif.relatedOrder._id || '';
-    }
-    return String(notif.relatedOrder);
-  });
+  /**
+   * Contextual call-to-action derived from the notification type. Null when
+   * the notification has no related order, so the modal shows no nav button.
+   */
+  protected readonly cta = computed(() => resolveAdminNotificationCta(this._notification()));
 
   protected getNotificationTypeLabel(type: NotificationType | string): string {
     const labels: Record<string, string> = {
       mechanic_rejection: 'Rechazo de mecánico',
+      assignment_expired: 'Servicio sin confirmar',
       customer_cancellation: 'Cancelación de cliente',
       new_order: 'Nueva orden',
       payment_note: 'Comentario de pago',
@@ -100,18 +100,18 @@ export class AdminNotificationDetailModalComponent {
   }
 
   /**
-   * Navigate to the order detail and dismiss the modal. Calling
+   * Navigate to the contextual CTA destination and dismiss the modal. Calling
    * `router.navigate(...)` BEFORE `close()` matters: emitting `closed` here
    * causes the parent to null out the modal's input, which destroys this
-   * component (and any `[routerLink]` directive on its DOM) within the same
-   * change-detection tick. Programmatic navigation captures the intent
-   * synchronously on the live Router instance, so the navigation completes
-   * even though the originating element is about to be unmounted.
+   * component within the same change-detection tick. Programmatic navigation
+   * captures the intent synchronously on the live Router instance, so the
+   * navigation completes even though the originating element is about to be
+   * unmounted.
    */
-  protected goToOrder(): void {
-    const id = this.orderId();
-    if (!id) return;
-    this.router.navigate(['/admin/orders', id]);
+  protected goToCta(): void {
+    const cta = this.cta();
+    if (!cta) return;
+    this.router.navigate(cta.commands, cta.extras);
     this.close();
   }
 }
