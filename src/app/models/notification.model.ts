@@ -1,5 +1,6 @@
 export type NotificationType =
   | 'mechanic_rejection'
+  | 'assignment_expired'
   | 'customer_cancellation'
   | 'new_order'
   | 'payment_note'

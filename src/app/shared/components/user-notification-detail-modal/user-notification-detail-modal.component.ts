@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { inject } from '@angular/core';
 import { UserNotification } from '../../../models/user-notification.model';
+import { resolveUserNotificationCta } from '../../utils/notification-cta.util';
 
 /**
  * Full-screen (mobile) / centered (desktop) modal that replaces the in-popover
@@ -29,23 +30,26 @@ export class UserNotificationDetailModalComponent {
 
   protected readonly n = this._notification.asReadonly();
 
-  protected readonly orderId = computed(() => {
-    const notif = this._notification();
-    if (!notif?.relatedOrder) return '';
-    if (typeof notif.relatedOrder === 'object') {
-      return notif.relatedOrder.id || notif.relatedOrder._id || '';
-    }
-    return String(notif.relatedOrder);
-  });
+  /**
+   * Contextual call-to-action derived from the notification type. Null when
+   * the notification has no related order, in which case the modal shows no
+   * navigation button (e.g. system-wide notices).
+   */
+  protected readonly cta = computed(() => resolveUserNotificationCta(this._notification()));
 
   protected close(): void {
     this.closed.emit();
   }
 
-  protected goToOrder(): void {
-    const id = this.orderId();
-    if (!id) return;
+  /**
+   * Navigates to the CTA destination, then closes the modal. Navigation is
+   * issued first so the intent is captured on the live Router before the
+   * parent unmounts this component on `closed`.
+   */
+  protected goToCta(): void {
+    const cta = this.cta();
+    if (!cta) return;
+    this.router.navigate(cta.commands, cta.extras);
     this.close();
-    this.router.navigate(['/perfil/pedidos', id]);
   }
 }
