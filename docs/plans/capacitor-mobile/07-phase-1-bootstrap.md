@@ -1,6 +1,6 @@
 # 07 — Phase 1: Bootstrap Capacitor
 
-> **Status:** ⏳ EN EJECUCIÓN (iniciada 2026-05-15)
+> **Status:** ✅ CERRADA (2026-05-15)
 > **Owner:** Luis V (workstation Windows)
 > **Objetivo:** instalar Capacitor, generar la carpeta `android/`, compilar el primer APK e instalarlo en el POCO físico. Verificar que la app abre y carga la landing TuBus Express.
 > **Entry criteria:** Phase 0 completada (`06-phase-0-prerequisites.md`) + autorización formal del owner ✅

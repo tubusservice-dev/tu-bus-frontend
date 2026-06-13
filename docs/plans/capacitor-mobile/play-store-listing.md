@@ -1,8 +1,8 @@
 # Google Play Console — Listing TuBus Express (es)
 
-> **Status:** Draft listo para Phase 7. Pegar tal cual en Play Console → *Store listing* cuando la build firmada (AAB) esté lista para *internal testing*.
+> **Status:** ✅ En uso — Phase 7 en **Closed Testing** (actualizado 2026-06-12). Contenido del listing ya aplicado en Play Console.
 > **Idioma primario del listing:** Español (`es`). Play sí permite Español genérico; opcionalmente añadir `es-419` (Latinoamérica) como traducción.
-> **Cuenta:** Google Play Developer ya verificada ✅. Falta crear la app en la consola.
+> **Cuenta:** Google Play Developer ya verificada ✅. App creada en la consola (`com.tubusexpress.app`, cuenta personal `TuBus Servicios`).
 > **Equivalente iOS:** [`app-store-listing.md`](app-store-listing.md). Las diferencias clave están marcadas con ⚠️ **DIFF iOS**.
 
 ---
@@ -21,7 +21,7 @@
 | **Email de contacto** | obligatorio | `tubusservice@gmail.com` |
 | **Teléfono** | opcional | +58 (a completar) |
 | **Sitio web** | opcional | `https://tubusexpress.com` |
-| **Privacy Policy URL** | obligatorio | `https://tubusexpress.com/legal/privacidad` |
+| **Privacy Policy URL** | obligatorio | `https://www.tubusexpress.com/legal/privacidad` (dominio canónico **con `www`**; el apex sin `www` devuelve 404) |
 
 > ⚠️ **DIFF iOS:** Apple usa *App Name* (30) + *Subtitle* (30) + *Keywords* (100). Play usa *App name* (30) + *Short description* (80) + *Full description* (4000). **Play NO tiene campo de keywords** — el indexado se hace sobre el texto de la descripción. No metas listas de palabras separadas por comas en la descripción (Google lo penaliza como spam).
 
@@ -176,7 +176,7 @@ Play exige completar TODAS estas secciones antes de publicar. Respuestas para Tu
 
 | Declaración | Respuesta | Notas |
 |---|---|---|
-| **Privacy policy** | URL: `https://tubusexpress.com/legal/privacidad` | Debe estar viva y mencionar los SDK third-party (ver [`privacy-policy-additions.md`](privacy-policy-additions.md)). |
+| **Privacy policy** | URL: `https://www.tubusexpress.com/legal/privacidad` | Debe estar viva y mencionar los SDK third-party (ver [`privacy-policy-additions.md`](privacy-policy-additions.md)). **Usar `www`** — el apex devuelve 404. |
 | **Ads** | No contiene anuncios | |
 | **App access** | Requiere credenciales (ver §6) | |
 | **Content ratings** | Cuestionario IARC completo (§5.1) | |
@@ -193,9 +193,9 @@ Play exige completar TODAS estas secciones antes de publicar. Respuestas para Tu
 
 | Campo | Valor | Fuente |
 |---|---|---|
-| `versionCode` | `1` | `android/app/build.gradle` (entero monotónico, +1 por cada subida) |
-| `versionName` | `1.0` | `android/app/build.gradle` (visible al usuario) |
-| Release name (Play Console) | `1.0 (1)` | Nombre interno del release en la consola |
+| `versionCode` | `3` | `android/app/build.gradle` (entero monotónico, +1 por cada subida; durante la subida a Play se iteró v1→v2→v3) |
+| `versionName` | `1.1` | `android/app/build.gradle` (visible al usuario) |
+| Release name (Play Console) | `1.1 (3)` | Nombre interno del release en la consola |
 
 **Release notes v1.0 (Play Console → "What's new"):**
 
@@ -215,9 +215,11 @@ Esta primera versión incluye:
 
 > ⚠️ Tras activar **Play App Signing** (decisión 1.7 = sí), Google re-firma el AAB con su release key. El **SHA-256 de esa release key** (visible en Play Console → *Setup → App signing*) debe añadirse a:
 > 1. Firebase Console → Project settings → tu app Android (para que el login Google nativo funcione en la build de producción).
-> 2. `public/.well-known/assetlinks.json` en producción (para que los **App Links con `autoVerify`** funcionen — hoy solo está el SHA-256 del debug keystore).
+> 2. `public/.well-known/assetlinks.json` en producción (para que los **App Links con `autoVerify`** funcionen — ya contiene **2 SHA-256**: el del debug keystore y el del app signing key de Play).
 >
 > **Si te saltas esto, en la build de Play el login Google fallará y los deep links abrirán el navegador en vez de la app.** Es el error más común al publicar Capacitor + Firebase.
+>
+> **Nota de dominio (descubierto en Phase 7):** el host apex `tubusexpress.com` no sirve `assetlinks.json` (404); la verificación de App Links solo pasa en `www.tubusexpress.com`. Ver deuda **DT-1 (redirect 301 apex→www)** en [`18-phase-7-play-release.md`](18-phase-7-play-release.md).
 
 ---
 
@@ -233,7 +235,7 @@ Esta primera versión incluye:
 7. Production → Submit for review (primera revisión de Google: 1-7 días para cuentas nuevas)
 ```
 
-> ⚠️ **Cuentas de developer nuevas (2024+):** Google exige para apps de cuentas personales nuevas un **closed testing con mínimo 12 testers durante 14 días** antes de poder publicar en producción. Verificar si tu cuenta cae en este requisito (depende de cuándo/cómo se registró). Si aplica, planificar los 14 días.
+> ⚠️ **Cuentas personales (2024+) — APLICA A ESTE PROYECTO:** Google exige **closed testing con mínimo 12 testers durante 14 días** antes de habilitar producción. La cuenta `TuBus Servicios` es personal, así que el requisito está activo. **Estado a 2026-06-12: en Closed Testing acumulando los 14 días con los 12 testers.**
 
 ---
 

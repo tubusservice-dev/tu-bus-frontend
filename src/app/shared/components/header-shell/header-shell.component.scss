@@ -36,7 +36,13 @@
 // Single flex row. `justify-between` lets consumers ship 1, 2 or 3
 // children and have them spread naturally — keeps the API minimal (no
 // named slots needed yet).
+//
+// Full-bleed: the content stretches edge-to-edge (no `max-width`/centering)
+// so the header spans the entire viewport. Horizontal padding keeps the
+// logo and actions off the screen edges. NOTE: body sections still use a
+// `max-w-7xl` centered column, so on viewports wider than 1280px the header
+// content sits wider than the page content by design.
 .shell-content {
   @apply flex items-center justify-between gap-2 sm:gap-4
-         max-w-7xl mx-auto h-full px-4 sm:px-6 lg:px-8;
+         w-full h-full px-4 sm:px-6 lg:px-8;
 }

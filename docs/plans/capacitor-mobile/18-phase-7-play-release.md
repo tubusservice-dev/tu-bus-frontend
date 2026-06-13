@@ -1,6 +1,6 @@
 # 18 — Phase 7 — Build Firmado y Distribución (Google Play)
 
-> **Status:** ⏳ EN EJECUCIÓN — app en Google Play Console, subiendo de Internal Testing a **Closed Testing**; pendiente enviar cambios a revisión.
+> **Status:** ⏳ EN CURSO — app en **Closed Testing** (Google Play); release `versionCode 3 / 1.1` enviado. Acumulando los 14 días con 12 testers antes de poder habilitar producción. (Actualizado 2026-06-12.)
 > **Plataforma:** Android (Phase A)
 > **Owner:** Luis V (workstation Windows)
 > **Cuenta Play:** personal — `TuBus Servicios` (account ID `7825213331489003956`)
@@ -66,7 +66,7 @@ AAB firmado regenerado desde Android Studio (*Generate Signed Bundle / APK → A
 - El warning PKIX (certificado self-signed) es esperado y benigno.
 - Play App Signing activo (decisión 1.7) → Google re-firma con su app signing key al subir.
 
-Subido a Play: `versionCode 2`, tamaño de entrega **11.7 MB**.
+Subido a Play: `versionCode 2`, tamaño de entrega **11.7 MB**. (Posteriormente se iteró a **`versionCode 3` / `versionName 1.1`** — el binario que finalmente quedó en Closed Testing.)
 
 ### 7.4 — Bloqueadores de política en Play Console
 
@@ -100,7 +100,7 @@ https://www.tubusexpress.com/legal/privacidad
 ```
 Idem para Data Safety (borrado de cuenta): `https://www.tubusexpress.com/legal/eliminar-cuenta`.
 
-### 7.6 — Advertencias no bloqueantes (2 mensajes en versionCode 2)
+### 7.6 — Advertencias no bloqueantes (2 mensajes por release)
 
 | Advertencia | Causa | Veredicto |
 |---|---|---|
@@ -109,15 +109,16 @@ Idem para Data Safety (borrado de cuenta): `https://www.tubusexpress.com/legal/e
 
 ---
 
-## Estado actual (punto donde quedamos)
+## Estado actual (2026-06-12)
 
-- AAB `versionCode 2` subido a Play.
-- Errores de política A, B, C resueltos.
-- Pantalla **"Descripción general de la publicación"**: hay **12 cambios pendientes de enviar a revisión** (prueba cerrada con segmento "Prueba de Validación de Testers", país Venezuela, verificadores configurados).
-- Play está corriendo las **"verificaciones rápidas"** (hasta ~14 min) antes de permitir el envío.
-- "Publicación administrada" desactivada → al aprobarse, los cambios se publican automáticamente (aceptable para prueba cerrada).
+- AAB final **`versionCode 3` / `versionName 1.1`** subido y en **Closed Testing**.
+- Errores de política resueltos: permiso de fotos (declarado funcionalidad principal), Ad ID (declarado "No"), política de privacidad (URL corregida a `www`).
+- Cambios enviados a revisión; la app está en **prueba cerrada** con el segmento "Prueba de Validación de Testers" (país Venezuela).
+- Los 12 testers están instalando la app desde el enlace de opt-in de Play.
 
-**Próximo paso inmediato:** esperar a que las verificaciones rápidas terminen en verde (sin reaparecer el panel de problemas) y pulsar **"Enviar 12 cambios para su revisión"**.
+**Próximo hito:** completar **14 días con 12 testers activos** → habilitar acceso a producción → submit a producción.
+
+> **Nota sobre métricas de Play:** el contador de "usuarios con la app instalada" se actualiza con 24–48 h de retraso, así que ver `1` no implica error. Solo cuentan las instalaciones hechas desde el opt-in de Play (no las de APK sideload).
 
 ---
 
@@ -151,8 +152,8 @@ Por Play App Signing, lo que importa es el **app signing key de Google**, no el 
 
 | Métrica | Valor |
 |---|---|
-| `versionCode` | 2 |
-| `versionName` | "1.0" |
+| `versionCode` | 3 |
+| `versionName` | "1.1" |
 | Tamaño de entrega (Play) | 11.7 MB |
 | Bundle web transfer | ~193 kB (dentro de baseline Phase 6.6) |
 | Plugins Capacitor | 13 |
