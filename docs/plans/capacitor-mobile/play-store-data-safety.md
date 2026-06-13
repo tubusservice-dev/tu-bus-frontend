@@ -1,6 +1,6 @@
 # Google Play — Data Safety Form (TuBus Express)
 
-> **Status:** Draft listo para Phase 7. Source of truth interno para completar Play Console → *App content → Data safety*.
+> **Status:** ✅ En uso — Phase 7 / Closed Testing (actualizado 2026-06-12). Source of truth interno para Play Console → *App content → Data safety*.
 > **Norma:** Política de Datos de Usuario de Google Play. La declaración debe coincidir 1:1 con lo que la app realmente hace. Declarar mal = suspensión de la app.
 > **Equivalente iOS:** [`app-store-privacy-nutrition.md`](app-store-privacy-nutrition.md). El **modelo de Play es distinto** al de Apple — leer §1.
 
@@ -128,13 +128,11 @@ Leyenda: **C** = Collected · **S** = Shared · **E** = Processed ephemerally ·
 | User payment info (tarjeta/crédito) | ❌ No |
 | Advertising ID / datos publicitarios | ❌ No |
 
-> **Advertising ID — ⚠️ CONFIRMADO presente (acción requerida):** se verificó el manifest fusionado del build (`android/app/build/intermediates/merged_manifest/.../AndroidManifest.xml`) y **`com.google.android.gms.permission.AD_ID` SÍ está declarado** — lo inyecta `play-services-measurement` (Firebase Analytics) de forma transitiva, aunque el `AndroidManifest.xml` fuente no lo tenga.
->
-> **Implicación:** si declaras "no advertising data" en el Data Safety form (como recomienda este doc) pero el binario expone `AD_ID`, Google lo marca como inconsistencia. **Acción:** remover el permiso explícitamente en `android/app/src/main/AndroidManifest.xml`:
+> **Advertising ID — ✅ RESUELTO (removido del manifest):** el permiso `com.google.android.gms.permission.AD_ID` lo inyecta `play-services-measurement` (Firebase Analytics) de forma transitiva. Se removió explícitamente en el manifest fuente (`android/app/src/main/AndroidManifest.xml:122`):
 > ```xml
 > <uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:node="remove" />
 > ```
-> (requiere `xmlns:tools="http://schemas.android.com/tools"` en el `<manifest>`). Alternativa: desactivar la recolección de Ad ID en Firebase Analytics. Hacerlo antes de generar el AAB de release.
+> (con `xmlns:tools="http://schemas.android.com/tools"` ya declarado en el `<manifest>`). El AAB de release (`versionCode 3`) ya no expone `AD_ID`, de modo que la declaración "no advertising data" es **consistente con el binario**. Confirmado al subir la versión a Play (no reaparece el problema de declaración de Ad ID).
 
 ---
 
@@ -149,13 +147,13 @@ Google Play exige (política vigente desde 2024) que **toda app que permita crea
 - **Backend:** `DELETE /api/users/account` (`backend/src/modules/users/routes/user.routes.ts`) → `UserController.deleteAccount` → `UserService.anonymizeAndDeleteAccount`. Verifica identidad (contraseña en cuentas locales; frase "ELIMINAR" en cuentas OAuth puras), borra PII del documento User, elimina device tokens / vehículos / notificaciones, invalida auth tokens y JWT (`tokensInvalidatedAt`), borra el avatar de Cloudinary y registra `AuthAuditEvent.ACCOUNT_SELF_DELETED`. Conserva pedidos/pagos despersonalizados.
 - **Frontend (app + web):** botón "Eliminar Cuenta" en la sección ACCIONES de `/perfil` → `DeleteAccountModalComponent` (doble confirmación: identidad + checkbox de irreversibilidad). Tras el éxito hace logout automático.
 - **Página pública (2026-06-04):** ruta `legal/eliminar-cuenta` (`frontend/src/app/features/legal/pages/account-deletion/account-deletion.component.ts`, registrada en `app.routes.ts`, sin `authGuard` → accesible sin login). Enlazada desde el footer. Documenta el borrado in-app, la vía por email (`privacidad@tubusexpress.com`), qué se elimina vs. qué se conserva anonimizado, y los pedidos en curso.
-- **URL para el Data Safety form:** `https://tubusexpress.com/legal/eliminar-cuenta`
+- **URL para el Data Safety form:** `https://www.tubusexpress.com/legal/eliminar-cuenta` (**con `www`** — el apex devuelve 404)
 
 > Nota: el `DELETE /api/admin/users/:id` preexistente (`backend/src/modules/admin/routes/users.routes.ts:17`) es admin-borra-usuario y sigue siendo un soft-delete distinto; no confundir con el flujo self-service.
 
-**Trabajo pendiente antes del submit:**
-- [ ] **Deploy a producción** del frontend para que `https://tubusexpress.com/legal/eliminar-cuenta` quede en vivo (la ruta ya existe en el código; el fallback SPA de `nginx.conf` la sirve).
-- [ ] **Declarar la URL** `https://tubusexpress.com/legal/eliminar-cuenta` en Play Console → App content → Data safety → campo "URL for account deletion".
+**Estado (2026-06-12):**
+- [x] **Deploy a producción** — `https://www.tubusexpress.com/legal/eliminar-cuenta` responde **HTTP 200** (verificado). ⚠️ Solo funciona con `www`; el apex `tubusexpress.com` sin `www` devuelve 404 (ver deuda DT-1 en `18-phase-7-play-release.md`).
+- [x] **URL declarada** en Play Console → App content → Data safety → "URL for account deletion": `https://www.tubusexpress.com/legal/eliminar-cuenta`.
 
 > Este punto **no aparece en los docs de iOS** porque Apple lo gestiona distinto (exige el borrado in-app pero no la URL pública). Para Play es un campo obligatorio del form.
 
@@ -166,9 +164,9 @@ Google Play exige (política vigente desde 2024) que **toda app que permita crea
 - [ ] Cada fila de §4 cargada en Play Console con sus flags C/S/E y R/O.
 - [ ] Todas las categorías de §5 marcadas explícitamente como "No collected".
 - [ ] "Encrypted in transit" = **Sí**.
-- [ ] "Users can request deletion" = **Sí** + URL `https://tubusexpress.com/legal/eliminar-cuenta` declarada en el form (§6). ⏳ Falta solo deploy + declararla en Play Console.
+- [x] "Users can request deletion" = **Sí** + URL `https://www.tubusexpress.com/legal/eliminar-cuenta` declarada en el form (§6).
 - [ ] **Shared = No** en todas las filas (Firebase/Cloudinary son service providers, no terceros).
-- [ ] Verificado que el `AndroidManifest.xml` no expone `AD_ID` (§5).
+- [x] Verificado que el `AndroidManifest.xml` no expone `AD_ID` (§5) — removido con `tools:node="remove"`.
 - [ ] El form coincide con la política de privacidad (`privacy-policy-additions.md`) y con las nutrition labels de iOS (`app-store-privacy-nutrition.md`) — las 3 fuentes deben ser consistentes.
 
 ---

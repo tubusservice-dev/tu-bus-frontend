@@ -1,6 +1,6 @@
 # 06 — Phase 0: Pre-requisitos del Entorno
 
-> **Status:** ⏳ EN EJECUCIÓN (iniciada 2026-05-15)
+> **Status:** ✅ CERRADA (2026-05-15)
 > **Owner:** Luis V (workstation Windows)
 > **Objetivo:** dejar el workstation y los servicios externos listos para compilar la app Android. **Cero código del proyecto se modifica en esta fase.**
 > **Entry criteria:** las 12 decisiones cerradas (`05-decisions-log.md`) + autorización formal del owner ✅

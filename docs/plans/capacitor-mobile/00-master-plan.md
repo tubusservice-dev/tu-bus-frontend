@@ -1,9 +1,9 @@
 # Capacitor Mobile — Master Plan
 
-> **Status:** Draft / Pending approval
-> **Owner:** —
+> **Status:** ✅ Aprobado y ejecutado — Phases 0–6.6 cerradas; **Phase 7 en Closed Testing (Google Play)**. Phase B (iOS) ~70% adelantada desde Windows (pendiente del Mac).
+> **Owner:** Luis V (workstation Windows)
 > **Created:** 2026-05-14
-> **Last updated:** 2026-05-15
+> **Last updated:** 2026-06-12
 > **Target platforms (Phase A):** Android only
 > **Target platforms (Phase B, deferred):** iOS
 > **Codebase impact:** Frontend Angular 20.1 (`/frontend`) + Backend Express (`/backend`, mínimo)
@@ -93,7 +93,7 @@ La app móvil ofrecerá **el mismo set de features que la web**, más estas func
 2. **El backend NO se rompe para clientes web actuales.** Todo cambio en backend es aditivo (nuevos endpoints, nuevas env vars).
 3. **No se introduce un segundo repositorio.** Single source of truth: este monorepo.
 4. **No se duplica el bundle Angular.** El mismo `dist/tubus-express/browser` alimenta web y app nativa.
-5. **No se usan deprecaciones.** Capacitor 6.x o 7.x (la mayor estable al momento de implementar).
+5. **No se usan deprecaciones.** Capacitor 7.x o superior (la mayor estable al momento de implementar — npm instaló **8.3.4**).
 6. **Toda dependencia añadida debe documentarse** en este plan con la justificación.
 
 ---
@@ -149,13 +149,15 @@ Cumple regla `feedback_path_aliases.md`: todo nuevo código usa `@core/*`, `@sha
 
 ## 3. Stack final y dependencias
 
-### 3.1 Versiones objetivo (a verificar al instalar)
+### 3.1 Versiones del stack (reales instaladas)
 
-| Tecnología | Versión esperada | Fuente |
+> Actualizado a 2026-06-12 con los valores que realmente se instalaron/configuraron (difieren de la estimación original — ver decisión revisada 1.2bis en `05-decisions-log.md`).
+
+| Tecnología | Versión real | Fuente |
 |---|---|---|
-| Capacitor Core | ^7.0.0 (mayor estable a 2026-05) | npm |
-| Android Gradle Plugin | 8.5+ | Capacitor 7 requirements |
-| Android SDK | API 34 (target), API 23 (min) | Google Play policy |
+| Capacitor Core / CLI / Android | **8.3.4** (npm tomó la mayor estable) | `package.json` |
+| Android Gradle Plugin | 8.5+ | Capacitor 8 requirements |
+| Android SDK | **API 36 (target + compile), API 24 (min)** — subido en Phase 6.5/6.6 por el edge-to-edge enforcement de Android 15 | `android/variables.gradle` |
 | JDK | 17 (LTS) | Android Studio Hedgehog+ |
 | Android Studio | Hedgehog (2023.1) o superior | jetbrains.com |
 | Node.js | 20 LTS (ya alineado con Dockerfile) | proyecto |
@@ -364,7 +366,7 @@ Phase 6.5  Fixes post-QA (no prevista)         (1 día)        ✅ CERRADA
    ↓
 Phase 6.6  Bridge nativo safe-area (hotfix)    (0.5 día)      ✅ CERRADA
    ↓
-Phase 7    Build firmado y distribución        (1 día)        ⏳ PENDIENTE
+Phase 7    Build firmado y distribución        (1 día)        ⏳ EN CURSO (Closed Testing)
                                                ─────────
                                                ~16-20 días hombre
 
@@ -1578,15 +1580,17 @@ Detalle completo en [`14-phase-6.6-native-insets-bridge.md`](./14-phase-6.6-nati
 
 ### 18.10 Phase 7 — Release
 
-- [ ] 7.1 Keystore de release generado y backed up
-- [ ] 7.2 `build.gradle` configurado para signing
-- [ ] 7.3 SHA-256 release registrado en Firebase, Google Cloud, assetlinks
-- [ ] 7.4 AAB generado
-- [ ] 7.5 APK generado
-- [ ] 7.6 APK validado en dispositivo limpio
-- [ ] 7.7 Listing en Play Console completado
-- [ ] 7.8 Internal testing track activo
-- [ ] 7.9 Release notes documentadas
+> **Estado a 2026-06-12:** AAB `versionCode 3 / 1.1` firmado y en **Closed Testing**. Detalle en [`18-phase-7-play-release.md`](./18-phase-7-play-release.md).
+
+- [x] 7.1 Keystore de release generado y backed up (upload key, alias `UPLOAD`)
+- [x] 7.2 `build.gradle` configurado para signing (`signingConfigs.release` desde `keystore.properties`)
+- [~] 7.3 SHA-256 release en `assetlinks.json` ✅ (2 fingerprints); **pendiente verificar** SHA-1 del app signing key en Firebase
+- [x] 7.4 AAB generado y subido a Play (`versionCode 3`)
+- [ ] 7.5 APK directo generado (canal sideload — opcional)
+- [x] 7.6 Build validado en dispositivo (testers de Closed Testing instalando)
+- [x] 7.7 Listing en Play Console completado
+- [x] 7.8 Testing track activo → **Closed Testing** (cuenta personal: requisito 12 testers × 14 días)
+- [x] 7.9 Release notes documentadas
 - [ ] 7.10 QA Tier A (Pixel/Samsung Android 15+) — valida 15 AC nuevos de Phase 6.5
 - [ ] 7.11 QA Tier B (POCO Android 13, Samsung A56 Android 14) — valida 8 AC nuevos de Phase 6.6 (B4.AC16-23)
 - [ ] 7.12 QA Tier C (Android 7-9 si está disponible) — valida que el bridge nativo funciona en API 24+
@@ -1630,7 +1634,7 @@ Detalle completo en [`14-phase-6.6-native-insets-bridge.md`](./14-phase-6.6-nati
 | `12-phase-6-qa.md` | ✅ Generado y ejecutado |
 | `13-phase-6.5-post-qa-fixes.md` | ✅ Generado y ejecutado (NUEVO, no estaba previsto) |
 | `14-phase-6.6-native-insets-bridge.md` | ✅ Generado y ejecutado (NUEVO, no estaba previsto — hotfix del bug raíz) |
-| `15-phase-7-release.md` | ⏳ Por generar al autorizar Phase 7 |
+| `18-phase-7-play-release.md` | ✅ Generado — bitácora Phase 7 (Closed Testing) |
 | `versioning-and-compatibility.md` | ⏳ Por crear durante Phase 7 |
 | `troubleshooting.md` | ⏳ Vivo, se llena con cada bug recurrente |
 
@@ -1643,7 +1647,7 @@ Detalle completo en [`14-phase-6.6-native-insets-bridge.md`](./14-phase-6.6-nati
 | # | Decisión | Valor adoptado |
 |---|---|---|
 | 1.1 | Package name | `com.tubusexpress.app` |
-| 1.2 | Min SDK Android | API 23 |
+| 1.2 | Min SDK Android | API 24 real (target/compile API 36 — ver decisión 1.2 revisada) |
 | 1.3 | Esquema biometría | Flag local |
 | 1.4 | Reverse geocoding | Bounding boxes propias |
 | 1.5 | Forced updates desde v1 | Sí |
@@ -1655,14 +1659,14 @@ Detalle completo en [`14-phase-6.6-native-insets-bridge.md`](./14-phase-6.6-nati
 | 1.11 | Plugin Google Auth | `@capacitor-firebase/authentication` |
 | 1.12 | Plugin FCM | `@capacitor-firebase/messaging` |
 
-### Items aún pendientes para iniciar Phase 0
+### Items para iniciar Phase 0 — ✅ TODOS RESUELTOS (2026-05-15)
 
-- ⏳ Acceso a Firebase Console
-- ⏳ Acceso a Google Cloud Console
-- ⏳ Acceso a Railway
-- ⏳ Confirmación de dispositivo Android físico para QA
-- ⏳ Autorización formal del owner para iniciar Phase 0
+- ✅ Acceso a Firebase Console
+- ✅ Acceso a Google Cloud Console
+- ✅ Acceso a Railway
+- ✅ Dispositivo Android físico para QA (POCO X4 Pro 5G)
+- ✅ Autorización formal del owner para iniciar Phase 0
 
 ---
 
-> **Estado del documento:** este es el plan maestro. Las decisiones arquitecturales están cerradas. Pendiente: accesos + dispositivo + autorización para iniciar Phase 0.
+> **Estado del documento:** este es el plan maestro. Phases 0–6.6 cerradas y ejecutadas; **Phase 7 en Closed Testing (Google Play)**; Phase B (iOS) ~70% adelantada desde Windows, pendiente del Mac. Última reconciliación con el código real: 2026-06-12.

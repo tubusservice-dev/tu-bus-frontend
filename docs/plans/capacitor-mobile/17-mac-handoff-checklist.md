@@ -1,6 +1,7 @@
 # 17 — Mac Handoff Checklist (El día del Mac)
 
-> **Status:** ✅ Generado al cierre de Phase B Windows Track (F5)
+> **Status:** ✅ Documento generado al cierre del Phase B Windows Track (F5). ⏳ **El checklist en sí NO se ha ejecutado** — la parte Mac de Phase B sigue pendiente del Mac (a 2026-06-12). El foco actual del proyecto es Phase 7 (Android / Google Play Closed Testing).
+> **Nota sobre `frontend/ios/`:** si la carpeta existe, es un **residuo del stub de assets de WB-5**, NO un proyecto Capacitor iOS real (no tiene `ios/App` ni `Podfile`). El `npx cap add ios` de verdad se ejecuta en el Bloque B de este checklist, el día del Mac.
 > **Cuándo se ejecuta:** el día que el owner tenga (a) Mac con macOS 14+, (b) cuenta Apple Developer activa, (c) iPhone físico, (d) GoogleService-Info.plist descargado de Firebase Console.
 > **Esfuerzo estimado:** 4-6 horas si todos los pre-requisitos están listos.
 > **Output:** APK iOS firmada en TestFlight + lista para submit a App Store.

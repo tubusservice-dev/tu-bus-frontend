@@ -1,6 +1,6 @@
 # Política de Privacidad — Adiciones para iOS (Phase B)
 
-> **Status:** Texto listo para pegar en `https://tubusexpress.com/legal/privacidad`.
+> **Status:** Texto listo para pegar en `https://www.tubusexpress.com/legal/privacidad` (dominio canónico **con `www`**; el apex sin `www` devuelve 404).
 > **Cuándo aplicar:** antes de submit a App Store Connect (Apple Review rechaza apps cuya política no menciona los proveedores third-party que la app usa).
 > **Quién aplica:** owner — editar manualmente el sitio web (esto está fuera del repo de Capacitor).
 

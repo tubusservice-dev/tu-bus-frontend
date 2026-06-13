@@ -73,6 +73,8 @@ Las 12 decisiones del documento `04-user-requirements.md` fueron resueltas en bl
 - Phase 1.3: en `android/app/build.gradle` setear `minSdkVersion 23`.
 - Phase 1.3: setear `targetSdkVersion 34` (último estable, requisito Play Store).
 
+> **🔄 REVISADO (Phase 6.5/6.6, 2026-05-20/21):** los valores reales en `android/variables.gradle` quedaron en **`minSdkVersion 24`, `targetSdkVersion 36`, `compileSdkVersion 36`**. Razón: el *edge-to-edge enforcement* obligatorio de Android 15 (API 35+) requiere `targetSdk` ≥ 35 para no caer en modo de compatibilidad; se adoptó 36 (última API estable) y `minSdk` subió a 24 por requisitos de las dependencias androidx que arrastra Capacitor 8. Cobertura de dispositivos sigue ~95%. Esta entrada es la decisión formal que documenta el cambio (antes solo se infería de las bitácoras 6.5/6.6).
+
 **Riesgo conocido:**
 
 - API 23 no soporta algunas optimizaciones de batería modernas. Push notifications pueden ser deferidas en dispositivos viejos. Aceptable.
@@ -413,11 +415,10 @@ ZOMBIE_ACCOUNT_CLEANUP_AFTER_HOURS
 3. **Install via USB:** activar en Developer Options junto con USB Debugging.
 4. **Battery saver:** marcar la app como "Sin restricciones" en battery management para garantizar entrega de FCM en background.
 
-### ⏳ Autorización formal para iniciar Phase 0
+### ✅ Autorización formal para iniciar Phase 0 — RESUELTO
 
 **Necesario:** owner indica explícitamente "OK, empieza Phase 0" o equivalente.
-**Una vez autorizado:** primera acción es crear `06-phase-0-prerequisites.md` con el detalle ejecutable de cada sub-task.
-**Status:** PENDIENTE.
+**Status:** ✅ RESUELTO el 2026-05-15. El owner autorizó y se ejecutaron las Phases 0 → 6.6 (todas cerradas); Phase 7 está en Closed Testing en Google Play. Ver bitácoras `06`–`14` y `18`.
 
 ---
 
