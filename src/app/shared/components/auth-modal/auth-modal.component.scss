@@ -210,9 +210,12 @@
   span { @apply text-sm text-gray-500 dark:text-gray-400; }
 }
 
-.oauth-buttons { @apply flex gap-3; }
+// Stack the OAuth buttons vertically. The two-button case (Apple + Google)
+// only renders on iOS (always a phone), where side-by-side looked cramped.
+// On web/Android only Google shows, so a full-width single button is unchanged.
+.oauth-buttons { @apply flex flex-col gap-3; }
 .oauth-btn {
-  @apply flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium text-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors;
+  @apply w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium text-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors;
   .oauth-icon { @apply w-5 h-5; }
 }
 
