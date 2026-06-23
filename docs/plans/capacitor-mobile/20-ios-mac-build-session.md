@@ -117,7 +117,18 @@ Se dejó pre-configurado en el proyecto (`DEVELOPMENT_TEAM = M39UFF5WFX`, `CODE_
 
 > **Nota:** NO usar otra de las cuentas presentes. Cambiar de team obligaría a rehacer App ID + Service ID + llave APNs + app iOS en Firebase + el Team ID del AASA — toda la Fase A se hizo con `M39UFF5WFX`.
 
-**El owner confirmó (2026-06-23) que SÍ tiene acceso a la cuenta de Apple** — el siguiente paso es loguearla en Xcode → Settings → Accounts.
+**El owner confirmó (2026-06-23) que SÍ tiene acceso a la cuenta de Apple** y la logueó en Xcode. Verificado:
+- Certificado creado: `Apple Development: Luis Manuel Carvallo Gomez`, con `OU=M39UFF5WFX` (Team ID correcto; el `(796JQ23BJ2)` del CN es un id interno del cert, NO el team).
+- La comunicación con Apple funciona.
+
+**Hallazgo (bloqueo real):** aun con la cuenta logueada, **no se pudo construir para dispositivo ni archivar**. Tanto `xcodebuild build -destination generic/platform=iOS` como `xcodebuild archive` fallan con:
+
+```
+error: Your team has no devices from which to generate a provisioning profile.
+error: No profiles for 'com.tubusexpress.app' were found (iOS App Development).
+```
+
+La firma automática necesita un **perfil de desarrollo**, y Apple no lo genera sin **al menos un iPhone registrado** en la cuenta. Sin iPhone, el Simulador es el techo de la firma automática. Para TestFlight sin iPhone hay que usar **firma manual de distribución App Store** (no requiere dispositivos) — decisión pendiente, ver [`21-cambio-de-mac-handoff.md`](./21-cambio-de-mac-handoff.md).
 
 ---
 
@@ -129,8 +140,10 @@ Commit `e2f9dc6` en `feature/dev-ios` (local, sin push). 28 archivos. **No** se 
 
 ## 8. Qué falta (pendiente, en orden)
 
-1. **Loguear la cuenta Apple `M39UFF5WFX`** en Xcode → Settings → Accounts. (owner tiene acceso)
-2. Verificar la pestaña Signing & Capabilities sin errores rojos.
+> **Cambio de máquina (2026-06-23):** la Mac de Melanie se quedó sin disco. Se continúa en otra Mac. Pasos de retomada en [`21-cambio-de-mac-handoff.md`](./21-cambio-de-mac-handoff.md). **Antes de apagar la Mac vieja: `git push -u origin feature/dev-ios`** (los commits son locales).
+
+1. ✅ ~~Loguear la cuenta Apple `M39UFF5WFX`~~ — hecho, Team verificado.
+2. **Desbloquear la firma de dispositivo/TestFlight** — elegir: (a) firma manual de distribución App Store (sin iPhone) o (b) registrar un iPhone. Ver [`21-cambio-de-mac-handoff.md`](./21-cambio-de-mac-handoff.md).
 3. **Deploy del frontend a producción** para publicar el AASA con el Team ID real (Universal Links).
 4. **QA en iPhone físico:** push, cámara, Apple Sign-In, Universal Links (no validables en Simulador). Sigue actualmente sin iPhone (doc 19 §8).
 5. Actualizar la política de privacidad en `www.tubusexpress.com/legal/privacidad` (texto en [`privacy-policy-additions.md`](./privacy-policy-additions.md)).
