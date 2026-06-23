@@ -197,7 +197,7 @@
         -->
         @if (platform.isIos()) {
           <button type="button" class="oauth-btn apple" (click)="loginWithApple()" [disabled]="isOAuthLoading()">
-            @if (isOAuthLoading()) {
+            @if (oauthLoadingProvider() === 'apple') {
               <span class="spinner"></span>
               Conectando...
             } @else {
@@ -210,7 +210,7 @@
         }
 
         <button type="button" class="oauth-btn google" (click)="loginWithGoogle()" [disabled]="isOAuthLoading()">
-          @if (isOAuthLoading()) {
+          @if (oauthLoadingProvider() === 'google') {
             <span class="spinner"></span>
             Conectando...
           } @else {

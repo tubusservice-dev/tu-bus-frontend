@@ -37,6 +37,7 @@ export class AuthModalComponent implements OnInit, OnDestroy {
     effect(() => {
       if (!this.authService.nativeOAuthLoading()) {
         this.isOAuthLoading.set(false);
+        this.oauthLoadingProvider.set(null);
       }
     });
   }
@@ -334,9 +335,17 @@ export class AuthModalComponent implements OnInit, OnDestroy {
   // ========== OAuth ==========
 
   protected readonly isOAuthLoading = signal(false);
+  /**
+   * Which provider's button shows the spinner. Both OAuth buttons disable
+   * while any flow runs (prevents starting two at once), but only the one the
+   * user clicked spins — the other just greys out. Reset wherever the loading
+   * state clears (the native-flow effect and the web bfcache failsafe).
+   */
+  protected readonly oauthLoadingProvider = signal<'google' | 'apple' | null>(null);
   private oauthFailsafeCleanup: (() => void) | null = null;
 
   loginWithGoogle(): void {
+    this.oauthLoadingProvider.set('google');
     this.isOAuthLoading.set(true);
     this.installOAuthFailsafe();
     this.authService.loginWithOAuth('google');
@@ -351,6 +360,7 @@ export class AuthModalComponent implements OnInit, OnDestroy {
    * is the only spinner control needed.
    */
   loginWithApple(): void {
+    this.oauthLoadingProvider.set('apple');
     this.isOAuthLoading.set(true);
     this.authService.loginWithApple();
   }
@@ -370,6 +380,7 @@ export class AuthModalComponent implements OnInit, OnDestroy {
 
     const cleanup = (): void => {
       this.isOAuthLoading.set(false);
+      this.oauthLoadingProvider.set(null);
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('pageshow', onPageShow);
       this.oauthFailsafeCleanup = null;
