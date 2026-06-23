@@ -6,21 +6,39 @@
 
 ---
 
-## 🔴 LO PRIMERO (en la Mac vieja, ANTES de apagarla)
+## 🔴 LO PRIMERO — pasar el trabajo a la otra Mac
 
-**El trabajo de hoy está commiteado SOLO localmente. La branch `feature/dev-ios` NO está en GitHub.** Si no se sube, se pierde al cambiar de Mac.
+**El trabajo de hoy está commiteado SOLO localmente.** Los commits:
+- `e2f9dc6` — proyecto iOS (`ios/`) + fixes de botones del auth-modal
+- `33ad08c` — documentación (docs 19/20, decisiones D15-D17, README, master plan)
+- `8d1c968` (y este doc 21) — handoff de cambio de Mac
+
+### Opción A — Push a GitHub (si se tiene permiso de escritura)
 
 ```bash
-cd "/Users/macbook/Projects/TuBus Express/tu-bus-frontend"
 git push -u origin feature/dev-ios
 ```
 
-Esto sube los 2 commits:
-- `e2f9dc6` — proyecto iOS (`ios/`) + fixes de botones del auth-modal
-- `33ad08c` — documentación (docs 19/20, decisiones D15-D17, README, master plan)
-- (este doc 21 se añade en un tercer commit)
+> ⚠️ **El 2026-06-23 esto FALLÓ con 403**: la cuenta `MelanieMarval` no tiene permiso de escritura en `tubusservice-dev/tu-bus-frontend`. Para usar esta opción, primero un admin del repo debe dar acceso a esa cuenta, o autenticarse con una cuenta autorizada (Luis / cuenta dev). Verificar éxito con `git ls-remote --heads origin feature/dev-ios`.
 
-> Verificar después: `git ls-remote --heads origin feature/dev-ios` debe devolver un hash.
+### Opción B — Bundle de git (NO necesita permisos) ✅ usada el 2026-06-23
+
+Empaqueta todos los commits en un archivo que se copia por USB/Drive:
+
+```bash
+git bundle create ~/Desktop/tubus-feature-dev-ios.bundle feature/dev-ios
+```
+
+Luego, **en la Mac nueva** (después de clonar el repo desde GitHub):
+
+```bash
+# Copiar el .bundle desde el USB, p.ej. a ~/Downloads
+cd tu-bus-frontend
+git fetch ~/Downloads/tubus-feature-dev-ios.bundle feature/dev-ios:feature/dev-ios
+git checkout feature/dev-ios
+```
+
+> El `.bundle` (~7.6 MB) contiene la historia completa de la branch, incluyendo todo el `ios/` y la documentación. **No** contiene el `GoogleService-Info.plist` (gitignored — llevarlo aparte, ver abajo).
 
 ---
 
