@@ -1578,6 +1578,24 @@ Detalle completo en [`14-phase-6.6-native-insets-bridge.md`](./14-phase-6.6-nati
 - QA matrix Apple Sign-In (login local + Google + Apple) + Universal Links + Push iOS.
 - Archive → TestFlight upload → App Store Connect listing (copy ya preparado en `app-store-listing.md`).
 
+### 18.13 Sesión del Mac — armado iOS (Fase B parcial)
+
+> Primer armado del proyecto iOS en un Mac real (2026-06-23). Bitácora completa en [`20-ios-mac-build-session.md`](./20-ios-mac-build-session.md). Branch `feature/dev-ios`, commit `e2f9dc6`.
+
+- [x] Bloque A — `npm install` + `build:prod` (193 kB transfer, limpio).
+- [x] Bloque B — `npx cap add ios` con **CocoaPods** (D15; se descartó SPM por el plugin printer). Requirió instalar `@capacitor/ios@8.3.4` (faltaba en el repo).
+- [x] Bloque C — assets iOS (AppIcon + Splash) desde `resources/ios-staging/`.
+- [x] Bloque D — `GoogleService-Info.plist` copiado + enlazado al target (gem `xcodeproj`) + gitignored.
+- [x] Bloque E — `Info.plist`: 4 NSUsageDescription + `CFBundleURLTypes` con `REVERSED_CLIENT_ID` real.
+- [x] Bloque F — `pod install` (37 pods; subspec `AnalyticsWithoutAdIdSupport`, D16).
+- [~] Bloque G — entitlements + capabilities + `DEVELOPMENT_TEAM M39UFF5WFX` pre-cableados; **pendiente loguear la cuenta Apple** en Xcode.
+- [x] Bloque H — AASA `TEAMID` → `M39UFF5WFX` (pendiente deploy del frontend).
+- [x] Bloque I — Run en Simulador iPhone 16: app corre, datos de producción, Firebase OK.
+- [x] `AppDelegate`: `FirebaseApp.configure()` añadido (D17).
+- [x] Fix UX `auth-modal`: botones OAuth apilados en vertical + spinner por proveedor.
+
+**Pendiente:** firma (cuenta Apple `M39UFF5WFX`), deploy AASA, QA en iPhone físico (push/cámara/Apple Sign-In/Universal Links), Archive → TestFlight → submit. Detalle en `20-ios-mac-build-session.md` §8.
+
 ### 18.10 Phase 7 — Release
 
 > **Estado a 2026-06-12:** AAB `versionCode 3 / 1.1` firmado y en **Closed Testing**. Detalle en [`18-phase-7-play-release.md`](./18-phase-7-play-release.md).

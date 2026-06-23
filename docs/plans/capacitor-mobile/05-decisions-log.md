@@ -447,6 +447,19 @@ ZOMBIE_ACCOUNT_CLEANUP_AFTER_HOURS
 |---|---|---|
 | Android (type 1) | `1071922885496-2knh1l8lkintplr4oc8j4iibla2v5j1d.apps.googleusercontent.com` | App nativa al iniciar flujo Google Sign-In |
 | Web (type 3) | `1071922885496-ggktf2e4q2a1kl7pjt866rqvm8ad0gft.apps.googleusercontent.com` | Backend al verificar `idToken` enviado por la app |
+| iOS (type 2) | `1071922885496-khqrcgl16nu6l08jdju3p6njiif6bkqs.apps.googleusercontent.com` | App iOS al iniciar flujo Google Sign-In |
+
+### Identificadores iOS (del `GoogleService-Info.plist`, capturados 2026-06-23)
+
+| Concepto | Valor | Dónde se usa |
+|---|---|---|
+| iOS Bundle ID | `com.tubusexpress.app` | Xcode, App ID, Firebase iOS |
+| Mobile SDK App ID (iOS) `GOOGLE_APP_ID` | `1:1071922885496:ios:80f65e1e641c8291930e8d` | Firebase iOS |
+| Firebase API Key (iOS) | `AIzaSyBujMCVzQL0ResEZ6CKWWcsgZYSVD_QWxU` | `GoogleService-Info.plist` |
+| `REVERSED_CLIENT_ID` (URL scheme Google Sign-In) | `com.googleusercontent.apps.1071922885496-khqrcgl16nu6l08jdju3p6njiif6bkqs` | `Info.plist` → `CFBundleURLTypes` |
+| `IS_ADS_ENABLED` / `IS_ANALYTICS_ENABLED` en el plist | `false` / `false` | Confirma D16 (Analytics sin Ad ID) |
+
+> El `GoogleService-Info.plist` real **no se commitea** (gitignored en `ios/.gitignore`); vive en `Firma de la App/` fuera del repo.
 
 > **Acción para Phase 2 (backend):** estos dos client IDs se configurarán como env vars en Railway:
 > - `GOOGLE_CLIENT_ID_ANDROID=1071922885496-2knh1l8lkintplr4oc8j4iibla2v5j1d.apps.googleusercontent.com`
@@ -832,6 +845,56 @@ Si se decide consolidar todo en un solo proyecto Google Cloud, la opción cleane
 **Decisión:** **plan upfront + bitácora al cierre de cada fase**. El doc del plan (`16-phase-B-windows-track.md`) ya existe; se actualizará la sección "Bitácora de ejecución" al cerrar cada fase consolidada (F1-F5).
 
 **Aprobada el 2026-05-27 por:** Owner.
+
+---
+
+## Decisiones durante implementación — Sesión del Mac (Fase B parcial)
+
+> Decisiones formales tomadas el **2026-06-23** durante el primer armado del proyecto iOS en un Mac real. Surgieron de problemas que el checklist (escrito desde Windows) no preveía. Detalle completo en [`20-ios-mac-build-session.md`](./20-ios-mac-build-session.md).
+
+### Decisión D15 — Gestor de dependencias iOS: CocoaPods (no SPM)
+
+**Contexto:** `npx cap add ios` en Capacitor 8.3.4 genera por defecto un proyecto **Swift Package Manager** (carpeta `CapApp-SPM/`). El plugin `@bcyesil/capacitor-plugin-printer@0.0.6` **no soporta SPM** (no tiene `Package.swift`), por lo que quedaba excluido del build — rompería el botón "Imprimir" en el detalle de orden (la razón por la que se añadió el plugin, ver master plan 18.11.11). Además toda la documentación del equipo asumía CocoaPods (`pod install`, `.xcworkspace`, 13 plugins).
+
+**Opciones evaluadas:**
+
+| Opción | Pros | Contras |
+|---|---|---|
+| Dejar SPM (default Cap 8) | Moderno, más rápido | Pierde el plugin printer (sin soporte SPM); diverge de la doc |
+| **CocoaPods** (`--packagemanager CocoaPods`) | Incluye los 13 plugins; alineado con la doc; cero regresión | Más lento, requiere `pod install` |
+
+**Decisión:** **CocoaPods**. Se borró el `ios/` SPM y se regeneró con `npx cap add ios --packagemanager CocoaPods`.
+
+**Aprobada el 2026-06-23 por:** decisión técnica en sesión (regla "cero regresión de funcionalidad" tiene prioridad).
+
+---
+
+### Decisión D16 — Firebase Analytics iOS: subspec `AnalyticsWithoutAdIdSupport`
+
+**Contexto:** el plugin `@capacitor-firebase/analytics` usa `default_subspec = 'Lite'`, que NO incluye el SDK de Firebase Analytics → el build falla con `unable to resolve module dependency: 'FirebaseAnalytics'`. Hay que opt-in explícito a un subspec en el `Podfile`. Las opciones son `Analytics` (con Ad ID/IDFA) o `AnalyticsWithoutAdIdSupport` (sin Ad ID).
+
+**Opciones evaluadas:**
+
+| Opción | Pros | Contras |
+|---|---|---|
+| `Analytics` (con IdentitySupport/Ad ID) | Métricas de atribución publicitaria | Recolecta IDFA → exige declarar tracking en App Store + permiso ATT; **contradice** la postura de privacidad del proyecto |
+| **`AnalyticsWithoutAdIdSupport`** | Sin IDFA; coherente con Android (Phase 7 removió `AD_ID`) y con la matriz Privacy Nutrition ("no tracking") | Sin métricas de atribución de ads (no se usan) |
+
+**Decisión:** **`AnalyticsWithoutAdIdSupport`**. Confirmado además por el `GoogleService-Info.plist` iOS, que trae `IS_ADS_ENABLED = false`.
+
+**Aprobada el 2026-06-23 por:** decisión técnica en sesión (consistencia con la política de privacidad ya declarada).
+
+> ⚠️ **Fragilidad:** la línea del subspec en el `Podfile` la podría sobrescribir un futuro `npx cap update ios`. Si tras un `cap update` el build vuelve a fallar con `FirebaseAnalytics`, re-aplicar el subspec.
+
+---
+
+### Decisión D17 — `FirebaseApp.configure()` explícito en el AppDelegate
+
+**Contexto:** los plugins `@capacitor-firebase` llaman a `FirebaseApp.configure()` de forma perezosa (en su `load()`), pero Crashlytics inicializa tan temprano que se perdían crashes del arranque (warning `The default Firebase app has not yet been configured`).
+
+**Decisión:** añadir `import FirebaseCore` + `FirebaseApp.configure()` al inicio de `AppDelegate.didFinishLaunchingWithOptions` — el setup canónico de Firebase iOS. El warning desapareció y Crashlytics captura desde el arranque.
+
+**Aprobada el 2026-06-23 por:** decisión técnica en sesión.
 
 ---
 

@@ -1,6 +1,6 @@
 # 19 — Handoff iOS: estado real al 2026-06-22 (Fase A completada)
 
-> **Status:** Fase A (trámites Apple + Firebase + Railway) ✅ **COMPLETA**. Fase B (armado en Mac/Xcode) ⏳ **pendiente**.
+> **Status:** Fase A (trámites Apple + Firebase + Railway) ✅ **COMPLETA**. Fase B (armado en Mac/Xcode) 🟡 **EN CURSO** — el 2026-06-23 se ejecutaron los bloques A-I del checklist en el Mac (proyecto `ios/` generado, compila y corre en Simulador). Bitácora completa en [`20-ios-mac-build-session.md`](./20-ios-mac-build-session.md). Pendiente: firma con la cuenta Apple + QA en iPhone + Archive/TestFlight.
 > **Propósito:** punto de partida para el día del Mac. Recoge los **datos reales** ya recolectados y exactamente qué falta. Complementa el checklist genérico [`17-mac-handoff-checklist.md`](./17-mac-handoff-checklist.md) con los valores concretos del proyecto.
 > **Owner:** Luis Manuel Carvallo Gomez — cuenta Apple Developer **Individual** ("Persona física"), activa hasta 2027-06-08.
 > **Nota de seguridad:** los identificadores de abajo (Team ID, Key IDs, Bundle ID) **no son secretos** (Apple los expone en su consola y no sirven sin la llave privada). Los **secretos reales** son el *contenido* de los archivos `.p8` y la `APPLE_PRIVATE_KEY` — esos viven solo en `Firma de la App/`, Firebase y Railway, **nunca en el repo**.
@@ -95,6 +95,8 @@ Interpretación: el servidor **ya está configurado** (antes respondía `OAUTH_N
 ---
 
 ## 7. Qué falta — Fase B (en la Mac, con Xcode)
+
+> **Actualización 2026-06-23:** los pasos 1-8 de abajo ya se ejecutaron en el Mac (ver [`20-ios-mac-build-session.md`](./20-ios-mac-build-session.md)) — el proyecto `ios/` existe, compila y corre en Simulador con datos de producción. **Lo que sigue pendiente:** loguear la cuenta Apple `M39UFF5WFX` en Xcode (paso 7), re-desplegar el frontend con el AASA (paso 8), y los pasos 9-11 (Run, QA en iPhone, TestFlight).
 
 Sigue el checklist [`17-mac-handoff-checklist.md`](./17-mac-handoff-checklist.md). Resumen con los datos reales ya insertados:
 

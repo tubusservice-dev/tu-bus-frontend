@@ -24,7 +24,7 @@
 | **Web** (`https://tubusexpress.com`) | ✅ En producción | Auto-deploy desde `main` |
 | **Backend** (`https://api.tubusexpress.com`) | ✅ En producción | Auto-deploy desde `feat/capacitor-ios` (rama actual de trabajo) |
 | **Android APK** | ✅ Validada en POCO X4 Pro 5G + Samsung A56 | Pendiente release firmado + Play Store (Phase 7) |
-| **iOS** | 🟡 Preparado al 70 % desde Windows | Pendiente Mac + cuenta Apple Developer para Phase B post-Mac. Sigue `17-mac-handoff-checklist.md` |
+| **iOS** | 🟡 Proyecto `ios/` armado en Mac, corre en Simulador | Bloques A-I del handoff hechos (2026-06-23, ver `docs/plans/capacitor-mobile/20-ios-mac-build-session.md`). Pendiente: loguear cuenta Apple `M39UFF5WFX` en Xcode → firma → QA en iPhone → TestFlight |
 
 ---
 
