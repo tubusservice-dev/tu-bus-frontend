@@ -173,7 +173,18 @@ Verificado con curl: `https://tubusexpress.com/contacto` → **404** (apex da 40
 | `ios/App/App/Base.lproj/LaunchScreen.storyboard` | logo centrado sobre fondo azul | sí |
 | `src/app/platform/splash/splash.service.ts` | status bar siempre clara (sin dependencia de tema) | sí |
 
-> Nada commiteado. **No se tocó git** (a pedido del owner, igual que el doc 22).
+### 11.1 — Estado de git al cierre (2026-06-24)
+
+A pedido del owner se hizo **commit + push**. Resultado:
+
+- ✅ **Commiteado** en la rama local **`feature/ios-testflight-appstore`** (creada desde `dev`, que es la rama default — por eso no se commitea directo en ella):
+  - `143860d` — `feat(capacitor-ios): distribution signing + build-2 native fixes` (pbxproj, entitlements, Info.plist, LaunchScreen, splash.service, ExportOptions, package-lock).
+  - `8e92367` — `docs(capacitor-ios): session 23 log` (doc 22 pendiente + doc 23).
+- ❌ **Push FALLÓ con `403`**: la cuenta GitHub de esta Mac (**`yornel13`**) no tiene permiso de escritura en `tubusservice-dev/tu-bus-frontend`. Es el mismo bloqueo del [doc 21](21-cambio-de-mac-handoff.md) (antes con `MelanieMarval`).
+- 💾 **Respaldo:** `git bundle` en `~/Desktop/tubus-ios-testflight-appstore.bundle` (incremental desde `origin/dev`).
+- 🔒 La **contraseña de la cuenta demo se redactó** de este doc antes de commitear (sigue cargada en App Store Connect y en el vault/memoria local).
+
+**Para subir los commits:** (a) un admin da acceso de escritura a `yornel13`, o (b) autenticar con una cuenta autorizada (Luis), o (c) aplicar el bundle desde una máquina/cuenta con permiso (ver método del doc 21).
 
 ---
 
