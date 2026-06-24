@@ -12,12 +12,16 @@ def capacitor_pods
   pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
   pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
   pod 'BcyesilCapacitorPluginPrinter', :path => '../../node_modules/@bcyesil/capacitor-plugin-printer'
-  # Opt into the Analytics subspec WITHOUT Ad ID / IDFA support to match the
-  # project's privacy posture (Android removed AD_ID in Phase 7; iOS Privacy
-  # Nutrition declares no tracking). The plugin's default 'Lite' subspec omits
-  # the Firebase Analytics SDK, which breaks the plugin's `import FirebaseAnalytics`.
-  pod 'CapacitorFirebaseAnalytics/AnalyticsWithoutAdIdSupport', :path => '../../node_modules/@capacitor-firebase/analytics'
+  # Declared WITHOUT a subspec — CocoaPods has a bug where `pod 'X/Subspec',
+  # :path => '...'` skips generation of the plugin's PBXNativeTarget, so the
+  # plugin code never compiles and Capacitor reports "plugin is not implemented
+  # on ios" (breaks BOTH Google AND Apple Sign-In, same class). What the
+  # subspec used to inject (GoogleSignIn dep + -DRGCFA_INCLUDE_GOOGLE flag +
+  # build search paths) is replicated in post_install below.
   pod 'CapacitorFirebaseAuthentication', :path => '../../node_modules/@capacitor-firebase/authentication'
+  pod 'GoogleSignIn', '9.0.0'
+  pod 'CapacitorFirebaseAnalytics', :path => '../../node_modules/@capacitor-firebase/analytics'
+  pod 'FirebaseAnalytics/Core', '~> 12.7.0'  # decision D16: no IdentitySupport = no IDFA
   pod 'CapacitorFirebaseCrashlytics', :path => '../../node_modules/@capacitor-firebase/crashlytics'
   pod 'CapacitorFirebaseMessaging', :path => '../../node_modules/@capacitor-firebase/messaging'
   pod 'CapacitorApp', :path => '../../node_modules/@capacitor/app'
@@ -37,4 +41,70 @@ end
 
 post_install do |installer|
   assertDeploymentTarget(installer)
+
+  # Helper: append items to an xcconfig list setting without duplicates.
+  # Uses exact string match (NOT substring) — substring matching causes
+  # false positives with paths sharing a trailing segment like /Frameworks.
+  add_paths = lambda do |config, key, paths|
+    existing = config.build_settings[key] || ['$(inherited)']
+    existing = [existing] if existing.is_a?(String)
+    paths.each do |p|
+      existing << p unless existing.include?(p)
+    end
+    config.build_settings[key] = existing
+  end
+
+  # ─────────────────────────────────────────────────────────────────────
+  # Workaround for a CocoaPods bug: `pod 'X/Subspec', :path => '...'`
+  # silently skips PBXNativeTarget generation for the plugin's main framework.
+  # We have to declare these plugins WITHOUT a subspec (so the target gets
+  # created and the plugin compiles), then manually replicate what the
+  # subspec would have wired in — dependencies, search paths, swift flags.
+  # ─────────────────────────────────────────────────────────────────────
+
+  # ── CapacitorFirebaseAuthentication (replaces /Google subspec) ──
+  auth_target = installer.pods_project.targets.find { |t| t.name == 'CapacitorFirebaseAuthentication' }
+  google_target = installer.pods_project.targets.find { |t| t.name == 'GoogleSignIn' }
+  if auth_target && google_target
+    auth_target.add_dependency(google_target) unless auth_target.dependencies.any? { |d| d.target == google_target }
+    auth_target.build_configurations.each do |config|
+      flags = config.build_settings['OTHER_SWIFT_FLAGS'] || ['$(inherited)']
+      flags = [flags] if flags.is_a?(String)
+      flags << '-DRGCFA_INCLUDE_GOOGLE' unless flags.any? { |f| f.to_s.include?('RGCFA_INCLUDE_GOOGLE') }
+      config.build_settings['OTHER_SWIFT_FLAGS'] = flags
+      add_paths.call(config, 'FRAMEWORK_SEARCH_PATHS', [
+        '"${PODS_CONFIGURATION_BUILD_DIR}/GoogleSignIn"',
+      ])
+    end
+  end
+
+  # ── CapacitorFirebaseAnalytics (replaces /AnalyticsWithoutAdIdSupport subspec) ──
+  analytics_target = installer.pods_project.targets.find { |t| t.name == 'CapacitorFirebaseAnalytics' }
+  # FirebaseAnalytics and GoogleAppMeasurement are PBXAggregateTarget (vendor
+  # xcframeworks). Adding them as dependencies fires their "[CP] Copy
+  # XCFrameworks" script, which extracts the slice into PODS_XCFRAMEWORKS_BUILD_DIR
+  # so Swift can find the FirebaseAnalytics module. Without this dependency
+  # the script never runs, search paths point at empty dirs, and the build fails.
+  needed_deps = %w[FirebaseCore FirebaseCoreInternal FirebaseInstallations GoogleUtilities FirebaseAnalytics GoogleAppMeasurement]
+  if analytics_target
+    needed_deps.each do |dep_name|
+      dep = installer.pods_project.targets.find { |t| t.name == dep_name }
+      next unless dep
+      analytics_target.add_dependency(dep) unless analytics_target.dependencies.any? { |d| d.target == dep }
+    end
+    analytics_target.build_configurations.each do |config|
+      add_paths.call(config, 'FRAMEWORK_SEARCH_PATHS', [
+        '"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseCore"',
+        '"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseCoreInternal"',
+        '"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseInstallations"',
+        '"${PODS_CONFIGURATION_BUILD_DIR}/GoogleUtilities"',
+        '"${PODS_CONFIGURATION_BUILD_DIR}/PromisesObjC"',
+        '"${PODS_CONFIGURATION_BUILD_DIR}/nanopb"',
+        '"${PODS_ROOT}/FirebaseAnalytics/Frameworks"',
+        '"${PODS_ROOT}/GoogleAppMeasurement/Frameworks"',
+        '"${PODS_XCFRAMEWORKS_BUILD_DIR}/FirebaseAnalytics/Core"',
+        '"${PODS_XCFRAMEWORKS_BUILD_DIR}/GoogleAppMeasurement/Core"',
+      ])
+    end
+  end
 end

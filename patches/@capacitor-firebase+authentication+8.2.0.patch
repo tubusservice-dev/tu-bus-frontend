@@ -1,0 +1,20 @@
+diff --git a/node_modules/@capacitor-firebase/authentication/ios/Plugin/Handlers/GoogleAuthProviderHandler.swift b/node_modules/@capacitor-firebase/authentication/ios/Plugin/Handlers/GoogleAuthProviderHandler.swift
+index 2cc2e26..f74b247 100644
+--- a/node_modules/@capacitor-firebase/authentication/ios/Plugin/Handlers/GoogleAuthProviderHandler.swift
++++ b/node_modules/@capacitor-firebase/authentication/ios/Plugin/Handlers/GoogleAuthProviderHandler.swift
+@@ -31,7 +31,14 @@ class GoogleAuthProviderHandler: NSObject {
+     private func startSignInWithGoogleFlow(_ call: CAPPluginCall, isLink: Bool) {
+         #if RGCFA_INCLUDE_GOOGLE
+         guard let clientId = FirebaseApp.app()?.options.clientID else { return }
+-        let config = GIDConfiguration(clientID: clientId, serverClientID: clientId)
++        // The backend verifies the Google ID token against the WEB OAuth client
++        // ID (same one Android uses via server_client_id). GoogleSignIn sets the
++        // token's `aud` to the serverClientID, so it must be the web client ID,
++        // not the iOS clientId — otherwise the backend rejects it with
++        // "Wrong recipient, payload audience != requiredAudience".
++        // Read it from Info.plist (GIDServerClientID); fall back to clientId.
++        let serverClientId = Bundle.main.object(forInfoDictionaryKey: "GIDServerClientID") as? String ?? clientId
++        let config = GIDConfiguration(clientID: clientId, serverClientID: serverClientId)
+         GIDSignIn.sharedInstance.configuration = config
+         guard let controller = self.pluginImplementation.getPlugin().bridge?.viewController else { return }
+         let scopes = call.getArray("scopes", String.self) ?? []

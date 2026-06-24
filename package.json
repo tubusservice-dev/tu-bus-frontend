@@ -11,7 +11,8 @@
     "build:prod": "ng build --configuration production",
     "prewatch": "node scripts/generate-firebase-sw.js",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "postinstall": "patch-package"
   },
   "prettier": {
     "overrides": [
@@ -62,6 +63,7 @@
     "autoprefixer": "^10.4.23",
     "jasmine-core": "~5.8.0",
     "karma": "~6.4.0",
+    "patch-package": "^8.0.1",
     "karma-chrome-launcher": "~3.2.0",
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",

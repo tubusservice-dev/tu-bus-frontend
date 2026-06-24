@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-        <string>TuBus Express</string>
+	<string>TuBus Express</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -18,10 +18,29 @@
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
 	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.1071922885496-khqrcgl16nu6l08jdju3p6njiif6bkqs</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>GIDServerClientID</key>
+	<string>1071922885496-ggktf2e4q2a1kl7pjt866rqvm8ad0gft.apps.googleusercontent.com</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>TuBus Express necesita acceso a tu cámara para capturar comprobantes de pago y fotos de perfil.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Inicia sesión rápido en TuBus Express con Face ID sin volver a escribir tu contraseña.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>TuBus Express usa tu ubicación para sugerir la sucursal y la zona de despacho más cercanas a ti.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>TuBus Express necesita acceso a tu galería para subir comprobantes de pago e imágenes de perfil.</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
@@ -45,22 +64,5 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
-	<key>NSCameraUsageDescription</key>
-	<string>TuBus Express necesita acceso a tu cámara para capturar comprobantes de pago y fotos de perfil.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>TuBus Express necesita acceso a tu galería para subir comprobantes de pago e imágenes de perfil.</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>TuBus Express usa tu ubicación para sugerir la sucursal y la zona de despacho más cercanas a ti.</string>
-	<key>NSFaceIDUsageDescription</key>
-	<string>Inicia sesión rápido en TuBus Express con Face ID sin volver a escribir tu contraseña.</string>
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>com.googleusercontent.apps.1071922885496-khqrcgl16nu6l08jdju3p6njiif6bkqs</string>
-			</array>
-		</dict>
-	</array>
 </dict>
 </plist>

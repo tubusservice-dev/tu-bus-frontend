@@ -7,8 +7,10 @@ export const environment = {
   production: false,
 
   // === URL del Backend ===
-  // Backend directo (standalone, sin gateway)
-  apiUrl: 'http://localhost:3003/api',
+  // Local dev sin backend en esta máquina → apuntar a producción.
+  apiUrl: 'https://api.tubusexpress.com/api',
+  // Backend local (standalone, sin gateway) — descomentar si corres el backend en :3003
+  // apiUrl: 'http://localhost:3003/api',
 
   appName: 'TuBus Express',
   version: '1.0.0',
