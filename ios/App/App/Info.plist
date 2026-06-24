@@ -31,12 +31,16 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>GIDServerClientID</key>
 	<string>1071922885496-ggktf2e4q2a1kl7pjt866rqvm8ad0gft.apps.googleusercontent.com</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>TuBus Express necesita acceso a tu cámara para capturar comprobantes de pago y fotos de perfil.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Inicia sesión rápido en TuBus Express con Face ID sin volver a escribir tu contraseña.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>TuBus Express usa tu ubicación para sugerir la sucursal y la zona de despacho más cercanas a ti.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>TuBus Express usa tu ubicación para sugerir la sucursal y la zona de despacho más cercanas a ti.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
