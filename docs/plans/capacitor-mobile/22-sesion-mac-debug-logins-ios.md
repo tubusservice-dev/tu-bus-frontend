@@ -11,8 +11,9 @@
 
 1. **Se arreglaron DOS bugs reales de código del login Google en iOS** (ver §3). Ambos fixes están aplicados y verificados a nivel de binario.
 2. **NO se pudo validar el login en el Simulador** porque los logins OAuth nativos (Google y Apple) necesitan permisos del sistema (Keychain / Sign in with Apple) que **solo se activan con una firma respaldada por un provisioning profile**, y ese profile **exige un iPhone físico registrado** en el team `M39UFF5WFX`. Es regla de Apple, comprobada empíricamente probando todas las variantes de firma.
-3. **Bloqueo único pendiente: conseguir un iPhone** (una vez) para registrar su UDID → generar el profile → desbloquea Google **y** Apple. Es el mismo bloqueo ya documentado en docs 19/20/21.
+3. **Bloqueo único pendiente: validar los logins nativos requiere un iPhone** (cualquiera, una vez). **PERO no hace falta comprar uno** — basta el UDID de un tester, o usar TestFlight. Ver **§10** (opciones para avanzar sin iPhone propio). Es el mismo bloqueo ya documentado en docs 19/20/21.
 4. **El login local (email/contraseña) sí funciona** en el Simulador para seguir probando el resto de la app.
+5. **Generar/subir la app a TestFlight/App Store NO requiere iPhone** (profile de distribución). Ver §10. **Decisión de qué camino tomar: pendiente (owner decide).**
 
 ---
 
@@ -191,3 +192,67 @@ grep -c "productName = CapacitorFirebaseAuthentication" ios/App/Pods/Pods.xcodep
 ## 9. Nota de proceso
 
 Esta sesión gastó mucho tiempo en intentos de firma en el Simulador antes de confirmar que el bloqueo (provisioning/iPhone) es un límite de Apple, no resoluble por software. **Lección:** ante "funciona el plugin pero el login nativo no arranca", verificar PRIMERO el estado de firma/provisioning (`security find-identity`, perfiles disponibles, si hay device registrado) antes de iterar builds. Los fixes de código (A y B) son sólidos; el resto era el bloqueo de firma.
+
+---
+
+## 10. Opciones para avanzar SIN un iPhone propio (decisión pendiente — owner decide mañana)
+
+> Aclaración clave que matiza la conclusión de §4: **hay que separar "generar/subir la app" de "probar los logins nativos".** Son cosas distintas con requisitos distintos.
+
+### 10.1 ¿Generar y subir la app sin device? → SÍ se puede
+
+El device sólo es obligatorio para el **provisioning profile de _desarrollo_** (debug en Simulador/device). Para **generar la app firmada y subirla a TestFlight / App Store** se usa un **provisioning profile de _distribución_ (App Store)**, que **NO requiere ningún dispositivo registrado** (ya anticipado en doc 21).
+
+- Con el profile de distribución, los permisos restringidos (Keychain de Google, Apple Sign-In, Push, Associated Domains) **sí se aplican** correctamente.
+- Es independiente de si se mantiene o no Apple Sign-In.
+
+### 10.2 Apple Sign-In NO se puede quitar si se mantiene Google (Guideline 4.8)
+
+App Store Review Guideline **4.8**: si la app ofrece login social de terceros (Google), Apple **obliga** a ofrecer **Sign in with Apple** como alternativa equivalente.
+- Quitar Apple Sign-In + mantener Google → **rechazo en review**.
+- Sólo se podría quitar Apple Sign-In si también se quita Google (dejar sólo email/contraseña).
+- **Decisión:** mantener Apple Sign-In. El código ya está; con firma de distribución se activa.
+
+### 10.3 ¿Instalar en un iPhone de tester, estilo `app-debug.apk`?
+
+iOS **no** tiene un instalable libre como el APK. Dos caminos reales:
+
+| | **Opción A — `.ipa` Ad-hoc/Development** | **Opción B — TestFlight** |
+|---|---|---|
+| Equivalente a | `app-debug.apk` (archivo que instalás) | repartir un link de invitación |
+| ¿Requiere UDID del iPhone del tester? | ✅ **Sí** — registrar UDID en la cuenta (máx **100 devices/año**) | ❌ No |
+| ¿Cómo instala el tester? | conectando a una Mac (Xcode/Apple Configurator) o servicio tipo Firebase App Distribution | app **TestFlight** + invitación (email/link) |
+| Cantidad de testers | hasta 100 devices | Internal 100 / External 10.000 |
+| ¿Review de Apple? | No | Internal: no · External: ligera (~1-2 días) |
+| Firma | development o ad-hoc | distribución (App Store) |
+
+### 10.4 El "doble desbloqueo" con UN solo UDID
+
+Si un tester comparte el **UDID de su iPhone** y se registra en la cuenta Apple Developer:
+1. Se puede generar e instalar un **`.ipa` development/ad-hoc** en ese iPhone.
+2. Se **desbloquea el provisioning profile de desarrollo** que faltaba (§4) → con eso también se validan los logins nativos en ese iPhone.
+
+→ **No hay que comprar un iPhone.** Basta el UDID de un tester (Opción A) o usar TestFlight (Opción B).
+
+### 10.5 Matriz de decisión
+
+| Objetivo | Camino | ¿Necesita UDID/iPhone? | Review |
+|---|---|---|---|
+| Subir a TestFlight para testers | Distribución → Archive → TestFlight | ❌ No | Internal no / External ligera |
+| Instalar "a mano" en 1-2 iPhones cercanos | `.ipa` ad-hoc con UDID | ✅ UDID del tester | No |
+| Validar logins nativos en local (Simulador) | Development profile | ✅ ≥1 UDID registrado | No |
+| Publicar en App Store | Distribución → submit | ❌ No (pero QA real recomendada) | Sí (completa) |
+
+### 10.6 Recomendación
+
+- **Para repartir a varios testers cómodamente → TestFlight (Opción B).** No necesita UDIDs, es la vía estándar, y es el siguiente hito natural del proyecto.
+- **Para una prueba rápida en el iPhone de alguien cercano → `.ipa` ad-hoc (Opción A)** con su UDID.
+- Ambas se preparan **sin un iPhone propio**.
+
+### 10.7 Pendiente para mañana
+
+**Owner elige Opción A (ad-hoc) o B (TestFlight).** Según la elección, la próxima sesión prepara:
+- **Si B (TestFlight):** distribution certificate + App Store provisioning profile (sin device) → Archive → subir a App Store Connect → invitar testers.
+- **Si A (ad-hoc):** pedir UDID(s) al/los tester(s) → registrar en portal → ad-hoc provisioning profile → generar `.ipa` → distribuir (Firebase App Distribution o conexión directa).
+
+> Nota: con cualquiera de las dos, los fixes de Google (A+B de §3) y Apple ya están en el código y se activan al firmar con el profile correcto.
