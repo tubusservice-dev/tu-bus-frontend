@@ -35,7 +35,18 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" android:host="tubusexpress.com" />
+                <!--
+                    Only the canonical `www` host is declared. With autoVerify,
+                    the OS verifies EVERY host listed against its
+                    /.well-known/assetlinks.json over HTTPS (redirects are NOT
+                    followed). The apex `tubusexpress.com` serves 404 on that
+                    path (it is an external partial redirect, not the Railway
+                    SPA), so listing it made verification fail — fully on
+                    Android <=11 (all-or-nothing), partially on 12+. The apex
+                    still reaches the app via its server-side redirect of `/`
+                    to www, and every backend-generated link uses CLIENT_URL
+                    (www), so no real link targets the apex.
+                -->
                 <data android:scheme="https" android:host="www.tubusexpress.com" />
             </intent-filter>
         </activity>
