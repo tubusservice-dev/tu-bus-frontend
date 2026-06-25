@@ -16,7 +16,7 @@ import { LegalPageLayoutComponent } from '../../components/legal-page-layout/leg
     <app-legal-page-layout
       title="Política de Privacidad"
       subtitle="Cómo recolectamos, usamos y protegemos tus datos personales en TuBus Express. Tu privacidad es parte esencial de la confianza que nos das."
-      lastUpdated="2026-06-02"
+      lastUpdated="2026-06-25"
     >
       <section>
         <h2>1. Responsable del tratamiento</h2>
@@ -89,6 +89,62 @@ import { LegalPageLayoutComponent } from '../../components/legal-page-layout/leg
             identificarte personalmente ni con fines publicitarios.
           </li>
         </ul>
+
+        <h3>2.7 Inicio de sesión con Google y Apple</h3>
+        <p>
+          Además del registro con correo y contraseña, puedes iniciar sesión
+          con tu cuenta de Google o, en dispositivos iOS, con tu cuenta de
+          Apple. Para gestionar estos inicios de sesión utilizamos
+          <strong>Firebase Authentication</strong> (de Google).
+        </p>
+        <ul>
+          <li>
+            <strong>Inicio de sesión con Google:</strong> Google comparte con
+            nosotros un identificador único de tu cuenta, tu nombre, tu correo
+            electrónico y, opcionalmente, tu foto de perfil.
+          </li>
+          <li>
+            <strong>Iniciar sesión con Apple (Sign in with Apple):</strong>
+            Apple comparte con nosotros un identificador único y estable de tu
+            cuenta (exclusivo para TuBus Express) y tu nombre, este último solo
+            en el primer inicio de sesión. Sobre el correo: si eliges "Compartir
+            mi correo" recibimos tu correo real; si eliges "Ocultar mi correo",
+            recibimos una dirección de reenvío de Apple
+            (<em>xxxx&#64;privaterelay.appleid.com</em>) que reenvía los mensajes
+            a tu correo real.
+          </li>
+          <li>
+            En ninguno de los dos casos recibimos tu contraseña. Apple y Google
+            no nos comparten tu historial de compras, tu ubicación ni datos
+            distintos a los descritos aquí.
+          </li>
+        </ul>
+
+        <h3>2.8 Notificaciones push</h3>
+        <p>
+          Para avisarte sobre el estado de tus pedidos, mensajes del taller y
+          recordatorios de servicio utilizamos <strong>Firebase Cloud Messaging
+          (FCM)</strong> de Google, que en dispositivos iOS se apoya en el
+          <strong>servicio de notificaciones push de Apple (APNs)</strong>. Se
+          genera un identificador de dispositivo (<em>device token</em>) que
+          asociamos a tu cuenta para enviarte únicamente las notificaciones que
+          te corresponden. Puedes desactivarlas en cualquier momento desde tu
+          perfil o desde la configuración del sistema operativo.
+        </p>
+
+        <h3>2.9 Permisos del dispositivo (aplicación móvil)</h3>
+        <p>
+          La aplicación solicita los siguientes permisos solo cuando son
+          necesarios para una acción que tú inicias. Puedes revocarlos cuando
+          quieras desde la configuración de tu sistema operativo:
+        </p>
+        <ul>
+          <li><strong>Cámara:</strong> para capturar comprobantes de pago o fotos de perfil, cuando eliges "Cámara" al subir una imagen.</li>
+          <li><strong>Galería de fotos:</strong> para seleccionar imágenes ya guardadas en tu dispositivo.</li>
+          <li><strong>Ubicación (mientras usas la app):</strong> para sugerirte la sucursal y zona de despacho más cercanas, solo cuando tocas "Usar mi ubicación". Nunca accedemos a tu ubicación en segundo plano.</li>
+          <li><strong>Face ID / Touch ID (iOS) o huella (Android):</strong> para el inicio de sesión rápido, solo si tú lo activas en tu perfil. Los datos biométricos los gestiona tu dispositivo; nosotros nunca los recibimos.</li>
+          <li><strong>Notificaciones:</strong> para informarte sobre tus pedidos, solo cuando concedes el permiso.</li>
+        </ul>
       </section>
 
       <section>
@@ -123,12 +179,18 @@ import { LegalPageLayoutComponent } from '../../components/legal-page-layout/leg
           <li><strong>Agencias de envío</strong> que despachan tus productos (nombre, teléfono, dirección, descripción del envío).</li>
           <li><strong>Proveedores de infraestructura</strong> (hosting, almacenamiento de imágenes, mensajería transaccional) bajo acuerdos de confidencialidad.</li>
           <li><strong>Google (Firebase)</strong> como proveedor de analítica de uso y reportes de errores (Google Analytics para Firebase y Crashlytics), conforme a sus propias políticas de privacidad.</li>
+          <li><strong>Google (Firebase Authentication y Firebase Cloud Messaging)</strong> para gestionar el inicio de sesión con Google y el envío de notificaciones push, conforme a las políticas de privacidad de Google.</li>
+          <li><strong>Apple (Sign in with Apple y APNs)</strong> cuando inicias sesión con tu cuenta Apple o recibes notificaciones en dispositivos iOS, conforme a la política de privacidad de Apple.</li>
           <li><strong>Autoridades competentes</strong> cuando la ley así lo exija.</li>
         </ul>
-        <p>
-          <strong>No vendemos tus datos</strong> ni los cedemos para fines
-          publicitarios de terceros.
-        </p>
+        <p><strong>Lo que NO hacemos:</strong></p>
+        <ul>
+          <li><strong>No vendemos tus datos</strong> ni los cedemos para fines publicitarios de terceros.</li>
+          <li>No te rastreamos a través de otras aplicaciones o sitios web de otras empresas.</li>
+          <li>No usamos identificadores publicitarios (IDFA de Apple ni ID de publicidad de Google).</li>
+          <li>No accedemos a tus contactos, calendario, micrófono ni datos de salud.</li>
+          <li>No almacenamos números de tarjeta ni claves bancarias.</li>
+        </ul>
       </section>
 
       <section>
