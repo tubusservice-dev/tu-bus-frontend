@@ -85,12 +85,12 @@
       <p class="copyright">
         &copy; {{ currentYear }} {{ appName }}. Todos los derechos reservados.
       </p>
-      <!-- TODO: replace `href` with the public Vortex Autonomy URL once it's live. -->
       <a
         class="dev-credit"
-        href="#"
-        rel="noopener"
-        (click)="$event.preventDefault()"
+        [href]="devCreditUrl"
+        target="_blank"
+        rel="noopener noreferrer"
+        (click)="onDevCreditClick($event)"
       >
         Diseñado y desarrollado por Vortex Autonomy
       </a>
