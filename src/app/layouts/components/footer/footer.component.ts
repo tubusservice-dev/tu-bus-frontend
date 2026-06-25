@@ -32,6 +32,9 @@ export class FooterComponent {
   /** Nombre de la aplicación */
   protected readonly appName = environment.appName;
 
+  /** Public site of the studio that built the app (footer credit link). */
+  protected readonly devCreditUrl = 'https://www.vortexautonomy.com';
+
   /** Año actual para el copyright */
   protected readonly currentYear = new Date().getFullYear();
 
@@ -93,5 +96,17 @@ export class FooterComponent {
     } else {
       this.toast.info('Próximamente');
     }
+  }
+
+  /**
+   * Open the developer-credit link. `preventDefault` stops the default
+   * anchor navigation so the URL is routed through the platform
+   * abstraction: a new tab on web, an in-app Custom Tab (Android) /
+   * SFSafariViewController (iOS) on native. The real `href` is kept for
+   * accessibility and right-click "open in new tab" on the web.
+   */
+  protected onDevCreditClick(event: Event): void {
+    event.preventDefault();
+    void this.externalLink.open(this.devCreditUrl, '_blank');
   }
 }
