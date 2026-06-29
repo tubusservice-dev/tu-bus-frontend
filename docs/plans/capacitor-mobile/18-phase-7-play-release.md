@@ -1,6 +1,6 @@
 # 18 — Phase 7 — Build Firmado y Distribución (Google Play)
 
-> **Status:** ⏳ EN CURSO — app en **Closed Testing** (Google Play); release `versionCode 3 / 1.1` enviado. Acumulando los 14 días con 12 testers antes de poder habilitar producción. (Actualizado 2026-06-12.)
+> **Status:** ⏳ EN CURSO — **acceso a producción CONCEDIDO** (2026-06-29). Release `versionCode 5 / 1.1.2` **en revisión** en Closed Testing tras migrar al **Android Photo Picker** (Google bloqueó el `vc4` en review de producción por `READ_MEDIA_IMAGES`). Publicación administrada activada. Pendiente: validar en dispositivo → promover `vc5` a producción. (Actualizado 2026-06-29.) — ver "Sesión 2026-06-29" abajo.
 > **Plataforma:** Android (Phase A)
 > **Owner:** Luis V (workstation Windows)
 > **Cuenta Play:** personal — `TuBus Servicios` (account ID `7825213331489003956`)
@@ -142,7 +142,7 @@ Por Play App Signing, lo que importa es el **app signing key de Google**, no el 
 | # | Item | Razón | Esfuerzo |
 |---|---|---|---|
 | DT-1 | Redirect **301 apex → www** para todas las rutas (incl. `/.well-known/`) | Resuelve de raíz: política de privacidad, Data Safety y verificación de App Links del host apex. Afecta SEO y links compartidos. | Infra/hosting (apex está en servicio distinto al nginx de www — ubicar primero) |
-| DT-2 | Migrar a **Android Photo Picker** y eliminar `READ_MEDIA_IMAGES` | Elimina el error de permiso de fotos y la obligación de declarar | Frontend (`@capacitor/camera` config) + manifest + re-QA POCO |
+| ~~DT-2~~ ✅ | ~~Migrar a **Android Photo Picker** y eliminar `READ_MEDIA_IMAGES`~~ **RESUELTO 2026-06-29 (vc5)** | Google bloqueó el `vc4` en review de producción por la política de permisos de fotos. Se eliminaron `READ_MEDIA_IMAGES` + `READ_EXTERNAL_STORAGE` del manifest (sin romper nada — ver sesión 2026-06-29). | Hecho |
 | DT-3 | `ndk { debugSymbolLevel 'SYMBOL_TABLE' }` en release | Símbolos nativos legibles en Crashlytics/Play (crashes nativos) | Requiere NDK + nuevo versionCode |
 | DT-4 | Evaluar R8/ProGuard con keep rules de Capacitor | Reduce tamaño app + genera mapping | Requiere QA en dispositivo |
 
@@ -152,8 +152,8 @@ Por Play App Signing, lo que importa es el **app signing key de Google**, no el 
 
 | Métrica | Valor |
 |---|---|
-| `versionCode` | 3 |
-| `versionName` | "1.1" |
+| `versionCode` | 5 (cadena: 3 → 4 App Links fix → 5 Photo Picker) |
+| `versionName` | "1.1.2" |
 | Tamaño de entrega (Play) | 11.7 MB |
 | Bundle web transfer | ~193 kB (dentro de baseline Phase 6.6) |
 | Plugins Capacitor | 13 |
@@ -161,6 +161,53 @@ Por Play App Signing, lo que importa es el **app signing key de Google**, no el 
 
 ---
 
+## Sesión 2026-06-29 — App Links (vc4) + migración Photo Picker (vc5)
+
+> Cubre el fix de Android App Links, la concesión del acceso a producción, y el bloqueo de permisos de fotos que forzó la migración al Android Photo Picker (resuelve DT-2).
+
+### vc4 (1.1.1) — fix de Android App Links (2026-06-25)
+
+Deep-debug detectó que el `intent-filter` `autoVerify` declaraba dos hosts (`tubusexpress.com` apex + `www`), pero el **apex sirve 404 sin redirect** en `/.well-known/assetlinks.json` (verificado con `curl`). Con `autoVerify`, Android verifica CADA host por HTTPS **sin seguir redirects** → el host apex nunca verifica → App Links rotos: **total en Android ≤11** (verificación all-or-nothing por app), parcial en 12+.
+
+**Fix (commit `7533a4b`):** se quitó el host apex del `intent-filter`; queda solo `www.tubusexpress.com`.
+- `CLIENT_URL = https://www.tubusexpress.com` (verificado en Railway, servicio `tu-bus-express-frontend`) ⇒ ningún enlace real (verify-email/reset) apunta al apex.
+- `assetlinks.json` ya tenía el fingerprint correcto del **app signing key** (`79:C3:8B:DF…`, **verificado** en Play Console → Protegido con Play → Administra la firma de apps de Play). El otro fingerprint (`F3:43:03…`) es el debug keystore.
+- `versionCode 3 → 4`, `versionName → 1.1.1`. Subido a Closed Testing + **solicitud de acceso a producción** enviada (criterios 12 testers / 14 días ya cumplidos).
+
+### Acceso a producción concedido + bloqueo de permisos de fotos (2026-06-29)
+
+Google **concedió el acceso a producción**. Al crear el release de producción promoviendo el `vc4`, el pre-check de Play lo **bloqueó**:
+
+> *"Uso no válido de los permisos de fotos y vídeos: tu app no puede utilizar READ_MEDIA_IMAGES ni READ_MEDIA_VIDEO porque solo necesita acceder de forma puntual o con poca frecuencia…"*
+
+La declaración de "funcionalidad principal" (que **sí pasó en Closed Testing** en Phase 7 inicial) **NO califica para producción**: esa excepción es para galerías/editores de foto/vídeo, no para un e-commerce que sube comprobantes/avatares de forma ocasional. "Continuar de todos modos" tenía riesgo alto de rechazo humano.
+
+### Migración a Android Photo Picker — vc5 (1.1.2)
+
+Investigación del uso real de imágenes en el código:
+- **25 de 26 flujos** (comprobantes de pago en checkout, avatar de perfil, imágenes admin de productos/marcas/agencias/líneas) usan **`<input type="file">`** en el WebView → el file chooser del SO **no requiere permiso de la app**.
+- **1 flujo** (`mechanic-progress.component.ts`) usa **`@capacitor/camera@8.2.0`**; para galería (`CameraSource.Photos`) usa el **Android Photo Picker** del sistema → **tampoco requiere permiso** en la v8.
+
+**Conclusión:** el permiso era innecesario. Se eliminaron `READ_MEDIA_IMAGES` y `READ_EXTERNAL_STORAGE` del `AndroidManifest.xml` (se mantiene `CAMERA` para captura). Comentario obsoleto en `native-camera.strategy.ts` corregido. `versionCode 4 → 5`, `versionName → 1.1.2`. **Resuelve DT-2.**
+
+Sin el permiso, el bloqueo de Play desaparece de raíz (nada que declarar). El `vc4` (con permiso) se **descartó** del release de producción; el `vc5` se subió a Closed Testing y está **en revisión**.
+
+### Publicación administrada (managed publishing) activada
+
+Se activó la **publicación administrada** para desacoplar "enviar a revisión" de "publicar": Google revisa, pero nada sale a usuarios hasta pulsar **"Publicar"** manualmente. Permite validar en dispositivo antes de exponer producción.
+
+### Pendiente (próximos checkpoints)
+
+1. Google aprueba el `vc5` → **publicarlo manualmente** (managed publishing) → llega a testers.
+2. **Validar en dispositivo (crítico antes de producción):**
+   - Subir comprobante/avatar **funciona sin el permiso** (Photo Picker) — afecta el checkout.
+   - App Links: `adb shell pm get-app-links com.tubusexpress.app` → `www.tubusexpress.com: verified`; tap en enlace `verify-email` desde Gmail abre la app.
+3. Si ambas pasan → crear release de **producción** con `vc5` (+ Venezuela, ya en cola) → **Publicar** manualmente.
+
+> **Nota:** la declaración de "Permisos de fotos y videos" que se llenó durante el bloqueo quedó como cambio "indicado" en Play; es **irrelevante** ahora que el `vc5` no declara el permiso. No requiere acción.
+
+---
+
 ## Próximo documento
 
-Al promover a producción (tras 12 testers / 14 días), actualizar este documento con la bitácora del lanzamiento en producción y el cierre formal de Phase 7.
+Al promover a producción, actualizar este documento con la bitácora del lanzamiento en producción y el cierre formal de Phase 7.
