@@ -89,17 +89,16 @@
     <uses-permission android:name="android.permission.CAMERA" />
 
     <!--
-        Photo library access on Android 13+ (API 33+). Replaces the
-        legacy READ_EXTERNAL_STORAGE for media files.
+        NO photo/media read permissions are declared, on purpose. Image
+        selection uses the Android Photo Picker — via @capacitor/camera v8
+        for the gallery (CameraSource.Photos), and the WebView file chooser
+        for the many <input type="file"> upload fields. The Photo Picker
+        grants per-pick access WITHOUT any app permission. Declaring
+        READ_MEDIA_IMAGES / READ_EXTERNAL_STORAGE would violate Google Play's
+        Photo and Video Permissions policy (this app's image use is
+        occasional, not a gallery/editor core feature) and gets the
+        production release rejected. CAMERA below is still needed for capture.
     -->
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-
-    <!--
-        Legacy storage read for Android 12 (API 32) and below. The
-        `maxSdkVersion` attribute makes Android 13+ ignore it (so the
-        device only sees ONE storage permission at any time).
-    -->
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
 
     <!--
         Geolocation permissions for @capacitor/geolocation plugin.

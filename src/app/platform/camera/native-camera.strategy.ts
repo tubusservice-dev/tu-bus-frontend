@@ -8,9 +8,11 @@ import { CameraSource, ICamera, PickImageOptions } from './camera.service';
  * the existing `FormData`-based upload pipeline (used by `UploadService`)
  * works unchanged. The conversion is cheap (a few ms for typical photos).
  *
- * Permissions: `@capacitor/camera` handles the runtime permission prompt
- * automatically when invoked. AndroidManifest declarations for CAMERA and
- * READ_MEDIA_IMAGES must be present (added in P5.6).
+ * Permissions: `@capacitor/camera` handles the CAMERA runtime prompt
+ * automatically when capturing. Gallery selection (CameraSource.Photos)
+ * uses the Android Photo Picker, which needs NO storage/media permission —
+ * so the manifest declares only CAMERA, not READ_MEDIA_IMAGES (removed to
+ * comply with Google Play's Photo and Video Permissions policy).
  */
 export class NativeCameraStrategy implements ICamera {
   isAvailable(): boolean {
