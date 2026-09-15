@@ -18,18 +18,11 @@
 .zoning-modal {
   @apply relative w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl;
   background-color: var(--bg-primary);
-  max-height: 90vh;
+  // Scrolls internally; the bar itself is hidden via the global `.no-scrollbar`
+  // utility applied on the element.
+  max-height: 65vh;
   overflow-y: auto;
   animation: slideUp 0.3s ease-out;
-
-  // Scrollbar
-  &::-webkit-scrollbar {
-    width: 4px;
-  }
-  &::-webkit-scrollbar-thumb {
-    background-color: var(--border-primary);
-    border-radius: 4px;
-  }
 
   // While the resolving overlay is shown we freeze the modal so the user
   // cannot keep scrolling its internal list behind the loader.

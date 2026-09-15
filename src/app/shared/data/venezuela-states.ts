@@ -50,7 +50,7 @@ export const VENEZUELA_STATES: VenezuelaState[] = [
     code: "G",
     name: "Carabobo",
     cities: ["Bejuma","Belén","Campo de Carabobo","Canoabo","Central Tacarigua","Chirgua","Ciudad Alianza","El Palito","Guacara","Guigue","Las Trincheras","Los Guayos","Mariara","Miranda","Montalbán","Morón","Naguanagua","Puerto Cabello","San Joaquín","Tocuyito","Urama","Valencia","Vigirimita"],
-    municipalities: ["Bejuma","Carlos Arvelo","Diego Ibarra","Guacara","Libertador","Los Guayos","Miranda","Montalbán","Mora","Naguanagua","Puerto Cabello","San Diego","San Joaquín","Valencia"],
+    municipalities: ["Bejuma","Carlos Arvelo","Diego Ibarra","Guacara","Libertador","Los Guayos","Miranda","Montalbán","Juan José Mora","Naguanagua","Puerto Cabello","San Diego","San Joaquín","Valencia"],
   },
   {
     code: "H",

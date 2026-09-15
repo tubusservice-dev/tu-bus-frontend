@@ -1,5 +1,5 @@
 import { Component, inject, signal, effect } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Router, RouterOutlet } from '@angular/router';
 import { OverlayStackService } from '@core/services/overlay-stack.service';
 import { AuthService } from '@core/services/auth.service';
 import { UserNotificationService } from '@core/services/user-notification.service';
@@ -46,6 +46,7 @@ export class App {
   protected readonly authService = inject(AuthService);
   private readonly userNotifications = inject(UserNotificationService);
   private readonly analytics = inject(ANALYTICS);
+  private readonly router = inject(Router);
 
   // Auth modal hosted here so it stacks above any feature overlay (product
   // detail, cart) which mount with z-index 1000.
@@ -65,10 +66,17 @@ export class App {
   protected readonly firstNameContext = signal<string>('');
 
   constructor() {
+    // A session that expires while on the admin panel is handled by the
+    // interceptor (redirect to /admin/login, which has its own username +
+    // password form). Opening the customer modal there would cover that form
+    // and let an admin sign in as a customer by mistake.
     effect(() => {
-      if (this.authService.sessionExpired()) {
-        this.authService.openAuthModal();
+      if (!this.authService.sessionExpired()) return;
+      if (this.router.url.startsWith('/admin')) {
+        this.authService.clearSessionExpired();
+        return;
       }
+      this.authService.openAuthModal();
     });
 
     // Track the auth modal as a screen so login/registration friction shows
@@ -99,6 +107,9 @@ export class App {
 
   closeAuthModal(): void {
     this.authService.closeAuthModal();
+    // Dismissing the modal acknowledges the expiry; otherwise the flag stays
+    // set and the modal reopens on the next change detection.
+    this.authService.clearSessionExpired();
   }
 
   // ─── Auth modal → secondary modals ─────────────────────────────

@@ -1,7 +1,7 @@
 @if (isOpen()) {
   <div class="zoning-overlay" (click)="closeModal()">
     <div
-      class="zoning-modal"
+      class="zoning-modal no-scrollbar"
       [class.zoning-modal--resolving]="isResolving()"
       [attr.inert]="isResolving() ? '' : null"
       (click)="$event.stopPropagation()"
