@@ -574,6 +574,10 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
   }
 
   onCancelOrder(): void {
+    // Once the customer confirms, the order is committed: the cancel button
+    // is already disabled. Ignore any other dismissal (e.g. a backdrop click)
+    // instead of closing the modal while the order is still created behind it.
+    if (this.isProcessingConfirm()) return;
     this.showConfirmModal.set(false);
     this.releaseScrollLock();
   }

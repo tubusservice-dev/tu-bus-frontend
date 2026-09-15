@@ -46,6 +46,8 @@ export class AdminNotificationsService {
   private foregroundSub?: Subscription;
   private lastKnownCount = 0;
   private initialCountFetched = false;
+  /** Tracks the previous session state so logout can be detected. */
+  private wasAdminSession = false;
 
   private readonly _unreadCount = signal(0);
   private readonly _notifications = signal<AdminNotification[]>([]);
@@ -84,7 +86,14 @@ export class AdminNotificationsService {
     // prompts that lack a user gesture.
     effect(() => {
       const user = this.authService.currentUser();
+      const isAdmin = user?.role === 'admin';
       this._permissionState.set(readBrowserPermission());
+
+      // Admin session ended (logout or expiry): drop the previous admin's
+      // counters and stop polling so nothing leaks into the next session.
+      if (this.wasAdminSession && !isAdmin) this.resetSessionState();
+      this.wasAdminSession = isAdmin;
+
       if (!user) return;
       if (user.role !== 'admin') return;
       if (this._currentToken() !== null) return;
@@ -119,10 +128,25 @@ export class AdminNotificationsService {
     this.pollSub = undefined;
   }
 
-  /** Retorna true si hay token de admin en localStorage (usuario admin logueado) */
-  private hasAdminToken(): boolean {
-    if (typeof window === 'undefined' || !window.localStorage) return false;
-    return !!localStorage.getItem('admin_auth_token');
+  /**
+   * True when an administrator is signed in. Asks AuthService instead of
+   * reading `localStorage`: on the native app the token lives in Capacitor
+   * Preferences, so a direct storage read was always false there and the
+   * admin never received counts or notifications.
+   */
+  private hasAdminSession(): boolean {
+    return this.authService.currentUser()?.role === 'admin';
+  }
+
+  /** Clears per-session state. Token unregistering is handled by AuthService on logout. */
+  private resetSessionState(): void {
+    this.stopPolling();
+    this._unreadCount.set(0);
+    this._notifications.set([]);
+    this._showPopover.set(false);
+    this._isLoadingRecent.set(false);
+    this.lastKnownCount = 0;
+    this.initialCountFetched = false;
   }
 
   togglePopover(): void {
@@ -136,7 +160,7 @@ export class AdminNotificationsService {
   }
 
   fetchUnreadCount(): void {
-    if (!this.hasAdminToken()) return;
+    if (!this.hasAdminSession()) return;
     this.http.get<UnreadCountResponse>(`${this.apiUrl}/unread-count`).subscribe({
       next: (res) => {
         const newCount = res.data.count;
@@ -160,7 +184,7 @@ export class AdminNotificationsService {
   }
 
   fetchRecent(): void {
-    if (!this.hasAdminToken()) return;
+    if (!this.hasAdminSession()) return;
     this._isLoadingRecent.set(true);
     this.http.get<NotificationListResponse>(`${this.apiUrl}?limit=5`).subscribe({
       next: (res) => {

@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { CheckoutService, SellerAgreementInfo } from '../services/checkout.service';
 import { AuthService } from '@core/services/auth.service';
-import { scrollToFirstFormError } from '@shared/validators/form-validators';
+import { PHONE_VE_PATTERN, scrollToFirstFormError } from '@shared/validators/form-validators';
 import { CheckoutHeaderComponent } from '../components/checkout-header/checkout-header.component';
 import { PhoneMaskDirective } from '@shared/directives/phone-mask.directive';
 import { ANALYTICS, AnalyticsEvent } from '@platform';
@@ -48,7 +48,7 @@ export class CheckoutSellerAgreementFormComponent implements OnInit {
       fullName: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(100)]],
       documentType: ['V', Validators.required],
       documentNumber: ['', [Validators.required, Validators.pattern(/^\d{6,10}$/)]],
-      phone: ['', [Validators.required, Validators.pattern(/^(0414|0424|0412|0416|0426)-?\d{7}$/)]],
+      phone: ['', [Validators.required, Validators.pattern(PHONE_VE_PATTERN)]],
       email: ['', [Validators.email]],
       notes: ['', [Validators.maxLength(500)]],
     });

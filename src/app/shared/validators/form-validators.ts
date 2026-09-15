@@ -7,7 +7,7 @@ import { toVenezuelanE164 } from '../utils/phone.util';
 export const NAME_PATTERN = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]+$/;
 
 /** Venezuelan mobile: 0414, 0424, 0412, 0416, 0426 + optional hyphen + 7 digits */
-export const PHONE_VE_PATTERN = /^(0414|0424|0412|0416|0426)-?\d{7}$/;
+export const PHONE_VE_PATTERN = /^(0412|0414|0416|0422|0424|0426)-?\d{7}$/;
 
 /** Venezuelan landline: 02XX + optional hyphen + 7 digits */
 export const LANDLINE_VE_PATTERN = /^(02\d{2})-?\d{7}$/;

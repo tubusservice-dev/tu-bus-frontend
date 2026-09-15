@@ -6,8 +6,8 @@
  * spaces) or international (`+58XXXXXXXXXX` / `58XXXXXXXXXX`).
  */
 
-const VE_LOCAL_RE = /^(0414|0424|0412|0416|0426)\d{7}$/;
-const VE_INTL_DIGITS_RE = /^58(414|424|412|416|426)\d{7}$/;
+const VE_LOCAL_RE = /^(0412|0414|0416|0422|0424|0426)\d{7}$/;
+const VE_INTL_DIGITS_RE = /^58(412|414|416|422|424|426)\d{7}$/;
 
 function stripNonDigits(input: string | null | undefined): string {
   return (input ?? '').replace(/\D/g, '');

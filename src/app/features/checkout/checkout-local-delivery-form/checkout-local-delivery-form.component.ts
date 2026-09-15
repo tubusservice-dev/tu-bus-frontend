@@ -16,6 +16,7 @@ import {
 import { CheckoutHeaderComponent } from '../components/checkout-header/checkout-header.component';
 import { PhoneMaskDirective } from '@shared/directives/phone-mask.directive';
 import { ANALYTICS, AnalyticsEvent } from '@platform';
+import { toSlug } from '@shared/utils/slug.util';
 
 @Component({
   selector: 'app-checkout-local-delivery-form',
@@ -55,8 +56,9 @@ export class CheckoutLocalDeliveryFormComponent implements OnInit {
     }
 
     this.initForm();
+    // Saved data and profile prefill depend on the coverage lists, so they are
+    // applied once the branch zones have loaded (see loadBranchZones).
     this.loadBranchZones();
-    this.loadSavedData();
   }
 
   private initForm(): void {
@@ -77,7 +79,10 @@ export class CheckoutLocalDeliveryFormComponent implements OnInit {
 
   private loadBranchZones(): void {
     const branches = this.locationService.branches();
-    if (branches.length === 0) return;
+    if (branches.length === 0) {
+      this.loadSavedData();
+      return;
+    }
 
     const requests = branches.map((b) => this.branchZoneService.getByBranch(b.id));
 
@@ -106,14 +111,17 @@ export class CheckoutLocalDeliveryFormComponent implements OnInit {
 
         this.branchCities.set(Array.from(cityMap.values()));
         this.allMunicipalities.set(muniList);
+        this.loadSavedData();
       },
+      // Personal data can still be restored even if coverage failed to load.
+      error: () => this.loadSavedData(),
     });
   }
 
   private loadSavedData(): void {
     const savedInfo = this.checkoutService.localDeliveryRecipientInfo();
     if (savedInfo) {
-      this.onCityChange(savedInfo.cityCode);
+      this.populateMunicipalitiesForCity(savedInfo.cityCode);
 
       this.deliveryForm.patchValue({
         fullName: savedInfo.fullName,
@@ -176,14 +184,20 @@ export class CheckoutLocalDeliveryFormComponent implements OnInit {
       locked['email'] = true;
     }
 
-    // Prefill address if user profile location is within coverage
-    if (user.cityCode && user.municipalityCode) {
+    // Prefill address if user profile location is within coverage.
+    // The profile stores names from the static state list ("Valencia",
+    // "Carlos Arvelo") while coverage uses seeded slugs ("valencia",
+    // "carabobo"), so compare by slug. The coverage city may be the profile
+    // city or a state-wide entry named after the state.
+    if (user.municipalityCode) {
+      const muniSlug = toSlug(user.municipalityCode);
+      const citySlugs = [user.cityCode, user.cityName, user.stateName].filter(Boolean).map(toSlug);
       const muniMatch = this.allMunicipalities().find(
-        (m) => m.slug === user.municipalityCode && m.citySlug === user.cityCode
+        (m) => m.slug === muniSlug && citySlugs.includes(m.citySlug)
       );
       if (muniMatch) {
-        this.onCityChange(user.cityCode);
-        this.deliveryForm.patchValue({ cityCode: user.cityCode, municipalityCode: user.municipalityCode });
+        this.populateMunicipalitiesForCity(muniMatch.citySlug);
+        this.deliveryForm.patchValue({ cityCode: muniMatch.citySlug, municipalityCode: muniMatch.slug });
         this.deliveryForm.get('cityCode')?.disable();
         this.deliveryForm.get('municipalityCode')?.disable();
         locked['cityCode'] = true;
@@ -260,14 +274,20 @@ export class CheckoutLocalDeliveryFormComponent implements OnInit {
     this.selectedCityName.set('');
   }
 
+  /** User picked a different city: refresh municipalities and clear the choice. */
   onCityChange(cityCode: string): void {
+    this.populateMunicipalitiesForCity(cityCode);
+    this.deliveryForm.patchValue({ municipalityCode: '' });
+  }
+
+  /** Fills the municipality list for `cityCode` without touching the selected value. */
+  private populateMunicipalitiesForCity(cityCode: string): void {
     const munis = this.allMunicipalities()
       .filter((m) => m.citySlug === cityCode)
       .map((m) => ({ code: m.slug, name: m.name }));
     this.availableMunicipalities.set(munis);
     const city = this.branchCities().find((c) => c.code === cityCode);
     this.selectedCityName.set(city?.name || '');
-    this.deliveryForm.patchValue({ municipalityCode: '' });
   }
 
   onSubmit(): void {
@@ -282,7 +302,13 @@ export class CheckoutLocalDeliveryFormComponent implements OnInit {
     const city = this.branchCities().find(c => c.code === formValue.cityCode);
     const municipality = this.availableMunicipalities().find(m => m.code === formValue.municipalityCode);
 
-    if (!city || !municipality) return;
+    if (!city || !municipality) {
+      // The selected values are no longer in the coverage lists (e.g. data
+      // saved before coverage changed). Surface it on the field instead of
+      // leaving the submit button doing nothing.
+      this.flagOutOfCoverage(!city ? 'cityCode' : 'municipalityCode');
+      return;
+    }
 
     const deliveryInfo: LocalDeliveryRecipientInfo = {
       fullName: formValue.fullName.trim(),
@@ -302,6 +328,19 @@ export class CheckoutLocalDeliveryFormComponent implements OnInit {
 
     this.checkoutService.setLocalDeliveryRecipientInfo(deliveryInfo);
     this.router.navigate(['/checkout/resumen']);
+  }
+
+  /** Clears an out-of-coverage selection so the field shows its required error. */
+  private flagOutOfCoverage(field: 'cityCode' | 'municipalityCode'): void {
+    const control = this.deliveryForm.get(field);
+    control?.enable();
+    control?.setValue('');
+    control?.markAsTouched();
+    const updated = { ...this.lockedFields() };
+    delete updated[field];
+    this.lockedFields.set(updated);
+    void this.analytics.logEvent(AnalyticsEvent.FormError, { screen: 'checkout_delivery' });
+    scrollToFirstFormError();
   }
 
   goBack(): void {

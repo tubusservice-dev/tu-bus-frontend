@@ -67,7 +67,7 @@ export const VENEZUELA_STATES: VenezuelaState[] = [
   {
     code: "A",
     name: "Distrito Capital",
-    cities: [],
+    cities: ["Caracas"],
     municipalities: ["Libertador"],
   },
   {
@@ -139,7 +139,9 @@ export const VENEZUELA_STATES: VenezuelaState[] = [
   {
     code: "W",
     name: "Vargas",
-    cities: ["Carayaca","Litoral"],
+    // "Litoral" is the colloquial name for the whole coast; kept because it may
+    // already be stored in customer profiles.
+    cities: ["Caraballeda","Carayaca","Catia La Mar","La Guaira","Litoral","Macuto","Maiquetía","Naiguatá"],
     municipalities: ["Vargas"],
   },
   {
