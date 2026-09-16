@@ -12,7 +12,9 @@
     "prewatch": "node scripts/generate-firebase-sw.js",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "postinstall": "patch-package"
+    "postinstall": "patch-package",
+    "test:ci": "ng test --watch=false --browsers=ChromeHeadless",
+    "typecheck": "tsc --noEmit -p tsconfig.app.json"
   },
   "prettier": {
     "overrides": [

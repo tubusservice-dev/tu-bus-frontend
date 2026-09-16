@@ -153,22 +153,38 @@ describe('CheckoutService', () => {
   // ==================== DISPATCH TYPE & BRANCH ====================
 
   describe('Dispatch type selection', () => {
-    it('should preserve branch for ALL dispatch types', () => {
-      const branch = { id: 'b-1', name: 'Sucursal A', address: 'Dir A', whatsappPhone: '0412', hasInStoreOilChange: false, schedule: [] };
-      service.selectBranch(branch);
-      expect(service.selectedBranch()).toEqual(branch);
+    // The branch is kept only for the dispatch types that consume it
+    // (BRANCH_AWARE_DISPATCH_TYPES). For the rest the backend resolves the
+    // servicing branch from the stock reservations instead.
+    const branch = {
+      id: 'b-1',
+      name: 'Sucursal A',
+      address: 'Dir A',
+      whatsappPhone: '0412',
+      hasInStoreOilChange: false,
+      schedule: [],
+    };
 
-      // Switch to local_delivery — branch should be preserved
-      service.selectDispatchType('local_delivery');
-      expect(service.selectedBranch()).toEqual(branch);
+    it('should preserve the branch for dispatch types that use it', () => {
+      for (const type of ['store_pickup', 'in_store_oil_change', 'oil_change_service'] as const) {
+        service.selectBranch(branch);
+        service.selectDispatchType(type);
 
-      // Switch to shipping_agency — branch should still be preserved
-      service.selectDispatchType('shipping_agency');
-      expect(service.selectedBranch()).toEqual(branch);
+        expect(service.selectedBranch())
+          .withContext(`branch should survive ${type}`)
+          .toEqual(branch);
+      }
+    });
 
-      // Switch to seller_agreement — still preserved
-      service.selectDispatchType('seller_agreement');
-      expect(service.selectedBranch()).toEqual(branch);
+    it('should clear the branch for dispatch types that do not use it', () => {
+      for (const type of ['local_delivery', 'shipping_agency', 'seller_agreement'] as const) {
+        service.selectBranch(branch);
+        service.selectDispatchType(type);
+
+        expect(service.selectedBranch())
+          .withContext(`branch should be cleared for ${type}`)
+          .toBeNull();
+      }
     });
 
     it('should clear vehicles when switching away from oil change types', () => {
