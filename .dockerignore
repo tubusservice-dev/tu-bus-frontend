@@ -13,6 +13,19 @@ out-tsc
 .angular
 coverage
 
+# Native projects — the image only serves the web build, and these folders
+# carry signing material (upload-keystore.jks, google-services.json,
+# GoogleService-Info.plist, local.properties) that must never enter the
+# build context.
+android
+ios
+*.jks
+*.keystore
+google-services.json
+GoogleService-Info.plist
+local.properties
+keystore.properties
+
 # IDE / OS
 .idea
 .vscode

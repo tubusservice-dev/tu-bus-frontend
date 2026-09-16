@@ -19,6 +19,7 @@ FROM nginx:1.27-alpine AS runtime
 # Replace default Nginx site with our SPA config (static port 8080)
 RUN rm -f /etc/nginx/conf.d/default.conf
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY nginx/security-headers.conf /etc/nginx/snippets/security-headers.conf
 
 # Static assets produced by @angular/build:application
 COPY --from=builder /app/dist/tubus-express/browser /usr/share/nginx/html
