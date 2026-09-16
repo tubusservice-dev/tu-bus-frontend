@@ -34,12 +34,17 @@ export class CheckoutSellerAgreementFormComponent implements OnInit {
   ];
 
   ngOnInit(): void {
+    // Initialize the form FIRST so the template has a valid FormGroup during
+    // the async navigation tick, even when we need to redirect away. Reloading
+    // this URL drops the in-memory checkout state, so the redirect below is the
+    // common path, not the rare one.
+    this.initForm();
+
     if (this.checkoutService.dispatchType() !== 'seller_agreement') {
       this.router.navigate(['/checkout/despacho']);
       return;
     }
 
-    this.initForm();
     this.loadSavedData();
   }
 

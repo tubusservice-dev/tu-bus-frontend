@@ -47,12 +47,17 @@ export class CheckoutShippingFormComponent implements OnInit {
   ];
 
   ngOnInit(): void {
+    // Initialize the form FIRST so the template has a valid FormGroup during
+    // the async navigation tick, even when we need to redirect away. Reloading
+    // this URL drops the in-memory checkout state, so the redirect below is the
+    // common path, not the rare one.
+    this.initForm();
+
     if (!this.selectedAgency()) {
       this.router.navigate(['/checkout/agencia']);
       return;
     }
 
-    this.initForm();
     this.loadReferenceStates();
     this.loadSavedData();
   }

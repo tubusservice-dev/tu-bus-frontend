@@ -27,17 +27,16 @@ describe('CheckoutLocalDeliveryFormComponent', () => {
     ],
   };
 
-  const branchZonesResponse = {
-    data: [
-      {
-        zone: { city: carabobo },
-        deliveryConfig: [
-          { municipality: 'valencia', hasDelivery: true },
-          { municipality: 'carlos-arvelo', hasDelivery: true },
-          { municipality: 'san-diego', hasDelivery: false },
-        ],
-      },
-    ],
+  /** Shape of the public `/branch-zones/coverage` route. */
+  const coverageResponse = {
+    data: {
+      cities: [{ slug: carabobo.slug, name: carabobo.name }],
+      municipalities: [
+        { slug: 'valencia', name: 'Valencia', citySlug: 'carabobo', hasDelivery: true },
+        { slug: 'carlos-arvelo', name: 'Carlos Arvelo', citySlug: 'carabobo', hasDelivery: true },
+        { slug: 'san-diego', name: 'San Diego', citySlug: 'carabobo', hasDelivery: false },
+      ],
+    },
   };
 
   const savedInfo: LocalDeliveryRecipientInfo = {
@@ -56,6 +55,9 @@ describe('CheckoutLocalDeliveryFormComponent', () => {
   let saved: LocalDeliveryRecipientInfo | null;
   let user: Record<string, unknown> | null;
   let setInfoSpy: jasmine.Spy;
+  let branchZoneMock: { getCoverage: jasmine.Spy; getByBranch: jasmine.Spy };
+  let dispatchType: string;
+  let navigateSpy: jasmine.Spy;
 
   function create(): CheckoutLocalDeliveryFormComponent {
     const fixture = TestBed.createComponent(CheckoutLocalDeliveryFormComponent);
@@ -70,7 +72,14 @@ describe('CheckoutLocalDeliveryFormComponent', () => {
     zones$ = new Subject();
     saved = null;
     user = null;
+    dispatchType = 'local_delivery';
+    navigateSpy = jasmine.createSpy('navigate');
     setInfoSpy = jasmine.createSpy('setLocalDeliveryRecipientInfo');
+    branchZoneMock = {
+      getCoverage: jasmine.createSpy('getCoverage').and.returnValue(zones$),
+      // Present so the test below can assert it is never called.
+      getByBranch: jasmine.createSpy('getByBranch').and.returnValue(zones$),
+    };
 
     TestBed.configureTestingModule({
       imports: [CheckoutLocalDeliveryFormComponent],
@@ -78,7 +87,7 @@ describe('CheckoutLocalDeliveryFormComponent', () => {
         {
           provide: CheckoutService,
           useValue: {
-            dispatchType: () => 'local_delivery',
+            dispatchType: () => dispatchType,
             localDeliveryRecipientInfo: () => saved,
             setLocalDeliveryRecipientInfo: setInfoSpy,
           },
@@ -89,8 +98,8 @@ describe('CheckoutLocalDeliveryFormComponent', () => {
           useValue: { currentUser: () => user, loadUserProfile: () => of(null) },
         },
         { provide: LocationService, useValue: { branches: signal([{ id: 'branch-1' }]) } },
-        { provide: BranchZoneService, useValue: { getByBranch: () => zones$ } },
-        { provide: Router, useValue: { navigate: jasmine.createSpy('navigate') } },
+        { provide: BranchZoneService, useValue: branchZoneMock },
+        { provide: Router, useValue: { navigate: navigateSpy } },
         { provide: ANALYTICS, useValue: { logEvent: () => Promise.resolve() } },
       ],
     });
@@ -100,9 +109,44 @@ describe('CheckoutLocalDeliveryFormComponent', () => {
   });
 
   function emitZones(): void {
-    zones$.next(branchZonesResponse);
+    zones$.next(coverageResponse);
     zones$.complete();
   }
+
+  it('builds the form even when it has to redirect away', () => {
+    // Reloading this URL drops the in-memory checkout state, so the component
+    // redirects. The template still renders for a tick and calls hasError(),
+    // which threw on an undefined FormGroup and filled the console with
+    // TypeErrors in front of the customer.
+    dispatchType = 'store_pickup';
+
+    const component = create();
+
+    expect(navigateSpy).toHaveBeenCalledWith(['/checkout/despacho']);
+    expect(read(component)['deliveryForm']).toBeDefined();
+    expect(() => component.hasError('fullName')).not.toThrow();
+    // Nothing else should run on the way out.
+    expect(branchZoneMock.getCoverage).not.toHaveBeenCalled();
+  });
+
+  it('loads coverage from the public route, never from the admin-only one', () => {
+    // The admin route rejects customers with a 403, which blanked both
+    // dropdowns and made local delivery impossible to complete. Asking for
+    // coverage the wrong way must fail here, not in production.
+    create();
+
+    expect(branchZoneMock.getCoverage).toHaveBeenCalledOnceWith(['branch-1']);
+    expect(branchZoneMock.getByBranch).not.toHaveBeenCalled();
+  });
+
+  it('offers only municipalities with delivery', () => {
+    const component = create();
+    emitZones();
+
+    const slugs = read(component)['allMunicipalities']().map((m: { slug: string }) => m.slug);
+    expect(slugs).toEqual(['valencia', 'carlos-arvelo']);
+    expect(slugs).not.toContain('san-diego');
+  });
 
   it('restores saved data only after coverage loads, keeping the saved municipality', () => {
     saved = savedInfo;

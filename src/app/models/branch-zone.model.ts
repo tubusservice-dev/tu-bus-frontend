@@ -48,3 +48,29 @@ export interface BranchZoneListResponse {
   success: boolean;
   data: BranchZone[];
 }
+
+/**
+ * Delivery coverage as the public `/branch-zones/coverage` route returns it:
+ * the cities and municipalities a set of branches reaches, and nothing else.
+ */
+export interface CoverageCity {
+  slug: string;
+  name: string;
+}
+
+export interface CoverageMunicipality {
+  slug: string;
+  name: string;
+  citySlug: string;
+  /** Home delivery available here. The oil-change form lists every
+   *  municipality; the local-delivery form keeps only these. */
+  hasDelivery: boolean;
+}
+
+export interface BranchZoneCoverageResponse {
+  success: boolean;
+  data: {
+    cities: CoverageCity[];
+    municipalities: CoverageMunicipality[];
+  };
+}

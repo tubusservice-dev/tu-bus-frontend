@@ -157,32 +157,18 @@ export class CheckoutOilChangeFormComponent implements OnInit {
     const branches = this.locationService.branches();
     if (branches.length === 0) return;
 
-    const requests = branches.map((b) => this.branchZoneService.getByBranch(b.id));
-
-    forkJoin(requests).subscribe({
-      next: (responses) => {
-        const cityMap = new Map<string, { code: string; name: string }>();
-        const muniList: { name: string; slug: string; citySlug: string }[] = [];
-
-        for (const res of responses) {
-          for (const bz of (res as any).data || []) {
-            const zone = bz.zone as any;
-            const city = zone?.city as any;
-            if (!city) continue;
-
-            cityMap.set(city.slug, { code: city.slug, name: city.name });
-
-            for (const dc of bz.deliveryConfig) {
-              const muni = city.municipalities?.find((m: any) => m.slug === dc.municipality);
-              if (muni && !muniList.some((m) => m.slug === muni.slug && m.citySlug === city.slug)) {
-                muniList.push({ name: muni.name, slug: muni.slug, citySlug: city.slug });
-              }
-            }
-          }
-        }
-
-        this.branchCities.set(Array.from(cityMap.values()));
-        this.allMunicipalities.set(muniList);
+    // One public call for every branch at once. This used to be one admin-only
+    // request per branch, which started returning 403 to customers and left
+    // both dropdowns empty.
+    //
+    // Unlike local delivery, every municipality in the coverage counts here:
+    // the mechanic travels to the address, so `hasDelivery` is not a filter.
+    this.branchZoneService.getCoverage(branches.map((b) => b.id)).subscribe({
+      next: ({ data }) => {
+        this.branchCities.set(data.cities.map((c) => ({ code: c.slug, name: c.name })));
+        this.allMunicipalities.set(
+          data.municipalities.map((m) => ({ name: m.name, slug: m.slug, citySlug: m.citySlug })),
+        );
 
         // If the user returned to this screen with pre-saved data, loadSavedData()
         // already ran while allMunicipalities was empty — the municipality dropdown

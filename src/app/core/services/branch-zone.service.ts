@@ -7,6 +7,7 @@ import {
   BranchZoneResponse,
   CreateBranchZoneBatchRequest,
   UpdateBranchZoneRequest,
+  BranchZoneCoverageResponse,
 } from '../../models/branch-zone.model';
 
 /**
@@ -44,10 +45,24 @@ export class BranchZoneService {
     return this.http.get<any>(`${this.publicUrl}/delivery-config`, { params });
   }
 
+  /**
+   * Cities and municipalities the given branches reach (public, no auth).
+   *
+   * This is what the checkout forms use to fill their location dropdowns.
+   * They must not call `getByBranch` below: that route is admin-only, and a
+   * customer hitting it gets a 403 and an empty form.
+   */
+  getCoverage(branchIds: string[]): Observable<BranchZoneCoverageResponse> {
+    const params = new HttpParams().set('branchIds', branchIds.join(','));
+    return this.http.get<BranchZoneCoverageResponse>(`${this.publicUrl}/coverage`, { params });
+  }
+
   // ==================== ADMIN ENDPOINTS ====================
 
   /**
    * Get all BranchZones for a branch (populated with zone + city).
+   *
+   * Admin only. Client-facing screens want `getCoverage` instead.
    */
   getByBranch(branchId: string): Observable<BranchZoneListResponse> {
     const params = new HttpParams().set('branchId', branchId);

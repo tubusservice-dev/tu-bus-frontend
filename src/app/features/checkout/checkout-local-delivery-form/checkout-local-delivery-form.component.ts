@@ -2,7 +2,6 @@ import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { forkJoin } from 'rxjs';
 import { CheckoutService, LocalDeliveryRecipientInfo } from '../services/checkout.service';
 import { CartService } from '@core/services/cart.service';
 import { AuthService } from '@core/services/auth.service';
@@ -50,12 +49,17 @@ export class CheckoutLocalDeliveryFormComponent implements OnInit {
   ];
 
   ngOnInit(): void {
+    // Initialize the form FIRST so the template has a valid FormGroup during
+    // the async navigation tick, even when we need to redirect away. Reloading
+    // this URL drops the in-memory checkout state, so the redirect below is the
+    // common path, not the rare one.
+    this.initForm();
+
     if (this.checkoutService.dispatchType() !== 'local_delivery') {
       this.router.navigate(['/checkout/despacho']);
       return;
     }
 
-    this.initForm();
     // Saved data and profile prefill depend on the coverage lists, so they are
     // applied once the branch zones have loaded (see loadBranchZones).
     this.loadBranchZones();
@@ -84,33 +88,17 @@ export class CheckoutLocalDeliveryFormComponent implements OnInit {
       return;
     }
 
-    const requests = branches.map((b) => this.branchZoneService.getByBranch(b.id));
-
-    forkJoin(requests).subscribe({
-      next: (responses) => {
-        const cityMap = new Map<string, { code: string; name: string }>();
-        const muniList: { name: string; slug: string; citySlug: string }[] = [];
-
-        for (const res of responses) {
-          for (const bz of (res as any).data || []) {
-            const zone = bz.zone as any;
-            const city = zone?.city as any;
-            if (!city) continue;
-
-            cityMap.set(city.slug, { code: city.slug, name: city.name });
-
-            for (const dc of bz.deliveryConfig) {
-              if (!dc.hasDelivery) continue;
-              const muni = city.municipalities?.find((m: any) => m.slug === dc.municipality);
-              if (muni && !muniList.some((m) => m.slug === muni.slug && m.citySlug === city.slug)) {
-                muniList.push({ name: muni.name, slug: muni.slug, citySlug: city.slug });
-              }
-            }
-          }
-        }
-
-        this.branchCities.set(Array.from(cityMap.values()));
-        this.allMunicipalities.set(muniList);
+    // One public call for every branch at once. This used to be one admin-only
+    // request per branch, which started returning 403 to customers and left
+    // both dropdowns empty.
+    this.branchZoneService.getCoverage(branches.map((b) => b.id)).subscribe({
+      next: ({ data }) => {
+        this.branchCities.set(data.cities.map((c) => ({ code: c.slug, name: c.name })));
+        this.allMunicipalities.set(
+          data.municipalities
+            .filter((m) => m.hasDelivery)
+            .map((m) => ({ name: m.name, slug: m.slug, citySlug: m.citySlug })),
+        );
         this.loadSavedData();
       },
       // Personal data can still be restored even if coverage failed to load.
