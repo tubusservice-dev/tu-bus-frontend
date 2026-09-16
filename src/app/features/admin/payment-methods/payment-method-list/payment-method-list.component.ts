@@ -8,11 +8,12 @@ import {
   PAYMENT_METHOD_TYPE_LABELS,
   getPaymentMethodSummary,
 } from '../../../../models/payment-method.model';
+import { ConfirmDialogComponent } from '@shared/components/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-payment-method-list',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, ConfirmDialogComponent],
   templateUrl: './payment-method-list.component.html',
   styleUrl: './payment-method-list.component.scss',
 })

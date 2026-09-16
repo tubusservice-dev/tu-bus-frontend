@@ -4,11 +4,12 @@ import { CurrencyPipe } from '@angular/common';
 import { CartService, CartItem } from '../../core/services/cart.service';
 import { ExchangeRateService } from '../../core/services/exchange-rate.service';
 import { OverlayStackService } from '../../core/services/overlay-stack.service';
+import { ConfirmDialogComponent } from '@shared/components/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-cart',
   standalone: true,
-  imports: [CurrencyPipe],
+  imports: [CurrencyPipe, ConfirmDialogComponent],
   templateUrl: './cart.component.html',
   styleUrl: './cart.component.scss',
 })

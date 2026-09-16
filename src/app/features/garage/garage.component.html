@@ -70,3 +70,13 @@
     </div>
   }
 </div>
+<app-confirm-dialog
+  [isOpen]="!!vehicleToDelete()"
+  title="Eliminar vehículo"
+  [message]="vehicleToDelete() ? '¿Eliminar el vehículo ' + vehicleLabel(vehicleToDelete()!) + '?' : ''"
+  confirmLabel="Eliminar"
+  busyLabel="Eliminando..."
+  [busy]="isDeleting()"
+  (confirmed)="confirmDelete()"
+  (cancelled)="cancelDelete()"
+/>

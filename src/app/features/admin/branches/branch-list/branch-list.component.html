@@ -406,38 +406,21 @@
   }
 
   <!-- Modal de confirmacion de eliminacion -->
-  @if (branchToDelete()) {
-    <div class="modal-overlay" (click)="closeDeleteModal()">
-      <div class="modal-content" (click)="$event.stopPropagation()">
-        <div class="modal-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
-          </svg>
-        </div>
-        <h3 class="modal-title">Eliminar sucursal</h3>
-        <p class="modal-message">
-          Estas seguro de eliminar <strong>{{ branchToDelete()!.name }}</strong>?
-          Esta accion no se puede deshacer.
-        </p>
-        <div class="modal-actions">
-          <button type="button" class="btn-modal-cancel" (click)="closeDeleteModal()">
-            Cancelar
-          </button>
-          <button
-            type="button"
-            class="btn-modal-delete"
-            [disabled]="isDeleting() === branchToDelete()!.id"
-            (click)="confirmDelete()"
-          >
-            @if (isDeleting() === branchToDelete()!.id) {
-              <span class="spinner-sm"></span>
-              Eliminando...
-            } @else {
-              Eliminar
-            }
-          </button>
-        </div>
-      </div>
-    </div>
-  }
+  <app-confirm-dialog
+    [isOpen]="!!branchToDelete()"
+    icon="warning"
+    title="Eliminar sucursal"
+    confirmLabel="Eliminar"
+    busyLabel="Eliminando..."
+    [busy]="isDeleting() === branchToDelete()?.id"
+    (confirmed)="confirmDelete()"
+    (cancelled)="closeDeleteModal()"
+  >
+    @if (branchToDelete(); as branch) {
+      <p>
+        Estas seguro de eliminar <strong>{{ branch.name }}</strong>?
+        Esta accion no se puede deshacer.
+      </p>
+    }
+  </app-confirm-dialog>
 </div>

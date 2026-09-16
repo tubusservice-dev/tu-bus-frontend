@@ -438,33 +438,21 @@
       </div>
     }
   }
-
   <!-- Modal de eliminación -->
-  @if (productToDelete()) {
-    <div class="modal-overlay" (click)="cancelDelete()">
-      <div class="modal-content" (click)="$event.stopPropagation()">
-        <div class="modal-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
-          </svg>
-        </div>
-        <h3 class="modal-title">Eliminar producto</h3>
-        <p class="modal-message">
-          ¿Estás seguro de eliminar <strong>{{ productToDelete()?.name }}</strong>?
-        </p>
-        <div class="modal-actions">
-          <button type="button" class="btn-cancel" (click)="cancelDelete()" [disabled]="isDeleting()">
-            Cancelar
-          </button>
-          <button type="button" class="btn-delete-confirm" (click)="deleteProduct()" [disabled]="isDeleting()">
-            @if (isDeleting()) {
-              Eliminando...
-            } @else {
-              Eliminar
-            }
-          </button>
-        </div>
-      </div>
+  <app-confirm-dialog
+    [isOpen]="!!productToDelete()"
+    icon="warning"
+    title="Eliminar producto"
+    confirmLabel="Eliminar"
+    busyLabel="Eliminando..."
+    [busy]="isDeleting()"
+    (confirmed)="deleteProduct()"
+    (cancelled)="cancelDelete()"
+  >
+    @if (productToDelete(); as product) {
+      <p>¿Estás seguro de eliminar <strong>{{ product.name }}</strong>?</p>
+    }
+  </app-confirm-dialog>
     </div>
   }
 
@@ -737,28 +725,18 @@
   }
 
   <!-- Discard pending edits when navigating / changing filter -->
-  @if (pendingDiscardAction() !== null) {
-    <div class="modal-overlay" (click)="cancelDiscard()">
-      <div class="modal-content" (click)="$event.stopPropagation()">
-        <div class="modal-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
-          </svg>
-        </div>
-        <h3 class="modal-title">¿Descartar cambios?</h3>
-        <p class="modal-message">
-          Tienes <strong>{{ dirtyCount() }} cambio{{ dirtyCount() === 1 ? '' : 's' }}</strong> sin guardar.
-          Si continúas se perderán.
-        </p>
-        <div class="modal-actions">
-          <button type="button" class="btn-cancel" (click)="cancelDiscard()">
-            Seguir editando
-          </button>
-          <button type="button" class="btn-discard-confirm" (click)="confirmDiscardAndProceed()">
-            Descartar cambios
-          </button>
-        </div>
-      </div>
-    </div>
-  }
+  <app-confirm-dialog
+    [isOpen]="pendingDiscardAction() !== null"
+    icon="warning"
+    title="¿Descartar cambios?"
+    confirmLabel="Descartar cambios"
+    cancelLabel="Seguir editando"
+    (confirmed)="confirmDiscardAndProceed()"
+    (cancelled)="cancelDiscard()"
+  >
+    <p>
+      Tienes <strong>{{ dirtyCount() }} cambio{{ dirtyCount() === 1 ? '' : 's' }}</strong> sin guardar.
+      Si continúas se perderán.
+    </p>
+  </app-confirm-dialog>
 </div>

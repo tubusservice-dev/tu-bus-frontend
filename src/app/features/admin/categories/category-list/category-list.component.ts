@@ -5,11 +5,12 @@ import { FormsModule } from '@angular/forms';
 import { CategoryService } from '../../../../core/services/category.service';
 import { Category, VEHICLE_TYPE_LABELS, VehicleType } from '../../../../models/product.model';
 import { SearchInputComponent } from '../../../../shared/components/search-input/search-input.component';
+import { ConfirmDialogComponent } from '@shared/components/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-category-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, SearchInputComponent],
+  imports: [CommonModule, RouterLink, FormsModule, SearchInputComponent, ConfirmDialogComponent],
   templateUrl: './category-list.component.html',
   styleUrl: './category-list.component.scss',
 })

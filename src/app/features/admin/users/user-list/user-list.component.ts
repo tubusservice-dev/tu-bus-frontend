@@ -17,6 +17,7 @@ import {
 } from '../../../../shared/components/kebab-menu/kebab-menu.component';
 import { UserAvatarComponent } from '../../../../shared/components/user-avatar/user-avatar.component';
 import { DateInputComponent } from '../../../../shared/components/date-input/date-input.component';
+import { ConfirmDialogComponent } from '@shared/components/confirm-dialog/confirm-dialog.component';
 
 type StatusFilter = 'all' | UserStatus;
 
@@ -40,6 +41,7 @@ interface StatusModal {
     KebabMenuComponent,
     UserAvatarComponent,
     DateInputComponent,
+    ConfirmDialogComponent,
   ],
   templateUrl: './user-list.component.html',
   styleUrl: './user-list.component.scss',

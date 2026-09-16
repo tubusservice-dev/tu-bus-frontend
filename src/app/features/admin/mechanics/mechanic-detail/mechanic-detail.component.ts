@@ -7,11 +7,12 @@ import { Mechanic } from '../../../../models/mechanic.model';
 import { MechanicAssignment, AssignmentStatus } from '../../../../models/mechanic-assignment.model';
 import { MechanicAvatarComponent } from '../../../../shared/components/mechanic-avatar/mechanic-avatar.component';
 import { toWhatsAppDigits } from '../../../../shared/utils/phone.util';
+import { ConfirmDialogComponent } from '@shared/components/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-mechanic-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, MechanicAvatarComponent],
+  imports: [CommonModule, RouterLink, MechanicAvatarComponent, ConfirmDialogComponent],
   templateUrl: './mechanic-detail.component.html',
   styleUrl: './mechanic-detail.component.scss',
 })

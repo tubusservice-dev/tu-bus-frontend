@@ -5,11 +5,12 @@ import { FormsModule } from '@angular/forms';
 import { BrandService } from '../../../../core/services/brand.service';
 import { Brand } from '../../../../models/product.model';
 import { SearchInputComponent } from '../../../../shared/components/search-input/search-input.component';
+import { ConfirmDialogComponent } from '@shared/components/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-brand-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, SearchInputComponent],
+  imports: [CommonModule, RouterLink, FormsModule, SearchInputComponent, ConfirmDialogComponent],
   templateUrl: './brand-list.component.html',
   styleUrl: './brand-list.component.scss',
 })

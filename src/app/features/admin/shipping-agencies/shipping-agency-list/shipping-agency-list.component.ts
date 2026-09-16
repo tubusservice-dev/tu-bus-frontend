@@ -5,11 +5,12 @@ import { FormsModule } from '@angular/forms';
 import { ShippingAgencyService } from '../../../../core/services/shipping-agency.service';
 import { ShippingAgency } from '../../../../models/product.model';
 import { SearchInputComponent } from '../../../../shared/components/search-input/search-input.component';
+import { ConfirmDialogComponent } from '@shared/components/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-shipping-agency-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, SearchInputComponent],
+  imports: [CommonModule, RouterLink, FormsModule, SearchInputComponent, ConfirmDialogComponent],
   templateUrl: './shipping-agency-list.component.html',
   styleUrl: './shipping-agency-list.component.scss',
 })

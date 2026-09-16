@@ -5,11 +5,12 @@ import { VehicleService } from '../../core/services/vehicle.service';
 import { Vehicle } from '../../models/vehicle.model';
 import { VehicleCardComponent } from './vehicle-card/vehicle-card.component';
 import { VehicleFormComponent } from './vehicle-form/vehicle-form.component';
+import { ConfirmDialogComponent } from '@shared/components/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-garage',
   standalone: true,
-  imports: [CommonModule, VehicleCardComponent, VehicleFormComponent],
+  imports: [CommonModule, VehicleCardComponent, VehicleFormComponent, ConfirmDialogComponent],
   templateUrl: './garage.component.html',
   styleUrl: './garage.component.scss',
 })
@@ -22,6 +23,9 @@ export class GarageComponent implements OnInit {
   protected readonly isSubmitting = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly successMessage = signal<string | null>(null);
+  /** Vehicle awaiting delete confirmation; `null` closes the dialog. */
+  protected readonly vehicleToDelete = signal<Vehicle | null>(null);
+  protected readonly isDeleting = signal(false);
 
   ngOnInit(): void {
     this.vehicleService.getMyVehicles().subscribe();
@@ -78,15 +82,35 @@ export class GarageComponent implements OnInit {
   }
 
   onDelete(vehicle: Vehicle): void {
-    const label = `${vehicle.marca} ${vehicle.modelo}${vehicle.placa ? ` (${vehicle.placa})` : ''}`;
-    if (!confirm(`¿Eliminar el vehículo ${label}?`)) {
-      return;
-    }
+    this.vehicleToDelete.set(vehicle);
+  }
 
+  cancelDelete(): void {
+    this.vehicleToDelete.set(null);
+  }
+
+  confirmDelete(): void {
+    const vehicle = this.vehicleToDelete();
+    if (!vehicle || this.isDeleting()) return;
+
+    this.isDeleting.set(true);
     this.vehicleService.delete(vehicle.id).subscribe({
-      next: () => this.successMessage.set('Vehículo eliminado exitosamente'),
-      error: (err) => this.errorMessage.set(err.error?.message || 'Error al eliminar el vehículo'),
+      next: () => {
+        this.isDeleting.set(false);
+        this.vehicleToDelete.set(null);
+        this.successMessage.set('Vehículo eliminado exitosamente');
+      },
+      error: (err) => {
+        this.isDeleting.set(false);
+        this.vehicleToDelete.set(null);
+        this.errorMessage.set(err.error?.message || 'Error al eliminar el vehículo');
+      },
     });
+  }
+
+  /** Label shown inside the confirmation, e.g. "Toyota Corolla (AB123CD)". */
+  protected vehicleLabel(vehicle: Vehicle): string {
+    return `${vehicle.marca} ${vehicle.modelo}${vehicle.placa ? ` (${vehicle.placa})` : ''}`;
   }
 
   onSelectVehicle(vehicle: Vehicle): void {

@@ -10,11 +10,12 @@ import { BranchZone, DeliveryConfigItem } from '../../../../models/branch-zone.m
 import { Zone } from '../../../../models/zone.model';
 import { City } from '../../../../models/city.model';
 import { SearchInputComponent } from '../../../../shared/components/search-input/search-input.component';
+import { ConfirmDialogComponent } from '@shared/components/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-branch-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, SearchInputComponent],
+  imports: [CommonModule, RouterLink, FormsModule, SearchInputComponent, ConfirmDialogComponent],
   templateUrl: './branch-list.component.html',
   styleUrl: './branch-list.component.scss',
 })

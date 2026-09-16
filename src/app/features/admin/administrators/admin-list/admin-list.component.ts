@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { AdminService } from '../../../../core/services/admin.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { Admin } from '../../../../models/admin.model';
+import { ConfirmDialogComponent } from '@shared/components/confirm-dialog/confirm-dialog.component';
 
 /** Predefined deterministic gradients (HSL pairs) for avatar backgrounds. */
 const AVATAR_GRADIENTS: ReadonlyArray<readonly [string, string]> = [
@@ -21,7 +22,7 @@ const AVATAR_GRADIENTS: ReadonlyArray<readonly [string, string]> = [
 @Component({
   selector: 'app-admin-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, ConfirmDialogComponent],
   templateUrl: './admin-list.component.html',
   styleUrl: './admin-list.component.scss',
 })

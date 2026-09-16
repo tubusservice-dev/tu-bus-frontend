@@ -238,26 +238,17 @@
     }
 
     <!-- Cancel Confirmation Modal -->
-    @if (showCancelConfirm()) {
-      <div class="confirm-overlay" (click)="closeCancelConfirm()">
-        <div class="confirm-box" (click)="$event.stopPropagation()">
-          <div class="confirm-icon-wrap">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" /></svg>
-          </div>
-          <h3 class="confirm-title">Cancelar asignacion</h3>
-          <p class="confirm-text">Esta accion cancelara la asignacion del mecanico y la orden quedara disponible para reasignacion. ¿Deseas continuar?</p>
-          <div class="confirm-actions">
-            <button class="confirm-btn-no" (click)="closeCancelConfirm()" [disabled]="isCancelling()">No, volver</button>
-            <button class="confirm-btn-yes" (click)="confirmCancelAssignment()" [disabled]="isCancelling()">
-              @if (isCancelling()) {
-                <span class="confirm-spinner"></span> Cancelando...
-              } @else {
-                Si, cancelar
-              }
-            </button>
-          </div>
-        </div>
-      </div>
-    }
+    <app-confirm-dialog
+      [isOpen]="showCancelConfirm()"
+      icon="warning"
+      title="Cancelar asignacion"
+      message="Esta accion cancelara la asignacion del mecanico y la orden quedara disponible para reasignacion. ¿Deseas continuar?"
+      confirmLabel="Si, cancelar"
+      cancelLabel="No, volver"
+      busyLabel="Cancelando..."
+      [busy]="isCancelling()"
+      (confirmed)="confirmCancelAssignment()"
+      (cancelled)="closeCancelConfirm()"
+    />
   }
 </div>

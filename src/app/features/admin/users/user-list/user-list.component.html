@@ -238,28 +238,20 @@
     </div>
   }
 
-  @if (userToDelete(); as user) {
-    <div class="modal-overlay" (click)="closeDeleteModal()">
-      <div class="modal-content" (click)="$event.stopPropagation()">
-        <h3 class="modal-title">Eliminar usuario</h3>
-        <p class="modal-message">
-          ¿Eliminar a <strong>{{ fullName(user) }}</strong>?
-          La cuenta quedará inaccesible y no podrá iniciar sesión.
-        </p>
-        <div class="modal-actions">
-          <button type="button" class="btn-modal-cancel" [disabled]="modalBusy()" (click)="closeDeleteModal()">
-            Cancelar
-          </button>
-          <button
-            type="button"
-            class="btn-modal-confirm danger"
-            [disabled]="modalBusy()"
-            (click)="confirmDelete()"
-          >
-            @if (modalBusy()) { Eliminando... } @else { Eliminar }
-          </button>
-        </div>
-      </div>
-    </div>
-  }
+  <app-confirm-dialog
+    [isOpen]="!!userToDelete()"
+    title="Eliminar usuario"
+    confirmLabel="Eliminar"
+    busyLabel="Eliminando..."
+    [busy]="modalBusy()"
+    (confirmed)="confirmDelete()"
+    (cancelled)="closeDeleteModal()"
+  >
+    @if (userToDelete(); as user) {
+      <p>
+        ¿Eliminar a <strong>{{ fullName(user) }}</strong>?
+        La cuenta quedará inaccesible y no podrá iniciar sesión.
+      </p>
+    }
+  </app-confirm-dialog>
 </div>

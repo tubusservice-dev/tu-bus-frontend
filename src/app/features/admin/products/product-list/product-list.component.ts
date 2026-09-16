@@ -29,6 +29,7 @@ import {
   onImageError,
 } from '../../../../shared/utils/image-placeholder.util';
 import { ToastService } from '../../../../shared/services/toast.service';
+import { ConfirmDialogComponent } from '@shared/components/confirm-dialog/confirm-dialog.component';
 
 type BranchScope = 'all' | 'none' | string;
 
@@ -51,6 +52,7 @@ interface StockModalState {
     SearchInputComponent,
     StockModalComponent,
     BranchStockModalComponent,
+    ConfirmDialogComponent,
   ],
   templateUrl: './product-list.component.html',
   styleUrl: './product-list.component.scss',
