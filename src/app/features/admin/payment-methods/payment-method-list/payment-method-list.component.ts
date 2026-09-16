@@ -68,7 +68,25 @@ export class PaymentMethodListComponent implements OnInit {
    *  list views (this one and the settings section) stay in sync. */
   protected readonly getMethodDetails = getPaymentMethodSummary;
 
-  toggleStatus(method: PaymentMethodConfig): void {
+  /** Method whose activation is awaiting confirmation; `null` closes the dialog. */
+  protected readonly methodToToggle = signal<PaymentMethodConfig | null>(null);
+
+  askToggleStatus(method: PaymentMethodConfig): void {
+    this.methodToToggle.set(method);
+  }
+
+  cancelToggleStatus(): void {
+    this.methodToToggle.set(null);
+  }
+
+  confirmToggleStatus(): void {
+    const method = this.methodToToggle();
+    if (!method) return;
+    this.methodToToggle.set(null);
+    this.toggleStatus(method);
+  }
+
+  private toggleStatus(method: PaymentMethodConfig): void {
     this.isToggling.set(method.id);
     this.service.toggleActive(method.id).subscribe({
       next: (response) => {

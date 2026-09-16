@@ -65,7 +65,25 @@ export class MechanicListComponent implements OnInit {
       .join(', ');
   }
 
-  toggleStatus(mechanic: Mechanic): void {
+  /** Mechanic whose activation is awaiting confirmation; `null` closes the dialog. */
+  protected readonly mechanicToToggle = signal<Mechanic | null>(null);
+
+  askToggleStatus(mechanic: Mechanic): void {
+    this.mechanicToToggle.set(mechanic);
+  }
+
+  cancelToggleStatus(): void {
+    this.mechanicToToggle.set(null);
+  }
+
+  confirmToggleStatus(): void {
+    const mechanic = this.mechanicToToggle();
+    if (!mechanic) return;
+    this.mechanicToToggle.set(null);
+    this.toggleStatus(mechanic);
+  }
+
+  private toggleStatus(mechanic: Mechanic): void {
     this.isToggling.set(mechanic.id);
     this.mechanicService.toggleStatus(mechanic.id).subscribe({
       next: (response) => {

@@ -110,7 +110,7 @@
                 [class.btn-deactivate]="branch.isActive"
                 [class.btn-activate]="!branch.isActive"
                 [disabled]="isToggling() === branch.id"
-                (click)="toggleStatus(branch)"
+                (click)="askToggleStatus(branch)"
                 [title]="branch.isActive ? 'Desactivar' : 'Activar'"
                 [attr.aria-label]="branch.isActive ? 'Desactivar' : 'Activar'"
               >
@@ -206,7 +206,7 @@
                       [class.btn-deactivate]="branch.isActive"
                       [class.btn-activate]="!branch.isActive"
                       [disabled]="isToggling() === branch.id"
-                      (click)="toggleStatus(branch)"
+                      (click)="askToggleStatus(branch)"
                       [title]="branch.isActive ? 'Desactivar' : 'Activar'"
                     >
                       @if (isToggling() === branch.id) {
@@ -424,3 +424,23 @@
     }
   </app-confirm-dialog>
 </div>
+
+<app-confirm-dialog
+  [isOpen]="!!branchToToggle()"
+  [title]="branchToToggle()?.isActive ? 'Desactivar sucursal' : 'Activar sucursal'"
+  [confirmLabel]="branchToToggle()?.isActive ? 'Desactivar' : 'Activar'"
+  [variant]="branchToToggle()?.isActive ? 'danger' : 'primary'"
+  (confirmed)="confirmToggleStatus()"
+  (cancelled)="cancelToggleStatus()"
+>
+  @if (branchToToggle(); as branch) {
+    @if (branch.isActive) {
+      <p>
+        <strong>{{ branch.name }}</strong> dejara de estar disponible para nuevos pedidos.
+        Puedes volver a activarla cuando quieras.
+      </p>
+    } @else {
+      <p><strong>{{ branch.name }}</strong> volvera a estar disponible para nuevos pedidos.</p>
+    }
+  }
+</app-confirm-dialog>

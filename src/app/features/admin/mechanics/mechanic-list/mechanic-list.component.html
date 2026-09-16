@@ -111,7 +111,7 @@
                 [class.btn-deactivate]="mechanic.isActive"
                 [class.btn-activate]="!mechanic.isActive"
                 [disabled]="isToggling() === mechanic.id"
-                (click)="toggleStatus(mechanic)"
+                (click)="askToggleStatus(mechanic)"
                 [title]="mechanic.isActive ? 'Desactivar' : 'Activar'"
                 [attr.aria-label]="mechanic.isActive ? 'Desactivar' : 'Activar'"
               >
@@ -215,7 +215,7 @@
                       [class.btn-deactivate]="mechanic.isActive"
                       [class.btn-activate]="!mechanic.isActive"
                       [disabled]="isToggling() === mechanic.id"
-                      (click)="toggleStatus(mechanic)"
+                      (click)="askToggleStatus(mechanic)"
                       [title]="mechanic.isActive ? 'Desactivar' : 'Activar'"
                     >
                       @if (isToggling() === mechanic.id) {
@@ -312,3 +312,23 @@
     }
   </app-confirm-dialog>
 </div>
+
+<app-confirm-dialog
+  [isOpen]="!!mechanicToToggle()"
+  [title]="mechanicToToggle()?.isActive ? 'Desactivar mecanico' : 'Activar mecanico'"
+  [confirmLabel]="mechanicToToggle()?.isActive ? 'Desactivar' : 'Activar'"
+  [variant]="mechanicToToggle()?.isActive ? 'danger' : 'primary'"
+  (confirmed)="confirmToggleStatus()"
+  (cancelled)="cancelToggleStatus()"
+>
+  @if (mechanicToToggle(); as mechanic) {
+    @if (mechanic.isActive) {
+      <p>
+        <strong>{{ mechanic.name }}</strong> dejara de recibir asignaciones nuevas.
+        Puedes volver a activarlo cuando quieras.
+      </p>
+    } @else {
+      <p><strong>{{ mechanic.name }}</strong> volvera a recibir asignaciones.</p>
+    }
+  }
+</app-confirm-dialog>

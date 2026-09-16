@@ -56,7 +56,7 @@
                     <button type="button" [disabled]="i === heroImages().length - 1" (click)="moveHeroImage(i, 'down')" title="Mover derecha">
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
                     </button>
-                    <button type="button" class="thumb-delete" (click)="removeHeroImage(i)" title="Eliminar">
+                    <button type="button" class="thumb-delete" (click)="askRemoveHeroImage(i)" title="Eliminar">
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
                     </button>
                   </div>
@@ -1045,7 +1045,7 @@
                         Guardar
                       }
                     </button>
-                    <button type="button" class="btn-delete" [disabled]="customerFieldSaving()['whatsapp']" (click)="deleteCustomerField('whatsapp')">
+                    <button type="button" class="btn-delete" [disabled]="customerFieldSaving()['whatsapp']" (click)="askDeleteCustomerField('whatsapp')">
                       Eliminar
                     </button>
                   </div>
@@ -1070,7 +1070,7 @@
                         Guardar
                       }
                     </button>
-                    <button type="button" class="btn-delete" [disabled]="customerFieldSaving()['instagram']" (click)="deleteCustomerField('instagram')">
+                    <button type="button" class="btn-delete" [disabled]="customerFieldSaving()['instagram']" (click)="askDeleteCustomerField('instagram')">
                       Eliminar
                     </button>
                   </div>
@@ -1095,7 +1095,7 @@
                         Guardar
                       }
                     </button>
-                    <button type="button" class="btn-delete" [disabled]="customerFieldSaving()['facebook']" (click)="deleteCustomerField('facebook')">
+                    <button type="button" class="btn-delete" [disabled]="customerFieldSaving()['facebook']" (click)="askDeleteCustomerField('facebook')">
                       Eliminar
                     </button>
                   </div>
@@ -1120,7 +1120,7 @@
                         Guardar
                       }
                     </button>
-                    <button type="button" class="btn-delete" [disabled]="customerFieldSaving()['x']" (click)="deleteCustomerField('x')">
+                    <button type="button" class="btn-delete" [disabled]="customerFieldSaving()['x']" (click)="askDeleteCustomerField('x')">
                       Eliminar
                     </button>
                   </div>
@@ -1244,3 +1244,24 @@
     </div>
   }
 </div>
+
+<!-- Confirmación: borrar imagen del banner (irreversible, borra en Cloudinary) -->
+<app-confirm-dialog
+  [isOpen]="heroImageToRemove() !== null"
+  icon="warning"
+  title="Eliminar imagen del banner"
+  message="La imagen se borrará del almacenamiento y no se puede recuperar. Tendrás que volver a subirla."
+  confirmLabel="Eliminar"
+  (confirmed)="confirmRemoveHeroImage()"
+  (cancelled)="cancelRemoveHeroImage()"
+/>
+
+<!-- Confirmación: borrar un dato de contacto de atención al cliente -->
+<app-confirm-dialog
+  [isOpen]="customerFieldToDelete() !== null"
+  title="Eliminar dato de contacto"
+  message="Este contacto dejará de aparecer para los clientes. Puedes volver a escribirlo cuando quieras."
+  confirmLabel="Eliminar"
+  (confirmed)="confirmDeleteCustomerField()"
+  (cancelled)="cancelDeleteCustomerField()"
+/>

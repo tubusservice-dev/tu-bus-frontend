@@ -111,7 +111,25 @@ export class AdminListComponent implements OnInit {
     });
   }
 
-  toggleStatus(admin: Admin): void {
+  /** Administrator whose activation is awaiting confirmation; `null` closes the dialog. */
+  protected readonly adminToToggle = signal<Admin | null>(null);
+
+  askToggleStatus(admin: Admin): void {
+    this.adminToToggle.set(admin);
+  }
+
+  cancelToggleStatus(): void {
+    this.adminToToggle.set(null);
+  }
+
+  confirmToggleStatus(): void {
+    const admin = this.adminToToggle();
+    if (!admin) return;
+    this.adminToToggle.set(null);
+    this.toggleStatus(admin);
+  }
+
+  private toggleStatus(admin: Admin): void {
     // Optimistic-friendly: only mutate after server confirms.
     this.adminService.toggleStatus(admin.id, !admin.isActive).subscribe({
       next: () => {

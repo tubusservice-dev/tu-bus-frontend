@@ -98,7 +98,25 @@ export class BranchListComponent implements OnInit {
     return this.branchZonesMap().get(branchId)?.length || 0;
   }
 
-  toggleStatus(branch: Branch): void {
+  /** Branch whose activation is awaiting confirmation; `null` closes the dialog. */
+  protected readonly branchToToggle = signal<Branch | null>(null);
+
+  askToggleStatus(branch: Branch): void {
+    this.branchToToggle.set(branch);
+  }
+
+  cancelToggleStatus(): void {
+    this.branchToToggle.set(null);
+  }
+
+  confirmToggleStatus(): void {
+    const branch = this.branchToToggle();
+    if (!branch) return;
+    this.branchToToggle.set(null);
+    this.toggleStatus(branch);
+  }
+
+  private toggleStatus(branch: Branch): void {
     this.isToggling.set(branch.id);
     this.branchService.toggleStatus(branch.id).subscribe({
       next: (response) => {

@@ -15,6 +15,7 @@ import {
   PAYMENT_METHOD_TYPE_LABELS,
   getPaymentMethodSummary,
 } from '@models/payment-method.model';
+import { ConfirmDialogComponent } from '@shared/components/confirm-dialog/confirm-dialog.component';
 
 type SectionKey = 'heroImages' | 'homeHero' | 'whatsapp' | 'carousels' | 'pagination' | 'dispatchModules' | 'dispatch' | 'paymentMethods' | 'exchangeRate' | 'supportContact' | 'customerSupport' | 'adminNotifications';
 type CustomerSupportField = 'whatsapp' | 'instagram' | 'facebook' | 'x';
@@ -23,7 +24,7 @@ type PaginationSubKey = 'catalogLimit' | 'adminLimit';
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink, PushPermissionToggleComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink, PushPermissionToggleComponent, ConfirmDialogComponent],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss',
 })
@@ -378,7 +379,21 @@ export class SettingsComponent implements OnInit {
     });
   }
 
-  removeHeroImage(index: number): void {
+  /** Banner image awaiting confirmation; `null` closes the dialog. Deleting one
+   *  hits Cloudinary immediately and cannot be undone, hence the prompt. */
+  protected readonly heroImageToRemove = signal<number | null>(null);
+
+  askRemoveHeroImage(index: number): void { this.heroImageToRemove.set(index); }
+  cancelRemoveHeroImage(): void { this.heroImageToRemove.set(null); }
+
+  confirmRemoveHeroImage(): void {
+    const index = this.heroImageToRemove();
+    if (index === null) return;
+    this.heroImageToRemove.set(null);
+    this.removeHeroImage(index);
+  }
+
+  private removeHeroImage(index: number): void {
     const image = this.heroImages()[index];
     if (!image) return;
 
@@ -729,7 +744,20 @@ export class SettingsComponent implements OnInit {
    * backend writes '' — the landing page treats that as "not configured"
    * and falls back to the "Próximamente" toast.
    */
-  deleteCustomerField(field: CustomerSupportField): void {
+  /** Contact field awaiting confirmation; `null` closes the dialog. */
+  protected readonly customerFieldToDelete = signal<CustomerSupportField | null>(null);
+
+  askDeleteCustomerField(field: CustomerSupportField): void { this.customerFieldToDelete.set(field); }
+  cancelDeleteCustomerField(): void { this.customerFieldToDelete.set(null); }
+
+  confirmDeleteCustomerField(): void {
+    const field = this.customerFieldToDelete();
+    if (!field) return;
+    this.customerFieldToDelete.set(null);
+    this.deleteCustomerField(field);
+  }
+
+  private deleteCustomerField(field: CustomerSupportField): void {
     this.setCustomerFieldSaving(field, true);
     this.setCustomerFieldError(field, null);
 

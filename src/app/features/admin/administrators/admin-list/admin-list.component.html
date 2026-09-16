@@ -146,7 +146,7 @@
               class="status-pill"
               [class.active]="admin.isActive"
               [class.inactive]="!admin.isActive"
-              (click)="toggleStatus(admin)"
+              (click)="askToggleStatus(admin)"
               [attr.aria-label]="admin.isActive ? 'Desactivar admin' : 'Activar admin'"
             >
               <span class="status-dot" aria-hidden="true"></span>
@@ -213,7 +213,7 @@
                   class="status-pill"
                   [class.active]="admin.isActive"
                   [class.inactive]="!admin.isActive"
-                  (click)="toggleStatus(admin)"
+                  (click)="askToggleStatus(admin)"
                   [attr.aria-label]="admin.isActive ? 'Desactivar admin' : 'Activar admin'"
                 >
                   <span class="status-dot" aria-hidden="true"></span>
@@ -278,3 +278,23 @@
     }
   </app-confirm-dialog>
 </div>
+
+<app-confirm-dialog
+  [isOpen]="!!adminToToggle()"
+  [title]="adminToToggle()?.isActive ? 'Desactivar administrador' : 'Activar administrador'"
+  [confirmLabel]="adminToToggle()?.isActive ? 'Desactivar' : 'Activar'"
+  [variant]="adminToToggle()?.isActive ? 'danger' : 'primary'"
+  (confirmed)="confirmToggleStatus()"
+  (cancelled)="cancelToggleStatus()"
+>
+  @if (adminToToggle(); as admin) {
+    @if (admin.isActive) {
+      <p>
+        <strong>{{ admin.username }}</strong> no podrá volver a entrar al panel
+        @if (isCurrentUser(admin)) { <strong>— y esta es tu propia cuenta</strong> }.
+      </p>
+    } @else {
+      <p><strong>{{ admin.username }}</strong> volverá a poder entrar al panel.</p>
+    }
+  }
+</app-confirm-dialog>

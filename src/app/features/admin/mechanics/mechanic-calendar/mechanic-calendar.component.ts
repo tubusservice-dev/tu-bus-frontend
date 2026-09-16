@@ -7,6 +7,7 @@ import { Mechanic, DateBlock } from '../../../../models/mechanic.model';
 import { MechanicAssignment } from '../../../../models/mechanic-assignment.model';
 import { DateBlockModalComponent } from '../date-block-modal/date-block-modal.component';
 import { MechanicAvatarComponent } from '../../../../shared/components/mechanic-avatar/mechanic-avatar.component';
+import { ConfirmDialogComponent } from '@shared/components/confirm-dialog/confirm-dialog.component';
 
 interface CalendarDay {
   date: Date;
@@ -42,7 +43,7 @@ interface WeekDay {
 @Component({
   selector: 'app-mechanic-calendar',
   standalone: true,
-  imports: [CommonModule, RouterLink, DateBlockModalComponent, MechanicAvatarComponent],
+  imports: [CommonModule, RouterLink, DateBlockModalComponent, MechanicAvatarComponent, ConfirmDialogComponent],
   templateUrl: './mechanic-calendar.component.html',
   styleUrl: './mechanic-calendar.component.scss',
 })
@@ -287,7 +288,25 @@ export class MechanicCalendarComponent implements OnInit {
     this.showDateBlockModal.set(false);
   }
 
-  removeDateBlock(index: number): void {
+  /** Index of the date block awaiting confirmation; `null` closes the dialog. */
+  protected readonly blockToRemove = signal<number | null>(null);
+
+  askRemoveDateBlock(index: number): void {
+    this.blockToRemove.set(index);
+  }
+
+  cancelRemoveDateBlock(): void {
+    this.blockToRemove.set(null);
+  }
+
+  confirmRemoveDateBlock(): void {
+    const index = this.blockToRemove();
+    if (index === null) return;
+    this.blockToRemove.set(null);
+    this.removeDateBlock(index);
+  }
+
+  private removeDateBlock(index: number): void {
     const id = this.mechanicId();
     if (!id) return;
     this.mechanicService.removeDateBlock(id, index).subscribe({

@@ -89,7 +89,7 @@
                 [class.btn-deactivate]="method.isActive"
                 [class.btn-activate]="!method.isActive"
                 [disabled]="isToggling() === method.id"
-                (click)="toggleStatus(method)"
+                (click)="askToggleStatus(method)"
               >
                 @if (isToggling() === method.id) {
                   <span class="spinner-sm"></span>
@@ -142,3 +142,23 @@
     }
   </app-confirm-dialog>
 </div>
+
+<app-confirm-dialog
+  [isOpen]="!!methodToToggle()"
+  [title]="methodToToggle()?.isActive ? 'Desactivar método de pago' : 'Activar método de pago'"
+  [confirmLabel]="methodToToggle()?.isActive ? 'Desactivar' : 'Activar'"
+  [variant]="methodToToggle()?.isActive ? 'danger' : 'primary'"
+  (confirmed)="confirmToggleStatus()"
+  (cancelled)="cancelToggleStatus()"
+>
+  @if (methodToToggle(); as method) {
+    @if (method.isActive) {
+      <p>
+        <strong>{{ method.label }}</strong> dejará de aparecer entre las opciones de pago del cliente.
+        Puedes volver a activarlo cuando quieras.
+      </p>
+    } @else {
+      <p><strong>{{ method.label }}</strong> volverá a aparecer entre las opciones de pago del cliente.</p>
+    }
+  }
+</app-confirm-dialog>
