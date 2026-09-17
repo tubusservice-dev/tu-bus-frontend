@@ -6,8 +6,15 @@ import { City, Municipality } from '../../../models/city.model';
 import { SearchInputComponent } from '../search-input/search-input.component';
 import { BodyScrollLockService } from '../../services/body-scroll-lock.service';
 import { ANALYTICS } from '@platform';
+import { stateOf, stateRank } from '@shared/data/city-state';
 
 type ModalStep = 'city' | 'municipality' | 'no-coverage';
+
+/** Cities sharing a state, rendered under one heading. */
+interface CityGroup {
+  state: string;
+  cities: City[];
+}
 
 @Component({
   selector: 'app-zoning-modal',
@@ -53,11 +60,36 @@ export class ZoningModalComponent implements OnInit, OnDestroy {
     return all.filter((c) => c.name.toLowerCase().includes(term));
   });
 
+  /**
+   * Cities grouped under their state heading.
+   *
+   * Eighteen cities in one flat column is a long scroll for a decision the
+   * customer should make at a glance; grouping also answers "which state is
+   * Morón in?" without them having to know.
+   */
+  protected readonly citiesByState = computed<CityGroup[]>(() => {
+    const groups = new Map<string, City[]>();
+    for (const city of this.filteredCities()) {
+      const state = stateOf(city.slug);
+      if (!groups.has(state)) groups.set(state, []);
+      groups.get(state)!.push(city);
+    }
+
+    return [...groups.entries()]
+      .map(([state, cities]) => ({ state, cities }))
+      .sort((a, b) => stateRank(a.state) - stateRank(b.state) || a.state.localeCompare(b.state));
+  });
+
   /** Municipalities of the selected city */
   protected readonly municipalities = computed<Municipality[]>(() => {
     const city = this.selectedCity();
     return city?.municipalities || [];
   });
+
+  /** How many of them get home delivery — drives the footer note. */
+  protected readonly deliverableCount = computed(
+    () => this.municipalities().filter((m) => m.hasDelivery).length,
+  );
 
   constructor() {
     // Lock/unlock body scroll when modal opens/closes

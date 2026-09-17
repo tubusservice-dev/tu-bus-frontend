@@ -4,6 +4,9 @@
 export interface Municipality {
   name: string;
   slug: string;
+  /** Whether any branch delivers here. Present only on the coverage listing,
+   *  which is what the location picker loads. */
+  hasDelivery?: boolean;
 }
 
 /**
