@@ -57,24 +57,11 @@
 }
 
 // Search box
+// Plain wrapper. The search field draws its own border and background, so
+// giving this one a frame too produced a box inside a box that weighed more
+// than the cities the customer is here to pick.
 .search-box {
-  @apply flex items-center gap-2 px-3 py-2.5 mb-4 rounded-lg border;
-  background-color: var(--bg-secondary);
-  border-color: var(--border-primary);
-
-  svg {
-    @apply w-4 h-4 flex-shrink-0;
-    color: var(--text-secondary);
-  }
-
-  input {
-    @apply flex-1 bg-transparent outline-none text-sm;
-    color: var(--text-primary);
-
-    &::placeholder {
-      color: var(--text-secondary);
-    }
-  }
+  @apply mb-4;
 }
 
 // No results
