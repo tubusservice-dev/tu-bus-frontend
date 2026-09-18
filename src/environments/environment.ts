@@ -7,10 +7,15 @@ export const environment = {
   production: false,
 
   // === URL del Backend ===
-  // Local dev sin backend en esta máquina → apuntar a producción.
-  apiUrl: 'https://api.tubusexpress.com/api',
-  // Backend local (standalone, sin gateway) — descomentar si corres el backend en :3003
-  // apiUrl: 'http://localhost:3003/api',
+  // Local development always talks to the local backend, which in turn uses
+  // the test database. Pointing this at the live API meant local testing
+  // wrote real orders and changed real stock.
+  //
+  // Safe to leave as is: this file is only used by `ng serve` and development
+  // builds. Publishing runs `npm run build:prod`, which swaps in
+  // environment.prod.ts (angular.json fileReplacements), so customers never
+  // see this value.
+  apiUrl: 'http://localhost:3003/api',
 
   appName: 'TuBus Express',
   version: '1.0.0',
