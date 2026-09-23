@@ -12,7 +12,7 @@
         <div class="cell-name" role="cell">
           <span class="cell-name__title">{{ zc.city.name }}</span>
           <span class="cell-name__meta">
-            {{ zc.municipalityName }} · {{ zc.parishes.length }} {{ zc.parishes.length === 1 ? 'parroquia' : 'parroquias' }}
+            {{ zc.municipalityName }}@if (spansStates()) {, {{ zc.stateName }}} · {{ zc.parishes.length }} {{ zc.parishes.length === 1 ? 'parroquia' : 'parroquias' }}
             @if (terms.parishOverrides.length) {
               · {{ terms.parishOverrides.length }} {{ terms.parishOverrides.length === 1 ? 'excepción' : 'excepciones' }}
             }

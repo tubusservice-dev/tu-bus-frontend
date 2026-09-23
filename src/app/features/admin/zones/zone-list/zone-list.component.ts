@@ -7,6 +7,7 @@ import { ZoneService } from '../../../../core/services/zone.service';
 import { SearchInputComponent } from '../../../../shared/components/search-input/search-input.component';
 import { ConfirmDialogComponent } from '@shared/components/confirm-dialog/confirm-dialog.component';
 import { GeoAdminService } from '@core/services/geo-admin.service';
+import { zoneStateLabel } from '@shared/utils/zone-states.util';
 
 /** One municipality of a zone in the detail modal: how many of its parishes the zone covers. */
 interface ZoneMunicipalitySummary {
@@ -92,8 +93,7 @@ export class ZoneListComponent implements OnInit {
   }
 
   getStateName(zone: Zone): string {
-    const stateId = zone.states?.[0];
-    return (stateId && this.stateNames().get(stateId)) || 'Sin parroquias';
+    return zoneStateLabel(zone.states, this.stateNames());
   }
 
   getParishCount(zone: Zone): number {
@@ -107,17 +107,18 @@ export class ZoneListComponent implements OnInit {
     this.detailModalOpen.set(true);
     this.detailMunicipalities.set(null);
 
-    const stateId = zone.states?.[0];
-    if (!stateId) {
+    const stateIds = zone.states ?? [];
+    if (!stateIds.length) {
       this.detailMunicipalities.set([]);
       return;
     }
     const covered = new Set(zone.parishes ?? []);
-    this.geoAdminService.getTree(stateId).subscribe({
-      next: (tree) => {
+    this.geoAdminService.getTrees(stateIds).subscribe({
+      next: (trees) => {
         if (this.selectedZone()?.id !== zone.id) return;
         this.detailMunicipalities.set(
-          tree.municipalities
+          trees
+            .flatMap((tree) => tree.municipalities)
             .map((m) => {
               const ids = m.cities.flatMap((c) => c.parishes.map((p) => p.id));
               return { name: m.name, selected: ids.filter((id) => covered.has(id)).length, total: ids.length };

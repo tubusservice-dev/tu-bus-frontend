@@ -29,12 +29,15 @@ const termsFor = (mode: DeliveryMode, current: DeliveryTerms): DeliveryTerms => 
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BranchZoneDeliveryComponent {
-  readonly tree = input.required<GeoAdminTree>();
+  /** One tree per state of the zone. */
+  readonly trees = input.required<GeoAdminTree[]>();
   readonly zoneParishes = input.required<string[]>();
   readonly config = model.required<CityDeliveryConfig[]>();
 
   protected readonly openCities = signal<Set<string>>(new Set());
-  protected readonly cities = computed(() => zoneCities(this.tree(), this.zoneParishes()));
+  protected readonly cities = computed(() => zoneCities(this.trees(), this.zoneParishes()));
+  /** With several states, each row says which one its city is in. */
+  protected readonly spansStates = computed(() => this.trees().length > 1);
   protected readonly hasExceptions = computed(() => this.config().some((c) => c.parishOverrides.length > 0));
 
   protected readonly modes: Array<{ id: DeliveryMode; label: string }> = [

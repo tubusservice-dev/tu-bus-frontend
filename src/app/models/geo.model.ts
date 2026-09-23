@@ -69,14 +69,15 @@ export interface CreateGeoZoneRequest {
 
 export type UpdateGeoZoneRequest = Partial<CreateGeoZoneRequest>;
 
-export interface CreateGeoAssignmentsRequest {
-  branchId: string;
-  zones: Array<{ zoneId: string; cityConfig?: CityDeliveryConfig[] }>;
-}
-
-export interface UpdateGeoAssignmentRequest {
+/**
+ * One zone of a branch as the panel saves it. `id` names an existing
+ * assignment; an existing one sent without `cityConfig` is kept as it is.
+ * Zones of the branch left out of the list are removed.
+ */
+export interface BranchAssignmentSave {
+  id: string | null;
+  zoneId: string;
   cityConfig?: CityDeliveryConfig[];
-  isActive?: boolean;
 }
 
 export interface ApiResponse<T> {

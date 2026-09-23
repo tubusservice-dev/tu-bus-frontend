@@ -11,9 +11,17 @@ import { GeoTreePickerComponent } from '@shared/components/geo-tree-picker/geo-t
 import { GeoStatePickerComponent } from '@shared/components/geo-state-picker/geo-state-picker.component';
 import { GeoAdminTree, GeoState } from '@models/geo.model';
 
+/** A state added to the zone, with its tree once loaded. */
+interface ZoneStateBlock {
+  id: string;
+  name: string;
+  tree: GeoAdminTree | null;
+}
+
 /**
- * Create / edit a zone as a set of parishes of one state (ubicaciones v2).
- * The server derives what the previous app version reads from the parishes.
+ * Create / edit a zone as a set of parishes (ubicaciones v2). A zone may span
+ * several states — metropolitan Caracas is Distrito Capital plus Miranda —
+ * so the form holds one parish picker per state added.
  */
 @Component({
   selector: 'app-zone-form',
@@ -40,17 +48,20 @@ export class ZoneFormComponent implements OnInit {
   protected readonly states = signal<GeoState[]>([]);
   protected readonly coveredStateIds = signal<ReadonlySet<string>>(new Set());
   protected readonly coveredMunicipalityCounts = signal<ReadonlyMap<string, number>>(new Map());
-  protected readonly selectedStateId = signal<string | null>(null);
-  protected readonly tree = signal<GeoAdminTree | null>(null);
-  protected readonly isLoadingTree = signal(false);
+  protected readonly zoneStates = signal<ZoneStateBlock[]>([]);
   protected readonly parishes = signal<string[]>([]);
+  /** States not in the zone yet: the ones the "add a state" picker offers. */
+  protected readonly addableStates = computed(() => {
+    const added = new Set(this.zoneStates().map((s) => s.id));
+    return this.states().filter((s) => !added.has(s.id));
+  });
+  /** Bumped after each add so the "add a state" picker starts empty again. */
+  protected readonly addPickerKey = signal(0);
 
   protected readonly nameExists = signal(false);
   private readonly nameCheck$ = new Subject<string>();
 
-  protected readonly canSubmit = computed(
-    () => !this.isSubmitting() && !this.nameExists() && Boolean(this.selectedStateId()) && this.parishes().length > 0,
-  );
+  protected readonly canSubmit = computed(() => !this.isSubmitting() && !this.nameExists() && this.parishes().length > 0);
 
   protected readonly form: FormGroup = this.fb.group({
     name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(80)]],
@@ -93,13 +104,12 @@ export class ZoneFormComponent implements OnInit {
         this.form.patchValue({ name: zone.name ?? '', isActive: zone.isActive });
         this.isLoading.set(false);
 
-        const stateId = zone.states?.[0];
-        if (!stateId || !zone.parishes?.length) {
+        if (!zone.states?.length || !zone.parishes?.length) {
           this.errorMessage.set('Esta zona todavía no tiene parroquias: hay que migrarla antes de editarla aquí.');
           return;
         }
         this.parishes.set(zone.parishes);
-        this.loadTree(stateId);
+        zone.states.forEach((stateId) => this.addState(stateId));
       },
       error: (error) => {
         this.errorMessage.set(error.error?.message || 'Error al cargar zona');
@@ -108,34 +118,34 @@ export class ZoneFormComponent implements OnInit {
     });
   }
 
-  private loadTree(stateId: string): void {
-    this.selectedStateId.set(stateId);
-    this.tree.set(null);
-    this.isLoadingTree.set(true);
+  // ==================== states of the zone ====================
+
+  /** Adds a state to the zone and loads its parishes. */
+  protected addState(stateId: string | null): void {
+    if (!stateId || this.zoneStates().some((s) => s.id === stateId)) return;
+    const name = this.states().find((s) => s.id === stateId)?.name ?? '';
+    this.zoneStates.update((blocks) => [...blocks, { id: stateId, name, tree: null }]);
+    this.addPickerKey.update((k) => k + 1);
+
     this.geoAdminService
       .getTree(stateId)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (tree) => {
-          this.tree.set(tree);
-          this.isLoadingTree.set(false);
-        },
-        error: () => {
-          this.errorMessage.set('No se pudo cargar el estado');
-          this.isLoadingTree.set(false);
-        },
+        next: (tree) =>
+          this.zoneStates.update((blocks) =>
+            blocks.map((b) => (b.id === stateId ? { ...b, name: tree.state.name, tree } : b)),
+          ),
+        error: () => this.errorMessage.set('No se pudo cargar el estado'),
       });
   }
 
-  /** A zone lives in one state: changing it starts the selection over. */
-  protected onStateChange(stateId: string | null): void {
-    if (stateId === this.selectedStateId()) return;
-    this.parishes.set([]);
-    if (stateId) this.loadTree(stateId);
-    else {
-      this.selectedStateId.set(null);
-      this.tree.set(null);
-    }
+  /** Takes a state out of the zone, with every parish of it the zone had. Nothing is saved until "Guardar". */
+  protected removeState(block: ZoneStateBlock): void {
+    const ofState = new Set(
+      (block.tree?.municipalities ?? []).flatMap((m) => m.cities.flatMap((c) => c.parishes.map((p) => p.id))),
+    );
+    this.parishes.update((ids) => ids.filter((id) => !ofState.has(id)));
+    this.zoneStates.update((blocks) => blocks.filter((b) => b.id !== block.id));
   }
 
   // ==================== name uniqueness ====================

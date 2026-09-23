@@ -201,9 +201,9 @@
 
             @if (!isCollapsed(a.key)) {
               <div class="zone-card-body">
-                @if (treeFor(a.zone); as tree) {
+                @if (treesFor(a.zone); as trees) {
                   <app-branch-zone-delivery
-                    [tree]="tree"
+                    [trees]="trees"
                     [zoneParishes]="a.zone.parishes ?? []"
                     [config]="a.cityConfig"
                     (configChange)="onConfigChange(a.key, $event)"

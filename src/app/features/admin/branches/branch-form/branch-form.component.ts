@@ -1,8 +1,8 @@
 import { Component, inject, signal, computed, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
 import { RouterLink, Router, ActivatedRoute } from '@angular/router';
-import { forkJoin, Observable } from 'rxjs';
+import { forkJoin, Observable, switchMap, tap } from 'rxjs';
 import { BranchService } from '@core/services/branch.service';
 import { ZoneService } from '@core/services/zone.service';
 import { BranchZoneService } from '@core/services/branch-zone.service';
@@ -10,7 +10,8 @@ import { ToastService } from '@shared/services/toast.service';
 import { CreateBranchRequest } from '@models/branch.model';
 import { Zone } from '@models/zone.model';
 import { BranchZone } from '@models/branch-zone.model';
-import { CityDeliveryConfig, GeoAdminTree } from '@models/geo.model';
+import { BranchAssignmentSave, CityDeliveryConfig, GeoAdminTree } from '@models/geo.model';
+import { zoneStateLabel } from '@shared/utils/zone-states.util';
 import { GeoAdminService } from '@core/services/geo-admin.service';
 import { BranchZoneDeliveryComponent } from '../branch-zone-delivery/branch-zone-delivery.component';
 import { alignCityConfig } from '../branch-zone-delivery/city-config.util';
@@ -46,6 +47,7 @@ export class BranchFormComponent implements OnInit {
   private readonly branchZoneService = inject(BranchZoneService);
   private readonly geoAdminService = inject(GeoAdminService);
   private readonly toastService = inject(ToastService);
+  private readonly location = inject(Location);
 
   protected readonly branchId = signal<string | null>(null);
   protected readonly isEditMode = signal(false);
@@ -57,13 +59,12 @@ export class BranchFormComponent implements OnInit {
   // Zone state (ubicaciones v2: delivery per city, with parish exceptions)
   protected readonly availableZones = signal<Zone[]>([]);
   protected readonly assignments = signal<AssignmentDraft[]>([]);
-  protected readonly deletedBranchZoneIds = signal<string[]>([]);
   protected readonly zoneSearchTerm = signal('');
   protected readonly showZoneDropdown = signal(false);
   protected readonly isLoadingZones = signal(false);
   protected readonly collapsed = signal<Set<string>>(new Set());
 
-  /** State trees by state id; zones of one branch usually share a state. */
+  /** State trees by state id; a zone may need several, a branch's zones often share them. */
   private readonly trees = signal<Map<string, GeoAdminTree>>(new Map());
   private readonly stateNames = signal<Map<string, string>>(new Map());
   private newKeySeq = 0;
@@ -182,7 +183,7 @@ export class BranchFormComponent implements OnInit {
           .map((bz) => ({ key: bz.id, bzId: bz.id, zone: bz.zone as Zone, cityConfig: bz.cityConfig ?? [], dirty: false }));
         this.assignments.set(drafts);
         this.collapsed.set(new Set(drafts.map((d) => d.key)));
-        drafts.forEach((d) => this.ensureTree(d.zone));
+        drafts.forEach((d) => this.ensureTrees(d.zone));
 
         this.isLoading.set(false);
       },
@@ -195,42 +196,47 @@ export class BranchFormComponent implements OnInit {
 
   // ==================== ZONE HELPERS ====================
 
-  /** "Carabobo · 17 parroquias" */
+  /** "Distrito Capital + Miranda · 32 parroquias" */
   zoneMeta(zone: Zone): string {
     const count = zone.parishes?.length ?? 0;
-    const state = (zone.states?.[0] && this.stateNames().get(zone.states[0])) || 'Sin parroquias';
-    return `${state} · ${count} ${count === 1 ? 'parroquia' : 'parroquias'}`;
+    return `${zoneStateLabel(zone.states, this.stateNames())} · ${count} ${count === 1 ? 'parroquia' : 'parroquias'}`;
   }
 
-  treeFor(zone: Zone): GeoAdminTree | undefined {
-    const stateId = zone.states?.[0];
-    return stateId ? this.trees().get(stateId) : undefined;
+  /** The trees of every state of the zone, or undefined while any is still loading. */
+  treesFor(zone: Zone): GeoAdminTree[] | undefined {
+    const stateIds = zone.states ?? [];
+    const loaded = this.trees();
+    if (!stateIds.length || !stateIds.every((id) => loaded.has(id))) return undefined;
+    return stateIds.map((id) => loaded.get(id)!);
   }
 
-  /** Loads the zone's state tree once, then aligns every draft of that state with it. */
-  private ensureTree(zone: Zone): void {
-    const stateId = zone.states?.[0];
-    if (!stateId || this.trees().has(stateId)) {
-      if (stateId) this.alignDrafts(stateId);
+  /** Loads the trees the zone still lacks, then aligns every draft whose trees are all in. */
+  private ensureTrees(zone: Zone): void {
+    const missing = (zone.states ?? []).filter((id) => !this.trees().has(id));
+    if (!missing.length) {
+      this.alignDrafts();
       return;
     }
-    this.geoAdminService.getTree(stateId).subscribe({
-      next: (tree) => {
-        this.trees.update((map) => new Map(map).set(stateId, tree));
-        this.alignDrafts(stateId);
+    this.geoAdminService.getTrees(missing).subscribe({
+      next: (trees) => {
+        this.trees.update((map) => {
+          const next = new Map(map);
+          trees.forEach((tree, i) => next.set(missing[i], tree));
+          return next;
+        });
+        this.alignDrafts();
       },
       error: () => this.toastService.error('No se pudieron cargar las parroquias de la zona'),
     });
   }
 
   /** New cities of a zone get default terms; a draft whose config had to change is saved. */
-  private alignDrafts(stateId: string): void {
-    const tree = this.trees().get(stateId);
-    if (!tree) return;
+  private alignDrafts(): void {
     this.assignments.update((drafts) =>
       drafts.map((d) => {
-        if (d.zone.states?.[0] !== stateId) return d;
-        const aligned = alignCityConfig(tree, d.cityConfig, d.zone.parishes ?? []);
+        const trees = this.treesFor(d.zone);
+        if (!trees) return d;
+        const aligned = alignCityConfig(trees, d.cityConfig, d.zone.parishes ?? []);
         const changed = JSON.stringify(aligned) !== JSON.stringify(d.cityConfig);
         return changed ? { ...d, cityConfig: aligned, dirty: true } : d;
       }),
@@ -259,13 +265,13 @@ export class BranchFormComponent implements OnInit {
     }
     const key = `new-${++this.newKeySeq}`;
     this.assignments.update((drafts) => [...drafts, { key, bzId: null, zone, cityConfig: [], dirty: true }]);
-    this.ensureTree(zone);
+    this.ensureTrees(zone);
     this.zoneSearchTerm.set('');
     this.showZoneDropdown.set(false);
   }
 
+  /** Zones left out of the list are removed when the branch is saved. */
   removeAssignment(draft: AssignmentDraft): void {
-    if (draft.bzId) this.deletedBranchZoneIds.update((ids) => [...ids, draft.bzId!]);
     this.assignments.update((drafts) => drafts.filter((d) => d.key !== draft.key));
   }
 
@@ -313,67 +319,74 @@ export class BranchFormComponent implements OnInit {
       isActive: formValue.isActive,
     };
 
-    const request$ = this.isEditMode()
-      ? this.branchService.update(this.branchId()!, data)
-      : this.branchService.create(data);
-
-    request$.subscribe({
-      next: (response) => {
-        const branchId = response.data.id || this.branchId()!;
-        this.saveBranchZones(branchId);
-      },
-      error: (error) => {
-        const msg = error.error?.message || 'Error al guardar sucursal';
-        this.errorMessage.set(msg);
-        this.toastService.error(msg);
-        this.isSubmitting.set(false);
-      },
-    });
-  }
-
-  private saveBranchZones(branchId: string): void {
-    const drafts = this.assignments();
-    const created = drafts.filter((d) => !d.bzId);
-    const changed = drafts.filter((d) => d.bzId && d.dirty);
-    const tasks: Observable<unknown>[] = [];
-
-    for (const id of this.deletedBranchZoneIds()) {
-      tasks.push(this.branchZoneService.delete(id));
-    }
-    if (created.length > 0) {
-      tasks.push(
-        this.geoAdminService.createAssignments({
-          branchId,
-          zones: created.map((d) => ({ zoneId: d.zone.id, cityConfig: d.cityConfig })),
-        }),
-      );
-    }
-    for (const d of changed) {
-      tasks.push(this.geoAdminService.updateAssignment(d.bzId!, { cityConfig: d.cityConfig }));
-    }
-
-    const successMessage = this.isEditMode()
-      ? 'Sucursal actualizada exitosamente'
-      : 'Sucursal creada exitosamente';
-
-    if (tasks.length === 0) {
-      this.toastService.success(successMessage);
-      this.router.navigate(['/admin/branches']);
+    if (this.isEditMode()) {
+      // Zones first: their rules are what can refuse a save, while the branch
+      // fields were already checked by the form. A refusal then changes nothing.
+      const branchId = this.branchId()!;
+      this.saveZones$(branchId)
+        .pipe(
+          tap((saved) => this.markZonesSaved(saved)),
+          switchMap(() => this.branchService.update(branchId, data)),
+        )
+        .subscribe({
+          next: () => this.finishSave('Sucursal actualizada exitosamente'),
+          error: (error) => this.failSave(error?.error?.message || 'Error al guardar sucursal'),
+        });
       return;
     }
 
-    forkJoin(tasks).subscribe({
-      next: () => {
-        this.toastService.success(successMessage);
-        this.router.navigate(['/admin/branches']);
+    this.branchService.create(data).subscribe({
+      next: (response) => {
+        const branchId = response.data.id;
+        this.saveZones$(branchId).subscribe({
+          next: () => this.finishSave('Sucursal creada exitosamente'),
+          error: (error) => {
+            // The branch exists now: keep editing it, so saving again fixes its
+            // zones instead of creating a second branch.
+            this.branchId.set(branchId);
+            this.isEditMode.set(true);
+            this.location.replaceState(`/admin/branches/edit/${branchId}`);
+            const reason = error?.error?.message || 'error desconocido';
+            this.failSave(`La sucursal se creó, pero sus zonas no se guardaron: ${reason}. Corrígelo y guarda de nuevo.`);
+          },
+        });
       },
-      error: (error) => {
-        const msg = error.error?.message || 'Sucursal guardada, pero hubo un error al guardar las zonas';
-        this.errorMessage.set(msg);
-        this.toastService.error(msg);
-        this.isSubmitting.set(false);
-      },
+      error: (error) => this.failSave(error?.error?.message || 'Error al guardar sucursal'),
     });
+  }
+
+  /**
+   * Every zone of the branch in one request, stored all together or not at
+   * all. A draft travels with its terms once its trees are loaded; a new one
+   * still loading goes without them and the server gives it free delivery,
+   * the same default the table would show.
+   */
+  private saveZones$(branchId: string): Observable<BranchZone[]> {
+    const assignments: BranchAssignmentSave[] = this.assignments().map((d) => ({
+      id: d.bzId,
+      zoneId: d.zone.id,
+      ...(d.dirty && this.treesFor(d.zone) ? { cityConfig: d.cityConfig } : {}),
+    }));
+    return this.geoAdminService.saveBranchAssignments(branchId, assignments);
+  }
+
+  /** After the zones are stored, drafts point at their saved assignments: a retry then only updates them. */
+  private markZonesSaved(saved: BranchZone[]): void {
+    const idByZone = new Map(saved.map((bz) => [typeof bz.zone === 'string' ? bz.zone : bz.zone.id, bz.id]));
+    this.assignments.update((drafts) =>
+      drafts.map((d) => (idByZone.has(d.zone.id) ? { ...d, bzId: idByZone.get(d.zone.id)!, dirty: false } : d)),
+    );
+  }
+
+  private finishSave(message: string): void {
+    this.toastService.success(message);
+    this.router.navigate(['/admin/branches']);
+  }
+
+  private failSave(message: string): void {
+    this.errorMessage.set(message);
+    this.toastService.error(message);
+    this.isSubmitting.set(false);
   }
 
   private parseCoordinates(raw: string): { latitude: number; longitude: number } | undefined {

@@ -150,6 +150,19 @@
   @apply block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5;
 }
 
+// One state of the zone: its label and the way to take it out
+.state-block {
+  @apply pb-5 border-b border-gray-100 dark:border-gray-700;
+}
+
+.state-block__head {
+  @apply flex items-baseline justify-between gap-3;
+}
+
+.state-block__remove {
+  @apply text-sm font-medium text-red-700 dark:text-red-400 hover:underline;
+}
+
 .form-actions {
   @apply flex gap-3 justify-end pt-6 border-t border-gray-200 dark:border-gray-700;
 }

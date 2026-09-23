@@ -1,15 +1,14 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, map, shareReplay } from 'rxjs';
+import { Observable, forkJoin, map, of, shareReplay } from 'rxjs';
 import { environment } from '@env';
 import {
   ApiResponse,
-  CreateGeoAssignmentsRequest,
+  BranchAssignmentSave,
   CreateGeoZoneRequest,
   GeoAdminTree,
   GeoCoverageState,
   GeoState,
-  UpdateGeoAssignmentRequest,
   UpdateGeoZoneRequest,
 } from '@models/geo.model';
 import { Zone } from '@models/zone.model';
@@ -46,6 +45,11 @@ export class GeoAdminService {
     return tree;
   }
 
+  /** Trees of several states (a zone may span more than one), in the given order. */
+  getTrees(stateIds: readonly string[]): Observable<GeoAdminTree[]> {
+    return stateIds.length ? forkJoin(stateIds.map((id) => this.getTree(id))) : of([]);
+  }
+
   /** Where there is service today (public coverage tree): states first, then municipalities. */
   getCoverage(): Observable<GeoCoverageState[]> {
     this.coverage ??= this.http
@@ -69,11 +73,10 @@ export class GeoAdminService {
     return this.http.put<ApiResponse<Zone>>(`${this.url}/zones/${id}`, request).pipe(map((r) => r.data));
   }
 
-  createAssignments(request: CreateGeoAssignmentsRequest): Observable<BranchZone[]> {
-    return this.http.post<ApiResponse<BranchZone[]>>(`${this.url}/branch-zones/batch`, request).pipe(map((r) => r.data));
-  }
-
-  updateAssignment(id: string, request: UpdateGeoAssignmentRequest): Observable<BranchZone> {
-    return this.http.put<ApiResponse<BranchZone>>(`${this.url}/branch-zones/${id}`, request).pipe(map((r) => r.data));
+  /** Saves every zone of a branch in one go: all of it is stored, or none. */
+  saveBranchAssignments(branchId: string, assignments: BranchAssignmentSave[]): Observable<BranchZone[]> {
+    return this.http
+      .put<ApiResponse<BranchZone[]>>(`${this.url}/branches/${branchId}/assignments`, { assignments })
+      .pipe(map((r) => r.data));
   }
 }

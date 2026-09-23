@@ -60,40 +60,48 @@
               }
             </div>
 
-            <!-- Estado -->
-            <div class="form-group">
-              <span class="field-label">
-                Estado <span class="required">*</span>
-              </span>
-              <app-geo-state-picker
-                [states]="states()"
-                [coveredIds]="coveredStateIds()"
-                [municipalityCounts]="coveredMunicipalityCounts()"
-                [selected]="selectedStateId()"
-                (selectedChange)="onStateChange($event)"
-              />
-              <span class="help-text">Una zona pertenece a un solo estado. Cambiarlo vacía la selección.</span>
-            </div>
-
-            <!-- Parroquias -->
-            @if (selectedStateId()) {
-              <div class="form-group">
-                <span class="field-label">
-                  Parroquias que cubre la zona <span class="required">*</span>
-                </span>
-                @if (isLoadingTree()) {
+            <!-- Estados y parroquias: one picker per state of the zone -->
+            @for (block of zoneStates(); track block.id) {
+              <div class="form-group state-block">
+                <div class="state-block__head">
+                  <span class="field-label">
+                    Parroquias de {{ block.name || 'este estado' }} <span class="required">*</span>
+                  </span>
+                  <button type="button" class="state-block__remove" (click)="removeState(block)">Quitar estado</button>
+                </div>
+                @if (block.tree; as tree) {
+                  <app-geo-tree-picker [tree]="tree" [(selected)]="parishes" />
+                } @else {
                   <div class="loading-container">
                     <div class="loading-spinner"></div>
                     <span>Cargando parroquias...</span>
                   </div>
-                } @else if (tree(); as t) {
-                  <app-geo-tree-picker [tree]="t" [(selected)]="parishes" />
-                  <span class="help-text">
-                    Marca un municipio para incluir todas sus parroquias, o despliégalo para elegirlas una a una.
-                  </span>
                 }
               </div>
             }
+
+            <div class="form-group">
+              <span class="field-label">
+                @if (zoneStates().length) {
+                  Añadir otro estado
+                } @else {
+                  Estado <span class="required">*</span>
+                }
+              </span>
+              @for (key of [addPickerKey()]; track key) {
+                <app-geo-state-picker
+                  [states]="addableStates()"
+                  [coveredIds]="coveredStateIds()"
+                  [municipalityCounts]="coveredMunicipalityCounts()"
+                  [placeholder]="zoneStates().length ? 'Añadir otro estado' : 'Selecciona un estado'"
+                  (selectedChange)="addState($event)"
+                />
+              }
+              <span class="help-text">
+                Marca un municipio para incluir todas sus parroquias, o despliégalo para elegirlas una a una.
+                Una zona puede abarcar varios estados cercanos, por ejemplo Caracas: Distrito Capital y Miranda.
+              </span>
+            </div>
           </section>
         </div>
 
