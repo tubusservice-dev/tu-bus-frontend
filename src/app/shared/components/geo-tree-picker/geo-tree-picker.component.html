@@ -1,0 +1,97 @@
+<div class="picker" [class.is-disabled]="disabled()">
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="toolbar__search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+      </svg>
+      <input type="text" placeholder="Buscar municipio, ciudad o parroquia…" autocomplete="off" aria-label="Buscar"
+             [value]="searchTerm()" (input)="onSearch($event)" />
+    </div>
+    <span class="summary" [class.is-empty]="!summary().parishes">
+      {{ summary().parishes }} {{ summary().parishes === 1 ? 'parroquia' : 'parroquias' }} ·
+      {{ summary().cities }} {{ summary().cities === 1 ? 'ciudad' : 'ciudades' }}
+    </span>
+    <div class="toolbar__bulk">
+      <button type="button" (click)="selectAll(true)" [disabled]="disabled()">Marcar todo</button>
+      <button type="button" (click)="selectAll(false)" [disabled]="disabled()">Quitar todo</button>
+    </div>
+  </div>
+
+  <!-- Municipality cards -->
+  <div class="cards">
+    @for (m of visibleMunicipalities(); track m.id) {
+      <div class="card" [class.is-all]="municipalityState(m) === 'all'" [class.is-some]="municipalityState(m) === 'some'"
+           [class.is-open]="isExpanded(m)" [class.is-inactive]="!m.isActive || !countOf(m).total">
+        <button type="button" class="card__head" [disabled]="disabled() || !countOf(m).total" (click)="toggleMunicipality(m)"
+                [attr.aria-pressed]="municipalityState(m) === 'all'" [attr.aria-label]="(municipalityState(m) === 'all' ? 'Quitar ' : 'Incluir ') + m.name">
+          <span class="check" aria-hidden="true">
+            @switch (municipalityState(m)) {
+              @case ('all') {
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
+              }
+              @case ('some') {
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" d="M6 12h12" /></svg>
+              }
+            }
+          </span>
+          <span class="card__name">{{ m.name }}</span>
+          <span class="card__count">{{ countOf(m).selected }}/{{ countOf(m).total }}</span>
+        </button>
+
+        @if (municipalityState(m) === 'some' && !isExpanded(m)) {
+          <div class="chips">
+            @for (name of selectedNames(m).slice(0, 3); track name) {
+              <span class="chip">{{ name }}</span>
+            }
+            @if (selectedNames(m).length > 3) {
+              <span class="chip chip--more">+{{ selectedNames(m).length - 3 }}</span>
+            }
+          </div>
+        }
+
+        @if (countOf(m).total > 1) {
+          <button type="button" class="card__expand" (click)="toggleExpanded(m)" [attr.aria-expanded]="isExpanded(m)">
+            {{ isExpanded(m) ? 'Cerrar' : 'Elegir parroquias' }}
+            <svg [class.is-open]="isExpanded(m)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+            </svg>
+          </button>
+        }
+
+        @if (isExpanded(m)) {
+          <div class="parishes">
+            @for (c of m.cities; track c.id) {
+              @if (m.cities.length > 1) {
+                <label class="parishes__city" [class.is-inactive]="!c.isActive">
+                  <input type="checkbox" [checked]="cityState(c) === 'all'" [indeterminate]="cityState(c) === 'some'"
+                         [disabled]="disabled() || !c.isActive" (change)="toggleCity(c)" />
+                  {{ c.name }}
+                </label>
+              }
+              <div class="parishes__grid">
+                @for (p of c.parishes; track p.id) {
+                  <label class="parish" [class.is-checked]="selectedSet().has(p.id)" [class.is-inactive]="!p.isActive || !c.isActive">
+                    <input type="checkbox" [checked]="selectedSet().has(p.id)" [disabled]="disabled() || !p.isActive || !c.isActive"
+                           (change)="toggleParish(p.id)" />
+                    <span>{{ p.name }}</span>
+                  </label>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+    } @empty {
+      <p class="empty">No hay coincidencias.</p>
+    }
+  </div>
+
+  @if (partialMunicipalities().length) {
+    <p class="warning" role="note">
+      <strong>{{ partialMunicipalities().join(', ') }}</strong>
+      {{ partialMunicipalities().length === 1 ? 'queda' : 'quedan' }} a medias. Quien use la versión anterior de la app
+      verá todo el municipio como atendido hasta que se retire esa versión.
+    </p>
+  }
+</div>

@@ -1,0 +1,48 @@
+:host { @apply relative block; }
+
+.trigger {
+  @apply w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg bg-white dark:bg-gray-800;
+  @apply border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white transition-colors;
+  @apply hover:border-gray-300 dark:hover:border-gray-600 focus:outline-none focus-visible:ring-2;
+  --tw-ring-color: var(--accent-primary);
+}
+.trigger__icon { @apply w-4 h-4 text-gray-400 flex-shrink-0; }
+.trigger__label {
+  @apply flex-1 text-left truncate;
+  &.is-placeholder { @apply text-gray-400 dark:text-gray-500; }
+}
+.trigger__chevron {
+  @apply w-4 h-4 text-gray-400 transition-transform;
+  &.is-open { @apply rotate-180; }
+}
+
+.panel {
+  @apply absolute left-0 right-0 top-full mt-1 z-30 rounded-xl bg-white dark:bg-gray-800;
+  @apply border border-gray-200 dark:border-gray-700 shadow-lg overflow-hidden;
+  min-width: 240px;
+}
+.panel__search {
+  @apply p-2 border-b border-gray-100 dark:border-gray-700;
+  input {
+    @apply w-full px-3 py-2 text-sm rounded-lg bg-gray-50 dark:bg-gray-700 border-0 text-gray-900 dark:text-white;
+    @apply placeholder-gray-400 focus:outline-none focus:ring-2;
+    --tw-ring-color: var(--accent-primary);
+  }
+}
+.panel__list { @apply max-h-72 overflow-y-auto py-1; }
+.panel__group {
+  @apply px-3 pt-2 pb-1 text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500;
+  &.has-divider { @apply mt-1 border-t border-gray-100 dark:border-gray-700; }
+}
+.panel__empty { @apply px-3 py-4 text-sm text-center text-gray-400; }
+
+.option {
+  @apply w-full flex items-center justify-between gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-200;
+  @apply hover:bg-gray-50 dark:hover:bg-gray-700/60;
+  &.is-selected {
+    @apply font-medium;
+    color: var(--accent-primary);
+    background-color: color-mix(in srgb, var(--accent-primary) 10%, transparent);
+  }
+}
+.option__meta { @apply text-xs text-gray-400; }

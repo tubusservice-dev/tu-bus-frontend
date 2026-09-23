@@ -1,12 +1,20 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { City } from '../../../../models/city.model';
 import { Zone } from '../../../../models/zone.model';
 import { ZoneService } from '../../../../core/services/zone.service';
 import { SearchInputComponent } from '../../../../shared/components/search-input/search-input.component';
 import { ConfirmDialogComponent } from '@shared/components/confirm-dialog/confirm-dialog.component';
+import { GeoAdminService } from '@core/services/geo-admin.service';
+import { zoneStateLabel } from '@shared/utils/zone-states.util';
+
+/** One municipality of a zone in the detail modal: how many of its parishes the zone covers. */
+interface ZoneMunicipalitySummary {
+  name: string;
+  selected: number;
+  total: number;
+}
 
 @Component({
   selector: 'app-zone-list',
@@ -17,15 +25,28 @@ import { ConfirmDialogComponent } from '@shared/components/confirm-dialog/confir
 })
 export class ZoneListComponent implements OnInit {
   private readonly zoneService = inject(ZoneService);
+  private readonly geoAdminService = inject(GeoAdminService);
 
   protected readonly isLoading = signal(true);
   protected readonly zones = signal<Zone[]>([]);
   protected readonly searchTerm = signal('');
-  protected readonly cityFilter = signal('');
+  protected readonly stateFilter = signal('');
+  private readonly stateNames = signal<Map<string, string>>(new Map());
+
+  /** States that have at least one zone, for the filter. */
+  protected readonly zoneStates = computed(() => {
+    const names = this.stateNames();
+    const ids = new Set(this.zones().flatMap((z) => z.states ?? []));
+    return [...ids]
+      .filter((id) => names.has(id))
+      .map((id) => ({ id, name: names.get(id)! }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'es'));
+  });
 
   // Detail modal
   protected readonly detailModalOpen = signal(false);
   protected readonly selectedZone = signal<Zone | null>(null);
+  protected readonly detailMunicipalities = signal<ZoneMunicipalitySummary[] | null>(null);
 
   // Delete modal
   protected readonly deleteModalOpen = signal(false);
@@ -35,6 +56,9 @@ export class ZoneListComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadZones();
+    this.geoAdminService.listStates().subscribe({
+      next: (states) => this.stateNames.set(new Map(states.map((s) => [s.id, s.name]))),
+    });
   }
 
   loadZones(): void {
@@ -50,56 +74,30 @@ export class ZoneListComponent implements OnInit {
     });
   }
 
-  get uniqueCities(): { id: string; name: string }[] {
-    const cityMap = new Map<string, string>();
-    for (const zone of this.zones()) {
-      if (zone.city && typeof zone.city === 'object') {
-        const city = zone.city as City;
-        cityMap.set(city.id || city.slug, city.name);
-      }
-    }
-    return Array.from(cityMap.entries())
-      .map(([id, name]) => ({ id, name }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }
-
   get filteredZones(): Zone[] {
     let result = this.zones();
 
-    const cityId = this.cityFilter();
-    if (cityId) {
-      result = result.filter((z) => {
-        if (typeof z.city === 'object') {
-          const city = z.city as City;
-          return (city.id || city.slug) === cityId;
-        }
-        return z.city === cityId;
-      });
+    const stateId = this.stateFilter();
+    if (stateId) {
+      result = result.filter((z) => z.states?.includes(stateId));
     }
 
     const term = this.searchTerm().toLowerCase();
     if (term) {
       result = result.filter((z) => {
-        const cityName = typeof z.city === 'object' ? (z.city as City).name : '';
-        return (
-          z.name.toLowerCase().includes(term) ||
-          cityName.toLowerCase().includes(term)
-        );
+        return z.name.toLowerCase().includes(term) || this.getStateName(z).toLowerCase().includes(term);
       });
     }
 
     return result;
   }
 
-  getCityName(zone: Zone): string {
-    if (zone.city && typeof zone.city === 'object') {
-      return (zone.city as City).name;
-    }
-    return '';
+  getStateName(zone: Zone): string {
+    return zoneStateLabel(zone.states, this.stateNames());
   }
 
-  getMunicipalityCount(zone: Zone): number {
-    return zone.municipalities?.length || 0;
+  getParishCount(zone: Zone): number {
+    return zone.parishes?.length || 0;
   }
 
   // ==================== DETAIL MODAL ====================
@@ -107,6 +105,29 @@ export class ZoneListComponent implements OnInit {
   openDetailModal(zone: Zone): void {
     this.selectedZone.set(zone);
     this.detailModalOpen.set(true);
+    this.detailMunicipalities.set(null);
+
+    const stateIds = zone.states ?? [];
+    if (!stateIds.length) {
+      this.detailMunicipalities.set([]);
+      return;
+    }
+    const covered = new Set(zone.parishes ?? []);
+    this.geoAdminService.getTrees(stateIds).subscribe({
+      next: (trees) => {
+        if (this.selectedZone()?.id !== zone.id) return;
+        this.detailMunicipalities.set(
+          trees
+            .flatMap((tree) => tree.municipalities)
+            .map((m) => {
+              const ids = m.cities.flatMap((c) => c.parishes.map((p) => p.id));
+              return { name: m.name, selected: ids.filter((id) => covered.has(id)).length, total: ids.length };
+            })
+            .filter((m) => m.selected > 0),
+        );
+      },
+      error: () => this.detailMunicipalities.set([]),
+    });
   }
 
   closeDetailModal(): void {

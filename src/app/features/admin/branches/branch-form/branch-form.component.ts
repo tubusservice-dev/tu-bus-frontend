@@ -1,16 +1,20 @@
 import { Component, inject, signal, computed, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
 import { RouterLink, Router, ActivatedRoute } from '@angular/router';
-import { forkJoin, Observable } from 'rxjs';
+import { forkJoin, Observable, switchMap, tap } from 'rxjs';
 import { BranchService } from '@core/services/branch.service';
 import { ZoneService } from '@core/services/zone.service';
 import { BranchZoneService } from '@core/services/branch-zone.service';
 import { ToastService } from '@shared/services/toast.service';
 import { CreateBranchRequest } from '@models/branch.model';
 import { Zone } from '@models/zone.model';
-import { BranchZone, DeliveryConfigItem } from '@models/branch-zone.model';
-import { City } from '@models/city.model';
+import { BranchZone } from '@models/branch-zone.model';
+import { BranchAssignmentSave, CityDeliveryConfig, GeoAdminTree } from '@models/geo.model';
+import { zoneStateLabel } from '@shared/utils/zone-states.util';
+import { GeoAdminService } from '@core/services/geo-admin.service';
+import { BranchZoneDeliveryComponent } from '../branch-zone-delivery/branch-zone-delivery.component';
+import { alignCityConfig } from '../branch-zone-delivery/city-config.util';
 import {
   PHONE_VE_PATTERN, LANDLINE_VE_PATTERN, COORDINATES_PATTERN,
   MAX_BRANCH_NAME_LENGTH, MAX_DESCRIPTION_LENGTH, MAX_ADDRESS_LENGTH,
@@ -18,10 +22,19 @@ import {
 
 const DAY_NAMES = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
+/** A zone of the branch being edited: already saved (`bzId`) or added in this session. */
+interface AssignmentDraft {
+  key: string;
+  bzId: string | null;
+  zone: Zone;
+  cityConfig: CityDeliveryConfig[];
+  dirty: boolean;
+}
+
 @Component({
   selector: 'app-branch-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, BranchZoneDeliveryComponent],
   templateUrl: './branch-form.component.html',
   styleUrl: './branch-form.component.scss',
 })
@@ -32,7 +45,9 @@ export class BranchFormComponent implements OnInit {
   private readonly branchService = inject(BranchService);
   private readonly zoneService = inject(ZoneService);
   private readonly branchZoneService = inject(BranchZoneService);
+  private readonly geoAdminService = inject(GeoAdminService);
   private readonly toastService = inject(ToastService);
+  private readonly location = inject(Location);
 
   protected readonly branchId = signal<string | null>(null);
   protected readonly isEditMode = signal(false);
@@ -41,36 +56,26 @@ export class BranchFormComponent implements OnInit {
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly successMessage = signal<string | null>(null);
 
-  // Zone state
+  // Zone state (ubicaciones v2: delivery per city, with parish exceptions)
   protected readonly availableZones = signal<Zone[]>([]);
-  protected readonly existingBranchZones = signal<BranchZone[]>([]);
-  protected readonly newBranchZones = signal<Array<{ zone: Zone; deliveryConfig: DeliveryConfigItem[] }>>([]);
-  protected readonly deletedBranchZoneIds = signal<string[]>([]);
+  protected readonly assignments = signal<AssignmentDraft[]>([]);
   protected readonly zoneSearchTerm = signal('');
   protected readonly showZoneDropdown = signal(false);
   protected readonly isLoadingZones = signal(false);
+  protected readonly collapsed = signal<Set<string>>(new Set());
 
-  // Collapsible state for existing branch zones
-  protected readonly collapsedExisting = signal<Set<string>>(new Set());
-  protected readonly collapsedNew = signal<Set<number>>(new Set());
+  /** State trees by state id; a zone may need several, a branch's zones often share them. */
+  private readonly trees = signal<Map<string, GeoAdminTree>>(new Map());
+  private readonly stateNames = signal<Map<string, string>>(new Map());
+  private newKeySeq = 0;
 
   // Computed: all zones matching search term, with assigned flag
   protected readonly filteredZones = computed(() => {
-    const all = this.availableZones();
-    const existingZoneIds = new Set(
-      this.existingBranchZones()
-        .filter(bz => !this.deletedBranchZoneIds().includes(bz.id))
-        .map(bz => typeof bz.zone === 'string' ? bz.zone : bz.zone.id)
-    );
-    const newZoneIds = new Set(this.newBranchZones().map(nbz => nbz.zone.id));
+    const assigned = new Set(this.assignments().map((a) => a.zone.id));
     const term = this.zoneSearchTerm().toLowerCase();
-
-    return all
-      .filter(z => !term || z.name.toLowerCase().includes(term) || this.getZoneCityName(z).toLowerCase().includes(term))
-      .map(z => ({
-        ...z,
-        isAssigned: existingZoneIds.has(z.id) || newZoneIds.has(z.id),
-      }));
+    return this.availableZones()
+      .filter((z) => !term || z.name.toLowerCase().includes(term) || this.zoneMeta(z).toLowerCase().includes(term))
+      .map((z) => ({ ...z, isAssigned: assigned.has(z.id) }));
   });
 
   form: FormGroup = this.fb.group({
@@ -97,6 +102,9 @@ export class BranchFormComponent implements OnInit {
     }
     this.initSchedule();
     this.loadZones();
+    this.geoAdminService.listStates().subscribe({
+      next: (states) => this.stateNames.set(new Map(states.map((st) => [st.id, st.name]))),
+    });
   }
 
   private initSchedule(): void {
@@ -169,11 +177,13 @@ export class BranchFormComponent implements OnInit {
           });
         }
 
-        // Load existing branch zones
-        this.existingBranchZones.set(bzRes.data || []);
-        // Collapse all existing by default
-        const collapsed = new Set<string>((bzRes.data || []).map(bz => bz.id));
-        this.collapsedExisting.set(collapsed);
+        // Existing assignments, collapsed by default; their trees load in the background.
+        const drafts = (bzRes.data || [])
+          .filter((bz) => typeof bz.zone === 'object' && bz.zone !== null)
+          .map((bz) => ({ key: bz.id, bzId: bz.id, zone: bz.zone as Zone, cityConfig: bz.cityConfig ?? [], dirty: false }));
+        this.assignments.set(drafts);
+        this.collapsed.set(new Set(drafts.map((d) => d.key)));
+        drafts.forEach((d) => this.ensureTrees(d.zone));
 
         this.isLoading.set(false);
       },
@@ -186,29 +196,51 @@ export class BranchFormComponent implements OnInit {
 
   // ==================== ZONE HELPERS ====================
 
-  getZoneCityName(zone: Zone): string {
-    if (typeof zone.city === 'string') return '';
-    return (zone.city as City).name || '';
+  /** "Distrito Capital + Miranda · 32 parroquias" */
+  zoneMeta(zone: Zone): string {
+    const count = zone.parishes?.length ?? 0;
+    return `${zoneStateLabel(zone.states, this.stateNames())} · ${count} ${count === 1 ? 'parroquia' : 'parroquias'}`;
   }
 
-  getZoneMunicipalityCount(zone: Zone): number {
-    return zone.municipalities?.length || 0;
+  /** The trees of every state of the zone, or undefined while any is still loading. */
+  treesFor(zone: Zone): GeoAdminTree[] | undefined {
+    const stateIds = zone.states ?? [];
+    const loaded = this.trees();
+    if (!stateIds.length || !stateIds.every((id) => loaded.has(id))) return undefined;
+    return stateIds.map((id) => loaded.get(id)!);
   }
 
-  getExistingZone(bz: BranchZone): Zone | null {
-    if (typeof bz.zone === 'string') return null;
-    return bz.zone as Zone;
+  /** Loads the trees the zone still lacks, then aligns every draft whose trees are all in. */
+  private ensureTrees(zone: Zone): void {
+    const missing = (zone.states ?? []).filter((id) => !this.trees().has(id));
+    if (!missing.length) {
+      this.alignDrafts();
+      return;
+    }
+    this.geoAdminService.getTrees(missing).subscribe({
+      next: (trees) => {
+        this.trees.update((map) => {
+          const next = new Map(map);
+          trees.forEach((tree, i) => next.set(missing[i], tree));
+          return next;
+        });
+        this.alignDrafts();
+      },
+      error: () => this.toastService.error('No se pudieron cargar las parroquias de la zona'),
+    });
   }
 
-  getExistingZoneName(bz: BranchZone): string {
-    const zone = this.getExistingZone(bz);
-    return zone?.name || 'Zona desconocida';
-  }
-
-  getExistingZoneCityName(bz: BranchZone): string {
-    const zone = this.getExistingZone(bz);
-    if (!zone) return '';
-    return this.getZoneCityName(zone);
+  /** New cities of a zone get default terms; a draft whose config had to change is saved. */
+  private alignDrafts(): void {
+    this.assignments.update((drafts) =>
+      drafts.map((d) => {
+        const trees = this.treesFor(d.zone);
+        if (!trees) return d;
+        const aligned = alignCityConfig(trees, d.cityConfig, d.zone.parishes ?? []);
+        const changed = JSON.stringify(aligned) !== JSON.stringify(d.cityConfig);
+        return changed ? { ...d, cityConfig: aligned, dirty: true } : d;
+      }),
+    );
   }
 
   // ==================== ZONE DROPDOWN ====================
@@ -227,150 +259,39 @@ export class BranchFormComponent implements OnInit {
 
   addZone(zone: Zone & { isAssigned?: boolean }): void {
     if (zone.isAssigned) return;
-
-    // Build default delivery config from zone municipalities
-    const deliveryConfig: DeliveryConfigItem[] = (zone.municipalities || []).map(slug => ({
-      municipality: slug,
-      hasDelivery: false,
-      freeDelivery: true,
-      deliveryCharge: 0,
-    }));
-
-    this.newBranchZones.update(zones => [...zones, { zone, deliveryConfig }]);
+    if (!zone.parishes?.length) {
+      this.toastService.error(`La zona «${zone.name}» todavía no tiene parroquias`);
+      return;
+    }
+    const key = `new-${++this.newKeySeq}`;
+    this.assignments.update((drafts) => [...drafts, { key, bzId: null, zone, cityConfig: [], dirty: true }]);
+    this.ensureTrees(zone);
     this.zoneSearchTerm.set('');
     this.showZoneDropdown.set(false);
   }
 
-  removeExistingZone(bzId: string): void {
-    this.deletedBranchZoneIds.update(ids => [...ids, bzId]);
+  /** Zones left out of the list are removed when the branch is saved. */
+  removeAssignment(draft: AssignmentDraft): void {
+    this.assignments.update((drafts) => drafts.filter((d) => d.key !== draft.key));
   }
 
-  removeNewZone(index: number): void {
-    this.newBranchZones.update(zones => zones.filter((_, i) => i !== index));
+  onConfigChange(key: string, cityConfig: CityDeliveryConfig[]): void {
+    this.assignments.update((drafts) => drafts.map((d) => (d.key === key ? { ...d, cityConfig, dirty: true } : d)));
   }
 
-  // ==================== COLLAPSE TOGGLES ====================
+  // ==================== COLLAPSE ====================
 
-  toggleExistingCollapse(bzId: string): void {
-    this.collapsedExisting.update(set => {
+  toggleCollapse(key: string): void {
+    this.collapsed.update((set) => {
       const next = new Set(set);
-      if (next.has(bzId)) {
-        next.delete(bzId);
-      } else {
-        next.add(bzId);
-      }
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
       return next;
     });
   }
 
-  isExistingCollapsed(bzId: string): boolean {
-    return this.collapsedExisting().has(bzId);
-  }
-
-  toggleNewCollapse(index: number): void {
-    this.collapsedNew.update(set => {
-      const next = new Set(set);
-      if (next.has(index)) {
-        next.delete(index);
-      } else {
-        next.add(index);
-      }
-      return next;
-    });
-  }
-
-  isNewCollapsed(index: number): boolean {
-    return this.collapsedNew().has(index);
-  }
-
-  // ==================== DELIVERY CONFIG - EXISTING ====================
-
-  toggleExistingDelivery(bzId: string, municipality: string): void {
-    this.existingBranchZones.update(zones => zones.map(bz => {
-      if (bz.id !== bzId) return bz;
-      return {
-        ...bz,
-        deliveryConfig: bz.deliveryConfig.map(dc =>
-          dc.municipality === municipality ? { ...dc, hasDelivery: !dc.hasDelivery } : dc
-        ),
-      };
-    }));
-  }
-
-  toggleExistingFreeDelivery(bzId: string, municipality: string): void {
-    this.existingBranchZones.update(zones => zones.map(bz => {
-      if (bz.id !== bzId) return bz;
-      return {
-        ...bz,
-        deliveryConfig: bz.deliveryConfig.map(dc =>
-          dc.municipality === municipality ? { ...dc, freeDelivery: !dc.freeDelivery } : dc
-        ),
-      };
-    }));
-  }
-
-  updateExistingDeliveryCharge(bzId: string, municipality: string, event: Event): void {
-    const value = parseFloat((event.target as HTMLInputElement).value) || 0;
-    this.existingBranchZones.update(zones => zones.map(bz => {
-      if (bz.id !== bzId) return bz;
-      return {
-        ...bz,
-        deliveryConfig: bz.deliveryConfig.map(dc =>
-          dc.municipality === municipality ? { ...dc, deliveryCharge: value } : dc
-        ),
-      };
-    }));
-  }
-
-  // ==================== DELIVERY CONFIG - NEW ====================
-
-  toggleNewDelivery(index: number, municipality: string): void {
-    this.newBranchZones.update(zones => zones.map((nbz, i) => {
-      if (i !== index) return nbz;
-      return {
-        ...nbz,
-        deliveryConfig: nbz.deliveryConfig.map(dc =>
-          dc.municipality === municipality ? { ...dc, hasDelivery: !dc.hasDelivery } : dc
-        ),
-      };
-    }));
-  }
-
-  toggleNewFreeDelivery(index: number, municipality: string): void {
-    this.newBranchZones.update(zones => zones.map((nbz, i) => {
-      if (i !== index) return nbz;
-      return {
-        ...nbz,
-        deliveryConfig: nbz.deliveryConfig.map(dc =>
-          dc.municipality === municipality ? { ...dc, freeDelivery: !dc.freeDelivery } : dc
-        ),
-      };
-    }));
-  }
-
-  updateNewDeliveryCharge(index: number, municipality: string, event: Event): void {
-    const value = parseFloat((event.target as HTMLInputElement).value) || 0;
-    this.newBranchZones.update(zones => zones.map((nbz, i) => {
-      if (i !== index) return nbz;
-      return {
-        ...nbz,
-        deliveryConfig: nbz.deliveryConfig.map(dc =>
-          dc.municipality === municipality ? { ...dc, deliveryCharge: value } : dc
-        ),
-      };
-    }));
-  }
-
-  // ==================== MUNICIPALITY NAME RESOLVER ====================
-
-  getMunicipalityDisplayName(slug: string, zone: Zone): string {
-    if (typeof zone.city !== 'string') {
-      const city = zone.city as City;
-      const found = city.municipalities?.find(m => m.slug === slug);
-      if (found) return found.name;
-    }
-    // Fallback: capitalize slug
-    return slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  isCollapsed(key: string): boolean {
+    return this.collapsed().has(key);
   }
 
   // ==================== SUBMIT ====================
@@ -398,77 +319,74 @@ export class BranchFormComponent implements OnInit {
       isActive: formValue.isActive,
     };
 
-    const request$ = this.isEditMode()
-      ? this.branchService.update(this.branchId()!, data)
-      : this.branchService.create(data);
-
-    request$.subscribe({
-      next: (response) => {
-        const branchId = response.data.id || this.branchId()!;
-        this.saveBranchZones(branchId);
-      },
-      error: (error) => {
-        const msg = error.error?.message || 'Error al guardar sucursal';
-        this.errorMessage.set(msg);
-        this.toastService.error(msg);
-        this.isSubmitting.set(false);
-      },
-    });
-  }
-
-  private saveBranchZones(branchId: string): void {
-    const deletions = this.deletedBranchZoneIds();
-    const newZones = this.newBranchZones();
-    const existingModified = this.existingBranchZones()
-      .filter(bz => !deletions.includes(bz.id));
-
-    const tasks: Observable<any>[] = [];
-
-    // 1. Delete removed branch zones
-    for (const id of deletions) {
-      tasks.push(this.branchZoneService.delete(id));
-    }
-
-    // 2. Create new branch zones in batch
-    if (newZones.length > 0) {
-      tasks.push(this.branchZoneService.createBatch({
-        branchId,
-        zones: newZones.map(nbz => ({
-          zoneId: nbz.zone.id,
-          deliveryConfig: nbz.deliveryConfig,
-        })),
-      }));
-    }
-
-    // 3. Update modified existing branch zones
-    for (const bz of existingModified) {
-      tasks.push(this.branchZoneService.update(bz.id, {
-        deliveryConfig: bz.deliveryConfig,
-      }));
-    }
-
-    const successMessage = this.isEditMode()
-      ? 'Sucursal actualizada exitosamente'
-      : 'Sucursal creada exitosamente';
-
-    if (tasks.length === 0) {
-      this.toastService.success(successMessage);
-      this.router.navigate(['/admin/branches']);
+    if (this.isEditMode()) {
+      // Zones first: their rules are what can refuse a save, while the branch
+      // fields were already checked by the form. A refusal then changes nothing.
+      const branchId = this.branchId()!;
+      this.saveZones$(branchId)
+        .pipe(
+          tap((saved) => this.markZonesSaved(saved)),
+          switchMap(() => this.branchService.update(branchId, data)),
+        )
+        .subscribe({
+          next: () => this.finishSave('Sucursal actualizada exitosamente'),
+          error: (error) => this.failSave(error?.error?.message || 'Error al guardar sucursal'),
+        });
       return;
     }
 
-    forkJoin(tasks).subscribe({
-      next: () => {
-        this.toastService.success(successMessage);
-        this.router.navigate(['/admin/branches']);
+    this.branchService.create(data).subscribe({
+      next: (response) => {
+        const branchId = response.data.id;
+        this.saveZones$(branchId).subscribe({
+          next: () => this.finishSave('Sucursal creada exitosamente'),
+          error: (error) => {
+            // The branch exists now: keep editing it, so saving again fixes its
+            // zones instead of creating a second branch.
+            this.branchId.set(branchId);
+            this.isEditMode.set(true);
+            this.location.replaceState(`/admin/branches/edit/${branchId}`);
+            const reason = error?.error?.message || 'error desconocido';
+            this.failSave(`La sucursal se creó, pero sus zonas no se guardaron: ${reason}. Corrígelo y guarda de nuevo.`);
+          },
+        });
       },
-      error: (error) => {
-        const msg = error.error?.message || 'Sucursal guardada, pero hubo un error al guardar las zonas';
-        this.errorMessage.set(msg);
-        this.toastService.error(msg);
-        this.isSubmitting.set(false);
-      },
+      error: (error) => this.failSave(error?.error?.message || 'Error al guardar sucursal'),
     });
+  }
+
+  /**
+   * Every zone of the branch in one request, stored all together or not at
+   * all. A draft travels with its terms once its trees are loaded; a new one
+   * still loading goes without them and the server gives it free delivery,
+   * the same default the table would show.
+   */
+  private saveZones$(branchId: string): Observable<BranchZone[]> {
+    const assignments: BranchAssignmentSave[] = this.assignments().map((d) => ({
+      id: d.bzId,
+      zoneId: d.zone.id,
+      ...(d.dirty && this.treesFor(d.zone) ? { cityConfig: d.cityConfig } : {}),
+    }));
+    return this.geoAdminService.saveBranchAssignments(branchId, assignments);
+  }
+
+  /** After the zones are stored, drafts point at their saved assignments: a retry then only updates them. */
+  private markZonesSaved(saved: BranchZone[]): void {
+    const idByZone = new Map(saved.map((bz) => [typeof bz.zone === 'string' ? bz.zone : bz.zone.id, bz.id]));
+    this.assignments.update((drafts) =>
+      drafts.map((d) => (idByZone.has(d.zone.id) ? { ...d, bzId: idByZone.get(d.zone.id)!, dirty: false } : d)),
+    );
+  }
+
+  private finishSave(message: string): void {
+    this.toastService.success(message);
+    this.router.navigate(['/admin/branches']);
+  }
+
+  private failSave(message: string): void {
+    this.errorMessage.set(message);
+    this.toastService.error(message);
+    this.isSubmitting.set(false);
   }
 
   private parseCoordinates(raw: string): { latitude: number; longitude: number } | undefined {
@@ -491,10 +409,4 @@ export class BranchFormComponent implements OnInit {
     return !!(control?.invalid && control?.touched);
   }
 
-  // ==================== VISIBLE EXISTING ZONES (filtered) ====================
-
-  get visibleExistingBranchZones(): BranchZone[] {
-    const deleted = this.deletedBranchZoneIds();
-    return this.existingBranchZones().filter(bz => !deleted.includes(bz.id));
-  }
 }

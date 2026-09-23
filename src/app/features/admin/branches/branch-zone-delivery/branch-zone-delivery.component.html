@@ -1,0 +1,101 @@
+<div class="table" role="table" aria-label="Delivery por ciudad">
+  <div class="table__head" role="row">
+    <span role="columnheader">Ciudad</span>
+    <span role="columnheader">Delivery</span>
+    <span role="columnheader">Tarifa</span>
+  </div>
+
+  @for (zc of cities(); track zc.city.id) {
+    @if (termsOf(zc.city.id); as terms) {
+      <!-- City row -->
+      <div class="table__row" role="row">
+        <div class="cell-name" role="cell">
+          <span class="cell-name__title">{{ zc.city.name }}</span>
+          <span class="cell-name__meta">
+            {{ zc.municipalityName }}@if (spansStates()) {, {{ zc.stateName }}} · {{ zc.parishes.length }} {{ zc.parishes.length === 1 ? 'parroquia' : 'parroquias' }}
+            @if (terms.parishOverrides.length) {
+              · {{ terms.parishOverrides.length }} {{ terms.parishOverrides.length === 1 ? 'excepción' : 'excepciones' }}
+            }
+          </span>
+          @if (zc.parishes.length > 1) {
+            <button type="button" class="cell-name__toggle" (click)="toggleOpen(zc.city.id)" [attr.aria-expanded]="isOpen(zc.city.id)">
+              {{ isOpen(zc.city.id) ? 'Ocultar parroquias' : 'Ajustar por parroquia' }}
+            </button>
+          }
+        </div>
+        <div role="cell">
+          <div class="segmented" role="radiogroup" [attr.aria-label]="'Delivery en ' + zc.city.name">
+            @for (mode of modes; track mode.id) {
+              <button type="button" role="radio" [attr.aria-checked]="modeOf(terms) === mode.id"
+                      [class.is-active]="modeOf(terms) === mode.id" [class]="'seg seg--' + mode.id"
+                      (click)="setCityMode(zc.city.id, mode.id)">{{ mode.label }}</button>
+            }
+          </div>
+        </div>
+        <div role="cell">
+          @if (modeOf(terms) === 'paid') {
+            <label class="charge">
+              <span>$</span>
+              <input type="number" min="0" step="0.01" [value]="terms.deliveryCharge" (input)="onCityCharge(zc.city.id, $event)"
+                     [attr.aria-label]="'Tarifa de ' + zc.city.name" />
+            </label>
+          } @else {
+            <span class="dash">—</span>
+          }
+        </div>
+      </div>
+
+      <!-- Parish rows -->
+      @if (isOpen(zc.city.id)) {
+        @for (p of zc.parishes; track p.id) {
+          <div class="table__row table__row--parish" role="row">
+            <div class="cell-name" role="cell">
+              <span class="cell-name__parish">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m16.49 12 3.75 3.75m0 0-3.75 3.75m3.75-3.75H3.74V4.499" />
+                </svg>
+                {{ p.name }}
+              </span>
+            </div>
+            <div role="cell">
+              <div class="segmented segmented--sm" role="radiogroup" [attr.aria-label]="'Delivery en ' + p.name">
+                <button type="button" role="radio" class="seg seg--inherit" [class.is-active]="!overrideOf(zc.city.id, p.id)"
+                        [attr.aria-checked]="!overrideOf(zc.city.id, p.id)" (click)="setParishMode(zc.city.id, p.id, 'inherit')">Igual</button>
+                @for (mode of modes; track mode.id) {
+                  <button type="button" role="radio" [class]="'seg seg--' + mode.id"
+                          [class.is-active]="overrideOf(zc.city.id, p.id) && modeOf(overrideOf(zc.city.id, p.id)!) === mode.id"
+                          [attr.aria-checked]="overrideOf(zc.city.id, p.id) && modeOf(overrideOf(zc.city.id, p.id)!) === mode.id"
+                          (click)="setParishMode(zc.city.id, p.id, mode.id)">{{ mode.label }}</button>
+                }
+              </div>
+            </div>
+            <div role="cell">
+              @if (overrideOf(zc.city.id, p.id); as o) {
+                @if (modeOf(o) === 'paid') {
+                  <label class="charge">
+                    <span>$</span>
+                    <input type="number" min="0" step="0.01" [value]="o.deliveryCharge" (input)="onParishCharge(zc.city.id, p.id, $event)"
+                           [attr.aria-label]="'Tarifa de ' + p.name" />
+                  </label>
+                } @else {
+                  <span class="dash">—</span>
+                }
+              } @else {
+                <span class="dash">como {{ zc.city.name }}</span>
+              }
+            </div>
+          </div>
+        }
+      }
+    }
+  } @empty {
+    <p class="empty">Esta zona no tiene parroquias.</p>
+  }
+</div>
+
+@if (hasExceptions()) {
+  <p class="warning" role="note">
+    Hay excepciones por parroquia. Quien use la versión anterior de la app verá en cada municipio las mejores condiciones
+    de sus parroquias hasta que se retire esa versión.
+  </p>
+}
