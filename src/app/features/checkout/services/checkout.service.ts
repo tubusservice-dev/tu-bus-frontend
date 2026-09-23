@@ -1,7 +1,8 @@
 import { Injectable, computed, signal, inject } from '@angular/core';
 import { SettingsService } from '@core/services/settings.service';
 import { CartService } from '@core/services/cart.service';
-import { LocationService, BranchSummary } from '@core/services/location.service';
+import { LocationStore } from '@core/services/location-store.service';
+import { BranchSummary } from '@models/geo.model';
 import { ShippingAgency } from '@models/product.model';
 import { Vehicle } from '@models/vehicle.model';
 import { EngineModificationStatus } from '@models/order.model';
@@ -165,7 +166,7 @@ const INITIAL_STATE: CheckoutState = {
 export class CheckoutService {
   private readonly settingsService = inject(SettingsService);
   private readonly cartService = inject(CartService);
-  private readonly locationService = inject(LocationService);
+  private readonly locationStore = inject(LocationStore);
   private readonly _state = signal<CheckoutState>(INITIAL_STATE);
 
   // ==================== PUBLIC READONLY STATE ====================
@@ -194,7 +195,7 @@ export class CheckoutService {
     const config = this.dispatchConfig();
     const modules = config.modules;
     const options: DispatchOption[] = [];
-    const hasCoverage = this.locationService.hasCoverage();
+    const hasCoverage = this.locationStore.hasCoverage();
     const hasOilChange = this.cartService.hasOilChangeService();
 
     // 1. Cambio de Aceite a Domicilio — oil combo + coverage (priority)
@@ -210,7 +211,7 @@ export class CheckoutService {
     }
 
     // 2. Cambio de Aceite en Tienda — oil combo + branch has service
-    if (hasOilChange && this.locationService.hasInStoreOilChange()) {
+    if (hasOilChange && this.locationStore.hasInStoreOilChange()) {
       options.push({
         id: 'in_store_oil_change',
         name: 'Cambio de Aceite en Tienda',
@@ -234,8 +235,8 @@ export class CheckoutService {
     }
 
     // 4. Delivery Local — ONLY if coverage AND delivery enabled
-    if (hasCoverage && this.locationService.hasDelivery()) {
-      const dc = this.locationService.deliveryConfig();
+    if (hasCoverage && this.locationStore.hasDelivery()) {
+      const dc = this.locationStore.deliveryConfig();
       const isFree = dc?.freeDelivery ?? false;
       const charge = dc?.deliveryCharge ?? 0;
       options.push({
@@ -525,7 +526,7 @@ export class CheckoutService {
 
     // Delivery local cost
     if (state.dispatchType === 'local_delivery') {
-      const dc = this.locationService.deliveryConfig();
+      const dc = this.locationStore.deliveryConfig();
       if (dc?.freeDelivery) return 0;
       return dc?.deliveryCharge ?? null;
     }
@@ -544,7 +545,7 @@ export class CheckoutService {
     const state = this._state();
 
     if (state.dispatchType === 'local_delivery') {
-      const dc = this.locationService.deliveryConfig();
+      const dc = this.locationStore.deliveryConfig();
       if (dc?.freeDelivery) return 'Delivery gratis';
       if (dc?.deliveryCharge) return `+$${dc.deliveryCharge.toFixed(2)}`;
       return '';

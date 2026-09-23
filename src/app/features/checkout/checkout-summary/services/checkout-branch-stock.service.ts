@@ -1,7 +1,8 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { forkJoin } from 'rxjs';
 import { CartService } from '@core/services/cart.service';
-import { LocationService, BranchSummary } from '@core/services/location.service';
+import { LocationStore } from '@core/services/location-store.service';
+import { BranchSummary } from '@models/geo.model';
 import { BranchProductService } from '@core/services/branch-product.service';
 import { CheckoutService } from '@features/checkout/services/checkout.service';
 
@@ -16,7 +17,7 @@ import { CheckoutService } from '@features/checkout/services/checkout.service';
 @Injectable()
 export class CheckoutBranchStockService {
   private readonly cartService = inject(CartService);
-  private readonly locationService = inject(LocationService);
+  private readonly locationStore = inject(LocationStore);
   private readonly branchProductService = inject(BranchProductService);
   private readonly checkoutService = inject(CheckoutService);
 
@@ -31,8 +32,8 @@ export class CheckoutBranchStockService {
    */
   private readonly allBranches = computed<BranchSummary[]>(() => {
     const dt = this.checkoutService.dispatchType();
-    if (dt === 'in_store_oil_change') return this.locationService.branchesWithOilChange();
-    return this.locationService.branches();
+    if (dt === 'in_store_oil_change') return this.locationStore.branchesWithOilChange();
+    return this.locationStore.branches();
   });
 
   /**
@@ -71,7 +72,7 @@ export class CheckoutBranchStockService {
    */
   loadBranchStockForCart(): void {
     const cartItems = this.cartService.items();
-    const branchIds = this.locationService.branchIds();
+    const branchIds = this.locationStore.branchIds();
     if (cartItems.length === 0 || branchIds.length === 0) return;
 
     this.isLoadingBranchStock.set(true);

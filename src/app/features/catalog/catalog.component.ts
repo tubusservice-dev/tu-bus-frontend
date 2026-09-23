@@ -9,7 +9,7 @@ import { BrandService } from '../../core/services/brand.service';
 import { CategoryService } from '../../core/services/category.service';
 import { SettingsService } from '../../core/services/settings.service';
 import { VehicleService } from '../../core/services/vehicle.service';
-import { LocationService } from '../../core/services/location.service';
+import { LocationStore } from '@core/services/location-store.service';
 import { ProductCardComponent, ProductCardData } from '../../shared/components/product-card/product-card.component';
 import { SearchInputComponent } from '../../shared/components/search-input/search-input.component';
 import {
@@ -45,7 +45,7 @@ export class CatalogComponent implements OnInit {
   private readonly settingsService = inject(SettingsService);
 
   protected readonly vehicleService = inject(VehicleService);
-  protected readonly locationService = inject(LocationService);
+  protected readonly locationStore = inject(LocationStore);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
@@ -155,9 +155,9 @@ export class CatalogComponent implements OnInit {
   });
 
   constructor() {
-    // Wait for LocationService to resolve before loading products.
+    // Wait for LocationStore to resolve before loading products.
     effect(() => {
-      const resolved = this.locationService.isResolved();
+      const resolved = this.locationStore.isResolved();
       if (resolved && !this.initialLoadDone) {
         this.initialLoadDone = true;
         this.loadProducts();
@@ -236,7 +236,7 @@ export class CatalogComponent implements OnInit {
     this.loadCategories();
 
     // If location is already resolved, load immediately
-    if (this.locationService.isResolved() && !this.initialLoadDone) {
+    if (this.locationStore.isResolved() && !this.initialLoadDone) {
       this.initialLoadDone = true;
       this.loadProducts();
     }
@@ -292,7 +292,7 @@ export class CatalogComponent implements OnInit {
     }
 
     // Include branchIds from user's selected location
-    const ids = this.locationService.branchIds();
+    const ids = this.locationStore.branchIds();
     const branchIds = ids.length > 0 ? ids.join(',') : undefined;
 
     // Garage→catalog flow filters by vehicleType only. Engine-level matching

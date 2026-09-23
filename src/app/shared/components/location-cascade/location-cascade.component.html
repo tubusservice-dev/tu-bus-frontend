@@ -1,0 +1,26 @@
+@if (fixedLabel(); as place) {
+  <p class="cascade-fixed">
+    <span>{{ place }}</span>
+    <button type="button" class="cascade-fixed__change" (click)="requestChange()">cambiar</button>
+  </p>
+}
+
+<div class="cascade-grid">
+  @for (level of levels(); track level) {
+    <div class="cascade-field">
+      <label [for]="uid + '-' + level">{{ labels[level] }} <span class="required">*</span></label>
+      <select
+        class="input"
+        [id]="uid + '-' + level"
+        [value]="selectedId(level)"
+        [disabled]="!isEnabled(level)"
+        (change)="onSelect(level, $any($event.target).value)"
+      >
+        <option value="">Seleccionar {{ labels[level].toLowerCase() }}...</option>
+        @for (option of optionsOf(level); track option.id) {
+          <option [value]="option.id" [selected]="option.id === selectedId(level)">{{ option.name }}</option>
+        }
+      </select>
+    </div>
+  }
+</div>

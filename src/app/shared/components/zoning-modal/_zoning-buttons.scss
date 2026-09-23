@@ -1,0 +1,113 @@
+// Buttons and grids shared by the steps of the zoning modal. Each step is its
+// own component (styles are scoped), so they @use this partial.
+
+// Two columns from 380 dp up; one below, where two would squeeze the longer
+// names onto three lines.
+.zone-grid {
+  @apply grid grid-cols-2 gap-2;
+
+  @media (max-width: 379px) {
+    @apply grid-cols-1;
+  }
+}
+
+.zone-btn {
+  @apply flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl border-2 text-left transition-all duration-200;
+  background-color: var(--bg-primary);
+  border-color: var(--border-primary);
+
+  &:hover {
+    border-color: var(--accent-primary);
+    background-color: var(--bg-secondary);
+    box-shadow: 0 0 0 1px var(--accent-primary);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+
+  &__icon {
+    @apply flex-shrink-0;
+
+    svg {
+      @apply w-5 h-5;
+      color: var(--accent-primary);
+    }
+  }
+
+  &__text {
+    @apply flex flex-col flex-1 min-w-0;
+  }
+
+  &__name {
+    @apply font-medium text-sm leading-snug;
+    color: var(--text-primary);
+  }
+
+  &__meta {
+    @apply text-xs leading-snug;
+    color: var(--text-secondary);
+  }
+}
+
+// What a municipality gets: delivery, delivery in part of it, or pickup only.
+.delivery-badge {
+  @apply inline-block self-start mt-1 px-2 py-0.5 rounded-full text-[11px] font-medium;
+
+  &--full {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: rgb(4, 120, 87);
+  }
+
+  &--partial {
+    background-color: rgba(245, 158, 11, 0.12);
+    color: rgb(146, 64, 14);
+  }
+
+  &--none {
+    background-color: var(--bg-secondary);
+    color: var(--text-secondary);
+  }
+}
+
+:host-context(.dark) {
+  .zone-btn {
+    background-color: #1f2937;
+    border-color: #374151;
+
+    &:hover {
+      border-color: var(--tubus-text-accent, #4d94ff);
+      background-color: #111827;
+    }
+
+    &__name {
+      color: #f3f4f6;
+    }
+
+    &__meta {
+      color: #9ca3af;
+    }
+
+    // The light accent (#001d56) disappears on the dark modal.
+    &__icon svg {
+      color: var(--tubus-text-accent, #4d94ff);
+    }
+  }
+
+  .delivery-badge {
+    &--full {
+      background-color: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+    }
+
+    &--partial {
+      background-color: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+    }
+
+    &--none {
+      background-color: #111827;
+      color: #9ca3af;
+    }
+  }
+}

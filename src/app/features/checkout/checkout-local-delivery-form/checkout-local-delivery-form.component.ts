@@ -5,7 +5,7 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { CheckoutService, LocalDeliveryRecipientInfo } from '../services/checkout.service';
 import { CartService } from '@core/services/cart.service';
 import { AuthService } from '@core/services/auth.service';
-import { LocationService } from '@core/services/location.service';
+import { LocationStore } from '@core/services/location-store.service';
 import { BranchZoneService } from '@core/services/branch-zone.service';
 import {
   NAME_PATTERN, PHONE_VE_PATTERN, DOCUMENT_NUMBER_PATTERN, EMAIL_PATTERN,
@@ -28,7 +28,7 @@ export class CheckoutLocalDeliveryFormComponent implements OnInit {
   protected readonly checkoutService = inject(CheckoutService);
   protected readonly cartService = inject(CartService);
   protected readonly authService = inject(AuthService);
-  private readonly locationService = inject(LocationService);
+  private readonly locationStore = inject(LocationStore);
   private readonly branchZoneService = inject(BranchZoneService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
@@ -82,7 +82,7 @@ export class CheckoutLocalDeliveryFormComponent implements OnInit {
   }
 
   private loadBranchZones(): void {
-    const branches = this.locationService.branches();
+    const branches = this.locationStore.branches();
     if (branches.length === 0) {
       this.loadSavedData();
       return;

@@ -1,3 +1,5 @@
+import { Coordinates, ScheduleDay } from './branch.model';
+
 /**
  * Geographic catalogue (ubicaciones v2): State › Municipality › City › Parish,
  * and the delivery terms zones and branch assignments carry.
@@ -42,17 +44,86 @@ export interface GeoAdminTree {
   municipalities: GeoAdminMunicipality[];
 }
 
+// ==================== Public catalogue (customer side) ====================
+
+/** Any place of the catalogue, as the public routes name it. */
+export interface GeoPlace {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+export interface GeoMunicipality extends GeoPlace {
+  aliases: string[];
+}
+
+export interface GeoCity extends GeoPlace {
+  isCapital: boolean;
+}
+
+export type GeoParish = GeoPlace;
+
+/**
+ * A place picked in the cascade: state and municipality always, city and
+ * parish when the form asks for them. Names travel with the ids so an order
+ * reads the same even if a place is renamed later.
+ */
+export interface LocationRef {
+  state: { id: string; name: string };
+  municipality: { id: string; name: string };
+  city?: { id: string; name: string };
+  parish?: { id: string; name: string };
+}
+
+/** `full`: every covered parish gets delivery; `partial`: some; `none`: store pickup only. */
+export type DeliveryStatus = 'full' | 'partial' | 'none';
+
 /** A state with coverage, as the public coverage tree returns it. */
 export interface GeoCoverageState {
-  state: { id: string; name: string; slug: string };
+  state: GeoPlace;
   hint: string;
-  municipalities: Array<{ id: string; name: string; slug: string; deliveryStatus: 'full' | 'partial' | 'none' }>;
+  municipalities: Array<GeoPlace & { deliveryStatus: DeliveryStatus }>;
+}
+
+/** A municipality found by the search box, by its name, an alias or one of its cities. */
+export interface GeoSearchHit {
+  municipality: GeoPlace;
+  state: GeoPlace;
+  matchedBy: 'municipality' | 'alias' | 'city';
+  cityName?: string;
 }
 
 export interface DeliveryTerms {
   hasDelivery: boolean;
   freeDelivery: boolean;
   deliveryCharge: number;
+}
+
+/** A branch as the coverage routes summarise it. */
+export interface BranchSummary {
+  id: string;
+  name: string;
+  address: string;
+  whatsappPhone: string;
+  schedule: ScheduleDay[];
+  coordinates?: Coordinates;
+  hasInStoreOilChange: boolean;
+}
+
+/** Who serves a municipality and on what terms, parish by parish (`/geo/coverage/municipalities/:id`). */
+export interface MunicipalityCoverage {
+  branches: BranchSummary[];
+  cities: Array<{ id: string; name: string; parishes: Array<{ id: string; name: string } & DeliveryTerms> }>;
+  deliveryStatus: DeliveryStatus;
+  /** Cheapest delivery charge among the parishes that get delivery; null when none does. */
+  minDeliveryCharge: number | null;
+  /** Every parish with delivery is free (and at least one delivers). */
+  allFree: boolean;
+}
+
+/** Delivery to one parish, folded over the branches that serve it (`/geo/coverage/parishes/:id`). */
+export interface ParishDelivery extends DeliveryTerms {
+  branchIds: string[];
 }
 
 /** Delivery of one city of a zone for one branch, with per-parish exceptions. */

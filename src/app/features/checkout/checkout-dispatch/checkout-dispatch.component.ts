@@ -18,7 +18,7 @@ export class CheckoutDispatchComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly analytics = inject(ANALYTICS);
 
-  /** Dispatch options (reactive — computed from LocationService + CartService) */
+  /** Dispatch options (reactive — computed from LocationStore + CartService) */
   protected readonly dispatchOptions = this.checkoutService.dispatchOptions;
 
   /** Currently selected type */

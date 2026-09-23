@@ -1,11 +1,11 @@
 // ========================================
-// Zoning Modal - Selección obligatoria de zona
+// Zoning modal — where the customer is (never mandatory)
 // ========================================
 
 .zoning-overlay {
   @apply fixed inset-0 z-50 flex items-center justify-center p-4;
-  // Override the Tailwind `p-4` with safe-area-aware padding so the
-  // zoning dialog never paints under the OS status bar / nav bar.
+  // Safe-area-aware padding so the dialog never paints under the OS status
+  // bar / nav bar.
   padding: max(1rem, var(--safe-area-top, 0px))
            max(1rem, var(--safe-area-right, 0px))
            max(1rem, var(--safe-area-bottom, 0px))
@@ -18,20 +18,32 @@
 .zoning-modal {
   @apply relative w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl;
   background-color: var(--bg-primary);
-  // Scrolls internally; the bar itself is hidden via the global `.no-scrollbar`
-  // utility applied on the element.
-  max-height: 65vh;
+  // Scrolls internally; the bar is hidden by the global `.no-scrollbar`.
+  max-height: 80vh;
   overflow-y: auto;
   animation: slideUp 0.3s ease-out;
 
-  // While the resolving overlay is shown we freeze the modal so the user
-  // cannot keep scrolling its internal list behind the loader.
-  &--resolving {
+  // Frozen while the parent checks the picked place.
+  &--busy {
     overflow: hidden;
   }
 }
 
-// Logo
+.close-btn {
+  @apply absolute top-3 right-3 p-2 rounded-full transition-colors duration-200;
+  color: var(--text-secondary);
+  background: none;
+
+  svg {
+    @apply w-5 h-5;
+  }
+
+  &:hover {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+  }
+}
+
 .modal-logo {
   @apply flex justify-center pt-8 pb-2;
 
@@ -41,9 +53,8 @@
   }
 }
 
-// Body
 .modal-body {
-  @apply px-6 pb-8;
+  @apply px-6 pb-6;
 }
 
 .modal-title {
@@ -52,25 +63,10 @@
 }
 
 .modal-subtitle {
-  @apply text-sm text-center mb-6;
+  @apply text-sm text-center mb-5 leading-relaxed;
   color: var(--text-secondary);
 }
 
-// Search box
-// Plain wrapper. The search field draws its own border and background, so
-// giving this one a frame too produced a box inside a box that weighed more
-// than the cities the customer is here to pick.
-.search-box {
-  @apply mb-4;
-}
-
-// No results
-.no-results {
-  @apply text-center text-sm py-6;
-  color: var(--text-secondary);
-}
-
-// Loading
 .loading-state {
   @apply flex flex-col items-center gap-3 py-8;
   color: var(--text-secondary);
@@ -84,248 +80,35 @@
   }
 }
 
-// Cities grid
-// Cities grouped by state. Eighteen cities in one flat column was a long
-// scroll for a decision the customer should make at a glance; the headings
-// also answer "which state is Morón in?" without them having to know.
-.cities-groups {
-  @apply flex flex-col gap-4;
-}
-
-.city-group {
-  &__state {
-    @apply flex items-center gap-1.5 mb-2 text-xs font-medium;
-    color: var(--text-secondary);
-
-    svg {
-      @apply w-3.5 h-3.5 flex-shrink-0;
-    }
-  }
-}
-
-// Two columns from 380 dp up; one below, where two would squeeze the longer
-// names ("Guarenas-Guatire", "Miranda (Carabobo)") onto three lines.
-.cities-grid {
-  @apply grid grid-cols-2 gap-2;
-
-  @media (max-width: 379px) {
-    @apply grid-cols-1;
-  }
-
-  &--inactive {
-    @apply gap-2;
-  }
-}
-
-// Municipalities grid — always 2 columns on every viewport. The previous
-// `@media (max-width: 400px) { grid-cols-1 }` collapsed HD phones (~360 dp)
-// into a single column while HD+ kept 2, producing inconsistent UX across
-// devices. 2 columns fit comfortably even on 320 dp viewports (~114 dp
-// per cell, plenty for the icon + short municipality labels).
-.municipalities-grid {
-  @apply grid grid-cols-2 gap-2;
-}
-
-// Footer note under the municipality list. Only ever states what the customer
-// can actually get: claiming home delivery where there is none costs a sale
-// at the door.
-.delivery-note {
-  @apply flex items-center gap-2 mt-4 pt-3 text-xs;
-  border-top: 1px solid var(--border-primary);
+.load-error {
+  @apply flex flex-col items-center gap-3 py-6 text-sm;
   color: var(--text-secondary);
-
-  svg {
-    @apply w-4 h-4 flex-shrink-0;
-  }
-
-  &--available svg {
-    color: rgb(16, 185, 129);
-  }
 }
 
-// Zone button. Tighter than before: the old 16px vertical padding and 24px
-// icon made each city a banner, so only a handful fit on screen at once.
-.zone-btn {
-  @apply flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl
-         border-2 text-left transition-all duration-200;
-  background-color: var(--bg-primary);
-  border-color: var(--border-primary);
-
-  &:active {
-    transform: scale(0.98);
-  }
-
-  &__icon {
-    @apply flex-shrink-0;
-
-    svg {
-      @apply w-5 h-5;
-      color: var(--accent-primary);
-    }
-  }
-
-  &__name {
-    @apply flex-1 font-medium text-sm leading-snug;
-    color: var(--text-primary);
-  }
-
-  &__badge {
-    @apply text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0;
-
-    &--available {
-      background-color: rgba(16, 185, 129, 0.1);
-      color: rgb(16, 185, 129);
-    }
-
-    &--soon {
-      background-color: rgba(245, 158, 11, 0.1);
-      color: rgb(245, 158, 11);
-    }
-
-  }
-
-  // Active city
-  &--active {
-    &:hover {
-      border-color: var(--accent-primary);
-      background-color: var(--bg-secondary);
-      box-shadow: 0 0 0 1px var(--accent-primary);
-    }
-  }
-
-  // Inactive city
-  &--inactive {
-    @apply py-3;
-    opacity: 0.7;
-    border-style: dashed;
-
-    .zone-btn__name {
-      @apply text-sm;
-    }
-
-    &:hover {
-      opacity: 1;
-      border-color: rgb(245, 158, 11);
-    }
-  }
-
-  // Municipality
-  &--municipality {
-    @apply flex-col items-center text-center py-5;
-
-    .zone-btn__icon svg {
-      @apply w-8 h-8;
-    }
-
-    &:hover {
-      border-color: var(--accent-primary);
-      background-color: var(--bg-secondary);
-      box-shadow: 0 0 0 1px var(--accent-primary);
-    }
-  }
-}
-
-// Separator
-.separator {
-  @apply flex items-center gap-3 my-5;
-
-  &__line {
-    @apply flex-1 h-px;
-    background-color: var(--border-primary);
-  }
-
-  &__text {
-    @apply text-xs font-medium uppercase tracking-wider;
-    color: var(--text-tertiary, var(--text-secondary));
-  }
-}
-
-// Back button
-.back-btn {
-  @apply flex items-center gap-1.5 text-sm font-medium mb-4 px-0 py-1
-         transition-colors duration-200;
-  color: var(--accent-primary);
-  background: none;
-  border: none;
-
-  svg {
-    @apply w-4 h-4;
-  }
-
-  &:hover {
-    opacity: 0.8;
-  }
-}
-
-// Out of coverage
-.out-of-coverage {
-  @apply text-center;
-
-  .ooc-icon {
-    @apply flex justify-center mb-4;
-
-    svg {
-      @apply w-16 h-16;
-      color: rgb(245, 158, 11);
-    }
-  }
-
-  .modal-title {
-    @apply text-xl;
-  }
-
-  .modal-subtitle {
-    @apply mb-8 leading-relaxed;
-  }
-}
-
-.btn-back-main {
-  @apply inline-flex items-center gap-2 px-6 py-3 rounded-xl
-         font-semibold text-sm transition-all duration-200;
-  background-color: var(--accent-primary);
-  color: white;
-
-  svg {
-    @apply w-4 h-4;
-  }
-
-  &:hover {
-    background-color: var(--accent-hover);
-  }
-
-  &:active {
-    transform: scale(0.98);
-  }
-}
-
-// OOC actions
-.ooc-actions {
-  @apply flex items-center justify-center gap-3 mt-2;
-}
-
-.btn-ooc-secondary {
-  @apply inline-flex items-center gap-1.5 px-5 py-3 rounded-xl
-         font-semibold text-sm transition-all duration-200 border;
+.retry-btn {
+  @apply px-4 py-2 rounded-xl text-sm font-medium border;
   border-color: var(--border-primary);
   color: var(--text-primary);
-  background: none;
+}
 
-  svg {
-    @apply w-4 h-4;
-  }
+// A way out, not the main action: picking a place is still what we want.
+.explore {
+  @apply mt-6 pt-4 text-center;
+  border-top: 1px solid var(--border-primary);
 
-  &:hover {
-    border-color: var(--accent-primary);
+  &__link {
+    @apply text-sm font-medium underline underline-offset-2;
     color: var(--accent-primary);
+    background: none;
   }
 
-  &:active {
-    transform: scale(0.98);
+  &__hint {
+    @apply mt-1.5 text-xs leading-relaxed;
+    color: var(--text-secondary);
   }
 }
 
-// Resolving overlay — covers the full viewport so the loader is visible
-// regardless of modal size or internal scroll position.
+// Covers the full viewport so the loader shows whatever the scroll position.
 .resolving-overlay {
   @apply fixed inset-0 flex flex-col items-center justify-center gap-3;
   background-color: rgba(0, 0, 0, 0.65);
@@ -347,7 +130,6 @@
   }
 }
 
-// Animations
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -380,69 +162,27 @@
     color: #f9fafb;
   }
 
-  .modal-subtitle {
+  .modal-subtitle,
+  .loading-state,
+  .load-error,
+  .explore__hint {
     color: #9ca3af;
   }
 
-  .loading-state {
-    color: #9ca3af;
-    .spinner {
-      border-color: #374151;
-      border-top-color: var(--tubus-text-accent, #4d94ff);
-    }
-  }
-
-  .zone-btn {
-    background-color: #1f2937;
+  .loading-state .spinner {
     border-color: #374151;
+    border-top-color: var(--tubus-text-accent, #4d94ff);
+  }
 
-    &__name {
-      color: #f3f4f6;
-    }
+  .explore {
+    border-top-color: #374151;
 
-    // El accent-primary del light mode es #001d56 — sobre el fondo oscuro del
-    // modal queda casi imperceptible. Usamos el accent brillante específico de
-    // dark mode (`tubus-text-accent` ≈ #4d94ff) para que el ícono se note.
-    &__icon svg {
+    &__link {
       color: var(--tubus-text-accent, #4d94ff);
     }
-
-    &__badge {
-      &--available {
-        background-color: rgba(16, 185, 129, 0.15);
-        color: #34d399;
-      }
-      &--soon {
-        background-color: rgba(245, 158, 11, 0.15);
-        color: #fbbf24;
-      }
-    }
-
-    &--active:hover {
-      border-color: var(--tubus-text-accent, #4d94ff);
-      background-color: #111827;
-    }
-
-    &--inactive:hover {
-      border-color: #fbbf24;
-    }
-
-    &--municipality:hover {
-      border-color: var(--tubus-text-accent, #4d94ff);
-      background-color: #111827;
-    }
   }
 
-  .separator {
-    &__line {
-      background-color: #374151;
-    }
-    &__text {
-      color: #6b7280;
-    }
-  }
-
-  .back-btn {
-    color: var(--tubus-text-accent, #4d94ff);
+  .close-btn:hover {
+    background-color: #111827;
   }
 }

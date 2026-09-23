@@ -6,7 +6,8 @@ import { forkJoin } from 'rxjs';
 import { CheckoutService, RequestedServiceDate } from '../services/checkout.service';
 import { CartService } from '@core/services/cart.service';
 import { OrderService } from '@core/services/order.service';
-import { LocationService, BranchSummary } from '@core/services/location.service';
+import { LocationStore } from '@core/services/location-store.service';
+import { BranchSummary } from '@models/geo.model';
 import { ProductService } from '@core/services/product.service';
 import { ExchangeRateService } from '@core/services/exchange-rate.service';
 import { BranchAvailabilityService, AvailabilityMode } from '@core/services/branch-availability.service';
@@ -37,7 +38,7 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
   protected readonly checkoutService = inject(CheckoutService);
   protected readonly cartService = inject(CartService);
   private readonly orderService = inject(OrderService);
-  protected readonly locationService = inject(LocationService);
+  protected readonly locationStore = inject(LocationStore);
   private readonly productService = inject(ProductService);
   private readonly router = inject(Router);
   protected readonly exchangeRateService = inject(ExchangeRateService);
@@ -515,7 +516,7 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
   }
 
   private getLocalDeliveryConfig(): { freeDelivery: boolean; additionalCharge: boolean; additionalChargeAmount: number } | null {
-    const dc = this.locationService.deliveryConfig();
+    const dc = this.locationStore.deliveryConfig();
     if (!dc) return null;
     return {
       freeDelivery: dc.freeDelivery,

@@ -6,7 +6,7 @@ import { forkJoin } from 'rxjs';
 import { CheckoutService, OilChangeServiceInfo } from '../services/checkout.service';
 import { CartService } from '@core/services/cart.service';
 import { AuthService } from '@core/services/auth.service';
-import { LocationService } from '@core/services/location.service';
+import { LocationStore } from '@core/services/location-store.service';
 import { BranchZoneService } from '@core/services/branch-zone.service';
 import { VehicleService } from '@core/services/vehicle.service';
 import { ProductService } from '@core/services/product.service';
@@ -32,7 +32,7 @@ export class CheckoutOilChangeFormComponent implements OnInit {
   protected readonly checkoutService = inject(CheckoutService);
   protected readonly cartService = inject(CartService);
   protected readonly authService = inject(AuthService);
-  private readonly locationService = inject(LocationService);
+  private readonly locationStore = inject(LocationStore);
   private readonly branchZoneService = inject(BranchZoneService);
   protected readonly vehicleService = inject(VehicleService);
   private readonly productService = inject(ProductService);
@@ -154,7 +154,7 @@ export class CheckoutOilChangeFormComponent implements OnInit {
   }
 
   private loadBranchZones(): void {
-    const branches = this.locationService.branches();
+    const branches = this.locationStore.branches();
     if (branches.length === 0) return;
 
     // One public call for every branch at once. This used to be one admin-only

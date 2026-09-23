@@ -1,0 +1,32 @@
+:host {
+  @apply block;
+}
+
+.cascade-fixed {
+  @apply flex items-center gap-2 mb-3 text-sm text-gray-700 dark:text-gray-300;
+}
+
+.cascade-fixed__change {
+  @apply font-medium underline;
+  color: var(--accent-primary);
+}
+
+.cascade-grid {
+  @apply grid gap-4 sm:grid-cols-2;
+}
+
+.cascade-field {
+  @apply flex flex-col gap-1.5;
+
+  label {
+    @apply text-sm font-medium text-gray-700 dark:text-gray-300;
+  }
+
+  .required {
+    @apply text-red-600;
+  }
+}
+
+select.input:disabled {
+  @apply opacity-50 cursor-not-allowed;
+}

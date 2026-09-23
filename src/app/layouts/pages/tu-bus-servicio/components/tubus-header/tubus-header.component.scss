@@ -171,6 +171,12 @@
   }
 }
 
+// Only the items the new zone lacks: the rest of the cart stays.
+.zone-confirm-list {
+  @apply text-sm text-left list-disc pl-5 -mt-4 mb-4 max-h-40 overflow-y-auto;
+  color: var(--text-primary);
+}
+
 .zone-confirm-actions {
   @apply flex flex-col gap-2;
 }

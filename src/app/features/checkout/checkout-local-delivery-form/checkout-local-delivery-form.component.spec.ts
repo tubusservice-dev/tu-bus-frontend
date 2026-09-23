@@ -6,7 +6,7 @@ import { CheckoutLocalDeliveryFormComponent } from './checkout-local-delivery-fo
 import { CheckoutService, LocalDeliveryRecipientInfo } from '../services/checkout.service';
 import { CartService } from '@core/services/cart.service';
 import { AuthService } from '@core/services/auth.service';
-import { LocationService } from '@core/services/location.service';
+import { LocationStore } from '@core/services/location-store.service';
 import { BranchZoneService } from '@core/services/branch-zone.service';
 import { ANALYTICS } from '@platform';
 
@@ -97,7 +97,7 @@ describe('CheckoutLocalDeliveryFormComponent', () => {
           provide: AuthService,
           useValue: { currentUser: () => user, loadUserProfile: () => of(null) },
         },
-        { provide: LocationService, useValue: { branches: signal([{ id: 'branch-1' }]) } },
+        { provide: LocationStore, useValue: { branches: signal([{ id: 'branch-1' }]) } },
         { provide: BranchZoneService, useValue: branchZoneMock },
         { provide: Router, useValue: { navigate: navigateSpy } },
         { provide: ANALYTICS, useValue: { logEvent: () => Promise.resolve() } },

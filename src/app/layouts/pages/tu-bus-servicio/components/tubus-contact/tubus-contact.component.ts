@@ -1,7 +1,8 @@
 import { Component, inject, computed } from '@angular/core';
 import { EXTERNAL_LINK, IExternalLink } from '@platform';
 import { SettingsService } from '../../../../../core/services/settings.service';
-import { LocationService, BranchSummary } from '../../../../../core/services/location.service';
+import { LocationStore } from '@core/services/location-store.service';
+import { BranchSummary } from '@models/geo.model';
 
 const DAY_NAMES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
@@ -14,13 +15,13 @@ const DAY_NAMES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 })
 export class TubusContactComponent {
   private readonly settingsService = inject(SettingsService);
-  private readonly locationService = inject(LocationService);
+  private readonly locationStore = inject(LocationStore);
   private readonly externalLink = inject<IExternalLink>(EXTERNAL_LINK);
 
   protected readonly whatsappConfig = this.settingsService.whatsappConfig;
   protected readonly customerSupport = this.settingsService.customerSupportConfig;
 
-  protected readonly branches = computed(() => this.locationService.branches());
+  protected readonly branches = computed(() => this.locationStore.branches());
   protected readonly hasMultipleBranches = computed(() => this.branches().length > 1);
 
   // Single-branch quick accessors (only meaningful when branches.length === 1).

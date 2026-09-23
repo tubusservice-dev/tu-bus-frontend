@@ -5,7 +5,7 @@ import { OverlayStackService } from '@core/services/overlay-stack.service';
 import { ProductService, DetailProduct, DetailRelatedProduct } from '@core/services/product.service';
 import { CartService } from '@core/services/cart.service';
 import { AuthService } from '@core/services/auth.service';
-import { LocationService } from '@core/services/location.service';
+import { LocationStore } from '@core/services/location-store.service';
 import { ExchangeRateService } from '@core/services/exchange-rate.service';
 import { ProductCardComponent, ProductCardData } from '@shared/components/product-card/product-card.component';
 import { CartPopoverComponent } from '@shared/components/cart-popover/cart-popover.component';
@@ -41,7 +41,7 @@ export class ProductDetailPageComponent implements OnInit {
   private readonly productService = inject(ProductService);
   private readonly cartService = inject(CartService);
   private readonly authService = inject(AuthService);
-  private readonly locationService = inject(LocationService);
+  private readonly locationStore = inject(LocationStore);
   protected readonly exchangeRateService = inject(ExchangeRateService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly analytics = inject(ANALYTICS);
@@ -175,7 +175,7 @@ export class ProductDetailPageComponent implements OnInit {
   private loadProductDetail(id: string): void {
     this.resetState();
 
-    const branchIdsList = this.locationService.branchIds();
+    const branchIdsList = this.locationStore.branchIds();
     const branchIdsParam = branchIdsList.length > 0 ? branchIdsList.join(',') : undefined;
 
     // Fire Phase 1 and Phase 2 in parallel.

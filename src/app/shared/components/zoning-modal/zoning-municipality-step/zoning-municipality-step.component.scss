@@ -1,0 +1,40 @@
+@use '../zoning-buttons';
+
+.back-btn {
+  @apply flex items-center gap-1.5 text-sm font-medium mb-4 px-0 py-1 transition-colors duration-200;
+  color: var(--accent-primary);
+  background: none;
+  border: none;
+
+  svg {
+    @apply w-4 h-4;
+  }
+
+  &:hover {
+    opacity: 0.8;
+  }
+}
+
+.step-title {
+  @apply text-2xl font-bold text-center mb-1;
+  color: var(--text-primary);
+}
+
+.step-subtitle {
+  @apply text-sm text-center mb-5;
+  color: var(--text-secondary);
+}
+
+:host-context(.dark) {
+  .back-btn {
+    color: var(--tubus-text-accent, #4d94ff);
+  }
+
+  .step-title {
+    color: #f9fafb;
+  }
+
+  .step-subtitle {
+    color: #9ca3af;
+  }
+}
