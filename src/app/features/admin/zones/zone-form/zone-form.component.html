@@ -12,18 +12,16 @@
     </h1>
   </header>
 
-  <!-- Loading -->
   @if (isLoading()) {
     <div class="loading-container">
       <div class="loading-spinner"></div>
       <span>Cargando zona...</span>
     </div>
   } @else {
-    <!-- Mensajes -->
     @if (errorMessage()) {
       <div class="alert error">
         <span>{{ errorMessage() }}</span>
-        <button (click)="errorMessage.set(null)">
+        <button type="button" (click)="errorMessage.set(null)" aria-label="Cerrar">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
           </svg>
@@ -31,26 +29,13 @@
       </div>
     }
 
-    @if (successMessage()) {
-      <div class="alert success">
-        <span>{{ successMessage() }}</span>
-        <button (click)="successMessage.set(null)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-    }
-
-    <!-- Formulario -->
-    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="form-container" autocomplete="nope">
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="form-container" autocomplete="off">
       <div class="form-grid">
-        <!-- Columna principal (span 2) -->
         <div class="form-main">
           <section class="form-section">
             <h2 class="section-title">Informacion de la Zona</h2>
 
-            <!-- Nombre de la zona -->
+            <!-- Nombre -->
             <div class="form-group">
               <label for="name">
                 Nombre de la zona <span class="required">*</span>
@@ -59,8 +44,8 @@
                 type="text"
                 id="name"
                 formControlName="name"
-                placeholder="Ej: Zona Centro, Zona Norte..."
-                autocomplete="nope"
+                placeholder="Ej: Valencia Norte, Caracas Este..."
+                autocomplete="off"
                 [class.error]="isInvalid('name') || nameExists()"
                 (blur)="onNameBlur()"
               />
@@ -75,112 +60,47 @@
               }
             </div>
 
-            <!-- Ciudad (custom searchable dropdown) -->
+            <!-- Estado -->
             <div class="form-group">
-              <label>
-                Ciudad <span class="required">*</span>
-              </label>
-              @if (selectedCity(); as city) {
-                <div class="selected-badge-full">
-                  <span>{{ city.name }}</span>
-                  <button type="button" class="badge-remove" (click)="clearCity()">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-              } @else {
-                <div class="custom-select-wrapper">
-                  <div class="custom-select-input-wrapper">
-                    <input
-                      type="text"
-                      class="custom-select-search"
-                      [placeholder]="isLoadingCities() ? 'Cargando ciudades...' : 'Buscar ciudad...'"
-                      autocomplete="nope"
-                      [disabled]="isLoadingCities()"
-                      [value]="citySearchTerm()"
-                      (input)="onCitySearch($event)"
-                      (focus)="showCityDropdown.set(true)"
-                      (blur)="closeCityDropdown()"
-                    />
-                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-                    </svg>
-                  </div>
-                  @if (showCityDropdown() && filteredCities().length > 0) {
-                    <div class="custom-select-dropdown" (mousedown)="$event.preventDefault()">
-                      @for (city of filteredCities(); track city.id) {
-                        <button type="button" class="custom-select-option" (mousedown)="$event.preventDefault()" (click)="selectCity(city)">
-                          {{ city.name }}
-                        </button>
-                      }
-                    </div>
-                  }
-                </div>
-              }
+              <span class="field-label">
+                Estado <span class="required">*</span>
+              </span>
+              <app-geo-state-picker
+                [states]="states()"
+                [coveredIds]="coveredStateIds()"
+                [municipalityCounts]="coveredMunicipalityCounts()"
+                [selected]="selectedStateId()"
+                (selectedChange)="onStateChange($event)"
+              />
+              <span class="help-text">Una zona pertenece a un solo estado. Cambiarlo vacía la selección.</span>
             </div>
 
-            <!-- Municipios (toggles after city selection) -->
-            @if (selectedCity(); as city) {
-              @if (city.municipalities.length > 0) {
-                <div class="form-group">
-                  <label>
-                    Municipios <span class="required">*</span>
-                  </label>
-
-                  <!-- Header: select all + counter -->
-                  <div class="muni-header">
-                    <button type="button" class="muni-select-all" (click)="toggleAll()">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-4 h-4">
-                        @if (allMunicipalitiesSelected) {
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                        } @else {
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15 12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
-                        }
-                      </svg>
-                      {{ allMunicipalitiesSelected ? 'Deseleccionar todos' : 'Seleccionar todos' }}
-                    </button>
-                    <span class="muni-counter">
-                      <span class="muni-counter-num">{{ selectedMunicipalities().length }}</span>
-                      / {{ city.municipalities.length }}
-                    </span>
+            <!-- Parroquias -->
+            @if (selectedStateId()) {
+              <div class="form-group">
+                <span class="field-label">
+                  Parroquias que cubre la zona <span class="required">*</span>
+                </span>
+                @if (isLoadingTree()) {
+                  <div class="loading-container">
+                    <div class="loading-spinner"></div>
+                    <span>Cargando parroquias...</span>
                   </div>
-
-                  <!-- Municipality toggle list -->
-                  <div class="muni-list">
-                    @for (municipality of city.municipalities; track municipality.slug) {
-                      <div
-                        class="muni-item"
-                        [class.is-active]="isMunicipalitySelected(municipality.slug)"
-                        (click)="toggleMunicipality(municipality.slug)"
-                      >
-                        <div class="muni-item-info">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="muni-item-icon">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
-                          </svg>
-                          <span class="muni-item-name">{{ municipality.name }}</span>
-                        </div>
-                        <div class="muni-toggle-wrapper">
-                          <div class="muni-toggle" [class.on]="isMunicipalitySelected(municipality.slug)">
-                            <div class="muni-toggle-knob"></div>
-                          </div>
-                        </div>
-                      </div>
-                    }
-                  </div>
-
-                  <span class="help-text">Selecciona los municipios que cubre esta zona</span>
-                </div>
-              }
+                } @else if (tree(); as t) {
+                  <app-geo-tree-picker [tree]="t" [(selected)]="parishes" />
+                  <span class="help-text">
+                    Marca un municipio para incluir todas sus parroquias, o despliégalo para elegirlas una a una.
+                  </span>
+                }
+              </div>
             }
           </section>
         </div>
 
-        <!-- Columna derecha (sidebar) -->
+        <!-- Sidebar -->
         <div class="form-sidebar">
           <section class="form-section">
-            <h2 class="section-title">Estado</h2>
+            <h2 class="section-title">Estado de la zona</h2>
             <label class="toggle-label">
               <input type="checkbox" formControlName="isActive" />
               <span class="toggle-switch"></span>
@@ -191,10 +111,9 @@
         </div>
       </div>
 
-      <!-- Acciones -->
       <div class="form-actions">
         <a routerLink="/admin/zones" class="btn-cancel">Cancelar</a>
-        <button type="submit" class="btn-submit" [disabled]="isSubmitting() || nameExists()">
+        <button type="submit" class="btn-submit" [disabled]="!canSubmit()">
           @if (isSubmitting()) {
             <span class="loading-spinner-sm"></span>
             Guardando...

@@ -1,5 +1,6 @@
 import { Branch } from './branch.model';
 import { Zone } from './zone.model';
+import { CityDeliveryConfig } from './geo.model';
 
 /**
  * Delivery configuration for a single municipality within a BranchZone.
@@ -20,6 +21,8 @@ export interface BranchZone {
   branch: Branch | string;
   zone: Zone | string;
   deliveryConfig: DeliveryConfigItem[];
+  /** Ubicaciones v2: delivery per geo city of the zone. */
+  cityConfig?: CityDeliveryConfig[];
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;

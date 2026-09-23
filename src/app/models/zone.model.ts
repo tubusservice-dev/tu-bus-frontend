@@ -7,8 +7,14 @@ import { City } from './city.model';
 export interface Zone {
   id: string;
   name: string;
-  city: City | string;
+  /** Legacy: null for a zone the old app never knew. */
+  city: City | string | null;
   municipalities: string[];
+  /** Ubicaciones v2: geo parishes the zone covers, and their (single) state. */
+  parishes?: string[];
+  states?: string[];
+  /** Edited with the new panel: the legacy panel can no longer change it. */
+  v2Managed?: boolean;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;

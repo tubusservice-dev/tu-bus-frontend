@@ -1,19 +1,24 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
-import { City, Municipality } from '../../../../models/city.model';
-import { Zone, CreateZoneRequest, UpdateZoneRequest } from '../../../../models/zone.model';
-import { CityService } from '../../../../core/services/city.service';
-import { ZoneService } from '../../../../core/services/zone.service';
-import { ToastService } from '../../../../shared/services/toast.service';
+import { ZoneService } from '@core/services/zone.service';
+import { GeoAdminService } from '@core/services/geo-admin.service';
+import { ToastService } from '@shared/services/toast.service';
+import { GeoTreePickerComponent } from '@shared/components/geo-tree-picker/geo-tree-picker.component';
+import { GeoStatePickerComponent } from '@shared/components/geo-state-picker/geo-state-picker.component';
+import { GeoAdminTree, GeoState } from '@models/geo.model';
 
+/**
+ * Create / edit a zone as a set of parishes of one state (ubicaciones v2).
+ * The server derives what the previous app version reads from the parishes.
+ */
 @Component({
   selector: 'app-zone-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, GeoTreePickerComponent, GeoStatePickerComponent],
   templateUrl: './zone-form.component.html',
   styleUrl: './zone-form.component.scss',
 })
@@ -21,43 +26,55 @@ export class ZoneFormComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
-  private readonly cityService = inject(CityService);
   private readonly zoneService = inject(ZoneService);
+  private readonly geoAdminService = inject(GeoAdminService);
   private readonly toastService = inject(ToastService);
+  private readonly destroyRef = inject(DestroyRef);
 
-  // Core state
   protected readonly zoneId = signal<string | null>(null);
   protected readonly isEditMode = signal(false);
   protected readonly isLoading = signal(false);
   protected readonly isSubmitting = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
-  protected readonly successMessage = signal<string | null>(null);
 
-  // Cities loaded from CityService
-  protected readonly cities = signal<City[]>([]);
-  protected readonly isLoadingCities = signal(false);
+  protected readonly states = signal<GeoState[]>([]);
+  protected readonly coveredStateIds = signal<ReadonlySet<string>>(new Set());
+  protected readonly coveredMunicipalityCounts = signal<ReadonlyMap<string, number>>(new Map());
+  protected readonly selectedStateId = signal<string | null>(null);
+  protected readonly tree = signal<GeoAdminTree | null>(null);
+  protected readonly isLoadingTree = signal(false);
+  protected readonly parishes = signal<string[]>([]);
 
-  // Selected city and municipalities
-  protected readonly selectedCity = signal<City | null>(null);
-  protected readonly selectedMunicipalities = signal<string[]>([]);
-
-  // Name uniqueness check
   protected readonly nameExists = signal(false);
   private readonly nameCheck$ = new Subject<string>();
 
-  // City searchable dropdown state
-  protected readonly citySearchTerm = signal('');
-  protected readonly showCityDropdown = signal(false);
+  protected readonly canSubmit = computed(
+    () => !this.isSubmitting() && !this.nameExists() && Boolean(this.selectedStateId()) && this.parishes().length > 0,
+  );
 
-  // Main form — only name and isActive
   protected readonly form: FormGroup = this.fb.group({
-    name: ['', [Validators.required, Validators.minLength(2)]],
+    name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(80)]],
     isActive: [true],
   });
 
   ngOnInit(): void {
-    this.loadCities();
     this.setupNameCheck();
+    this.geoAdminService
+      .listStates()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (states) => this.states.set(states),
+        error: () => this.errorMessage.set('No se pudieron cargar los estados'),
+      });
+    this.geoAdminService
+      .getCoverage()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (coverage) => {
+          this.coveredStateIds.set(new Set(coverage.map((c) => c.state.id)));
+          this.coveredMunicipalityCounts.set(new Map(coverage.map((c) => [c.state.id, c.municipalities.length])));
+        },
+      });
 
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
@@ -67,38 +84,22 @@ export class ZoneFormComponent implements OnInit {
     }
   }
 
-  // ==================== DATA LOADING ====================
-
-  private loadCities(): void {
-    this.isLoadingCities.set(true);
-    this.cityService.getAll().subscribe({
-      next: (response) => {
-        this.cities.set(response.data || []);
-        this.isLoadingCities.set(false);
-      },
-      error: () => {
-        this.isLoadingCities.set(false);
-      },
-    });
-  }
+  // ==================== data ====================
 
   private loadZone(id: string): void {
     this.isLoading.set(true);
     this.zoneService.getById(id).subscribe({
-      next: (response) => {
-        const zone = response.data;
-        this.form.patchValue({
-          name: zone.name || '',
-          isActive: zone.isActive,
-        });
-
-        // If city is populated as object, set selectedCity
-        if (zone.city && typeof zone.city === 'object') {
-          this.selectedCity.set(zone.city as City);
-        }
-
-        this.selectedMunicipalities.set(zone.municipalities || []);
+      next: ({ data: zone }) => {
+        this.form.patchValue({ name: zone.name ?? '', isActive: zone.isActive });
         this.isLoading.set(false);
+
+        const stateId = zone.states?.[0];
+        if (!stateId || !zone.parishes?.length) {
+          this.errorMessage.set('Esta zona todavía no tiene parroquias: hay que migrarla antes de editarla aquí.');
+          return;
+        }
+        this.parishes.set(zone.parishes);
+        this.loadTree(stateId);
       },
       error: (error) => {
         this.errorMessage.set(error.error?.message || 'Error al cargar zona');
@@ -107,165 +108,97 @@ export class ZoneFormComponent implements OnInit {
     });
   }
 
-  // ==================== NAME UNIQUENESS ====================
+  private loadTree(stateId: string): void {
+    this.selectedStateId.set(stateId);
+    this.tree.set(null);
+    this.isLoadingTree.set(true);
+    this.geoAdminService
+      .getTree(stateId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (tree) => {
+          this.tree.set(tree);
+          this.isLoadingTree.set(false);
+        },
+        error: () => {
+          this.errorMessage.set('No se pudo cargar el estado');
+          this.isLoadingTree.set(false);
+        },
+      });
+  }
+
+  /** A zone lives in one state: changing it starts the selection over. */
+  protected onStateChange(stateId: string | null): void {
+    if (stateId === this.selectedStateId()) return;
+    this.parishes.set([]);
+    if (stateId) this.loadTree(stateId);
+    else {
+      this.selectedStateId.set(null);
+      this.tree.set(null);
+    }
+  }
+
+  // ==================== name uniqueness ====================
 
   private setupNameCheck(): void {
     this.nameCheck$
       .pipe(
         debounceTime(400),
         distinctUntilChanged(),
-        switchMap((name) => this.zoneService.checkName(name))
+        switchMap((name) => this.zoneService.checkName(name)),
+        takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: (response) => {
-          this.nameExists.set(response.data.exists);
-        },
-        error: () => {
-          this.nameExists.set(false);
-        },
+        next: (response) => this.nameExists.set(response.data.exists),
+        error: () => this.nameExists.set(false),
       });
   }
 
-  onNameBlur(): void {
+  protected onNameBlur(): void {
     const name = this.form.get('name')?.value?.trim();
-    if (name && name.length >= 2) {
-      this.nameCheck$.next(name);
-    }
+    if (name && name.length >= 2) this.nameCheck$.next(name);
   }
 
-  // ==================== CITY SELECT ====================
+  // ==================== submit ====================
 
-  filteredCities(): City[] {
-    const term = this.citySearchTerm().toLowerCase();
-    return this.cities().filter((c) => !term || c.name.toLowerCase().includes(term));
-  }
-
-  onCitySearch(event: Event): void {
-    this.citySearchTerm.set((event.target as HTMLInputElement).value);
-    this.showCityDropdown.set(true);
-  }
-
-  selectCity(city: City): void {
-    this.selectedCity.set(city);
-    this.citySearchTerm.set('');
-    this.showCityDropdown.set(false);
-    this.selectedMunicipalities.set([]);
-  }
-
-  clearCity(): void {
-    this.selectedCity.set(null);
-    this.selectedMunicipalities.set([]);
-  }
-
-  closeCityDropdown(): void {
-    setTimeout(() => {
-      this.showCityDropdown.set(false);
-      this.citySearchTerm.set('');
-    }, 200);
-  }
-
-  // ==================== MUNICIPALITY CHECKBOXES ====================
-
-  isMunicipalitySelected(slug: string): boolean {
-    return this.selectedMunicipalities().includes(slug);
-  }
-
-  toggleMunicipality(slug: string): void {
-    if (this.isMunicipalitySelected(slug)) {
-      this.selectedMunicipalities.update((list) => list.filter((s) => s !== slug));
-    } else {
-      this.selectedMunicipalities.update((list) => [...list, slug]);
-    }
-  }
-
-  toggleAll(): void {
-    const city = this.selectedCity();
-    if (!city) return;
-
-    const allSlugs = city.municipalities.map((m) => m.slug);
-    const allSelected = allSlugs.length === this.selectedMunicipalities().length;
-
-    if (allSelected) {
-      this.selectedMunicipalities.set([]);
-    } else {
-      this.selectedMunicipalities.set([...allSlugs]);
-    }
-  }
-
-  get allMunicipalitiesSelected(): boolean {
-    const city = this.selectedCity();
-    if (!city || city.municipalities.length === 0) return false;
-    return city.municipalities.length === this.selectedMunicipalities().length;
-  }
-
-  // ==================== SUBMIT ====================
-
-  onSubmit(): void {
-    if (this.form.invalid || !this.selectedCity()) {
+  protected onSubmit(): void {
+    if (this.form.invalid || !this.canSubmit()) {
       this.form.markAllAsTouched();
-      if (!this.selectedCity()) {
-        this.errorMessage.set('Debes seleccionar una ciudad');
-      }
+      if (!this.parishes().length) this.errorMessage.set('Marca al menos una parroquia');
       return;
     }
 
     this.isSubmitting.set(true);
     this.errorMessage.set(null);
+    const { name, isActive } = this.form.getRawValue();
+    const request = { name: name.trim(), parishes: this.parishes(), isActive };
 
-    const formValue = this.form.getRawValue();
-    const city = this.selectedCity()!;
+    const save$ = this.isEditMode()
+      ? this.geoAdminService.updateZone(this.zoneId()!, request)
+      : this.geoAdminService.createZone(request);
 
-    if (this.isEditMode()) {
-      const updateData: UpdateZoneRequest = {
-        name: formValue.name,
-        city: city.id,
-        municipalities: this.selectedMunicipalities(),
-        isActive: formValue.isActive,
-      };
-
-      this.zoneService.update(this.zoneId()!, updateData).subscribe({
-        next: () => {
-          this.toastService.success('Zona actualizada exitosamente');
-          this.router.navigate(['/admin/zones']);
-        },
-        error: (error) => {
-          const msg = error.error?.message || 'Error al guardar zona';
-          this.errorMessage.set(msg);
-          this.toastService.error(msg);
-          this.isSubmitting.set(false);
-        },
-      });
-    } else {
-      const createData: CreateZoneRequest = {
-        name: formValue.name,
-        city: city.id,
-        municipalities: this.selectedMunicipalities(),
-        isActive: formValue.isActive,
-      };
-
-      this.zoneService.create(createData).subscribe({
-        next: () => {
-          this.toastService.success('Zona creada exitosamente');
-          this.router.navigate(['/admin/zones']);
-        },
-        error: (error) => {
-          const msg = error.error?.message || 'Error al guardar zona';
-          this.errorMessage.set(msg);
-          this.toastService.error(msg);
-          this.isSubmitting.set(false);
-        },
-      });
-    }
+    save$.subscribe({
+      next: () => {
+        this.toastService.success(this.isEditMode() ? 'Zona actualizada exitosamente' : 'Zona creada exitosamente');
+        this.router.navigate(['/admin/zones']);
+      },
+      error: (error) => {
+        const msg = error.error?.message || 'Error al guardar zona';
+        this.errorMessage.set(msg);
+        this.toastService.error(msg);
+        this.isSubmitting.set(false);
+      },
+    });
   }
 
-  // ==================== HELPERS ====================
+  // ==================== helpers ====================
 
-  hasError(field: string, error: string): boolean {
+  protected hasError(field: string, error: string): boolean {
     const control = this.form.get(field);
     return !!(control?.hasError(error) && control?.touched);
   }
 
-  isInvalid(field: string): boolean {
+  protected isInvalid(field: string): boolean {
     const control = this.form.get(field);
     return !!(control?.invalid && control?.touched);
   }

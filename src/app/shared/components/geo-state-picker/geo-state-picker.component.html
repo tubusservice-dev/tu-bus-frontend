@@ -1,0 +1,46 @@
+<button type="button" class="trigger" aria-haspopup="listbox" [attr.aria-expanded]="open()" (click)="toggle()">
+  <svg class="trigger__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498 4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 0 0-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0Z" />
+  </svg>
+  <span class="trigger__label" [class.is-placeholder]="!selectedName()">{{ selectedName() ?? placeholder() }}</span>
+  <svg class="trigger__chevron" [class.is-open]="open()" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+    <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+  </svg>
+</button>
+
+@if (open()) {
+  <div class="panel">
+    <div class="panel__search">
+      <input type="text" placeholder="Buscar estado…" aria-label="Buscar estado" autocomplete="off" autofocus
+             [value]="term()" (input)="onTerm($event)" (keydown)="onSearchKey($event)" />
+    </div>
+    <ul class="panel__list" role="listbox">
+      @if (groups().covered.length) {
+        <li class="panel__group">Con servicio</li>
+        @for (s of groups().covered; track s.id) {
+          <li role="option" [attr.aria-selected]="s.id === selected()">
+            <button type="button" class="option" [class.is-selected]="s.id === selected()" (click)="choose(s)">
+              <span>{{ s.name }}</span>
+              @if (municipalityCounts().get(s.id); as n) {
+                <span class="option__meta">{{ n }} mun.</span>
+              }
+            </button>
+          </li>
+        }
+      }
+      @if (groups().rest.length) {
+        <li class="panel__group" [class.has-divider]="groups().covered.length">Resto del país</li>
+        @for (s of groups().rest; track s.id) {
+          <li role="option" [attr.aria-selected]="s.id === selected()">
+            <button type="button" class="option" [class.is-selected]="s.id === selected()" (click)="choose(s)">
+              <span>{{ s.name }}</span>
+            </button>
+          </li>
+        }
+      }
+      @if (!groups().covered.length && !groups().rest.length) {
+        <li class="panel__empty">Ningún estado coincide</li>
+      }
+    </ul>
+  </div>
+}

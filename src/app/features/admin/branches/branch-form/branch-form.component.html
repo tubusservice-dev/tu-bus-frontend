@@ -159,11 +159,7 @@
                       }
                     </div>
                     <span class="zone-option-meta">
-                      @if (getZoneCityName(zone)) {
-                        <span>{{ getZoneCityName(zone) }}</span>
-                        <span class="zone-option-separator">·</span>
-                      }
-                      <span>{{ getZoneMunicipalityCount(zone) }} municipios</span>
+                      <span>{{ zoneMeta(zone) }}</span>
                     </span>
                   </button>
                 }
@@ -177,139 +173,43 @@
           </div>
         </div>
 
-        @if (visibleExistingBranchZones.length === 0 && newBranchZones().length === 0) {
+        @if (assignments().length === 0) {
           <div class="empty-zones-hint">
             <p>No hay zonas asignadas. Busca y agrega zonas de servicio.</p>
           </div>
         }
 
-        <!-- Existing branch zones -->
-        @for (bz of visibleExistingBranchZones; track bz.id) {
-          <div class="zone-card" [class.zone-collapsed]="isExistingCollapsed(bz.id)">
-            <!-- Zone header -->
-            <div class="zone-card-header" (click)="toggleExistingCollapse(bz.id)">
+        @for (a of assignments(); track a.key) {
+          <div class="zone-card" [class.zone-collapsed]="isCollapsed(a.key)">
+            <div class="zone-card-header" (click)="toggleCollapse(a.key)">
               <div class="zone-card-title-row">
-                <svg class="zone-chevron" [class.rotated]="!isExistingCollapsed(bz.id)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="m9 5 7 7-7 7" />
+                <svg class="zone-chevron" [class.rotated]="!isCollapsed(a.key)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
                 </svg>
-                <span class="zone-card-title">{{ getExistingZoneName(bz) }}</span>
-                @if (getExistingZoneCityName(bz)) {
-                  <span class="zone-muni-count">{{ getExistingZoneCityName(bz) }}</span>
+                <span class="zone-card-title">{{ a.zone.name }}</span>
+                <span class="zone-muni-count">{{ zoneMeta(a.zone) }}</span>
+                @if (!a.bzId) {
+                  <span class="zone-assigned-badge">Nueva</span>
                 }
-                <span class="zone-muni-count">{{ bz.deliveryConfig.length }} municipio{{ bz.deliveryConfig.length !== 1 ? 's' : '' }}</span>
               </div>
-              <button type="button" class="zone-remove-btn" (click)="$event.stopPropagation(); removeExistingZone(bz.id)" title="Eliminar zona">
+              <button type="button" class="zone-remove-btn" (click)="$event.stopPropagation(); removeAssignment(a)" title="Quitar zona">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
                 </svg>
               </button>
             </div>
 
-            <!-- Zone body (collapsible) -->
-            @if (!isExistingCollapsed(bz.id)) {
+            @if (!isCollapsed(a.key)) {
               <div class="zone-card-body">
-                @if (bz.deliveryConfig.length > 0) {
-                  <div class="muni-config-list">
-                    @for (dc of bz.deliveryConfig; track dc.municipality) {
-                      <div class="muni-config-row">
-                        <span class="muni-config-name">{{ getMunicipalityDisplayName(dc.municipality, $any(bz.zone)) }}</span>
-                        <div class="muni-config-toggles">
-                          <!-- Delivery toggle -->
-                          <label class="toggle-label toggle-inline">
-                            <input type="checkbox" class="toggle-input" [checked]="dc.hasDelivery" (change)="toggleExistingDelivery(bz.id, dc.municipality)" />
-                            <span class="toggle-switch toggle-switch-sm"></span>
-                            <span class="toggle-text-xs">Delivery</span>
-                          </label>
-
-                          @if (dc.hasDelivery) {
-                            <!-- Free delivery toggle -->
-                            <label class="toggle-label toggle-inline">
-                              <input type="checkbox" class="toggle-input" [checked]="dc.freeDelivery" (change)="toggleExistingFreeDelivery(bz.id, dc.municipality)" />
-                              <span class="toggle-switch toggle-switch-sm"></span>
-                              <span class="toggle-text-xs">Gratis</span>
-                            </label>
-
-                            @if (!dc.freeDelivery) {
-                              <div class="delivery-charge-inline">
-                                <span class="toggle-text-xs">$</span>
-                                <input type="number" class="form-input form-input-xs" min="0" step="0.01" [value]="dc.deliveryCharge" (input)="updateExistingDeliveryCharge(bz.id, dc.municipality, $event)" autocomplete="nope" />
-                              </div>
-                            }
-                          }
-
-                        </div>
-                      </div>
-                    }
-                  </div>
+                @if (treeFor(a.zone); as tree) {
+                  <app-branch-zone-delivery
+                    [tree]="tree"
+                    [zoneParishes]="a.zone.parishes ?? []"
+                    [config]="a.cityConfig"
+                    (configChange)="onConfigChange(a.key, $event)"
+                  />
                 } @else {
-                  <p class="empty-zones-hint">Esta zona no tiene municipios configurados.</p>
-                }
-              </div>
-            }
-          </div>
-        }
-
-        <!-- New branch zones (not yet saved) -->
-        @for (nbz of newBranchZones(); track $index; let nIdx = $index) {
-          <div class="zone-card" [class.zone-collapsed]="isNewCollapsed(nIdx)">
-            <!-- Zone header -->
-            <div class="zone-card-header" (click)="toggleNewCollapse(nIdx)">
-              <div class="zone-card-title-row">
-                <svg class="zone-chevron" [class.rotated]="!isNewCollapsed(nIdx)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="m9 5 7 7-7 7" />
-                </svg>
-                <span class="zone-card-title">{{ nbz.zone.name }}</span>
-                @if (getZoneCityName(nbz.zone)) {
-                  <span class="zone-muni-count">{{ getZoneCityName(nbz.zone) }}</span>
-                }
-                <span class="zone-muni-count">{{ nbz.deliveryConfig.length }} municipio{{ nbz.deliveryConfig.length !== 1 ? 's' : '' }}</span>
-                <span class="municipality-badge-sm" style="background: var(--accent-light, #e0f2fe); color: var(--accent, #0284c7);">Nueva</span>
-              </div>
-              <button type="button" class="zone-remove-btn" (click)="$event.stopPropagation(); removeNewZone(nIdx)" title="Eliminar zona">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                </svg>
-              </button>
-            </div>
-
-            <!-- Zone body (collapsible) -->
-            @if (!isNewCollapsed(nIdx)) {
-              <div class="zone-card-body">
-                @if (nbz.deliveryConfig.length > 0) {
-                  <div class="muni-config-list">
-                    @for (dc of nbz.deliveryConfig; track dc.municipality) {
-                      <div class="muni-config-row">
-                        <span class="muni-config-name">{{ getMunicipalityDisplayName(dc.municipality, nbz.zone) }}</span>
-                        <div class="muni-config-toggles">
-                          <!-- Delivery toggle -->
-                          <label class="toggle-label toggle-inline">
-                            <input type="checkbox" class="toggle-input" [checked]="dc.hasDelivery" (change)="toggleNewDelivery(nIdx, dc.municipality)" />
-                            <span class="toggle-switch toggle-switch-sm"></span>
-                            <span class="toggle-text-xs">Delivery</span>
-                          </label>
-
-                          @if (dc.hasDelivery) {
-                            <!-- Free delivery toggle -->
-                            <label class="toggle-label toggle-inline">
-                              <input type="checkbox" class="toggle-input" [checked]="dc.freeDelivery" (change)="toggleNewFreeDelivery(nIdx, dc.municipality)" />
-                              <span class="toggle-switch toggle-switch-sm"></span>
-                              <span class="toggle-text-xs">Gratis</span>
-                            </label>
-
-                            @if (!dc.freeDelivery) {
-                              <div class="delivery-charge-inline">
-                                <span class="toggle-text-xs">$</span>
-                                <input type="number" class="form-input form-input-xs" min="0" step="0.01" [value]="dc.deliveryCharge" (input)="updateNewDeliveryCharge(nIdx, dc.municipality, $event)" autocomplete="nope" />
-                              </div>
-                            }
-                          }
-
-                        </div>
-                      </div>
-                    }
-                  </div>
-                } @else {
-                  <p class="empty-zones-hint">Esta zona no tiene municipios configurados.</p>
+                  <p class="empty-zones-hint">Cargando parroquias…</p>
                 }
               </div>
             }
