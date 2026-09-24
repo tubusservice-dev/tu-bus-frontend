@@ -2,13 +2,29 @@
   @apply block;
 }
 
+// The customer's own location: fixed here, changed only from the header.
 .cascade-fixed {
-  @apply flex items-center gap-2 mb-3 text-sm text-gray-700 dark:text-gray-300;
+  @apply mb-3;
 }
 
-.cascade-fixed__change {
-  @apply font-medium underline;
-  color: var(--accent-primary);
+.cascade-fixed__place {
+  @apply flex items-center gap-1.5 text-sm text-gray-700;
+
+  svg { @apply w-4 h-4 flex-shrink-0; color: #2563eb; }
+  strong { @apply font-semibold; }
+}
+
+.cascade-fixed__note {
+  @apply mt-0.5 ml-[1.375rem] text-xs text-gray-500;
+}
+
+:host-context(.dark) {
+  .cascade-fixed__place {
+    color: #d1d5db;
+    svg { color: #93c5fd; }
+  }
+
+  .cascade-fixed__note { color: #9ca3af; }
 }
 
 .cascade-grid {

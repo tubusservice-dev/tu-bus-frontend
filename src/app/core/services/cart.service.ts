@@ -137,6 +137,26 @@ export class CartService {
   }
 
   /**
+   * Sets each item's price to the current catalogue price (product id →
+   * price). Items missing from the map keep their price. Returns whether
+   * anything changed.
+   */
+  applyCurrentPrices(pricesById: ReadonlyMap<string, number>): boolean {
+    let changed = false;
+    const next = this._items().map((item) => {
+      const price = pricesById.get(item.id);
+      if (price === undefined || price === item.price) return item;
+      changed = true;
+      return { ...item, price };
+    });
+    if (changed) {
+      this._items.set(next);
+      this.saveToStorage(next);
+    }
+    return changed;
+  }
+
+  /**
    * Cargar carrito desde localStorage
    * Filtra items sin stock válido (items viejos antes de la implementación)
    */

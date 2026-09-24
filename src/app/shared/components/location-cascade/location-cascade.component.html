@@ -1,8 +1,21 @@
 @if (fixedLabel(); as place) {
-  <p class="cascade-fixed">
-    <span>{{ place }}</span>
-    <button type="button" class="cascade-fixed__change" (click)="requestChange()">cambiar</button>
-  </p>
+  <div class="cascade-fixed">
+    <p class="cascade-fixed__place">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+      </svg>
+      <span>
+        @if (fixedPrefix()) {
+          {{ fixedPrefix() }}
+        }
+        <strong>{{ place }}</strong>
+      </span>
+    </p>
+    @if (fixedNote()) {
+      <p class="cascade-fixed__note">{{ fixedNote() }}</p>
+    }
+  </div>
 }
 
 <div class="cascade-grid">

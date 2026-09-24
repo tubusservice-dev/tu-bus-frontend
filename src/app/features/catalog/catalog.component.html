@@ -137,7 +137,10 @@
 
   <!-- Contenido principal -->
   <main class="catalog-content">
-    @if (isLoading()) {
+    @if (loadFailed()) {
+      <!-- The products could not arrive (usually no connection) -->
+      <app-load-error-state [retrying]="isLoading()" (retry)="retryLoad()" />
+    } @else if (isLoading()) {
       <!-- Loading -->
       <div class="loading-grid">
         @for (i of [1,2,3,4,5,6,7,8]; track i) {

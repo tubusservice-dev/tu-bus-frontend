@@ -19,7 +19,7 @@ const place = (id: string, name = id) => ({ id, name, slug: id });
     [fixed]="fixed()"
     [deliverableOnly]="deliverableOnly()"
     (deliveryChange)="delivery = $event"
-    (changeRequested)="changes = changes + 1"
+    fixedNote="Para cambiarla, hazlo desde el inicio."
   />`,
 })
 class HostComponent {
@@ -29,7 +29,6 @@ class HostComponent {
   fixed = signal<Partial<LocationRef> | null>(null);
   deliverableOnly = signal(false);
   delivery: ParishDelivery | null | undefined;
-  changes = 0;
 }
 
 const MUNICIPALITY_COVERAGE: MunicipalityCoverage = {
@@ -119,7 +118,7 @@ describe('LocationCascadeComponent', () => {
     expect(selects(fixture)[2].disabled).toBeTrue();
   });
 
-  it('shows fixed levels as text with a link to change them', () => {
+  it('shows the fixed levels as text, with no way to change them from the form', () => {
     const fixture = mount((host) => {
       host.source.set('coverage');
       host.levels.set(['city', 'parish']);
@@ -127,8 +126,8 @@ describe('LocationCascadeComponent', () => {
     });
 
     expect(fixture.nativeElement.textContent).toContain('Chacao, Miranda');
-    (fixture.nativeElement.querySelector('.cascade-fixed__change') as HTMLButtonElement).click();
-    expect(fixture.componentInstance.changes).toBe(1);
+    expect(fixture.nativeElement.textContent).toContain('Para cambiarla, hazlo desde el inicio.');
+    expect(fixture.nativeElement.querySelector('.cascade-fixed button')).toBeNull();
   });
 
   it('lists only places with delivery when asked, and emits the terms of the parish picked', () => {
@@ -165,5 +164,26 @@ describe('LocationCascadeComponent', () => {
     fixture.detectChanges();
 
     expect(Array.from(selects(fixture)).every((s) => s.disabled)).toBeTrue();
+  });
+
+  it('starts over when the fixed municipality changes, never keeping the old one', () => {
+    const fixture = mount((host) => {
+      host.source.set('coverage');
+      host.levels.set(['city', 'parish']);
+      host.deliverableOnly.set(true);
+      host.fixed.set({ state: { id: 'car', name: 'Carabobo' }, municipality: { id: 'nag', name: 'Naguanagua' } });
+    });
+    const host = fixture.componentInstance;
+    expect(host.control.value?.parish).toEqual({ id: 'p-a', name: 'A' });
+
+    // The new municipality delivers nowhere: nothing can be picked.
+    coverage['municipality'].and.returnValue(of({ ...MUNICIPALITY_COVERAGE, cities: [], deliveryStatus: 'none' }));
+    host.fixed.set({ state: { id: 'car', name: 'Carabobo' }, municipality: { id: 'sdi', name: 'San Diego' } });
+    fixture.detectChanges();
+
+    expect(coverage['municipality']).toHaveBeenCalledWith('sdi');
+    expect(host.control.value).toBeNull();
+    expect(host.delivery).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('San Diego, Carabobo');
   });
 });

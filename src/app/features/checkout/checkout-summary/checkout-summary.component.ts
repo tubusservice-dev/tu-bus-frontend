@@ -5,6 +5,7 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { CheckoutService, RequestedServiceDate } from '../services/checkout.service';
 import { CartService } from '@core/services/cart.service';
+import { CartPriceSyncService } from '@core/services/cart-price-sync.service';
 import { OrderService } from '@core/services/order.service';
 import { BranchSummary } from '@models/geo.model';
 import { ProductService } from '@core/services/product.service';
@@ -52,6 +53,7 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
   private readonly paymentUi = inject(CheckoutPaymentUiService);
   private readonly billing = inject(CheckoutBillingService);
   private readonly branchStock = inject(CheckoutBranchStockService);
+  private readonly cartPriceSync = inject(CartPriceSyncService);
 
   // ──────────────────────────────────────────────────────────────────────
   // Branch availability loader
@@ -98,6 +100,17 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
         },
       });
     });
+
+    // Prices follow the catalogue silently until the customer starts paying
+    // or confirming; from then on the order keeps what they saw and paid.
+    effect(() => {
+      this.cartPriceSync.setLocked(
+        this.paymentUi.showModal() ||
+          this.paymentUi.paymentSubmitted() ||
+          this.showConfirmModal() ||
+          this.isGenerating(),
+      );
+    });
   }
 
   // ── Scroll lock helpers (used only for the confirm-order modal; the
@@ -106,6 +119,7 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
   private confirmTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
   ngOnDestroy(): void {
+    this.cartPriceSync.setLocked(false);
     if (this.confirmTimeoutId !== null) {
       clearTimeout(this.confirmTimeoutId);
       this.confirmTimeoutId = null;
@@ -416,6 +430,9 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
     // Back-fill vehicleTypes on legacy cart items so the compatibility
     // warning can evaluate correctly.
     this.rehydrateLegacyCartItems();
+
+    // Show the current prices on arrival, not only at the next periodic refresh.
+    void this.cartPriceSync.sync();
 
     // Load per-branch stock to determine which branches can fulfill the cart
     this.branchStock.loadBranchStockForCart();

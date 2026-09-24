@@ -23,6 +23,8 @@ const DELIVERY_LABELS: Record<DeliveryStatus, string> = {
 })
 export class ZoningMunicipalityStepComponent {
   readonly entry = input.required<GeoCoverageState>();
+  /** The customer's current municipality, highlighted. */
+  readonly currentMunicipalityId = input<string | null>(null);
 
   readonly municipalitySelected = output<CoveredMunicipality>();
   readonly back = output<void>();

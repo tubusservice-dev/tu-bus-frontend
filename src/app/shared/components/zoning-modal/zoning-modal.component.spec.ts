@@ -27,6 +27,8 @@ const TREE: GeoCoverageState[] = [
     [isOpen]="open()"
     [busy]="busy()"
     [hasLocation]="hasLocation()"
+    [currentStateId]="currentStateId()"
+    [currentMunicipalityId]="currentMunicipalityId()"
     (picked)="picked = $event"
     (explore)="explored = explored + 1"
     (closed)="closed = closed + 1"
@@ -36,6 +38,8 @@ class HostComponent {
   open = signal(true);
   busy = signal(false);
   hasLocation = signal(false);
+  currentStateId = signal<string | null>(null);
+  currentMunicipalityId = signal<string | null>(null);
   picked: ZonePick | null = null;
   explored = 0;
   closed = 0;
@@ -126,5 +130,26 @@ describe('ZoningModalComponent', () => {
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
     expect(host.closed).toBe(2);
     expect(el().querySelector('.resolving-overlay')).not.toBeNull();
+  });
+
+  it('highlights the current state and, inside it, the current municipality', () => {
+    host.hasLocation.set(true);
+    host.currentStateId.set('car');
+    host.currentMunicipalityId.set('mon');
+    fixture.detectChanges();
+
+    const current = buttons('.zone-btn--current');
+    expect(current.length).toBe(1);
+    expect(current[0].textContent).toContain('Carabobo');
+    expect(current[0].getAttribute('aria-current')).toBe('true');
+
+    click(current[0]);
+    const municipality = buttons('.zone-btn--current');
+    expect(municipality.length).toBe(1);
+    expect(municipality[0].textContent).toContain('Montalbán');
+  });
+
+  it('highlights nothing without a location', () => {
+    expect(buttons('.zone-btn--current').length).toBe(0);
   });
 });

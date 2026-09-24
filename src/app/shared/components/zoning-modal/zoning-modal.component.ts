@@ -47,6 +47,9 @@ export class ZoningModalComponent implements OnDestroy {
    * leave the customer browsing the whole store.
    */
   readonly hasLocation = input(false);
+  /** The customer's current state and municipality, highlighted in the lists. */
+  readonly currentStateId = input<string | null>(null);
+  readonly currentMunicipalityId = input<string | null>(null);
 
   readonly picked = output<ZonePick>();
   readonly explore = output<void>();

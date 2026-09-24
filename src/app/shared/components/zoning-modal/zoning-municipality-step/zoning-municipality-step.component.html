@@ -10,7 +10,13 @@
 
 <div class="zone-grid">
   @for (municipality of entry().municipalities; track municipality.id) {
-    <button type="button" class="zone-btn" (click)="municipalitySelected.emit(municipality)">
+    <button
+      type="button"
+      class="zone-btn"
+      [class.zone-btn--current]="municipality.id === currentMunicipalityId()"
+      [attr.aria-current]="municipality.id === currentMunicipalityId() ? 'true' : null"
+      (click)="municipalitySelected.emit(municipality)"
+    >
       <span class="zone-btn__icon">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />

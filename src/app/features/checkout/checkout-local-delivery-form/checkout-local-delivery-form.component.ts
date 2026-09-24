@@ -6,7 +6,6 @@ import { CheckoutService, LocalDeliveryRecipientInfo } from '../services/checkou
 import { CartService } from '@core/services/cart.service';
 import { AuthService } from '@core/services/auth.service';
 import { LocationStore } from '@core/services/location-store.service';
-import { ZoneSelectorService } from '@core/services/zone-selector.service';
 import { LocationRef, ParishDelivery } from '@models/geo.model';
 import {
   NAME_PATTERN, PHONE_VE_PATTERN, DOCUMENT_NUMBER_PATTERN, EMAIL_PATTERN,
@@ -18,9 +17,10 @@ import { CheckoutHeaderComponent } from '../components/checkout-header/checkout-
 import { LocationCascadeComponent } from '@shared/components/location-cascade/location-cascade.component';
 import { PhoneMaskDirective } from '@shared/directives/phone-mask.directive';
 import { ANALYTICS, AnalyticsEvent } from '@platform';
-
-const PERSONAL_FIELDS = ['fullName', 'documentType', 'documentNumber', 'phone', 'alternativePhone', 'email'];
-const ADDRESS_FIELDS = ['location', 'address', 'referencePoint'];
+import {
+  ADDRESS_FIELDS, CheckoutFieldLocks, DOCUMENT_TYPES, PERSONAL_FIELDS,
+  clearPersonalFields, fieldErrorMessage, fieldHasError, profileAddressLine,
+} from '../utils/checkout-contact-form';
 
 /**
  * Local delivery: who receives it and where. The state and municipality are
@@ -39,13 +39,14 @@ export class CheckoutLocalDeliveryFormComponent implements OnInit {
   protected readonly cartService = inject(CartService);
   protected readonly authService = inject(AuthService);
   private readonly locationStore = inject(LocationStore);
-  private readonly zoneSelector = inject(ZoneSelectorService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
   private readonly analytics = inject(ANALYTICS);
 
   protected deliveryForm!: FormGroup;
-  protected readonly lockedFields = signal<Record<string, boolean>>({});
+  private readonly locks = new CheckoutFieldLocks(() => this.deliveryForm);
+  protected readonly hasLockedFields = this.locks.hasLockedPersonal;
+  protected readonly hasLockedAddressFields = this.locks.hasLockedAddress;
   protected readonly quote = this.checkoutService.deliveryQuote;
   /** Set when the parish picked gets no delivery (e.g. restored from the profile). */
   protected readonly parishWithoutDelivery = signal(false);
@@ -53,27 +54,46 @@ export class CheckoutLocalDeliveryFormComponent implements OnInit {
   /** The customer's state and municipality, shown above the city and parish selects. */
   protected readonly fixedPlace = computed<Partial<LocationRef> | null>(() => this.locationStore.location());
 
-  protected readonly documentTypes = [
-    { code: 'V', name: 'V - Venezolano' },
-    { code: 'E', name: 'E - Extranjero' },
-    { code: 'J', name: 'J - Jurídico' },
-    { code: 'P', name: 'P - Pasaporte' },
-  ];
+  protected readonly documentTypes = DOCUMENT_TYPES;
+
+  /** The customer's municipality gets no delivery at all: the form is blocked. */
+  protected readonly noDeliveryHere = computed(
+    () => this.locationStore.isResolved() && this.locationStore.deliveryStatus() === 'none',
+  );
 
   constructor() {
-    // A new location from the selector ("cambiar") voids the city and parish
-    // picked for the previous one, and their price.
+    // A new location (changed from the header, e.g. in another tab) voids the
+    // city and parish picked for the previous one, and their price. The cascade
+    // starts over on its own; a place locked from the profile is released.
     effect(() => {
       this.locationStore.location();
       untracked(() => {
         const control = this.deliveryForm?.get('location');
         if (control?.value && !this.inCurrentMunicipality(control.value)) {
-          control.enable();
+          this.locks.unlock(['location']);
           control.setValue(null);
           this.onDelivery(null);
         }
       });
     });
+
+    // Without delivery in the municipality nothing can be filled in (the
+    // dispatch step hides delivery there; this guards a coverage change while
+    // the form is open). Profile locks survive the round trip.
+    effect(() => {
+      const blocked = this.noDeliveryHere();
+      untracked(() => this.applyDeliveryBlock(blocked));
+    });
+  }
+
+  private applyDeliveryBlock(blocked: boolean): void {
+    if (!this.deliveryForm) return;
+    if (blocked) {
+      this.deliveryForm.disable({ emitEvent: false });
+    } else {
+      this.deliveryForm.enable({ emitEvent: false });
+      this.locks.reapply();
+    }
   }
 
   ngOnInit(): void {
@@ -88,6 +108,8 @@ export class CheckoutLocalDeliveryFormComponent implements OnInit {
       return;
     }
     this.loadSavedData();
+    // The effect may have run before the form existed.
+    if (this.noDeliveryHere()) this.applyDeliveryBlock(true);
   }
 
   private initForm(): void {
@@ -133,70 +155,38 @@ export class CheckoutLocalDeliveryFormComponent implements OnInit {
     const user = this.authService.currentUser();
     if (!user) return;
 
-    const locked: Record<string, boolean> = {};
-    const lock = (field: string, value: unknown) => {
-      this.deliveryForm.patchValue({ [field]: value });
-      this.deliveryForm.get(field)?.disable();
-      locked[field] = true;
-    };
-
-    const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
-    if (fullName) lock('fullName', fullName);
-    if (user.documentType) lock('documentType', user.documentType);
-    if (user.documentNumber) lock('documentNumber', user.documentNumber);
-    if (user.phone) lock('phone', user.phone);
-    if (user.alternativePhone) lock('alternativePhone', user.alternativePhone);
-    if (user.email) lock('email', user.email);
+    this.locks.lockPersonalFromProfile(user);
 
     // The profile address only helps when it is in the municipality being served.
     const profilePlace = user.location ? fromStoredLocation(user.location) : null;
     if (profilePlace?.parish && this.inCurrentMunicipality(profilePlace)) {
-      lock('location', profilePlace);
-      const addressParts = [user.street, user.houseNumber, user.neighborhood].filter(Boolean);
-      if (addressParts.length > 0) lock('address', addressParts.join(', '));
-      if (user.referencePoint) lock('referencePoint', user.referencePoint);
+      this.locks.lock('location', profilePlace);
+      const address = profileAddressLine(user);
+      if (address) this.locks.lock('address', address);
+      if (user.referencePoint) this.locks.lock('referencePoint', user.referencePoint);
     }
-
-    this.lockedFields.set(locked);
   }
 
   private inCurrentMunicipality(place: LocationRef | null | undefined): boolean {
     return Boolean(place && place.municipality.id === this.locationStore.location()?.municipality.id);
   }
 
-  protected readonly hasLockedFields = computed(() => PERSONAL_FIELDS.some((f) => this.lockedFields()[f]));
-  protected readonly hasLockedAddressFields = computed(() => ADDRESS_FIELDS.some((f) => this.lockedFields()[f]));
-
   protected unlockPersonalFields(): void {
-    this.unlock(PERSONAL_FIELDS);
+    this.locks.unlock(PERSONAL_FIELDS);
   }
 
   protected clearPersonalFields(): void {
-    this.deliveryForm.patchValue({
-      fullName: '',
-      documentType: 'V',
-      documentNumber: '',
-      phone: '',
-      alternativePhone: '',
-      email: '',
-    });
+    clearPersonalFields(this.deliveryForm);
   }
 
   protected unlockAddressFields(): void {
-    this.unlock(ADDRESS_FIELDS);
+    this.locks.unlock(ADDRESS_FIELDS);
   }
 
   protected clearDeliveryFields(): void {
-    this.unlock([...ADDRESS_FIELDS, 'notes']);
+    this.locks.unlock([...ADDRESS_FIELDS, 'notes']);
     this.deliveryForm.patchValue({ location: null, address: '', referencePoint: '', notes: '' });
     this.onDelivery(null);
-  }
-
-  private unlock(fields: string[]): void {
-    fields.forEach((field) => this.deliveryForm.get(field)?.enable());
-    const updated = { ...this.lockedFields() };
-    fields.forEach((f) => delete updated[f]);
-    this.lockedFields.set(updated);
   }
 
   /** The parish picked fixes the price shown here and in the summary. */
@@ -205,12 +195,8 @@ export class CheckoutLocalDeliveryFormComponent implements OnInit {
     this.parishWithoutDelivery.set(Boolean(delivery && !delivery.hasDelivery));
   }
 
-  /** "cambiar" next to the state and municipality: that is the customer's location. */
-  protected changeLocation(): void {
-    this.zoneSelector.open();
-  }
-
   onSubmit(): void {
+    if (this.noDeliveryHere()) return;
     const quote = this.quote();
     if (this.deliveryForm.invalid || !quote?.hasDelivery) {
       this.deliveryForm.markAllAsTouched();
@@ -243,27 +229,10 @@ export class CheckoutLocalDeliveryFormComponent implements OnInit {
   }
 
   hasError(field: string): boolean {
-    const control = this.deliveryForm.get(field);
-    return control ? control.invalid && control.touched : false;
+    return fieldHasError(this.deliveryForm.get(field));
   }
 
   getErrorMessage(field: string): string {
-    const control = this.deliveryForm.get(field);
-    if (!control || !control.errors) return '';
-
-    if (control.errors['required']) return field === 'location' ? 'Elige la ciudad y la parroquia' : 'Este campo es obligatorio';
-    if (control.errors['minlength']) return `Mínimo ${control.errors['minlength'].requiredLength} caracteres`;
-    if (control.errors['maxlength']) return `Máximo ${control.errors['maxlength'].requiredLength} caracteres`;
-    if (control.errors['noNumbers']) return 'No se permiten números en este campo';
-    if (control.errors['pattern']) {
-      if (field === 'documentNumber') return 'Solo números, entre 6 y 10 dígitos';
-      if (field === 'phone' || field === 'alternativePhone') return 'Formato: 04XX-XXXXXXX (ej: 04141234567)';
-      if (field === 'email') return 'Ingresa un email válido (ej: nombre@correo.com)';
-      if (field === 'fullName') return 'Solo letras, sin números';
-      return 'Formato inválido';
-    }
-    if (control.errors['email']) return 'Ingresa un email válido';
-
-    return 'Campo inválido';
+    return fieldErrorMessage(this.deliveryForm.get(field), field, { location: 'Elige la ciudad y la parroquia' });
   }
 }

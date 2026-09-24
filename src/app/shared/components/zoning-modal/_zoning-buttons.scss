@@ -11,12 +11,14 @@
   }
 }
 
+// `--current`: the customer's own state or municipality, shown as if hovered.
 .zone-btn {
   @apply flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl border-2 text-left transition-all duration-200;
   background-color: var(--bg-primary);
   border-color: var(--border-primary);
 
-  &:hover {
+  &:hover,
+  &--current {
     border-color: var(--accent-primary);
     background-color: var(--bg-secondary);
     box-shadow: 0 0 0 1px var(--accent-primary);
@@ -75,7 +77,8 @@
     background-color: #1f2937;
     border-color: #374151;
 
-    &:hover {
+    &:hover,
+    &--current {
       border-color: var(--tubus-text-accent, #4d94ff);
       background-color: #111827;
     }

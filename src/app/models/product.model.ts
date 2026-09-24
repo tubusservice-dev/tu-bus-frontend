@@ -213,3 +213,10 @@ export interface ProductResponse {
   message?: string;
   data: Product;
 }
+
+/** Current catalogue price of a product (`GET /products/prices`). */
+export interface ProductCurrentPrice {
+  id: string;
+  price: number;
+  isActive: boolean;
+}

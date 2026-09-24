@@ -7,7 +7,6 @@ import { CheckoutService, LocalDeliveryRecipientInfo } from '../services/checkou
 import { CartService } from '@core/services/cart.service';
 import { AuthService } from '@core/services/auth.service';
 import { LocationStore, SelectedLocation } from '@core/services/location-store.service';
-import { ZoneSelectorService } from '@core/services/zone-selector.service';
 import { LocationRef, ParishDelivery } from '@models/geo.model';
 import { ANALYTICS } from '@platform';
 
@@ -40,9 +39,9 @@ describe('CheckoutLocalDeliveryFormComponent', () => {
   let dispatchType: string;
   let place: ReturnType<typeof signal<SelectedLocation | null>>;
   let quote: ReturnType<typeof signal<ParishDelivery | null>>;
+  let deliveryStatus: ReturnType<typeof signal<string>>;
   let setInfoSpy: jasmine.Spy;
   let navigateSpy: jasmine.Spy;
-  let openSelector: jasmine.Spy;
 
   const read = (c: CheckoutLocalDeliveryFormComponent) => c as unknown as Record<string, any>;
 
@@ -68,9 +67,9 @@ describe('CheckoutLocalDeliveryFormComponent', () => {
     dispatchType = 'local_delivery';
     place = signal<SelectedLocation | null>(NAGUANAGUA);
     quote = signal<ParishDelivery | null>(null);
+    deliveryStatus = signal('full');
     setInfoSpy = jasmine.createSpy('setLocalDeliveryRecipientInfo');
     navigateSpy = jasmine.createSpy('navigate');
-    openSelector = jasmine.createSpy('open');
 
     TestBed.configureTestingModule({
       imports: [CheckoutLocalDeliveryFormComponent],
@@ -87,8 +86,10 @@ describe('CheckoutLocalDeliveryFormComponent', () => {
         },
         { provide: CartService, useValue: {} },
         { provide: AuthService, useValue: { currentUser: () => user, loadUserProfile: () => of(null) } },
-        { provide: LocationStore, useValue: { location: place, hasLocation: () => place() !== null } },
-        { provide: ZoneSelectorService, useValue: { open: openSelector } },
+        {
+          provide: LocationStore,
+          useValue: { location: place, hasLocation: () => place() !== null, isResolved: () => true, deliveryStatus },
+        },
         { provide: Router, useValue: { navigate: navigateSpy } },
         { provide: ANALYTICS, useValue: { logEvent: () => Promise.resolve() } },
       ],
@@ -164,7 +165,7 @@ describe('CheckoutLocalDeliveryFormComponent', () => {
     expect(navigateSpy).toHaveBeenCalledWith(['/checkout/resumen']);
   });
 
-  it('opens the zone selector from "cambiar", and forgets the place when the location changes', () => {
+  it('forgets the place and its price when the location changes elsewhere', () => {
     const fixture = TestBed.createComponent(CheckoutLocalDeliveryFormComponent);
     const component = fixture.componentInstance;
     component.ngOnInit();
@@ -172,13 +173,42 @@ describe('CheckoutLocalDeliveryFormComponent', () => {
     fillPersonalAndAddress(component);
     read(component)['onDelivery'](FREE);
 
-    read(component)['changeLocation']();
-    expect(openSelector).toHaveBeenCalled();
-
     place.set({ state: { id: 'mir', name: 'Miranda' }, municipality: { id: 'cha', name: 'Chacao' } });
     fixture.detectChanges();
 
     expect(read(component)['deliveryForm'].get('location').value).toBeNull();
     expect(quote()).toBeNull();
+  });
+
+  it('blocks every field and the button in a municipality without delivery', () => {
+    deliveryStatus.set('none');
+    const fixture = TestBed.createComponent(CheckoutLocalDeliveryFormComponent);
+    const component = fixture.componentInstance;
+    component.ngOnInit();
+    fixture.detectChanges();
+    fillPersonalAndAddress(component);
+    read(component)['onDelivery'](FREE);
+
+    expect(read(component)['noDeliveryHere']()).toBeTrue();
+    expect(read(component)['deliveryForm'].disabled).toBeTrue();
+    component.onSubmit();
+    expect(setInfoSpy).not.toHaveBeenCalled();
+  });
+
+  it('frees the form again, keeping the profile locks, when the new municipality delivers', () => {
+    user = { firstName: 'Ana', documentNumber: '12345678' };
+    deliveryStatus.set('none');
+    const fixture = TestBed.createComponent(CheckoutLocalDeliveryFormComponent);
+    const component = fixture.componentInstance;
+    component.ngOnInit();
+    fixture.detectChanges();
+
+    deliveryStatus.set('full');
+    fixture.detectChanges();
+
+    const form = read(component)['deliveryForm'];
+    expect(form.get('address').enabled).toBeTrue();
+    expect(form.get('fullName').disabled).toBeTrue();
+    expect(form.get('documentNumber').disabled).toBeTrue();
   });
 });

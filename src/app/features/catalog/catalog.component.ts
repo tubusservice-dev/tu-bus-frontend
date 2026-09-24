@@ -12,6 +12,7 @@ import { VehicleService } from '../../core/services/vehicle.service';
 import { LocationStore } from '@core/services/location-store.service';
 import { ProductCardComponent, ProductCardData } from '../../shared/components/product-card/product-card.component';
 import { SearchInputComponent } from '../../shared/components/search-input/search-input.component';
+import { LoadErrorStateComponent } from '@shared/components/load-error-state/load-error-state.component';
 import {
   Brand,
   Category,
@@ -34,7 +35,7 @@ interface FilterState {
 @Component({
   selector: 'app-catalog',
   standalone: true,
-  imports: [CommonModule, FormsModule, ProductCardComponent, SearchInputComponent],
+  imports: [CommonModule, FormsModule, ProductCardComponent, SearchInputComponent, LoadErrorStateComponent],
   templateUrl: './catalog.component.html',
   styleUrl: './catalog.component.scss',
 })
@@ -77,6 +78,8 @@ export class CatalogComponent implements OnInit {
 
   // Estado
   protected readonly isLoading = signal(true);
+  /** The last catalog request failed (usually no connection), as opposed to "no results". */
+  protected readonly loadFailed = signal(false);
   // Products already arrive filtered + sorted from the backend. No client-side
   // post-processing needed — avoids the pagination/count desync bug that the
   // previous filterByVehicle() implementation caused.
@@ -198,6 +201,7 @@ export class CatalogComponent implements OnInit {
           freeOilChangeService: p.freeOilChangeService,
           vehicleTypes: p.vehicleTypes,
         }));
+        this.loadFailed.set(false);
         this.products.set(mapped);
         this.totalPages.set(response.pagination?.pages || 1);
         this.totalProducts.set(response.pagination?.total || 0);
@@ -271,6 +275,19 @@ export class CatalogComponent implements OnInit {
     this.loadTrigger$.next();
   }
 
+  /** Retries everything a failed load left empty. */
+  retryLoad(): void {
+    if (this.brands().length === 0) this.loadBrands();
+    if (this.categories().length === 0) this.loadCategories();
+    this.loadProducts();
+  }
+
+  /** Coming back online after a failed load retries on its own. */
+  @HostListener('window:online')
+  onBackOnline(): void {
+    if (this.loadFailed()) this.retryLoad();
+  }
+
   /**
    * Builds the catalog request payload from current state and returns the
    * cancellable Observable. Errors are absorbed so a single failed request
@@ -326,6 +343,7 @@ export class CatalogComponent implements OnInit {
         catchError(() => {
           this.isLoading.set(false);
           this.isSearching.set(false);
+          this.loadFailed.set(true);
           return of(null);
         }),
       );

@@ -128,7 +128,8 @@
                 [levels]="['city', 'parish']"
                 [fixed]="fixedPlace()"
                 [deliverableOnly]="false"
-                (changeRequested)="changeLocation()"
+                fixedPrefix="Te atendemos en tu zona:"
+                fixedNote="Para cambiarla, hazlo desde el inicio."
               />
               @if (hasError('location')) {
                 <span class="error-message">{{ getErrorMessage('location') }}</span>

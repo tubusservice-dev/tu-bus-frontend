@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   Product,
@@ -10,6 +10,7 @@ import {
   UpdateProductRequest,
   FuelType,
   VehicleType,
+  ProductCurrentPrice,
 } from '../../models/product.model';
 import {
   AdminProductByBranchListResponse,
@@ -322,6 +323,14 @@ export class ProductService {
       `${this.publicUrl}/featured-showcase/availability`,
       { params: httpParams }
     );
+  }
+
+  /** Current prices of the given products (unknown ids are left out). */
+  getPrices(ids: string[]): Observable<ProductCurrentPrice[]> {
+    const params = new HttpParams().set('ids', ids.join(','));
+    return this.http
+      .get<{ success: boolean; data: ProductCurrentPrice[] }>(`${this.publicUrl}/prices`, { params })
+      .pipe(map((r) => r.data));
   }
 
   /**

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, forwardRef, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, effect, forwardRef, inject, input, output, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { Observable, map, shareReplay } from 'rxjs';
@@ -15,6 +15,10 @@ const LABELS: Record<CascadeLevel, string> = { state: 'Estado', municipality: 'M
 const EMPTY_OPTIONS: Record<CascadeLevel, Option[]> = { state: [], municipality: [], city: [], parish: [] };
 let cascadeSeq = 0;
 
+/** Identity of a fixed place: its ids, level by level. */
+const keyOf = (fixed: Partial<LocationRef> | null): string =>
+  ORDER.map((level) => fixed?.[level]?.id ?? '').join('|');
+
 /**
  * State › Municipality › City › Parish as native selects, for reactive forms
  * (value: `LocationRef | null`, complete once every level asked for is set).
@@ -22,7 +26,8 @@ let cascadeSeq = 0;
  * - `source: 'national'` lists the whole catalogue; `'coverage'` only places
  *   with service, and with `deliverableOnly` only those that get delivery.
  * - `levels` are the selects shown; the levels above them come from `fixed`
- *   (shown as text with a "cambiar" link that emits `changeRequested`).
+ *   (shown as text: the customer's own location, which forms never change),
+ *   optionally with `fixedPrefix` before it and `fixedNote` below.
  * - `optionalLevels` may stay empty (a profile's parish): the value is complete without them.
  * - A level with a single option is picked automatically.
  * - With `source: 'coverage'`, picking a parish emits its delivery terms.
@@ -45,9 +50,12 @@ export class LocationCascadeComponent implements ControlValueAccessor, OnInit {
   readonly fixed = input<Partial<LocationRef> | null>(null);
   readonly deliverableOnly = input(false);
   readonly optionalLevels = input<CascadeLevel[]>([]);
+  /** Text before the fixed place, e.g. "Entregamos en tu zona:". */
+  readonly fixedPrefix = input('');
+  /** Line under the fixed place, e.g. how to change it. */
+  readonly fixedNote = input('');
 
   readonly deliveryChange = output<ParishDelivery | null>();
-  readonly changeRequested = output<void>();
 
   protected readonly labels = LABELS;
   /** Keeps label/select ids unique when a page shows more than one cascade. */
@@ -59,6 +67,25 @@ export class LocationCascadeComponent implements ControlValueAccessor, OnInit {
   private readonly coverageByMunicipality = new Map<string, Observable<MunicipalityCoverage>>();
   private onChange: (value: LocationRef | null) => void = () => undefined;
   private onTouched: () => void = () => undefined;
+
+  /** The `fixed` place the current selection was built from. */
+  private fixedKey: string | null = null;
+  /** Bumped by every reset, so lists requested before it are ignored. */
+  private generation = 0;
+
+  constructor() {
+    // A new fixed place (the customer changed municipality) voids what was
+    // picked under the old one; start over and tell the form.
+    effect(() => {
+      const key = keyOf(this.fixed());
+      untracked(() => {
+        if (this.fixedKey === null || key === this.fixedKey) return;
+        this.reset(null);
+        this.deliveryChange.emit(null);
+        this.onChange(this.value());
+      });
+    });
+  }
 
   ngOnInit(): void {
     this.reset(null);
@@ -114,6 +141,8 @@ export class LocationCascadeComponent implements ControlValueAccessor, OnInit {
    * which picks itself when it has a single option.
    */
   private reset(value: LocationRef | null): void {
+    this.generation++;
+    this.fixedKey = keyOf(this.fixed());
     const written: Selection = value ? { ...value } : {};
     this.selection.set({ ...this.fixedSelection(), ...written });
     this.options.set(EMPTY_OPTIONS);
@@ -146,9 +175,11 @@ export class LocationCascadeComponent implements ControlValueAccessor, OnInit {
 
   /** Fetches a level's options; picks the only one when `autoPick` and nothing is chosen there. */
   private load(level: CascadeLevel, autoPick: boolean): void {
+    const generation = this.generation;
     this.fetch(level)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((list) => {
+        if (generation !== this.generation) return;
         this.options.update((o) => ({ ...o, [level]: list }));
         if (autoPick && list.length === 1 && !this.selection()[level]) this.pick(level, list[0], true);
       });
@@ -243,7 +274,4 @@ export class LocationCascadeComponent implements ControlValueAccessor, OnInit {
     return this.selection()[level]?.id ?? '';
   }
 
-  protected requestChange(): void {
-    this.changeRequested.emit();
-  }
 }

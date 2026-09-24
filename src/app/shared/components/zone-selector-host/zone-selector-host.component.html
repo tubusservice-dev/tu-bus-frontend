@@ -2,6 +2,8 @@
   [isOpen]="selector.isOpen()"
   [busy]="busy()"
   [hasLocation]="locationStore.hasLocation()"
+  [currentStateId]="locationStore.location()?.state?.id ?? null"
+  [currentMunicipalityId]="locationStore.location()?.municipality?.id ?? null"
   (picked)="onPicked($event)"
   (explore)="onExplore()"
   (closed)="onClosed()"
@@ -18,8 +20,11 @@
       </div>
       <h3 class="zone-confirm-title">¿Cambiar a {{ plan.municipality.name }}?</h3>
       <p class="zone-confirm-text">
-        {{ plan.unavailable.length === 1 ? 'Este producto no está disponible' : 'Estos productos no están disponibles' }}
-        en las sucursales de esa zona y se quitarán de tu carrito:
+        @if (plan.unavailable.length === 1) {
+          Este producto no está disponible en las sucursales de esa zona y se quitará de tu carrito:
+        } @else {
+          Estos productos no están disponibles en las sucursales de esa zona y se quitarán de tu carrito:
+        }
       </p>
       <ul class="zone-confirm-list">
         @for (item of plan.unavailable; track item.id) {

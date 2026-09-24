@@ -23,6 +23,7 @@
         @if (step() === 'municipality' && selectedState(); as entry) {
           <app-zoning-municipality-step
             [entry]="entry"
+            [currentMunicipalityId]="currentMunicipalityId()"
             (municipalitySelected)="chooseMunicipality($event)"
             (back)="backToStates()"
           />
@@ -48,6 +49,8 @@
               [hits]="hits()"
               [searching]="searching()"
               [query]="query()"
+              [currentStateId]="currentStateId()"
+              [currentMunicipalityId]="currentMunicipalityId()"
               (queryChange)="onQuery($event)"
               (stateSelected)="chooseState($event)"
               (hitSelected)="chooseHit($event)"

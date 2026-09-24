@@ -45,11 +45,11 @@ v2 changes this to the official Venezuelan geography — **State › Municipalit
 | **Branch assignments saved all-or-nothing** (`PUT /api/admin/geo/branches/:id/assignments`, Mongo transaction) | Previously the branch saved and its zones failed separately, leaving half-saved data. | Declarative: the payload is the full list; missing assignments are removed. |
 | **Parish price fixed in the form**, municipality summary elsewhere (`deliveryStatus`, `minDeliveryCharge`, `allFree`) | Delivery varies by parish; the card can only say "Gratis" or "desde $X". | The exact price is known only after the parish pick. |
 | **`LocationStore` persisted in `localStorage`, read synchronously** (not the async `STORAGE` platform token the spec suggested) | The header decides on first render whether to open the selector; async reads would have opened it for everyone. | Web storage on native (WebView) — same as the old service. |
-| **Selector hosted at the app root** (`ZoneSelectorHostComponent` + `ZoneSelectorService`) | Checkout hides the header, so a header-owned modal could not be opened from checkout ("Elige tu ubicación" options, "cambiar" link). Auto-open still lives in the header so the admin panel never triggers it. | One extra root component. |
-| **Two checkout forms kept, sharing `location-cascade`** (instead of the spec's single `checkout-address-form`) | The home-service form also selects vehicles; merging would couple unrelated concerns. Both forms dropped all duplicated list logic. | Personal-data prefill/lock code is still duplicated (see §5). |
+| **Selector hosted at the app root** (`ZoneSelectorHostComponent` + `ZoneSelectorService`) | Checkout hides the header, so a header-owned modal could not be opened from checkout ("Elige tu ubicación" options for a customer without a location). Auto-open still lives in the header so the admin panel never triggers it. | One extra root component. |
+| **Two checkout forms kept, sharing `location-cascade`** (instead of the spec's single `checkout-address-form`) | The home-service form also selects vehicles; merging would couple unrelated concerns. Both forms dropped all duplicated list logic. | Personal-data prefill/lock and field errors now live in `features/checkout/utils/checkout-contact-form.ts` (2026-09-24). |
 | **Parish mirrored into the legacy city text** (`"Tocuyito (parroquia Independencia)"`) | Admin panel, mechanic page, customer pages and WhatsApp messages all print `recipientCity`; couriers/mechanics need the parish without changing 8 templates. | Legacy text field carries composite text. |
 | **Without a location, stock = every active branch** (`LocationStore.stockBranchIds`) | Without branch ids the product API returns no stock → everything showed "Agotado". The plan says "show what any branch has". | Stock shown may be in a branch far away; pickup/agency still work. |
-| **`order.service.ts` untouched** | It is already 1,223 lines (above the 1,000-line cap). The order `location` feature was done in the model (`pre('validate')` hook + `location-mirror.ts`). | A split is proposed as a separate task. |
+| **`order.service.ts` untouched** | It is already 1,223 lines (above the 1,000-line cap). The order `location` feature was done in the model (`pre('validate')` hook + `location-mirror.ts`). | Split on 2026-09-24 into `order-price-check`, `order-shipping-quote`, `order-stock`, `order-service-date`, `order-servicing-branch`, `order-notifications` (783 lines left). |
 
 SoC: catalogue (seed/services), coverage rules (pure `coverage/*`), I/O loaders (`coverage-snapshot.loader.ts`), HTTP adapters (controllers/routes), and on the frontend: state (`LocationStore`), I/O (`GeoService`, `CoverageService`), orchestration (`LocationChangeService`, `ZoneSelectorHost`), presentation (steps, cascade, forms).
 
@@ -110,7 +110,7 @@ SoC: catalogue (seed/services), coverage rules (pure `coverage/*`), I/O loaders 
 - `geo.service.ts` (catalogue lists cached per id; search; coverage tree; legacy resolve), `coverage.service.ts` (municipality / parish coverage, not cached).
 - `cart-review.service.ts`: items with no stock in the given branches; network error ⇒ keep the item; no branches ⇒ everything unavailable. `removeUnavailable`.
 - `location-change.service.ts`: `prepare(state, municipality)` → coverage + cart review; `apply(plan)` → remove only unavailable items + `setLocation` with the prefetched coverage.
-- `zone-selector.service.ts`: `open()` / `close()` from anywhere.
+- `zone-selector.service.ts`: `open()` / `close()`. Opened only by the header (changing location) and by a checkout option that needs one for a customer who never picked any. Address forms never open it (user decision, 2026-09-24): their state and municipality are the customer's location, fixed; only the agency, billing and profile cascades pick states nationally, and none of them touches the main location.
 
 **Selector**
 - `shared/components/zone-selector-host/` (in `app.html`): hosts `app-zoning-modal` and the "items will be removed" confirmation; closing without a pick while `undecided` ⇒ browsing.
@@ -118,7 +118,7 @@ SoC: catalogue (seed/services), coverage rules (pure `coverage/*`), I/O loaders 
 - Header (`layouts/pages/tu-bus-servicio/components/tubus-header`): label "Elige tu ubicación" when not selected; auto-opens the selector once, only when `status === 'undecided'` after the store resolves.
 
 **Form control**
-- `shared/components/location-cascade/` — `ControlValueAccessor` with value `LocationRef | null`; inputs `source: 'coverage' | 'national'`, `levels`, `fixed` (shown as text + "cambiar" → `changeRequested`), `deliverableOnly`, `optionalLevels`; output `deliveryChange: ParishDelivery | null` (coverage mode, on parish pick or written value). Auto-picks single options (and reports them in `registerOnChange`, since forms register after the first `writeValue`).
+- `shared/components/location-cascade/` — `ControlValueAccessor` with value `LocationRef | null`; inputs `source: 'coverage' | 'national'`, `levels`, `fixed` (shown as text, with `fixedPrefix` / `fixedNote`; no way to change it from the form; a new `fixed` resets the selection and ignores late answers for the old one), `deliverableOnly`, `optionalLevels`; output `deliveryChange: ParishDelivery | null` (coverage mode, on parish pick or written value). Auto-picks single options (and reports them in `registerOnChange`, since forms register after the first `writeValue`).
 
 **Checkout (`features/checkout`)**
 - `services/checkout.service.ts`: `dispatchOptions` with `requiresLocation` (zone-bound options shown without a location), local delivery shown when `deliveryStatus !== 'none'`, "Gratis" / "desde $X"; `deliveryQuote` + `setDeliveryQuote`; `getShippingCost` / label use the parish quote; `LocalDeliveryRecipientInfo.location`, `OilChangeServiceInfo.location`, `ShippingRecipientInfo.location`, `BillingAddress.location`.
@@ -153,7 +153,7 @@ SoC: catalogue (seed/services), coverage rules (pure `coverage/*`), I/O loaders 
 - **Customer location lives in `localStorage`**; private mode / blocked storage ⇒ session-only location.
 - **A customer location in a municipality without coverage** is kept (status `selected`, no branches): zone-bound options disappear; the catalogue shows no stock filter results for that zone.
 - **Parish in the legacy city text** makes `recipientCity` composite; parse `dispatchDetails.location` instead of the text when you need structure.
-- **Files over the 1,000-line cap** (pre-existing): `backend/src/modules/orders/services/order.service.ts` (1,223), `frontend/src/app/features/admin/orders/order-dispatch-modal/order-dispatch-modal.component.ts` (1,085). Split tasks proposed; do not add code to them.
+- **Files over the 1,000-line cap:** none left. `order.service.ts` was split into focused modules and `order-dispatch-modal` into `.ts`/`.html`/`.scss` (2026-09-24; compiled styles verified identical).
 - **Not done by design:** editing places from the panel; per-parish pricing for the agency flow; offline catalogue.
 
 ---
@@ -178,4 +178,5 @@ SoC: catalogue (seed/services), coverage rules (pure `coverage/*`), I/O loaders 
 2. Publish web + mobile app with phases 4–6 together, after 1.1.2 (vc5) is approved and promoted on Google Play.
 3. Phase 7: server-side validation of `shippingCost` (parish terms for local delivery, 0 for agency), behind a flag; enable with the new app; 409 + client message ("punto 21").
 4. Phase 8 (when 1.1.2 has no active installs): remove `legacy-view`/`legacy-coverage`, legacy fields (`zone.city`, `zone.municipalities`, `branchZone.deliveryConfig`), `cities` collection and seed, `legacy-location-map`, `legacy-sync`, `LocationStore` legacy migration, `city.model`/zone legacy fields on the frontend; then the per-municipality price rule no longer applies.
-5. Refactors: shared helper for checkout personal-data prefill/lock (duplicated in three forms); split the two oversized files above.
+5. ~~Refactors~~ — done 2026-09-24 (shared checkout contact helper; both oversized files split).
+6. **Price freshness (2026-09-24, user decision):** the customer is never told a price changed. `CartPriceSyncService` refreshes cart prices from `GET /api/products/prices` at start-up, every 60 s while visible and on tab focus; the checkout summary locks it while the payment modal is open, a payment is registered, the confirm modal is open or the order is being sent, so the order keeps what was paid. The server never rejects on price: `priceCheck` (now also shipping: parish price for local delivery, agency charge, 0 otherwise) only notifies the admin. This replaces phase 7 / "punto 21" as originally specified (no 409, no flag).

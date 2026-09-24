@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -16,6 +16,10 @@ import { CheckoutHeaderComponent } from '../components/checkout-header/checkout-
 import { LocationCascadeComponent } from '@shared/components/location-cascade/location-cascade.component';
 import { PhoneMaskDirective } from '@shared/directives/phone-mask.directive';
 import { ANALYTICS, AnalyticsEvent } from '@platform';
+import {
+  ADDRESS_FIELDS, CheckoutFieldLocks, DOCUMENT_TYPES, PERSONAL_FIELDS,
+  clearPersonalFields, fieldErrorMessage, fieldHasError, profileAddressLine,
+} from '../utils/checkout-contact-form';
 
 @Component({
   selector: 'app-checkout-shipping-form',
@@ -34,14 +38,11 @@ export class CheckoutShippingFormComponent implements OnInit {
 
   protected shippingForm!: FormGroup;
   protected readonly selectedAgency = this.checkoutService.selectedShippingAgency;
-  protected readonly lockedFields = signal<Record<string, boolean>>({});
+  private readonly locks = new CheckoutFieldLocks(() => this.shippingForm);
+  protected readonly hasLockedFields = this.locks.hasLockedPersonal;
+  protected readonly hasLockedAddressFields = this.locks.hasLockedAddress;
 
-  protected readonly documentTypes = [
-    { code: 'V', name: 'V - Venezolano' },
-    { code: 'E', name: 'E - Extranjero' },
-    { code: 'J', name: 'J - Jurídico' },
-    { code: 'P', name: 'P - Pasaporte' },
-  ];
+  protected readonly documentTypes = DOCUMENT_TYPES;
 
   ngOnInit(): void {
     // Initialize the form FIRST so the template has a valid FormGroup during
@@ -91,103 +92,31 @@ export class CheckoutShippingFormComponent implements OnInit {
     const user = this.authService.currentUser();
     if (!user) return;
 
-    const locked: Record<string, boolean> = {};
-    const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
-
-    if (fullName) {
-      this.shippingForm.patchValue({ fullName });
-      this.shippingForm.get('fullName')?.disable();
-      locked['fullName'] = true;
-    }
-    if (user.documentType) {
-      this.shippingForm.patchValue({ documentType: user.documentType });
-      this.shippingForm.get('documentType')?.disable();
-      locked['documentType'] = true;
-    }
-    if (user.documentNumber) {
-      this.shippingForm.patchValue({ documentNumber: user.documentNumber });
-      this.shippingForm.get('documentNumber')?.disable();
-      locked['documentNumber'] = true;
-    }
-    if (user.phone) {
-      this.shippingForm.patchValue({ phone: user.phone });
-      this.shippingForm.get('phone')?.disable();
-      locked['phone'] = true;
-    }
-    if (user.alternativePhone) {
-      this.shippingForm.patchValue({ alternativePhone: user.alternativePhone });
-      this.shippingForm.get('alternativePhone')?.disable();
-      locked['alternativePhone'] = true;
-    }
-    if (user.email) {
-      this.shippingForm.patchValue({ email: user.email });
-      this.shippingForm.get('email')?.disable();
-      locked['email'] = true;
-    }
-
-    // Prefill address fields and lock them
+    this.locks.lockPersonalFromProfile(user);
     if (user.location) {
       const { parish: _parish, ...place } = fromStoredLocation(user.location);
-      this.shippingForm.patchValue({ location: place });
-      this.shippingForm.get('location')?.disable();
-      locked['location'] = true;
+      this.locks.lock('location', place);
     }
-    const addressParts = [user.street, user.houseNumber, user.neighborhood].filter(Boolean);
-    if (addressParts.length > 0) {
-      this.shippingForm.patchValue({ address: addressParts.join(', ') });
-      this.shippingForm.get('address')?.disable();
-      locked['address'] = true;
-    }
-    if (user.referencePoint) {
-      this.shippingForm.patchValue({ referencePoint: user.referencePoint });
-      this.shippingForm.get('referencePoint')?.disable();
-      locked['referencePoint'] = true;
-    }
-
-    this.lockedFields.set(locked);
+    const address = profileAddressLine(user);
+    if (address) this.locks.lock('address', address);
+    if (user.referencePoint) this.locks.lock('referencePoint', user.referencePoint);
   }
-
-  protected readonly hasLockedFields = computed(() => {
-    const locked = this.lockedFields();
-    return ['fullName', 'documentType', 'documentNumber', 'phone', 'alternativePhone', 'email']
-      .some(f => locked[f]);
-  });
-
-  protected readonly hasLockedAddressFields = computed(() => {
-    const locked = this.lockedFields();
-    return ['location', 'address', 'referencePoint']
-      .some(f => locked[f]);
-  });
 
   protected unlockAddressFields(): void {
-    const fields = ['location', 'address', 'referencePoint'];
-    fields.forEach(field => this.shippingForm.get(field)?.enable());
-    const updated = { ...this.lockedFields() };
-    fields.forEach(f => delete updated[f]);
-    this.lockedFields.set(updated);
+    this.locks.unlock(ADDRESS_FIELDS);
   }
 
+  /** Here the personal unlock also frees the address (unlike the other forms). */
   protected unlockPersonalFields(): void {
-    const allFields = ['fullName', 'documentType', 'documentNumber', 'phone', 'alternativePhone', 'email',
-      'location', 'address', 'referencePoint'];
-    allFields.forEach(field => this.shippingForm.get(field)?.enable());
-    this.lockedFields.set({});
+    this.locks.unlock([...PERSONAL_FIELDS, ...ADDRESS_FIELDS]);
   }
 
   protected clearPersonalFields(): void {
-    this.shippingForm.patchValue({
-      fullName: '',
-      documentType: 'V',
-      documentNumber: '',
-      phone: '',
-      alternativePhone: '',
-      email: '',
-    });
+    clearPersonalFields(this.shippingForm);
   }
 
   protected clearShippingFields(): void {
-    const addressFields = ['location', 'address', 'referencePoint', 'agencyOfficeCode', 'notes'];
-    addressFields.forEach(field => this.shippingForm.get(field)?.enable());
+    this.locks.unlock([...ADDRESS_FIELDS, 'agencyOfficeCode', 'notes']);
     this.shippingForm.patchValue({
       location: null,
       address: '',
@@ -195,10 +124,6 @@ export class CheckoutShippingFormComponent implements OnInit {
       agencyOfficeCode: '',
       notes: '',
     });
-    // Remove address locks
-    const updated = { ...this.lockedFields() };
-    addressFields.forEach(f => delete updated[f]);
-    this.lockedFields.set(updated);
   }
 
   onSubmit(): void {
@@ -238,27 +163,10 @@ export class CheckoutShippingFormComponent implements OnInit {
   }
 
   hasError(field: string): boolean {
-    const control = this.shippingForm.get(field);
-    return control ? control.invalid && control.touched : false;
+    return fieldHasError(this.shippingForm.get(field));
   }
 
   getErrorMessage(field: string): string {
-    const control = this.shippingForm.get(field);
-    if (!control || !control.errors) return '';
-
-    if (control.errors['required']) return 'Este campo es obligatorio';
-    if (control.errors['minlength']) return `Mínimo ${control.errors['minlength'].requiredLength} caracteres`;
-    if (control.errors['maxlength']) return `Máximo ${control.errors['maxlength'].requiredLength} caracteres`;
-    if (control.errors['noNumbers']) return 'No se permiten números en este campo';
-    if (control.errors['pattern']) {
-      if (field === 'documentNumber') return 'Solo números, entre 6 y 10 dígitos';
-      if (field === 'phone' || field === 'alternativePhone') return 'Formato: 04XX-XXXXXXX (ej: 04141234567)';
-      if (field === 'email') return 'Ingresa un email válido (ej: nombre@correo.com)';
-      if (field === 'fullName') return 'Solo letras, sin números';
-      return 'Formato inválido';
-    }
-    if (control.errors['email']) return 'Ingresa un email válido';
-
-    return 'Campo inválido';
+    return fieldErrorMessage(this.shippingForm.get(field), field);
   }
 }

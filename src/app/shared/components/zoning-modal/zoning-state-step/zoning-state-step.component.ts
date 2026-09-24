@@ -21,6 +21,9 @@ export class ZoningStateStepComponent {
   readonly hits = input<GeoSearchHit[] | null>(null);
   readonly searching = input(false);
   readonly query = input('');
+  /** The customer's current state and municipality, highlighted. */
+  readonly currentStateId = input<string | null>(null);
+  readonly currentMunicipalityId = input<string | null>(null);
 
   readonly queryChange = output<string>();
   readonly stateSelected = output<GeoCoverageState>();

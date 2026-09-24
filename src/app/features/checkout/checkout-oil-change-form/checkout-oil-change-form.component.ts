@@ -7,7 +7,6 @@ import { CheckoutService, OilChangeServiceInfo } from '../services/checkout.serv
 import { CartService } from '@core/services/cart.service';
 import { AuthService } from '@core/services/auth.service';
 import { LocationStore } from '@core/services/location-store.service';
-import { ZoneSelectorService } from '@core/services/zone-selector.service';
 import { LocationRef } from '@models/geo.model';
 import { VehicleService } from '@core/services/vehicle.service';
 import { ProductService } from '@core/services/product.service';
@@ -22,6 +21,10 @@ import { CheckoutHeaderComponent } from '../components/checkout-header/checkout-
 import { LocationCascadeComponent } from '@shared/components/location-cascade/location-cascade.component';
 import { PhoneMaskDirective } from '@shared/directives/phone-mask.directive';
 import { ANALYTICS, AnalyticsEvent } from '@platform';
+import {
+  ADDRESS_FIELDS, CheckoutFieldLocks, DOCUMENT_TYPES, PERSONAL_FIELDS,
+  clearPersonalFields, fieldErrorMessage, fieldHasError,
+} from '../utils/checkout-contact-form';
 
 @Component({
   selector: 'app-checkout-oil-change-form',
@@ -35,14 +38,15 @@ export class CheckoutOilChangeFormComponent implements OnInit {
   protected readonly cartService = inject(CartService);
   protected readonly authService = inject(AuthService);
   private readonly locationStore = inject(LocationStore);
-  private readonly zoneSelector = inject(ZoneSelectorService);
   protected readonly vehicleService = inject(VehicleService);
   private readonly productService = inject(ProductService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
   private readonly analytics = inject(ANALYTICS);
 
-  protected readonly lockedFields = signal<Record<string, boolean>>({});
+  private readonly locks = new CheckoutFieldLocks(() => this.oilChangeForm);
+  protected readonly hasLockedFields = this.locks.hasLockedPersonal;
+  protected readonly hasLockedAddressFields = this.locks.hasLockedAddress;
 
   /** Flips to `true` once the user tries to submit at least once. Used to
    *  surface domain-level errors (e.g. "no vehicle selected") that live
@@ -73,15 +77,10 @@ export class CheckoutOilChangeFormComponent implements OnInit {
     return selected.every((v) => validIds.has(v.id));
   });
 
-  protected readonly documentTypes = [
-    { code: 'V', name: 'V - Venezolano' },
-    { code: 'E', name: 'E - Extranjero' },
-    { code: 'J', name: 'J - Jurídico' },
-    { code: 'P', name: 'P - Pasaporte' },
-  ];
+  protected readonly documentTypes = DOCUMENT_TYPES;
 
   constructor() {
-    // A new location from the selector ("cambiar") voids the city and parish
+    // A new location (changed from the header) voids the city and parish
     // picked for the previous one.
     effect(() => {
       const current = this.locationStore.location();
@@ -261,78 +260,23 @@ export class CheckoutOilChangeFormComponent implements OnInit {
   private prefillFromUserProfile(): void {
     const user = this.authService.currentUser();
     if (!user) return;
-
-    const locked: Record<string, boolean> = {};
-    const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
-
-    if (fullName) {
-      this.oilChangeForm.patchValue({ fullName });
-      this.oilChangeForm.get('fullName')?.disable();
-      locked['fullName'] = true;
-    }
-    if (user.documentType) {
-      this.oilChangeForm.patchValue({ documentType: user.documentType });
-      this.oilChangeForm.get('documentType')?.disable();
-      locked['documentType'] = true;
-    }
-    if (user.documentNumber) {
-      this.oilChangeForm.patchValue({ documentNumber: user.documentNumber });
-      this.oilChangeForm.get('documentNumber')?.disable();
-      locked['documentNumber'] = true;
-    }
-    if (user.phone) {
-      this.oilChangeForm.patchValue({ phone: user.phone });
-      this.oilChangeForm.get('phone')?.disable();
-      locked['phone'] = true;
-    }
-    if (user.email) {
-      this.oilChangeForm.patchValue({ email: user.email });
-      this.oilChangeForm.get('email')?.disable();
-      locked['email'] = true;
-    }
-
-    this.lockedFields.set(locked);
+    this.locks.lockPersonalFromProfile(user);
   }
 
-  protected readonly hasLockedFields = computed(() => {
-    const locked = this.lockedFields();
-    return ['fullName', 'documentType', 'documentNumber', 'phone', 'email'].some(f => locked[f]);
-  });
-
-  protected readonly hasLockedAddressFields = computed(() => {
-    const locked = this.lockedFields();
-    return ['location', 'address', 'referencePoint'].some(f => locked[f]);
-  });
-
   protected unlockPersonalFields(): void {
-    const fields = ['fullName', 'documentType', 'documentNumber', 'phone', 'email'];
-    fields.forEach(field => this.oilChangeForm.get(field)?.enable());
-    const updated = { ...this.lockedFields() };
-    fields.forEach(f => delete updated[f]);
-    this.lockedFields.set(updated);
+    this.locks.unlock(PERSONAL_FIELDS);
   }
 
   protected clearPersonalFields(): void {
-    this.oilChangeForm.patchValue({
-      fullName: '',
-      documentType: 'V',
-      documentNumber: '',
-      phone: '',
-      email: '',
-    });
+    clearPersonalFields(this.oilChangeForm);
   }
 
   protected unlockAddressFields(): void {
-    const fields = ['location', 'address', 'referencePoint'];
-    fields.forEach(field => this.oilChangeForm.get(field)?.enable());
-    const updated = { ...this.lockedFields() };
-    fields.forEach(f => delete updated[f]);
-    this.lockedFields.set(updated);
+    this.locks.unlock(ADDRESS_FIELDS);
   }
 
   protected clearServiceFields(): void {
-    const fields = ['location', 'address', 'referencePoint', 'vehicleInfo', 'notes'];
-    fields.forEach(field => this.oilChangeForm.get(field)?.enable());
+    this.locks.unlock([...ADDRESS_FIELDS, 'vehicleInfo', 'notes']);
     this.oilChangeForm.patchValue({
       location: null,
       address: '',
@@ -340,14 +284,6 @@ export class CheckoutOilChangeFormComponent implements OnInit {
       vehicleInfo: '',
       notes: '',
     });
-    const updated = { ...this.lockedFields() };
-    fields.forEach(f => delete updated[f]);
-    this.lockedFields.set(updated);
-  }
-
-  /** "cambiar" next to the state and municipality: that is the customer's location. */
-  protected changeLocation(): void {
-    this.zoneSelector.open();
   }
 
   onSubmit(): void {
@@ -392,27 +328,10 @@ export class CheckoutOilChangeFormComponent implements OnInit {
   }
 
   hasError(field: string): boolean {
-    const control = this.oilChangeForm.get(field);
-    return control ? control.invalid && control.touched : false;
+    return fieldHasError(this.oilChangeForm.get(field));
   }
 
   getErrorMessage(field: string): string {
-    const control = this.oilChangeForm.get(field);
-    if (!control || !control.errors) return '';
-
-    if (control.errors['required']) return field === 'location' ? 'Elige la ciudad y la parroquia' : 'Este campo es obligatorio';
-    if (control.errors['minlength']) return `Mínimo ${control.errors['minlength'].requiredLength} caracteres`;
-    if (control.errors['maxlength']) return `Máximo ${control.errors['maxlength'].requiredLength} caracteres`;
-    if (control.errors['noNumbers']) return 'No se permiten números en este campo';
-    if (control.errors['pattern']) {
-      if (field === 'documentNumber') return 'Solo números, entre 6 y 10 dígitos';
-      if (field === 'phone') return 'Formato: 04XX-XXXXXXX (ej: 04141234567)';
-      if (field === 'email') return 'Ingresa un email válido (ej: nombre@correo.com)';
-      if (field === 'fullName') return 'Solo letras, sin números';
-      return 'Formato inválido';
-    }
-    if (control.errors['email']) return 'Ingresa un email válido';
-
-    return 'Campo inválido';
+    return fieldErrorMessage(this.oilChangeForm.get(field), field, { location: 'Elige la ciudad y la parroquia' });
   }
 }
