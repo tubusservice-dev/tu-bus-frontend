@@ -1,0 +1,261 @@
+// Page layout, header, loading, accordion, form groups, inline save and toggle switch.
+
+.settings-page {
+  @apply space-y-6 max-w-4xl mx-auto;
+}
+
+// ========== Header ==========
+.page-header {
+  @apply mb-8;
+}
+
+.page-title {
+  @apply text-2xl font-bold text-gray-900 dark:text-white;
+}
+
+.page-subtitle {
+  @apply text-gray-500 dark:text-gray-400 mt-1;
+}
+
+// ========== Loading ==========
+.loading-container {
+  @apply flex flex-col items-center justify-center py-16 text-gray-500 dark:text-gray-400;
+
+  .spinner {
+    @apply w-10 h-10 border-4 border-gray-200 dark:border-gray-700 rounded-full animate-spin mb-4;
+    border-top-color: var(--accent-primary);
+  }
+}
+
+// ========== Acordeón ==========
+.settings-accordion {
+  @apply space-y-4;
+}
+
+.accordion-item {
+  @apply bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden transition-all duration-200;
+
+  &.expanded {
+    @apply shadow-md;
+  }
+}
+
+.accordion-header {
+  @apply w-full flex items-center justify-between p-5 text-left bg-transparent hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer;
+
+  .header-content {
+    @apply flex items-center gap-3;
+  }
+
+  .icon {
+    @apply w-10 h-10 flex items-center justify-center rounded-lg;
+    background-color: var(--accent-light);
+    color: var(--accent-primary);
+
+    svg {
+      @apply w-5 h-5;
+    }
+  }
+
+  .title {
+    @apply text-lg font-semibold text-gray-900 dark:text-white;
+  }
+
+  .chevron {
+    @apply text-gray-400 transition-transform duration-200;
+
+    svg {
+      @apply w-5 h-5;
+    }
+
+    &.rotated {
+      @apply rotate-180;
+    }
+  }
+}
+
+.accordion-content {
+  @apply max-h-0 overflow-hidden transition-all duration-300 ease-in-out;
+
+  &.open {
+    @apply max-h-[2000px];
+  }
+}
+
+.section-form {
+  @apply p-5 pt-0 space-y-5;
+}
+
+.section-description {
+  @apply text-gray-600 dark:text-gray-400 text-sm pb-4 border-b border-gray-100 dark:border-gray-700;
+}
+
+// ========== Form Groups ==========
+.form-group {
+  @apply space-y-2;
+
+  label {
+    @apply block text-sm font-medium text-gray-700 dark:text-gray-300;
+  }
+
+  .hint {
+    @apply block text-xs text-gray-500 dark:text-gray-400;
+  }
+
+  .error {
+    @apply block text-xs text-red-600 dark:text-red-400;
+  }
+}
+
+.input {
+  @apply w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:border-transparent transition-colors;
+  &:focus { --tw-ring-color: var(--accent-primary); }
+
+  /* Select arrow styling handled by global styles.scss (select.select) */
+}
+
+.toggle-hint {
+  @apply mt-1 ml-16;
+}
+
+.catalog-toggle {
+  @apply mt-3 pt-3 border-t border-gray-100 dark:border-gray-700;
+}
+
+// ========== Inline Save Group ==========
+.inline-save-group {
+  @apply flex items-center gap-3;
+
+  .input.select {
+    @apply flex-1;
+  }
+
+  &.toggle-row {
+    @apply justify-between;
+  }
+}
+
+.btn-inline-save {
+  @apply inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium text-white rounded-lg transition-all min-w-[80px];
+  background-color: var(--accent-primary);
+
+  &:hover:not(:disabled) {
+    background-color: var(--accent-hover);
+  }
+
+  &:disabled {
+    @apply opacity-70 cursor-not-allowed;
+  }
+
+  &.success {
+    @apply bg-green-600;
+  }
+
+  .btn-spinner-small {
+    @apply w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin;
+  }
+
+  .icon-check {
+    @apply w-5 h-5;
+  }
+}
+
+// ========== Toggle Switch ==========
+.toggle-container {
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+  user-select: none;
+
+  &.small {
+    .toggle-switch {
+      width: 40px;
+      min-width: 40px;
+      height: 20px;
+
+      &::after {
+        width: 16px;
+        height: 16px;
+        top: 2px;
+      }
+    }
+
+    .toggle-input:checked + .toggle-switch::after {
+      left: 22px;
+    }
+  }
+}
+
+.toggle-input {
+  // Ocultar completamente el checkbox nativo
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  width: 48px;
+  min-width: 48px;
+  height: 24px;
+  background-color: #d1d5db;
+  border-radius: 9999px;
+  transition: background-color 0.2s ease;
+  cursor: pointer;
+  vertical-align: middle;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 2px;
+    top: 2px;
+    width: 20px;
+    height: 20px;
+    background-color: white;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    transition: left 0.2s ease;
+  }
+}
+
+// Dark mode para toggle
+:host-context(.dark) .toggle-switch {
+  background-color: #4b5563;
+}
+
+.toggle-input:checked + .toggle-switch {
+  background-color: var(--accent-primary);
+
+  &::after {
+    left: 26px;
+  }
+}
+
+.toggle-input:focus + .toggle-switch {
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+.toggle-label {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.875rem;
+  line-height: 24px;
+  color: #374151;
+  vertical-align: middle;
+  cursor: pointer;
+  margin-left: 5px;
+}
+
+:host-context(.dark) .toggle-label {
+  color: #d1d5db;
+}

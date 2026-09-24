@@ -31,13 +31,6 @@ export interface DispatchOption {
   requiresLocation?: boolean;
 }
 
-export interface StorePickupInfo {
-  address: string;
-  schedule: string;
-  phone?: string;
-  additionalInfo?: string;
-}
-
 export interface ShippingRecipientInfo {
   fullName: string;
   documentType: 'V' | 'E' | 'J' | 'P';
@@ -120,7 +113,6 @@ export interface BillingAddress {
 
 export interface CheckoutState {
   dispatchType: DispatchType;
-  storePickupInfo: StorePickupInfo | null;
   selectedShippingAgency: ShippingAgency | null;
   shippingRecipientInfo: ShippingRecipientInfo | null;
   localDeliveryRecipientInfo: LocalDeliveryRecipientInfo | null;
@@ -143,7 +135,6 @@ const BRANCH_AWARE_DISPATCH_TYPES: DispatchType[] = [
 
 const INITIAL_STATE: CheckoutState = {
   dispatchType: null,
-  storePickupInfo: null,
   selectedShippingAgency: null,
   shippingRecipientInfo: null,
   localDeliveryRecipientInfo: null,
@@ -182,17 +173,6 @@ export class CheckoutService {
 
   // Dispatch config from admin settings
   private readonly dispatchConfig = computed(() => this.settingsService.dispatchConfig());
-
-  // Store pickup info (from settings fallback)
-  readonly storeInfo = computed<StorePickupInfo>(() => {
-    const config = this.dispatchConfig();
-    return {
-      address: config.storePickup.address,
-      schedule: config.storePickup.schedule,
-      phone: config.storePickup.phone,
-      additionalInfo: config.storePickup.additionalInfo,
-    };
-  });
 
   // ==================== DISPATCH OPTIONS ====================
 
@@ -388,7 +368,6 @@ export class CheckoutService {
     this._state.update((state) => ({
       ...state,
       dispatchType: type,
-      storePickupInfo: type === 'store_pickup' ? this.storeInfo() : null,
       selectedShippingAgency: type === 'shipping_agency' ? state.selectedShippingAgency : null,
       shippingRecipientInfo: type === 'shipping_agency' ? state.shippingRecipientInfo : null,
       localDeliveryRecipientInfo: type === 'local_delivery' ? state.localDeliveryRecipientInfo : null,
@@ -522,7 +501,6 @@ export class CheckoutService {
     this._state.update((s) => ({
       ...s,
       dispatchType: null,
-      storePickupInfo: null,
       selectedShippingAgency: null,
       shippingRecipientInfo: null,
       localDeliveryRecipientInfo: null,

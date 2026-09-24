@@ -412,6 +412,16 @@ export class CheckoutPaymentUiService implements OnDestroy {
     return `${symbol} ${formatted}`;
   }
 
+  /** The order total in USD, as provided by the owning component. */
+  total(): number {
+    return this.totalSignal();
+  }
+
+  /** Today's business date (YYYY-MM-DD), the latest payment date allowed. */
+  today(): string {
+    return this.todayStr;
+  }
+
   /** Raw USD total as a paste-ready decimal string (no currency symbol). */
   totalUsdRaw(): string {
     return this.totalSignal().toFixed(2);

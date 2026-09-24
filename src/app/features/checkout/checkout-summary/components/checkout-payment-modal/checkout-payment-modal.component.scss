@@ -1,0 +1,6 @@
+// The payment modal keeps the summary's own partials, so it renders exactly as
+// it did inline: modal chrome, payment cards/forms, dark mode and responsive rules.
+@use '../../styles/modal-payment';
+@use '../../styles/payment';
+@use '../../styles/dark-mode';
+@use '../../styles/responsive';
