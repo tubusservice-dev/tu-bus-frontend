@@ -5,20 +5,22 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { CheckoutService, ShippingRecipientInfo } from '../services/checkout.service';
 import { CartService } from '@core/services/cart.service';
 import { AuthService } from '@core/services/auth.service';
-import { getStates, getCitiesByState, getMunicipalitiesByState } from '@shared/data/venezuela-states';
+import { LocationRef } from '@models/geo.model';
+import { fromStoredLocation } from '@shared/utils/location-ref.util';
 import {
   NAME_PATTERN, PHONE_VE_PATTERN, DOCUMENT_NUMBER_PATTERN, EMAIL_PATTERN,
   MAX_FULLNAME_LENGTH, MAX_ADDRESS_LENGTH, MAX_REFERENCE_LENGTH, MAX_NOTES_LENGTH,
   noNumbersValidator, scrollToFirstFormError,
 } from '@shared/validators/form-validators';
 import { CheckoutHeaderComponent } from '../components/checkout-header/checkout-header.component';
+import { LocationCascadeComponent } from '@shared/components/location-cascade/location-cascade.component';
 import { PhoneMaskDirective } from '@shared/directives/phone-mask.directive';
 import { ANALYTICS, AnalyticsEvent } from '@platform';
 
 @Component({
   selector: 'app-checkout-shipping-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, CheckoutHeaderComponent, PhoneMaskDirective],
+  imports: [CommonModule, ReactiveFormsModule, CheckoutHeaderComponent, LocationCascadeComponent, PhoneMaskDirective],
   templateUrl: './checkout-shipping-form.component.html',
   styleUrl: './checkout-shipping-form.component.scss',
 })
@@ -33,11 +35,6 @@ export class CheckoutShippingFormComponent implements OnInit {
   protected shippingForm!: FormGroup;
   protected readonly selectedAgency = this.checkoutService.selectedShippingAgency;
   protected readonly lockedFields = signal<Record<string, boolean>>({});
-
-  // Reference data — all 24 Venezuelan states with cities and municipalities
-  protected readonly states = signal<{ code: string; name: string }[]>([]);
-  protected readonly cities = signal<{ code: string; name: string }[]>([]);
-  protected readonly municipalities = signal<{ code: string; name: string }[]>([]);
 
   protected readonly documentTypes = [
     { code: 'V', name: 'V - Venezolano' },
@@ -58,12 +55,7 @@ export class CheckoutShippingFormComponent implements OnInit {
       return;
     }
 
-    this.loadReferenceStates();
     this.loadSavedData();
-  }
-
-  private loadReferenceStates(): void {
-    this.states.set(getStates());
   }
 
   private initForm(): void {
@@ -74,9 +66,7 @@ export class CheckoutShippingFormComponent implements OnInit {
       phone: ['', [Validators.required, Validators.pattern(PHONE_VE_PATTERN)]],
       alternativePhone: ['', [Validators.pattern(PHONE_VE_PATTERN)]],
       email: ['', [Validators.pattern(EMAIL_PATTERN)]],
-      stateCode: ['', Validators.required],
-      cityCode: ['', Validators.required],
-      municipalityCode: [''],
+      location: [null as LocationRef | null, Validators.required],
       address: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(MAX_ADDRESS_LENGTH)]],
       referencePoint: ['', Validators.maxLength(MAX_REFERENCE_LENGTH)],
       agencyOfficeCode: ['', Validators.maxLength(50)],
@@ -87,7 +77,7 @@ export class CheckoutShippingFormComponent implements OnInit {
   private loadSavedData(): void {
     const savedInfo = this.checkoutService.shippingRecipientInfo();
     if (savedInfo) {
-      this.shippingForm.patchValue(savedInfo);
+      this.shippingForm.patchValue({ ...savedInfo, location: savedInfo.location ?? null });
     } else {
       // Refresh user profile from server to get latest data, then prefill
       this.authService.loadUserProfile().subscribe({
@@ -136,20 +126,11 @@ export class CheckoutShippingFormComponent implements OnInit {
     }
 
     // Prefill address fields and lock them
-    if (user.stateName) {
-      const stateMatch = this.states().find((s: any) => s.name === user.stateName);
-      if (stateMatch) {
-        this.shippingForm.patchValue({ stateCode: stateMatch.code });
-        this.shippingForm.get('stateCode')?.disable();
-        locked['stateCode'] = true;
-        this.loadReferenceCities(stateMatch.code, user.cityCode, user.municipalityCode);
-      }
-    }
-    if (user.cityCode || user.cityName) {
-      locked['cityCode'] = true;
-    }
-    if (user.municipalityCode || user.municipalityName) {
-      locked['municipalityCode'] = true;
+    if (user.location) {
+      const { parish: _parish, ...place } = fromStoredLocation(user.location);
+      this.shippingForm.patchValue({ location: place });
+      this.shippingForm.get('location')?.disable();
+      locked['location'] = true;
     }
     const addressParts = [user.street, user.houseNumber, user.neighborhood].filter(Boolean);
     if (addressParts.length > 0) {
@@ -166,35 +147,6 @@ export class CheckoutShippingFormComponent implements OnInit {
     this.lockedFields.set(locked);
   }
 
-  protected onStateChange(): void {
-    const stateCode = this.shippingForm.get('stateCode')?.value;
-    this.shippingForm.patchValue({ cityCode: '', municipalityCode: '' });
-    this.cities.set([]);
-    this.municipalities.set([]);
-    if (stateCode) {
-      this.cities.set(getCitiesByState(stateCode));
-      this.municipalities.set(getMunicipalitiesByState(stateCode));
-    }
-  }
-
-  protected onCityChange(): void {
-    // City and municipality are independent lists within a state — no cascade needed
-  }
-
-  private loadReferenceCities(stateCode: string, preselectedCity?: string, preselectedMuni?: string): void {
-    this.cities.set(getCitiesByState(stateCode));
-    this.municipalities.set(getMunicipalitiesByState(stateCode));
-
-    if (preselectedCity) {
-      this.shippingForm.patchValue({ cityCode: preselectedCity });
-      this.shippingForm.get('cityCode')?.disable();
-    }
-    if (preselectedMuni) {
-      this.shippingForm.patchValue({ municipalityCode: preselectedMuni });
-      this.shippingForm.get('municipalityCode')?.disable();
-    }
-  }
-
   protected readonly hasLockedFields = computed(() => {
     const locked = this.lockedFields();
     return ['fullName', 'documentType', 'documentNumber', 'phone', 'alternativePhone', 'email']
@@ -203,12 +155,12 @@ export class CheckoutShippingFormComponent implements OnInit {
 
   protected readonly hasLockedAddressFields = computed(() => {
     const locked = this.lockedFields();
-    return ['stateCode', 'cityCode', 'municipalityCode', 'address', 'referencePoint']
+    return ['location', 'address', 'referencePoint']
       .some(f => locked[f]);
   });
 
   protected unlockAddressFields(): void {
-    const fields = ['stateCode', 'cityCode', 'municipalityCode', 'address', 'referencePoint'];
+    const fields = ['location', 'address', 'referencePoint'];
     fields.forEach(field => this.shippingForm.get(field)?.enable());
     const updated = { ...this.lockedFields() };
     fields.forEach(f => delete updated[f]);
@@ -217,7 +169,7 @@ export class CheckoutShippingFormComponent implements OnInit {
 
   protected unlockPersonalFields(): void {
     const allFields = ['fullName', 'documentType', 'documentNumber', 'phone', 'alternativePhone', 'email',
-      'stateCode', 'cityCode', 'municipalityCode', 'address', 'referencePoint'];
+      'location', 'address', 'referencePoint'];
     allFields.forEach(field => this.shippingForm.get(field)?.enable());
     this.lockedFields.set({});
   }
@@ -234,12 +186,10 @@ export class CheckoutShippingFormComponent implements OnInit {
   }
 
   protected clearShippingFields(): void {
-    const addressFields = ['stateCode', 'cityCode', 'municipalityCode', 'address', 'referencePoint', 'agencyOfficeCode', 'notes'];
+    const addressFields = ['location', 'address', 'referencePoint', 'agencyOfficeCode', 'notes'];
     addressFields.forEach(field => this.shippingForm.get(field)?.enable());
     this.shippingForm.patchValue({
-      stateCode: '',
-      cityCode: '',
-      municipalityCode: '',
+      location: null,
       address: '',
       referencePoint: '',
       agencyOfficeCode: '',
@@ -249,8 +199,6 @@ export class CheckoutShippingFormComponent implements OnInit {
     const updated = { ...this.lockedFields() };
     addressFields.forEach(f => delete updated[f]);
     this.lockedFields.set(updated);
-    this.cities.set([]);
-    this.municipalities.set([]);
   }
 
   onSubmit(): void {
@@ -262,9 +210,7 @@ export class CheckoutShippingFormComponent implements OnInit {
     }
 
     const formValue = this.shippingForm.getRawValue();
-    const selectedState = this.states().find((s: any) => s.code === formValue.stateCode);
-    const selectedCity = this.cities().find((c: any) => c.code === formValue.cityCode);
-    const selectedMuni = this.municipalities().find((m: any) => m.code === formValue.municipalityCode);
+    const location: LocationRef = formValue.location;
 
     const shippingInfo: ShippingRecipientInfo = {
       fullName: formValue.fullName.trim(),
@@ -273,9 +219,10 @@ export class CheckoutShippingFormComponent implements OnInit {
       phone: formValue.phone,
       alternativePhone: formValue.alternativePhone || undefined,
       email: formValue.email || undefined,
-      state: selectedState?.name || formValue.stateCode,
-      city: selectedCity?.name || formValue.cityCode,
-      municipality: selectedMuni?.name || undefined,
+      location,
+      state: location.state.name,
+      city: location.city?.name ?? location.municipality.name,
+      municipality: location.municipality.name,
       address: formValue.address.trim(),
       referencePoint: formValue.referencePoint?.trim() || undefined,
       agencyOfficeCode: formValue.agencyOfficeCode?.trim() || undefined,
@@ -288,10 +235,6 @@ export class CheckoutShippingFormComponent implements OnInit {
 
   goBack(): void {
     this.router.navigate(['/checkout/agencia']);
-  }
-
-  getStateName(code: string): string {
-    return this.states().find((s: any) => s.code === code)?.name || code;
   }
 
   hasError(field: string): boolean {

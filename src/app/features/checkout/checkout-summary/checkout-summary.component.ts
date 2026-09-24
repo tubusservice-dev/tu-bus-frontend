@@ -6,7 +6,6 @@ import { forkJoin } from 'rxjs';
 import { CheckoutService, RequestedServiceDate } from '../services/checkout.service';
 import { CartService } from '@core/services/cart.service';
 import { OrderService } from '@core/services/order.service';
-import { LocationStore } from '@core/services/location-store.service';
 import { BranchSummary } from '@models/geo.model';
 import { ProductService } from '@core/services/product.service';
 import { ExchangeRateService } from '@core/services/exchange-rate.service';
@@ -19,16 +18,18 @@ import { DateInputComponent } from '@shared/components/date-input/date-input.com
 import { ServiceDatePickerComponent } from '@shared/components/service-date-picker/service-date-picker.component';
 import { BodyScrollLockService } from '@shared/services/body-scroll-lock.service';
 import { CheckoutHeaderComponent } from '../components/checkout-header/checkout-header.component';
+import { LocationCascadeComponent } from '@shared/components/location-cascade/location-cascade.component';
 import { businessTodayIso } from '@shared/utils/business-date.util';
 import { CheckoutPaymentUiService } from './services/checkout-payment-ui.service';
 import { CheckoutBillingService } from './services/checkout-billing.service';
 import { CheckoutBranchStockService } from './services/checkout-branch-stock.service';
 import { ANALYTICS, AnalyticsEvent } from '@platform';
+import { cityAndParishLabel, toStoredLocation } from '@shared/utils/location-ref.util';
 
 @Component({
   selector: 'app-checkout-summary',
   standalone: true,
-  imports: [CurrencyPipe, CommonModule, ReactiveFormsModule, CopyableValueComponent, DateInputComponent, ServiceDatePickerComponent, CheckoutHeaderComponent],
+  imports: [CurrencyPipe, CommonModule, ReactiveFormsModule, CopyableValueComponent, DateInputComponent, ServiceDatePickerComponent, CheckoutHeaderComponent, LocationCascadeComponent],
   templateUrl: './checkout-summary.component.html',
   styleUrl: './checkout-summary.component.scss',
   providers: [CheckoutPaymentUiService, CheckoutBillingService, CheckoutBranchStockService],
@@ -38,7 +39,8 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
   protected readonly checkoutService = inject(CheckoutService);
   protected readonly cartService = inject(CartService);
   private readonly orderService = inject(OrderService);
-  protected readonly locationStore = inject(LocationStore);
+  /** "Tocuyito, parroquia Independencia" for the delivery address rows. */
+  protected readonly cityAndParish = cityAndParishLabel;
   private readonly productService = inject(ProductService);
   private readonly router = inject(Router);
   protected readonly exchangeRateService = inject(ExchangeRateService);
@@ -328,13 +330,9 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
 
   private readonly shippingCostSignal = computed<number>(() => {
     const dt = this.checkoutService.dispatchType();
-    if (dt === 'shipping_agency') {
+    // Local delivery is priced by the parish picked in the delivery form.
+    if (dt === 'shipping_agency' || dt === 'local_delivery') {
       return this.checkoutService.getShippingCost() ?? 0;
-    }
-    if (dt === 'local_delivery') {
-      const config = this.getLocalDeliveryConfig();
-      if (config?.additionalCharge) return config.additionalChargeAmount;
-      return 0;
     }
     return 0;
   });
@@ -502,27 +500,13 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
       return this.checkoutService.getShippingCostLabel();
     }
     if (this.dispatchType === 'local_delivery') {
-      const config = this.getLocalDeliveryConfig();
-      if (config?.additionalCharge) {
-        return `+$${config.additionalChargeAmount.toFixed(2)}`;
-      }
-      return 'Delivery gratis';
+      return this.checkoutService.getShippingCostLabel() || 'Delivery gratis';
     }
     return 'Gratis';
   }
 
   get shippingCost(): number {
     return this.shippingCostSignal();
-  }
-
-  private getLocalDeliveryConfig(): { freeDelivery: boolean; additionalCharge: boolean; additionalChargeAmount: number } | null {
-    const dc = this.locationStore.deliveryConfig();
-    if (!dc) return null;
-    return {
-      freeDelivery: dc.freeDelivery,
-      additionalCharge: !dc.freeDelivery && dc.deliveryCharge > 0,
-      additionalChargeAmount: dc.deliveryCharge,
-    };
   }
 
   get isPayOnDelivery(): boolean {
@@ -654,6 +638,7 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
         dispatchDetails.recipientAddress = recipient.address;
         dispatchDetails.recipientState = recipient.state;
         dispatchDetails.recipientCity = recipient.city;
+        if (recipient.location) dispatchDetails.location = toStoredLocation(recipient.location);
         dispatchDetails.agencyOfficeCode = recipient.agencyOfficeCode;
         dispatchDetails.referencePoint = recipient.referencePoint;
       }
@@ -665,8 +650,8 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
       dispatchDetails.recipientDocument = `${localDelivery.documentType}-${localDelivery.documentNumber}`;
       dispatchDetails.recipientPhone = localDelivery.phone;
       dispatchDetails.recipientAddress = localDelivery.address;
-      dispatchDetails.recipientCity = localDelivery.cityName;
-      dispatchDetails.recipientMunicipality = localDelivery.municipalityName;
+      // The server fills state, city and municipality text from the location.
+      dispatchDetails.location = toStoredLocation(localDelivery.location);
       dispatchDetails.referencePoint = localDelivery.referencePoint;
     }
 
@@ -683,8 +668,7 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
       dispatchDetails.recipientDocument = `${this.oilChangeServiceInfo.documentType}-${this.oilChangeServiceInfo.documentNumber}`;
       dispatchDetails.recipientPhone = this.oilChangeServiceInfo.phone;
       dispatchDetails.recipientAddress = this.oilChangeServiceInfo.address;
-      dispatchDetails.recipientCity = this.oilChangeServiceInfo.cityName;
-      dispatchDetails.recipientMunicipality = this.oilChangeServiceInfo.municipalityName;
+      dispatchDetails.location = toStoredLocation(this.oilChangeServiceInfo.location);
       dispatchDetails.referencePoint = this.oilChangeServiceInfo.referencePoint;
     }
 

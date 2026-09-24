@@ -8,7 +8,12 @@
 <div class="cascade-grid">
   @for (level of levels(); track level) {
     <div class="cascade-field">
-      <label [for]="uid + '-' + level">{{ labels[level] }} <span class="required">*</span></label>
+      <label [for]="uid + '-' + level">
+        {{ labels[level] }}
+        @if (!isOptional(level)) {
+          <span class="required">*</span>
+        }
+      </label>
       <select
         class="input"
         [id]="uid + '-' + level"

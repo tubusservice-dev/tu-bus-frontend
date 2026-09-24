@@ -399,13 +399,14 @@ import { businessTodayIso, businessIsoOffset, formatBusinessDate } from '@shared
       @apply grid gap-2;
       grid-template-columns: 1fr;
 
+      // minmax(0, …): a long date must not push the time chip out of the modal.
       @media (min-width: 480px) {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
       }
     }
 
     .schedule-chip {
-      @apply flex items-center gap-2.5 rounded-lg px-3 py-2.5;
+      @apply flex items-center gap-2.5 rounded-lg px-3 py-2.5 min-w-0;
       background-color: rgba(255, 255, 255, 0.75);
       border: 1px solid rgba(148, 163, 184, 0.25);
 
@@ -424,10 +425,11 @@ import { businessTodayIso, businessIsoOffset, formatBusinessDate } from '@shared
         color: #64748b;
       }
 
+      // Wraps instead of hiding part of the date; only its first letter is capitalised.
       .schedule-chip-value {
-        @apply text-sm font-semibold truncate;
+        @apply text-sm font-semibold;
         color: #0f172a;
-        text-transform: capitalize;
+        &::first-letter { text-transform: uppercase; }
       }
 
       .schedule-chip-sep {

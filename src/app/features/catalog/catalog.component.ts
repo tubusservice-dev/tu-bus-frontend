@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, computed, HostListener, effect, DestroyRef } from '@angular/core';
+import { Component, inject, signal, OnInit, computed, HostListener, effect, untracked, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -72,6 +72,8 @@ export class CatalogComponent implements OnInit {
 
   // Tracks whether initial product load has been triggered
   private initialLoadDone = false;
+  /** Branches the products on screen were loaded for. */
+  private loadedBranchKey = '';
 
   // Estado
   protected readonly isLoading = signal(true);
@@ -155,13 +157,17 @@ export class CatalogComponent implements OnInit {
   });
 
   constructor() {
-    // Wait for LocationStore to resolve before loading products.
+    // Load once the location is resolved, and again whenever the branches
+    // whose stock counts change (a new zone, or removing the location).
     effect(() => {
-      const resolved = this.locationStore.isResolved();
-      if (resolved && !this.initialLoadDone) {
+      const branchKey = this.locationStore.stockBranchIds().join(',');
+      if (!this.locationStore.isResolved()) return;
+      untracked(() => {
+        if (this.initialLoadDone && branchKey === this.loadedBranchKey) return;
         this.initialLoadDone = true;
+        this.loadedBranchKey = branchKey;
         this.loadProducts();
-      }
+      });
     });
 
     // Reactive pipeline: each loadTrigger$.next() cancels the previous
@@ -238,6 +244,7 @@ export class CatalogComponent implements OnInit {
     // If location is already resolved, load immediately
     if (this.locationStore.isResolved() && !this.initialLoadDone) {
       this.initialLoadDone = true;
+      this.loadedBranchKey = this.locationStore.stockBranchIds().join(',');
       this.loadProducts();
     }
   }
@@ -291,8 +298,8 @@ export class CatalogComponent implements OnInit {
       sortOrder = 'desc';
     }
 
-    // Include branchIds from user's selected location
-    const ids = this.locationStore.branchIds();
+    // The zone's branches, or every active one while exploring without a location
+    const ids = this.locationStore.stockBranchIds();
     const branchIds = ids.length > 0 ? ids.join(',') : undefined;
 
     // Garage→catalog flow filters by vehicleType only. Engine-level matching

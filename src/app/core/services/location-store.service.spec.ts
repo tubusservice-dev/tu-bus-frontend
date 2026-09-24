@@ -5,6 +5,7 @@ import { GeoPlace, MunicipalityCoverage } from '@models/geo.model';
 import { GeoService } from './geo.service';
 import { CoverageService } from './coverage.service';
 import { LocationStore } from './location-store.service';
+import { BranchService } from './branch.service';
 
 const MIRANDA = { id: 'st-mir', name: 'Miranda' };
 const CHACAO = { id: 'mu-cha', name: 'Chacao' };
@@ -39,6 +40,7 @@ describe('LocationStore', () => {
         { provide: GeoService, useValue: geo },
         { provide: CoverageService, useValue: coverageApi },
         { provide: ANALYTICS, useValue: { setUserProperty: () => Promise.resolve() } },
+        { provide: BranchService, useValue: { getActive: () => of({ success: true, data: [{ id: 'b8' }, { id: 'b9' }] }) } },
       ],
     });
     return TestBed.inject(LocationStore);
@@ -75,13 +77,6 @@ describe('LocationStore', () => {
       municipalityId: 'mu-cha',
       municipalityName: 'Chacao',
     });
-  });
-
-  it('prices the municipality as the previous version did: cheapest delivering parish', () => {
-    const store = create();
-    store.setLocation(MIRANDA, CHACAO);
-    expect(store.deliveryConfig()).toEqual({ hasDelivery: true, freeDelivery: false, deliveryCharge: 2 });
-    expect(store.hasDelivery()).toBeTrue();
   });
 
   it('restores a saved location on start', () => {
@@ -161,6 +156,15 @@ describe('LocationStore', () => {
     expect(coverageApi.municipality).not.toHaveBeenCalled();
     expect(store.deliveryStatus()).toBe('partial');
     expect(store.isResolved()).toBeTrue();
+  });
+
+  it('counts the stock of every active branch while exploring, and of the zone once located', () => {
+    const store = create();
+    store.browseWithoutLocation();
+    expect(store.stockBranchIds()).toEqual(['b8', 'b9']);
+
+    store.setLocation(MIRANDA, CHACAO);
+    expect(store.stockBranchIds()).toEqual(['b1']);
   });
 
   it('goes from browsing to a location', () => {

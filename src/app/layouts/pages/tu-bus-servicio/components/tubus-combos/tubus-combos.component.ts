@@ -66,7 +66,7 @@ export class TubusCombosComponent {
     this.tabRequest$
       .pipe(
         switchMap(vt => {
-          const branchIds = this.locationStore.branchIds();
+          const branchIds = this.locationStore.stockBranchIds();
           const branchParam = branchIds.length > 0 ? branchIds.join(',') : undefined;
           return this.productService.getFeaturedShowcase(
             branchParam,
@@ -91,14 +91,14 @@ export class TubusCombosComponent {
     effect(() => {
       const resolved = this.locationStore.isResolved();
       if (!resolved) return;
-      // Depend on branchIds so location changes re-fire.
-      this.locationStore.branchIds();
+      // Depend on the stock branches so location changes re-fire.
+      this.locationStore.stockBranchIds();
       untracked(() => this.refresh());
     });
   }
 
   private refresh(): void {
-    const branchIds = this.locationStore.branchIds();
+    const branchIds = this.locationStore.stockBranchIds();
     const branchParam = branchIds.length > 0 ? branchIds.join(',') : undefined;
 
     this.isLoading.set(true);

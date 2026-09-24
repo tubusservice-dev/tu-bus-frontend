@@ -1,3 +1,5 @@
+import { StoredLocation } from './geo.model';
+
 /**
  * Order Model — 3 Status Systems
  *
@@ -56,6 +58,8 @@ export interface DispatchDetails {
    *  was created. Persisted on the order so the value the client saw at
    *  checkout survives any later edit of the branch's contact info. */
   selectedBranchPhone?: string;
+  /** Where the order goes (ubicaciones v2). The server fills the recipient text fields from it. */
+  location?: StoredLocation;
 }
 
 export interface BillingAddress {
@@ -68,6 +72,8 @@ export interface BillingAddress {
   municipality?: string;
   state?: string;
   referencePoint?: string;
+  /** Billing place (ubicaciones v2); the server fills state, city and municipality from it. */
+  location?: StoredLocation;
 }
 
 export interface PaymentSubmission {

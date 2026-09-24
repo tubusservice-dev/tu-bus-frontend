@@ -1,9 +1,9 @@
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { ANALYTICS } from '@platform';
-import { DeliveryTerms, GeoPlace, MunicipalityCoverage } from '@models/geo.model';
+import { GeoPlace, MunicipalityCoverage } from '@models/geo.model';
 import { GeoService } from './geo.service';
 import { CoverageService } from './coverage.service';
-import { aggregateDelivery } from '@shared/utils/delivery-terms.util';
+import { BranchService } from './branch.service';
 
 /**
  * - `undecided`: nothing chosen yet (the selector should ask).
@@ -43,12 +43,15 @@ export class LocationStore {
   private readonly geo = inject(GeoService);
   private readonly coverageApi = inject(CoverageService);
   private readonly analytics = inject(ANALYTICS);
+  private readonly branchService = inject(BranchService);
 
   private readonly _status = signal<LocationStatus>('undecided');
   private readonly _location = signal<SelectedLocation | null>(null);
   private readonly _coverage = signal<MunicipalityCoverage | null>(null);
   private readonly _isLoading = signal(false);
   private readonly _isResolved = signal(false);
+  /** Every active branch, fetched once for customers without a location. */
+  private readonly _activeBranchIds = signal<string[] | null>(null);
   /** Drops answers to requests a newer choice has made stale. */
   private requestSeq = 0;
 
@@ -70,16 +73,11 @@ export class LocationStore {
   readonly allFree = computed(() => this._coverage()?.allFree ?? false);
 
   /**
-   * Delivery folded over the whole municipality: delivery if any parish gets
-   * it, free if any delivering parish is free, else the cheapest charge. The
-   * same answer the previous version got per municipality; checkout prices
-   * per parish once the address form asks for it.
+   * The branches whose stock the store shows: the zone's once a location is
+   * set, every active branch while the customer explores without one (what
+   * any branch has can still be picked up or shipped by agency).
    */
-  readonly deliveryConfig = computed<DeliveryTerms | null>(() => {
-    const coverage = this._coverage();
-    return coverage ? aggregateDelivery(coverage.cities.flatMap((c) => c.parishes)) : null;
-  });
-  readonly hasDelivery = computed(() => this.deliveryConfig()?.hasDelivery ?? false);
+  readonly stockBranchIds = computed(() => (this.hasLocation() ? this.branchIds() : this._activeBranchIds() ?? []));
 
   /** "Chacao, Miranda". */
   readonly locationLabel = computed(() => {
@@ -123,7 +121,7 @@ export class LocationStore {
     this._status.set('browsing');
     this._location.set(null);
     this.write({ status: 'browsing' });
-    this.finish(null);
+    this.resolveWithoutLocation();
   }
 
   // ==================== internals ====================
@@ -141,7 +139,7 @@ export class LocationStore {
     }
     if (saved?.status === 'browsing') {
       this._status.set('browsing');
-      this._isResolved.set(true);
+      this.resolveWithoutLocation();
       return;
     }
 
@@ -150,7 +148,7 @@ export class LocationStore {
       this.migrateLegacy(legacy.citySlug, legacy.municipalitySlug);
       return;
     }
-    this._isResolved.set(true);
+    this.resolveWithoutLocation();
   }
 
   /** Moves a location saved by the previous version. Kept for a later try if the server cannot be reached. */
@@ -161,7 +159,25 @@ export class LocationStore {
         if (seq !== this.requestSeq) return;
         this.remove(LEGACY_STORAGE_KEY);
         if (hit) this.setLocation(hit.state, hit.municipality);
-        else this.finish(null);
+        else this.resolveWithoutLocation();
+      },
+      error: () => seq === this.requestSeq && this.resolveWithoutLocation(),
+    });
+  }
+
+  /** No location: resolved once the active branches are known (fetched a single time). */
+  private resolveWithoutLocation(): void {
+    this._coverage.set(null);
+    if (this._activeBranchIds() !== null) {
+      this.requestSeq++;
+      this.finish(null);
+      return;
+    }
+    const seq = this.startRequest();
+    this.branchService.getActive().subscribe({
+      next: (res) => {
+        this._activeBranchIds.set((res.data ?? []).map((b) => b.id));
+        if (seq === this.requestSeq) this.finish(null);
       },
       error: () => seq === this.requestSeq && this.finish(null),
     });

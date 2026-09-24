@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, effect, untracked, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -6,21 +6,31 @@ import { CheckoutService, LocalDeliveryRecipientInfo } from '../services/checkou
 import { CartService } from '@core/services/cart.service';
 import { AuthService } from '@core/services/auth.service';
 import { LocationStore } from '@core/services/location-store.service';
-import { BranchZoneService } from '@core/services/branch-zone.service';
+import { ZoneSelectorService } from '@core/services/zone-selector.service';
+import { LocationRef, ParishDelivery } from '@models/geo.model';
 import {
   NAME_PATTERN, PHONE_VE_PATTERN, DOCUMENT_NUMBER_PATTERN, EMAIL_PATTERN,
   MAX_FULLNAME_LENGTH, MAX_ADDRESS_LENGTH, MAX_REFERENCE_LENGTH, MAX_NOTES_LENGTH,
   noNumbersValidator, scrollToFirstFormError,
 } from '@shared/validators/form-validators';
+import { fromStoredLocation } from '@shared/utils/location-ref.util';
 import { CheckoutHeaderComponent } from '../components/checkout-header/checkout-header.component';
+import { LocationCascadeComponent } from '@shared/components/location-cascade/location-cascade.component';
 import { PhoneMaskDirective } from '@shared/directives/phone-mask.directive';
 import { ANALYTICS, AnalyticsEvent } from '@platform';
-import { toSlug } from '@shared/utils/slug.util';
 
+const PERSONAL_FIELDS = ['fullName', 'documentType', 'documentNumber', 'phone', 'alternativePhone', 'email'];
+const ADDRESS_FIELDS = ['location', 'address', 'referencePoint'];
+
+/**
+ * Local delivery: who receives it and where. The state and municipality are
+ * the customer's location; the form asks for the city and parish, and the
+ * parish fixes the delivery price.
+ */
 @Component({
   selector: 'app-checkout-local-delivery-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, CheckoutHeaderComponent, PhoneMaskDirective],
+  imports: [CommonModule, ReactiveFormsModule, CheckoutHeaderComponent, LocationCascadeComponent, PhoneMaskDirective],
   templateUrl: './checkout-local-delivery-form.component.html',
   styleUrl: './checkout-local-delivery-form.component.scss',
 })
@@ -29,17 +39,19 @@ export class CheckoutLocalDeliveryFormComponent implements OnInit {
   protected readonly cartService = inject(CartService);
   protected readonly authService = inject(AuthService);
   private readonly locationStore = inject(LocationStore);
-  private readonly branchZoneService = inject(BranchZoneService);
+  private readonly zoneSelector = inject(ZoneSelectorService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
   private readonly analytics = inject(ANALYTICS);
 
   protected deliveryForm!: FormGroup;
-  protected readonly branchCities = signal<{ code: string; name: string }[]>([]);
-  protected readonly allMunicipalities = signal<{ name: string; slug: string; citySlug: string }[]>([]);
-  protected readonly availableMunicipalities = signal<{ code: string; name: string }[]>([]);
-  protected readonly selectedCityName = signal('');
   protected readonly lockedFields = signal<Record<string, boolean>>({});
+  protected readonly quote = this.checkoutService.deliveryQuote;
+  /** Set when the parish picked gets no delivery (e.g. restored from the profile). */
+  protected readonly parishWithoutDelivery = signal(false);
+
+  /** The customer's state and municipality, shown above the city and parish selects. */
+  protected readonly fixedPlace = computed<Partial<LocationRef> | null>(() => this.locationStore.location());
 
   protected readonly documentTypes = [
     { code: 'V', name: 'V - Venezolano' },
@@ -48,6 +60,22 @@ export class CheckoutLocalDeliveryFormComponent implements OnInit {
     { code: 'P', name: 'P - Pasaporte' },
   ];
 
+  constructor() {
+    // A new location from the selector ("cambiar") voids the city and parish
+    // picked for the previous one, and their price.
+    effect(() => {
+      this.locationStore.location();
+      untracked(() => {
+        const control = this.deliveryForm?.get('location');
+        if (control?.value && !this.inCurrentMunicipality(control.value)) {
+          control.enable();
+          control.setValue(null);
+          this.onDelivery(null);
+        }
+      });
+    });
+  }
+
   ngOnInit(): void {
     // Initialize the form FIRST so the template has a valid FormGroup during
     // the async navigation tick, even when we need to redirect away. Reloading
@@ -55,14 +83,11 @@ export class CheckoutLocalDeliveryFormComponent implements OnInit {
     // common path, not the rare one.
     this.initForm();
 
-    if (this.checkoutService.dispatchType() !== 'local_delivery') {
+    if (this.checkoutService.dispatchType() !== 'local_delivery' || !this.locationStore.hasLocation()) {
       this.router.navigate(['/checkout/despacho']);
       return;
     }
-
-    // Saved data and profile prefill depend on the coverage lists, so they are
-    // applied once the branch zones have loaded (see loadBranchZones).
-    this.loadBranchZones();
+    this.loadSavedData();
   }
 
   private initForm(): void {
@@ -73,44 +98,16 @@ export class CheckoutLocalDeliveryFormComponent implements OnInit {
       phone: ['', [Validators.required, Validators.pattern(PHONE_VE_PATTERN)]],
       alternativePhone: ['', [Validators.pattern(PHONE_VE_PATTERN)]],
       email: ['', [Validators.pattern(EMAIL_PATTERN)]],
-      cityCode: ['', Validators.required],
-      municipalityCode: ['', Validators.required],
+      location: [null as LocationRef | null, Validators.required],
       address: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(MAX_ADDRESS_LENGTH)]],
       referencePoint: ['', Validators.maxLength(MAX_REFERENCE_LENGTH)],
       notes: ['', Validators.maxLength(MAX_NOTES_LENGTH)],
     });
   }
 
-  private loadBranchZones(): void {
-    const branches = this.locationStore.branches();
-    if (branches.length === 0) {
-      this.loadSavedData();
-      return;
-    }
-
-    // One public call for every branch at once. This used to be one admin-only
-    // request per branch, which started returning 403 to customers and left
-    // both dropdowns empty.
-    this.branchZoneService.getCoverage(branches.map((b) => b.id)).subscribe({
-      next: ({ data }) => {
-        this.branchCities.set(data.cities.map((c) => ({ code: c.slug, name: c.name })));
-        this.allMunicipalities.set(
-          data.municipalities
-            .filter((m) => m.hasDelivery)
-            .map((m) => ({ name: m.name, slug: m.slug, citySlug: m.citySlug })),
-        );
-        this.loadSavedData();
-      },
-      // Personal data can still be restored even if coverage failed to load.
-      error: () => this.loadSavedData(),
-    });
-  }
-
   private loadSavedData(): void {
     const savedInfo = this.checkoutService.localDeliveryRecipientInfo();
     if (savedInfo) {
-      this.populateMunicipalitiesForCity(savedInfo.cityCode);
-
       this.deliveryForm.patchValue({
         fullName: savedInfo.fullName,
         documentType: savedInfo.documentType,
@@ -118,8 +115,7 @@ export class CheckoutLocalDeliveryFormComponent implements OnInit {
         phone: savedInfo.phone,
         alternativePhone: savedInfo.alternativePhone || '',
         email: savedInfo.email || '',
-        cityCode: savedInfo.cityCode,
-        municipalityCode: savedInfo.municipalityCode,
+        location: this.inCurrentMunicipality(savedInfo.location) ? savedInfo.location : null,
         address: savedInfo.address,
         referencePoint: savedInfo.referencePoint || '',
         notes: savedInfo.notes || '',
@@ -130,7 +126,6 @@ export class CheckoutLocalDeliveryFormComponent implements OnInit {
         next: () => this.prefillFromUserProfile(),
         error: () => this.prefillFromUserProfile(),
       });
-
     }
   }
 
@@ -139,91 +134,41 @@ export class CheckoutLocalDeliveryFormComponent implements OnInit {
     if (!user) return;
 
     const locked: Record<string, boolean> = {};
+    const lock = (field: string, value: unknown) => {
+      this.deliveryForm.patchValue({ [field]: value });
+      this.deliveryForm.get(field)?.disable();
+      locked[field] = true;
+    };
+
     const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
+    if (fullName) lock('fullName', fullName);
+    if (user.documentType) lock('documentType', user.documentType);
+    if (user.documentNumber) lock('documentNumber', user.documentNumber);
+    if (user.phone) lock('phone', user.phone);
+    if (user.alternativePhone) lock('alternativePhone', user.alternativePhone);
+    if (user.email) lock('email', user.email);
 
-    if (fullName) {
-      this.deliveryForm.patchValue({ fullName });
-      this.deliveryForm.get('fullName')?.disable();
-      locked['fullName'] = true;
-    }
-    if (user.documentType) {
-      this.deliveryForm.patchValue({ documentType: user.documentType });
-      this.deliveryForm.get('documentType')?.disable();
-      locked['documentType'] = true;
-    }
-    if (user.documentNumber) {
-      this.deliveryForm.patchValue({ documentNumber: user.documentNumber });
-      this.deliveryForm.get('documentNumber')?.disable();
-      locked['documentNumber'] = true;
-    }
-    if (user.phone) {
-      this.deliveryForm.patchValue({ phone: user.phone });
-      this.deliveryForm.get('phone')?.disable();
-      locked['phone'] = true;
-    }
-    if (user.alternativePhone) {
-      this.deliveryForm.patchValue({ alternativePhone: user.alternativePhone });
-      this.deliveryForm.get('alternativePhone')?.disable();
-      locked['alternativePhone'] = true;
-    }
-    if (user.email) {
-      this.deliveryForm.patchValue({ email: user.email });
-      this.deliveryForm.get('email')?.disable();
-      locked['email'] = true;
-    }
-
-    // Prefill address if user profile location is within coverage.
-    // The profile stores names from the static state list ("Valencia",
-    // "Carlos Arvelo") while coverage uses seeded slugs ("valencia",
-    // "carabobo"), so compare by slug. The coverage city may be the profile
-    // city or a state-wide entry named after the state.
-    if (user.municipalityCode) {
-      const muniSlug = toSlug(user.municipalityCode);
-      const citySlugs = [user.cityCode, user.cityName, user.stateName].filter(Boolean).map(toSlug);
-      const muniMatch = this.allMunicipalities().find(
-        (m) => m.slug === muniSlug && citySlugs.includes(m.citySlug)
-      );
-      if (muniMatch) {
-        this.populateMunicipalitiesForCity(muniMatch.citySlug);
-        this.deliveryForm.patchValue({ cityCode: muniMatch.citySlug, municipalityCode: muniMatch.slug });
-        this.deliveryForm.get('cityCode')?.disable();
-        this.deliveryForm.get('municipalityCode')?.disable();
-        locked['cityCode'] = true;
-        locked['municipalityCode'] = true;
-
-        const addressParts = [user.street, user.houseNumber, user.neighborhood].filter(Boolean);
-        if (addressParts.length > 0) {
-          this.deliveryForm.patchValue({ address: addressParts.join(', ') });
-          this.deliveryForm.get('address')?.disable();
-          locked['address'] = true;
-        }
-        if (user.referencePoint) {
-          this.deliveryForm.patchValue({ referencePoint: user.referencePoint });
-          this.deliveryForm.get('referencePoint')?.disable();
-          locked['referencePoint'] = true;
-        }
-      }
+    // The profile address only helps when it is in the municipality being served.
+    const profilePlace = user.location ? fromStoredLocation(user.location) : null;
+    if (profilePlace?.parish && this.inCurrentMunicipality(profilePlace)) {
+      lock('location', profilePlace);
+      const addressParts = [user.street, user.houseNumber, user.neighborhood].filter(Boolean);
+      if (addressParts.length > 0) lock('address', addressParts.join(', '));
+      if (user.referencePoint) lock('referencePoint', user.referencePoint);
     }
 
     this.lockedFields.set(locked);
   }
 
-  protected readonly hasLockedFields = computed(() => {
-    const locked = this.lockedFields();
-    return ['fullName', 'documentType', 'documentNumber', 'phone', 'alternativePhone', 'email'].some(f => locked[f]);
-  });
+  private inCurrentMunicipality(place: LocationRef | null | undefined): boolean {
+    return Boolean(place && place.municipality.id === this.locationStore.location()?.municipality.id);
+  }
 
-  protected readonly hasLockedAddressFields = computed(() => {
-    const locked = this.lockedFields();
-    return ['cityCode', 'municipalityCode', 'address', 'referencePoint'].some(f => locked[f]);
-  });
+  protected readonly hasLockedFields = computed(() => PERSONAL_FIELDS.some((f) => this.lockedFields()[f]));
+  protected readonly hasLockedAddressFields = computed(() => ADDRESS_FIELDS.some((f) => this.lockedFields()[f]));
 
   protected unlockPersonalFields(): void {
-    const fields = ['fullName', 'documentType', 'documentNumber', 'phone', 'alternativePhone', 'email'];
-    fields.forEach(field => this.deliveryForm.get(field)?.enable());
-    const updated = { ...this.lockedFields() };
-    fields.forEach(f => delete updated[f]);
-    this.lockedFields.set(updated);
+    this.unlock(PERSONAL_FIELDS);
   }
 
   protected clearPersonalFields(): void {
@@ -238,66 +183,44 @@ export class CheckoutLocalDeliveryFormComponent implements OnInit {
   }
 
   protected unlockAddressFields(): void {
-    const fields = ['cityCode', 'municipalityCode', 'address', 'referencePoint'];
-    fields.forEach(field => this.deliveryForm.get(field)?.enable());
-    const updated = { ...this.lockedFields() };
-    fields.forEach(f => delete updated[f]);
-    this.lockedFields.set(updated);
+    this.unlock(ADDRESS_FIELDS);
   }
 
   protected clearDeliveryFields(): void {
-    const fields = ['cityCode', 'municipalityCode', 'address', 'referencePoint', 'notes'];
-    fields.forEach(field => this.deliveryForm.get(field)?.enable());
-    this.deliveryForm.patchValue({
-      cityCode: '',
-      municipalityCode: '',
-      address: '',
-      referencePoint: '',
-      notes: '',
-    });
+    this.unlock([...ADDRESS_FIELDS, 'notes']);
+    this.deliveryForm.patchValue({ location: null, address: '', referencePoint: '', notes: '' });
+    this.onDelivery(null);
+  }
+
+  private unlock(fields: string[]): void {
+    fields.forEach((field) => this.deliveryForm.get(field)?.enable());
     const updated = { ...this.lockedFields() };
-    fields.forEach(f => delete updated[f]);
+    fields.forEach((f) => delete updated[f]);
     this.lockedFields.set(updated);
-    this.availableMunicipalities.set([]);
-    this.selectedCityName.set('');
   }
 
-  /** User picked a different city: refresh municipalities and clear the choice. */
-  onCityChange(cityCode: string): void {
-    this.populateMunicipalitiesForCity(cityCode);
-    this.deliveryForm.patchValue({ municipalityCode: '' });
+  /** The parish picked fixes the price shown here and in the summary. */
+  protected onDelivery(delivery: ParishDelivery | null): void {
+    this.checkoutService.setDeliveryQuote(delivery);
+    this.parishWithoutDelivery.set(Boolean(delivery && !delivery.hasDelivery));
   }
 
-  /** Fills the municipality list for `cityCode` without touching the selected value. */
-  private populateMunicipalitiesForCity(cityCode: string): void {
-    const munis = this.allMunicipalities()
-      .filter((m) => m.citySlug === cityCode)
-      .map((m) => ({ code: m.slug, name: m.name }));
-    this.availableMunicipalities.set(munis);
-    const city = this.branchCities().find((c) => c.code === cityCode);
-    this.selectedCityName.set(city?.name || '');
+  /** "cambiar" next to the state and municipality: that is the customer's location. */
+  protected changeLocation(): void {
+    this.zoneSelector.open();
   }
 
   onSubmit(): void {
-    if (this.deliveryForm.invalid) {
+    const quote = this.quote();
+    if (this.deliveryForm.invalid || !quote?.hasDelivery) {
       this.deliveryForm.markAllAsTouched();
+      if (quote && !quote.hasDelivery) this.parishWithoutDelivery.set(true);
       void this.analytics.logEvent(AnalyticsEvent.FormError, { screen: 'checkout_delivery' });
       scrollToFirstFormError();
       return;
     }
 
     const formValue = this.deliveryForm.getRawValue();
-    const city = this.branchCities().find(c => c.code === formValue.cityCode);
-    const municipality = this.availableMunicipalities().find(m => m.code === formValue.municipalityCode);
-
-    if (!city || !municipality) {
-      // The selected values are no longer in the coverage lists (e.g. data
-      // saved before coverage changed). Surface it on the field instead of
-      // leaving the submit button doing nothing.
-      this.flagOutOfCoverage(!city ? 'cityCode' : 'municipalityCode');
-      return;
-    }
-
     const deliveryInfo: LocalDeliveryRecipientInfo = {
       fullName: formValue.fullName.trim(),
       documentType: formValue.documentType,
@@ -305,10 +228,7 @@ export class CheckoutLocalDeliveryFormComponent implements OnInit {
       phone: formValue.phone,
       alternativePhone: formValue.alternativePhone || undefined,
       email: formValue.email || undefined,
-      cityCode: city.code,
-      cityName: city.name,
-      municipalityCode: municipality.code,
-      municipalityName: municipality.name,
+      location: formValue.location,
       address: formValue.address.trim(),
       referencePoint: formValue.referencePoint?.trim() || undefined,
       notes: formValue.notes?.trim() || undefined,
@@ -316,19 +236,6 @@ export class CheckoutLocalDeliveryFormComponent implements OnInit {
 
     this.checkoutService.setLocalDeliveryRecipientInfo(deliveryInfo);
     this.router.navigate(['/checkout/resumen']);
-  }
-
-  /** Clears an out-of-coverage selection so the field shows its required error. */
-  private flagOutOfCoverage(field: 'cityCode' | 'municipalityCode'): void {
-    const control = this.deliveryForm.get(field);
-    control?.enable();
-    control?.setValue('');
-    control?.markAsTouched();
-    const updated = { ...this.lockedFields() };
-    delete updated[field];
-    this.lockedFields.set(updated);
-    void this.analytics.logEvent(AnalyticsEvent.FormError, { screen: 'checkout_delivery' });
-    scrollToFirstFormError();
   }
 
   goBack(): void {
@@ -344,7 +251,7 @@ export class CheckoutLocalDeliveryFormComponent implements OnInit {
     const control = this.deliveryForm.get(field);
     if (!control || !control.errors) return '';
 
-    if (control.errors['required']) return 'Este campo es obligatorio';
+    if (control.errors['required']) return field === 'location' ? 'Elige la ciudad y la parroquia' : 'Este campo es obligatorio';
     if (control.errors['minlength']) return `Mínimo ${control.errors['minlength'].requiredLength} caracteres`;
     if (control.errors['maxlength']) return `Máximo ${control.errors['maxlength'].requiredLength} caracteres`;
     if (control.errors['noNumbers']) return 'No se permiten números en este campo';

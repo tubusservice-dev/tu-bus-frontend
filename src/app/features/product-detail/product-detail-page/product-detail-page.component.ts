@@ -175,7 +175,7 @@ export class ProductDetailPageComponent implements OnInit {
   private loadProductDetail(id: string): void {
     this.resetState();
 
-    const branchIdsList = this.locationStore.branchIds();
+    const branchIdsList = this.locationStore.stockBranchIds();
     const branchIdsParam = branchIdsList.length > 0 ? branchIdsList.join(',') : undefined;
 
     // Fire Phase 1 and Phase 2 in parallel.

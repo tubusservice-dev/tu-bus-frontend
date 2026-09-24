@@ -75,6 +75,22 @@ export interface LocationRef {
   parish?: { id: string; name: string };
 }
 
+/**
+ * A place as orders and profiles store it on the server: ids plus names,
+ * flattened. See `shared/utils/location-ref.util` to convert from and to
+ * `LocationRef`.
+ */
+export interface StoredLocation {
+  state: string;
+  stateName: string;
+  municipality: string;
+  municipalityName: string;
+  city?: string;
+  cityName?: string;
+  parish?: string;
+  parishName?: string;
+}
+
 /** `full`: every covered parish gets delivery; `partial`: some; `none`: store pickup only. */
 export type DeliveryStatus = 'full' | 'partial' | 'none';
 

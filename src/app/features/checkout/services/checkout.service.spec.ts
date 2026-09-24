@@ -44,10 +44,12 @@ const mockCartService = {
 };
 
 const mockLocationStore = {
+  hasLocation: () => true,
   hasCoverage: () => true,
-  hasDelivery: () => true,
   hasInStoreOilChange: () => false,
-  deliveryConfig: () => ({ freeDelivery: true, deliveryCharge: 0 }),
+  deliveryStatus: () => 'full',
+  allFree: () => true,
+  minDeliveryCharge: () => 0,
   branches: () => [
     { id: 'b-1', name: 'Sucursal A', address: 'Dir A', whatsappPhone: '0412', hasInStoreOilChange: false, schedule: [] },
     { id: 'b-2', name: 'Sucursal B', address: 'Dir B', whatsappPhone: '0414', hasInStoreOilChange: true, schedule: [] },

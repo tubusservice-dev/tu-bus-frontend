@@ -1,3 +1,5 @@
+import { StoredLocation } from './geo.model';
+
 /**
  * Modelo de Usuario
  */
@@ -27,6 +29,8 @@ export interface User {
   cityName?: string;
   municipalityCode?: string;
   municipalityName?: string;
+  /** Structured place (ubicaciones v2); the six text fields keep its names. */
+  location?: StoredLocation;
   neighborhood?: string;
   street?: string;
   houseNumber?: string;

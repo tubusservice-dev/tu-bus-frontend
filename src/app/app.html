@@ -10,6 +10,9 @@
   }
 }
 
+<!-- Selector de ubicación: root-level so screens that hide the header (checkout) can open it -->
+<app-zone-selector-host />
+
 <!-- Modal de Autenticación (root-level so it stacks above feature overlays) -->
 @if (isAuthModalOpen()) {
   <app-auth-modal

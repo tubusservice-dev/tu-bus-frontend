@@ -23,6 +23,7 @@ let cascadeSeq = 0;
  *   with service, and with `deliverableOnly` only those that get delivery.
  * - `levels` are the selects shown; the levels above them come from `fixed`
  *   (shown as text with a "cambiar" link that emits `changeRequested`).
+ * - `optionalLevels` may stay empty (a profile's parish): the value is complete without them.
  * - A level with a single option is picked automatically.
  * - With `source: 'coverage'`, picking a parish emits its delivery terms.
  */
@@ -43,6 +44,7 @@ export class LocationCascadeComponent implements ControlValueAccessor, OnInit {
   readonly levels = input<CascadeLevel[]>(['state', 'municipality']);
   readonly fixed = input<Partial<LocationRef> | null>(null);
   readonly deliverableOnly = input(false);
+  readonly optionalLevels = input<CascadeLevel[]>([]);
 
   readonly deliveryChange = output<ParishDelivery | null>();
   readonly changeRequested = output<void>();
@@ -204,10 +206,11 @@ export class LocationCascadeComponent implements ControlValueAccessor, OnInit {
       });
   }
 
-  /** The place picked so far, or null until every level shown and above is set. */
+  /** The place picked so far, or null until every required level shown and above is set. */
   private value(): LocationRef | null {
     const s = this.selection();
-    const deepest = this.levels().at(-1) ?? 'municipality';
+    const optional = this.optionalLevels();
+    const deepest = this.levels().filter((l) => !optional.includes(l)).at(-1) ?? 'municipality';
     const required = ORDER.slice(0, ORDER.indexOf(deepest) + 1);
     if (required.some((l) => !s[l])) return null;
     return {
@@ -230,6 +233,10 @@ export class LocationCascadeComponent implements ControlValueAccessor, OnInit {
 
   protected optionsOf(level: CascadeLevel): Option[] {
     return this.options()[level];
+  }
+
+  protected isOptional(level: CascadeLevel): boolean {
+    return this.optionalLevels().includes(level);
   }
 
   protected selectedId(level: CascadeLevel): string {

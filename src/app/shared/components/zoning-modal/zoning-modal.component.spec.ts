@@ -26,7 +26,7 @@ const TREE: GeoCoverageState[] = [
   template: `<app-zoning-modal
     [isOpen]="open()"
     [busy]="busy()"
-    [allowExplore]="allowExplore()"
+    [hasLocation]="hasLocation()"
     (picked)="picked = $event"
     (explore)="explored = explored + 1"
     (closed)="closed = closed + 1"
@@ -35,7 +35,7 @@ const TREE: GeoCoverageState[] = [
 class HostComponent {
   open = signal(true);
   busy = signal(false);
-  allowExplore = signal(true);
+  hasLocation = signal(false);
   picked: ZonePick | null = null;
   explored = 0;
   closed = 0;
@@ -103,13 +103,17 @@ describe('ZoningModalComponent', () => {
     expect(host.picked?.state.name).toBe('Miranda');
   }));
 
-  it('offers exploring without a location, unless one is already set', () => {
-    click(el().querySelector('.explore__link') as HTMLButtonElement);
+  it('offers exploring without a location, and removing it once there is one', () => {
+    const link = () => el().querySelector('.explore__link') as HTMLButtonElement;
+    expect(link().textContent).toContain('Ahora no, solo quiero explorar');
+    click(link());
     expect(host.explored).toBe(1);
 
-    host.allowExplore.set(false);
+    host.hasLocation.set(true);
     fixture.detectChanges();
-    expect(el().querySelector('.explore__link')).toBeNull();
+    expect(link().textContent).toContain('Quitar mi ubicación');
+    click(link());
+    expect(host.explored).toBe(2);
   });
 
   it('closes with the ✕ and with Escape, but not while the pick is being checked', () => {

@@ -204,7 +204,7 @@
                   <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                   <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
                 </svg>
-                <span>{{ localDeliveryInfo.municipalityName }}, {{ localDeliveryInfo.cityName }}</span>
+                <span>{{ cityAndParish(localDeliveryInfo.location) }} · {{ localDeliveryInfo.location.municipality.name }}, {{ localDeliveryInfo.location.state.name }}</span>
               </div>
               <div class="detail-row address-row">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -310,7 +310,7 @@
                   <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                   <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
                 </svg>
-                <span>{{ oilChangeServiceInfo.cityName }}, {{ oilChangeServiceInfo.municipalityName }}</span>
+                <span>{{ cityAndParish(oilChangeServiceInfo.location) }} · {{ oilChangeServiceInfo.location.municipality.name }}, {{ oilChangeServiceInfo.location.state.name }}</span>
               </div>
               <div class="detail-row">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -571,17 +571,12 @@
                   <label>Dirección <span class="required">*</span></label>
                   <input type="text" formControlName="address" placeholder="Dirección completa" class="billing-input" />
                 </div>
-                <div class="billing-form-group">
-                  <label>Ciudad <span class="required">*</span></label>
-                  <input type="text" formControlName="city" placeholder="Ciudad" class="billing-input" />
-                </div>
-                <div class="billing-form-group">
-                  <label>Municipio</label>
-                  <input type="text" formControlName="municipality" placeholder="Municipio" class="billing-input" />
-                </div>
-                <div class="billing-form-group">
-                  <label>Estado</label>
-                  <input type="text" formControlName="state" placeholder="Estado" class="billing-input" />
+                <div class="billing-form-group full-width">
+                  <app-location-cascade
+                    formControlName="location"
+                    source="national"
+                    [levels]="['state', 'municipality', 'city']"
+                  />
                 </div>
                 <div class="billing-form-group">
                   <label>Punto de referencia</label>
@@ -1214,12 +1209,12 @@
         } @else if (dispatchType === 'local_delivery' && localDeliveryInfo) {
           <div class="confirm-meta-row">
             <span class="confirm-meta-label">Dirección</span>
-            <span class="confirm-meta-value">{{ localDeliveryInfo.address }}@if (localDeliveryInfo.cityName) {, {{ localDeliveryInfo.cityName }}}</span>
+            <span class="confirm-meta-value">{{ localDeliveryInfo.address }}, {{ cityAndParish(localDeliveryInfo.location) }}</span>
           </div>
         } @else if (dispatchType === 'oil_change_service' && oilChangeServiceInfo) {
           <div class="confirm-meta-row">
             <span class="confirm-meta-label">Dirección</span>
-            <span class="confirm-meta-value">{{ oilChangeServiceInfo.address }}@if (oilChangeServiceInfo.cityName) {, {{ oilChangeServiceInfo.cityName }}}</span>
+            <span class="confirm-meta-value">{{ oilChangeServiceInfo.address }}, {{ cityAndParish(oilChangeServiceInfo.location) }}</span>
           </div>
         }
 

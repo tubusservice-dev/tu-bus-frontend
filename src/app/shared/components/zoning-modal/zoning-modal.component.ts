@@ -41,8 +41,12 @@ export class ZoningModalComponent implements OnDestroy {
   readonly isOpen = input(false);
   /** The parent is checking the picked place: the modal waits, frozen. */
   readonly busy = input(false);
-  /** Offer "Ahora no, solo quiero explorar" (not when a location is already set). */
-  readonly allowExplore = input(true);
+  /**
+   * Whether the customer already has a location. The way out then reads
+   * "Quitar mi ubicación" instead of "Ahora no, solo quiero explorar"; both
+   * leave the customer browsing the whole store.
+   */
+  readonly hasLocation = input(false);
 
   readonly picked = output<ZonePick>();
   readonly explore = output<void>();

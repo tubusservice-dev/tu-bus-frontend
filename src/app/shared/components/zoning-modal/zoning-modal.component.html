@@ -54,15 +54,20 @@
             />
           }
 
-          @if (allowExplore()) {
-            <div class="explore">
+          <div class="explore">
+            @if (hasLocation()) {
+              <button type="button" class="explore__link" (click)="explore.emit()">Quitar mi ubicación</button>
+              <p class="explore__hint">
+                Verás toda la tienda. Para delivery o servicio a domicilio tendrás que elegirla de nuevo.
+              </p>
+            } @else {
               <button type="button" class="explore__link" (click)="explore.emit()">Ahora no, solo quiero explorar</button>
               <p class="explore__hint">
                 Podrás elegirla después para ver delivery y servicios en tu zona.
                 ¿No ves tu zona? Explora la tienda y compra con envío por agencia a todo el país.
               </p>
-            </div>
-          }
+            }
+          </div>
         }
       </div>
     </div>

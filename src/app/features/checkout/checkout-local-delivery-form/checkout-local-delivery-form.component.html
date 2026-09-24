@@ -117,35 +117,27 @@
           </div>
 
           <div class="form-grid">
-            <div class="form-group">
-              <label for="cityCode">Ciudad <span class="required">*</span></label>
-              <select id="cityCode" formControlName="cityCode" class="input" [class.error]="hasError('cityCode')" (change)="onCityChange($any($event.target).value)">
-                <option value="">Seleccionar ciudad...</option>
-                @for (city of branchCities(); track city.code) {
-                  <option [value]="city.code">{{ city.name }}</option>
-                }
-              </select>
-              @if (hasError('cityCode')) {
-                <span class="error-message">{{ getErrorMessage('cityCode') }}</span>
+            <div class="form-group full-width">
+              <app-location-cascade
+                formControlName="location"
+                source="coverage"
+                [levels]="['city', 'parish']"
+                [fixed]="fixedPlace()"
+                [deliverableOnly]="true"
+                (deliveryChange)="onDelivery($event)"
+                (changeRequested)="changeLocation()"
+              />
+              @if (hasError('location')) {
+                <span class="error-message">{{ getErrorMessage('location') }}</span>
+              }
+              @if (parishWithoutDelivery()) {
+                <span class="error-message">No hacemos delivery a esa parroquia. Elige otra.</span>
+              } @else if (quote(); as q) {
+                <span class="hint delivery-price">
+                  Costo del delivery: <strong>{{ q.freeDelivery ? 'Gratis' : '$' + q.deliveryCharge.toFixed(2) }}</strong>
+                </span>
               }
             </div>
-
-            <div class="form-group">
-              <label for="municipalityCode">Municipio <span class="required">*</span></label>
-              <select id="municipalityCode" formControlName="municipalityCode" class="input" [class.error]="hasError('municipalityCode')" [attr.disabled]="availableMunicipalities().length === 0 ? '' : null">
-                <option value="">Seleccionar municipio...</option>
-                @for (mun of availableMunicipalities(); track mun.code) {
-                  <option [value]="mun.code">{{ mun.name }}</option>
-                }
-              </select>
-              @if (hasError('municipalityCode')) {
-                <span class="error-message">{{ getErrorMessage('municipalityCode') }}</span>
-              }
-              @if (availableMunicipalities().length === 0 && deliveryForm.get('cityCode')?.value) {
-                <span class="hint">No hay municipios disponibles en esta ciudad</span>
-              }
-            </div>
-
             <div class="form-group full-width">
               <label for="address">Dirección de entrega <span class="required">*</span></label>
               <textarea id="address" formControlName="address" placeholder="Dirección completa: calle, avenida, edificio, piso, apartamento..." maxlength="300" class="input textarea" rows="3" [class.error]="hasError('address')"></textarea>
