@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AuthService } from '@core/services/auth.service';
+import { dismissOnBack } from '@core/services/back-dismiss.service';
 
 /**
  * Bidirectional account-linking modal: opens when a native Google sign-in
@@ -30,6 +31,11 @@ export class LinkGooglePasswordModalComponent {
   protected readonly showPassword = signal(false);
   protected readonly loading = signal(false);
   protected readonly errorMessage = signal('');
+
+  constructor() {
+    // The Android back button closes this modal like its ✕ does.
+    dismissOnBack(() => this.authService.linkGoogleModalOpen(), () => this.onClose());
+  }
 
   protected onSubmit(): void {
     const pwd = this.password().trim();

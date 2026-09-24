@@ -4,6 +4,7 @@ import { ExchangeRateService } from '@core/services/exchange-rate.service';
 import { CopyableValueComponent } from '@shared/components/copyable-value/copyable-value.component';
 import { DateInputComponent } from '@shared/components/date-input/date-input.component';
 import { CheckoutPaymentUiService } from '../../services/checkout-payment-ui.service';
+import { dismissOnBack } from '@core/services/back-dismiss.service';
 
 /**
  * The payment modal of the checkout summary: account details of the method
@@ -56,4 +57,9 @@ export class CheckoutPaymentModalComponent {
   protected readonly removeProofFile = () => this.paymentUi.removeProofFile();
   protected readonly isFormValid = () => this.paymentUi.isFormValid();
   protected readonly submitPayment = () => this.paymentUi.submitPayment();
+
+  constructor() {
+    // The Android back button closes this modal like its ✕ does.
+    dismissOnBack(() => this.showModal(), () => { if (!this.isSubmittingPayment()) this.closeModal(); });
+  }
 }

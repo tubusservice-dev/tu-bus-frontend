@@ -1,5 +1,6 @@
 import { Component, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { dismissOnBack } from '@core/services/back-dismiss.service';
 
 /**
  * Post-link-account modal: shown after the user submits the link-account
@@ -24,4 +25,9 @@ export class AccountLinkPendingModalComponent {
   readonly firstName = input<string>('');
 
   readonly closeModal = output<void>();
+
+  constructor() {
+    // The Android back button closes this modal like its ✕ does.
+    dismissOnBack(() => true, () => this.closeModal.emit());
+  }
 }

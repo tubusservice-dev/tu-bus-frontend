@@ -11,6 +11,7 @@ import {
   ElementRef,
 } from '@angular/core';
 import { BodyScrollLockService } from '@shared/services/body-scroll-lock.service';
+import { dismissOnBack } from '@core/services/back-dismiss.service';
 
 /** Visual weight of the confirming action. `danger` is the default: most
  *  confirmations in this app guard a destructive operation. */
@@ -266,6 +267,9 @@ export class ConfirmDialogComponent implements OnDestroy {
   private readonly hasScrollLock = signal(false);
 
   constructor() {
+    // The Android back button closes this modal like its ✕ does.
+    dismissOnBack(() => this.isOpen(), () => this.onCancel());
+
     effect(() => {
       if (this.isOpen()) this.acquireScrollLock();
       else this.releaseScrollLock();

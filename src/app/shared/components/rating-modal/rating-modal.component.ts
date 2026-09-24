@@ -1,6 +1,7 @@
 import { Component, effect, inject, input, output, signal, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { BodyScrollLockService } from '../../services/body-scroll-lock.service';
+import { dismissOnBack } from '@core/services/back-dismiss.service';
 
 @Component({
   selector: 'app-rating-modal',
@@ -29,6 +30,9 @@ export class RatingModalComponent implements OnDestroy {
   private hasScrollLock = false;
 
   constructor() {
+    // The Android back button closes this modal like its ✕ does.
+    dismissOnBack(() => this.isOpen(), () => this.onCancel());
+
     effect(() => {
       if (this.isOpen() && !this.hasScrollLock) {
         this.scrollLock.lock();

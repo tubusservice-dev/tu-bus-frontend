@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService, UserService } from '../../../core';
 import { ToastService } from '@shared/services/toast.service';
+import { dismissOnBack } from '@core/services/back-dismiss.service';
 
 /**
  * Irreversible account-deletion confirmation modal (Google Play
@@ -54,6 +55,11 @@ export class DeleteAccountModalComponent {
       ? this.password().length > 0
       : this.typedPhrase().trim().toUpperCase() === this.confirmationPhrase;
   });
+
+  constructor() {
+    // The Android back button closes this modal like its ✕ does.
+    dismissOnBack(() => true, () => this.onClose());
+  }
 
   onClose(): void {
     if (this.isLoading()) return;

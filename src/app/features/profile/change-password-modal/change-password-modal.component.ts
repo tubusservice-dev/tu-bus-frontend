@@ -2,6 +2,7 @@ import { Component, inject, signal, output, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { AuthService, UserService } from '../../../core';
+import { dismissOnBack } from '@core/services/back-dismiss.service';
 
 type PasswordModalMode = 'set' | 'change';
 
@@ -52,6 +53,9 @@ export class ChangePasswordModalComponent {
   protected passwordForm: FormGroup;
 
   constructor() {
+    // The Android back button closes this modal like its ✕ does.
+    dismissOnBack(() => true, () => this.onClose());
+
     const isChange = this.mode() === 'change';
     this.passwordForm = this.fb.group({
       ...(isChange

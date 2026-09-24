@@ -11,6 +11,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { Order, OrderComment } from '@models/order.model';
 import { OrderCommentsComponent } from '@shared/components/order-comments/order-comments.component';
+import { dismissOnBack } from '@core/services/back-dismiss.service';
 
 /**
  * Modal wrapper around `OrderCommentsComponent` — owns the dialog chrome
@@ -46,6 +47,9 @@ export class OrderMessagingModalComponent {
   readonly commentsUpdated = output<Order>();
 
   constructor() {
+    // The Android back button closes this modal like its ✕ does.
+    dismissOnBack(() => this.open(), () => this.onClose());
+
     // Page scroll lock while the modal is open. Locks BOTH `<html>` and
     // `<body>` because the actual scroll container varies by browser
     // (Chrome desktop scrolls the documentElement; Safari iOS scrolls the

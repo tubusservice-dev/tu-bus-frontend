@@ -8,6 +8,7 @@ import { AuthService, AuthModalMode } from '@core/services';
 import { CheckEmailResponse, RegisterRequest } from '@models';
 import { ToastService } from '@shared/services/toast.service';
 import { PlatformService } from '@platform';
+import { dismissOnBack } from '@core/services/back-dismiss.service';
 
 @Component({
   selector: 'app-auth-modal',
@@ -30,6 +31,9 @@ export class AuthModalComponent implements OnInit, OnDestroy {
   private emailCheckSub: Subscription | null = null;
 
   constructor() {
+    // The Android back button closes this modal like its ✕ does.
+    dismissOnBack(() => true, () => this.closeModal.emit());
+
     // Sync the local OAuth spinner with the AuthService's native flow
     // signal. Without this the spinner would stay on forever after the
     // native flow completes (the WebView never reloads on native, so the

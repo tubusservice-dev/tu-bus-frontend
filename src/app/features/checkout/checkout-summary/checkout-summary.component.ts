@@ -25,6 +25,7 @@ import { CheckoutBranchStockService } from './services/checkout-branch-stock.ser
 import { CheckoutPaymentModalComponent } from './components/checkout-payment-modal/checkout-payment-modal.component';
 import { ANALYTICS, AnalyticsEvent } from '@platform';
 import { cityAndParishLabel, toStoredLocation } from '@shared/utils/location-ref.util';
+import { dismissOnBack } from '@core/services/back-dismiss.service';
 
 @Component({
   selector: 'app-checkout-summary',
@@ -73,6 +74,9 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
   };
 
   constructor() {
+    // The Android back button closes this modal like its ✕ does.
+    dismissOnBack(() => this.showConfirmModal(), () => this.onCancelOrder());
+
     // Branch-availability loader effect. Lives inside the constructor so it
     // registers in the component's injection context without leaving an
     // "unused field" reference behind (the return value of `effect()` is

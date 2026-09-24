@@ -7,6 +7,7 @@ import { GeoCoverageState, GeoPlace, GeoSearchHit } from '@models/geo.model';
 import { BodyScrollLockService } from '../../services/body-scroll-lock.service';
 import { ZoningStateStepComponent } from './zoning-state-step/zoning-state-step.component';
 import { ZoningMunicipalityStepComponent } from './zoning-municipality-step/zoning-municipality-step.component';
+import { dismissOnBack } from '@core/services/back-dismiss.service';
 
 type ModalStep = 'state' | 'municipality';
 
@@ -67,6 +68,9 @@ export class ZoningModalComponent implements OnDestroy {
   private readonly search$ = new Subject<string>();
 
   constructor() {
+    // The Android back button closes this modal like its ✕ does.
+    dismissOnBack(() => this.isOpen(), () => this.close());
+
     effect(() => {
       const open = this.isOpen();
       if (open && !this.hasScrollLock) {

@@ -4,6 +4,7 @@ import { LocationChangePlan, LocationChangeService } from '@core/services/locati
 import { ZoneSelectorService } from '@core/services/zone-selector.service';
 import { ToastService } from '@shared/services/toast.service';
 import { ZoningModalComponent, ZonePick } from '../zoning-modal/zoning-modal.component';
+import { dismissOnBack } from '@core/services/back-dismiss.service';
 
 /**
  * The zone selector and its cart confirmation, hosted once at the root.
@@ -24,6 +25,11 @@ export class ZoneSelectorHostComponent {
   protected readonly locationStore = inject(LocationStore);
   private readonly locationChange = inject(LocationChangeService);
   private readonly toastService = inject(ToastService);
+
+  constructor() {
+    // The Android back button closes this modal like its ✕ does.
+    dismissOnBack(() => this.pending() !== null, () => this.cancel());
+  }
 
   /** The picked place is being checked against the cart. */
   protected readonly busy = signal(false);

@@ -3,7 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Observable, Subject, of, switchMap, catchError } from 'rxjs';
+import { Observable, Subject, of, switchMap, catchError, timeout } from 'rxjs';
 import { ProductService, ProductCardDTO, ProductCardListResponse } from '../../core/services/product.service';
 import { BrandService } from '../../core/services/brand.service';
 import { CategoryService } from '../../core/services/category.service';
@@ -21,6 +21,13 @@ import {
 } from '../../models';
 import { PAGINATION_OPTIONS } from '../../models/settings.model';
 import { ANALYTICS, AnalyticsEvent } from '@platform';
+
+/**
+ * A catalog request that has not answered by then counts as failed, so the
+ * "could not load" state shows instead of an endless skeleton (a request
+ * caught by a network drop on a phone may otherwise never settle).
+ */
+const CATALOG_REQUEST_TIMEOUT_MS = 20_000;
 
 interface FilterState {
   search: string;
@@ -340,6 +347,7 @@ export class CatalogComponent implements OnInit {
         comboFirst: f.onlyCombos || undefined,
       })
       .pipe(
+        timeout(CATALOG_REQUEST_TIMEOUT_MS),
         catchError(() => {
           this.isLoading.set(false);
           this.isSearching.set(false);

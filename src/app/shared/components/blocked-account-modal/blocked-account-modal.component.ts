@@ -1,6 +1,7 @@
 import { Component, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AccountBlockedCode, AuthService } from '../../../core/services/auth.service';
+import { dismissOnBack } from '@core/services/back-dismiss.service';
 
 interface ModalCopy {
   title: string;
@@ -47,6 +48,11 @@ export class BlockedAccountModalComponent {
     const i = this.info();
     return i ? COPY_BY_CODE[i.code] : null;
   });
+
+  constructor() {
+    // The Android back button closes this modal like its ✕ does.
+    dismissOnBack(() => !!this.info(), () => this.close());
+  }
 
   close(): void {
     this.authService.clearAccountBlocked();
