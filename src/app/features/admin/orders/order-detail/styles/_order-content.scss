@@ -1,0 +1,195 @@
+// ============================================
+// CANCELLATION REQUEST CARD
+// ============================================
+.cancellation-card {
+  border-color: #f59e0b;
+
+  :host-context(.dark) & {
+    border-color: #d97706;
+  }
+}
+
+.cancellation-title {
+  @apply bg-orange-50 text-orange-800 border-orange-200;
+
+  :host-context(.dark) & {
+    background-color: rgba(245, 158, 11, 0.1);
+    color: #fbbf24;
+    border-bottom-color: rgba(245, 158, 11, 0.2);
+  }
+
+  svg {
+    color: #f59e0b !important;
+  }
+}
+
+.cancellation-body {
+  @apply px-5 sm:px-6 py-4 flex flex-col gap-3;
+}
+
+.cancellation-reason {
+  @apply flex flex-col gap-1;
+}
+
+.cancellation-reason-label {
+  @apply text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide;
+}
+
+.cancellation-reason-text {
+  @apply text-sm leading-relaxed p-3 rounded-lg italic;
+  @apply bg-orange-50 text-orange-900 border border-orange-200;
+
+  :host-context(.dark) & {
+    background-color: rgba(245, 158, 11, 0.08);
+    color: #fbbf24;
+    border-color: rgba(245, 158, 11, 0.15);
+  }
+}
+
+.cancellation-hint {
+  @apply text-xs text-gray-500 dark:text-gray-400 leading-relaxed;
+}
+
+// ============================================
+// PRODUCTS
+// ============================================
+.products-list {
+  @apply flex flex-col;
+}
+
+.product-row {
+  @apply flex items-center gap-3 px-5 sm:px-6 py-3 border-b border-gray-100 dark:border-gray-700/50;
+
+  &:last-child {
+    @apply border-b-0;
+  }
+}
+
+.product-img {
+  @apply w-10 h-10 rounded-lg object-cover flex-shrink-0 bg-gray-100 dark:bg-gray-700;
+}
+
+.product-info {
+  @apply flex-1 min-w-0 flex flex-col;
+}
+
+.product-name {
+  @apply text-sm font-medium text-gray-900 dark:text-gray-100 truncate;
+}
+
+.product-qty {
+  @apply text-xs text-gray-500 dark:text-gray-400;
+}
+
+.product-total {
+  @apply text-sm font-semibold text-gray-900 dark:text-gray-100 flex-shrink-0;
+}
+
+// ============================================
+// TOTALS
+// ============================================
+.totals-section {
+  @apply border-t border-gray-200 dark:border-gray-700;
+}
+
+.total-row {
+  @apply flex items-center justify-between px-5 sm:px-6 py-2 text-sm;
+  @apply text-gray-600 dark:text-gray-400;
+
+  span:last-child {
+    @apply font-medium text-gray-900 dark:text-gray-100;
+  }
+
+  &.total-final {
+    @apply bg-gray-50 dark:bg-gray-900/50 py-3 items-start rounded-b-xl;
+
+    span:first-child {
+      @apply font-semibold text-gray-900 dark:text-gray-100;
+    }
+  }
+}
+
+.total-values {
+  @apply flex flex-col items-end gap-0.5;
+}
+
+.total-usd {
+  @apply text-lg font-bold text-blue-600 dark:text-blue-400 leading-tight;
+}
+
+.total-bs {
+  @apply text-xs font-medium text-gray-500 dark:text-gray-400 leading-tight;
+}
+
+// ============================================
+// PROOF IMAGE
+// ============================================
+.proof-section {
+  @apply flex flex-col gap-2 px-5 sm:px-6 py-3;
+}
+
+.proof-image {
+  @apply max-w-full max-h-64 rounded-lg border border-gray-200 dark:border-gray-700 object-contain cursor-pointer;
+  @apply hover:opacity-90 transition-opacity;
+}
+
+// Lightbox
+.lightbox-overlay {
+  @apply fixed inset-0 z-50 flex items-center justify-center;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.2s ease;
+}
+.lightbox-close {
+  @apply absolute top-4 right-4 p-2 text-white/70 hover:text-white transition-colors;
+  svg { @apply w-8 h-8; }
+}
+.lightbox-image {
+  @apply max-w-[90vw] max-h-[90vh] object-contain rounded-lg;
+  animation: scaleIn 0.25s ease;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+// ============================================
+// TIMELINE
+// ============================================
+.timeline {
+  @apply flex flex-col px-5 sm:px-6 py-3;
+}
+
+.timeline-item {
+  @apply flex gap-3 pb-4 last:pb-0;
+  position: relative;
+
+  &:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 14px;
+    bottom: -4px;
+    width: 2px;
+    @apply bg-gray-200 dark:bg-gray-700;
+  }
+}
+
+.timeline-dot {
+  @apply w-3 h-3 rounded-full mt-1 flex-shrink-0 ring-2 ring-white dark:ring-gray-800;
+  @apply bg-gray-300 dark:bg-gray-600;
+}
+
+.timeline-content {
+  @apply flex flex-col gap-0.5;
+}
+
+.timeline-status {
+  @apply text-sm font-medium text-gray-900 dark:text-gray-100;
+}
+
+.timeline-note {
+  @apply text-xs text-gray-500 dark:text-gray-400 italic;
+}
+
+.timeline-date {
+  @apply text-xs text-gray-400 dark:text-gray-500;
+}

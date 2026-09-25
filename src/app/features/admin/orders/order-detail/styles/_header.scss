@@ -1,0 +1,99 @@
+.order-detail-page {
+  // Outer padding lives on the admin layout's <main>; duplicating it
+  // here only ate horizontal space on mobile.
+  @apply max-w-7xl mx-auto;
+}
+
+// ============================================
+// HEADER
+// ============================================
+.page-header {
+  @apply flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6;
+}
+
+.header-left {
+  @apply flex flex-col gap-2;
+}
+
+.btn-back {
+  @apply inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors;
+
+  svg {
+    @apply w-4 h-4;
+  }
+}
+
+.header-info {
+  @apply flex items-center gap-3 flex-wrap;
+}
+
+.page-title {
+  @apply text-xl sm:text-2xl font-bold text-gray-900 dark:text-white;
+}
+
+// Right-align + wrap so:
+//  1. The 3-dot button is on the right of the row when header-actions
+//     wraps below the title in mobile layout (page-header is flex-col).
+//     This restores the implicit assumption of `.options-dropdown
+//     { right: 0 }` (popover extends LEFT from a right-side trigger).
+//  2. Long button pairs (Aprobar Cancelación / Rechazar Cancelación)
+//     wrap to a second row instead of overflowing the viewport.
+.header-actions {
+  @apply flex flex-wrap items-center justify-end gap-2;
+}
+
+.btn-mechanic-assigned {
+  @apply inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white cursor-pointer transition-all;
+  background-color: #16a34a;
+
+  &:hover {
+    background-color: #15803d;
+  }
+
+  svg {
+    @apply w-4 h-4;
+  }
+}
+
+.btn-change-status {
+  @apply inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium border transition-all;
+  @apply border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800;
+
+  &:hover {
+    @apply bg-gray-50 dark:bg-gray-700;
+  }
+
+  svg {
+    @apply w-4 h-4;
+  }
+}
+
+.btn-cancel-order {
+  @apply inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white cursor-pointer transition-all;
+  background-color: #dc2626;
+
+  &:hover {
+    background-color: #b91c1c;
+  }
+
+  svg {
+    @apply w-4 h-4;
+  }
+}
+
+.btn-confirm-cancel {
+  @apply px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors;
+}
+
+.btn-dispatch, .btn-dispatch-status {
+  @apply inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium border transition-all;
+  @apply border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800;
+
+  &:hover {
+    @apply bg-gray-50 dark:bg-gray-700;
+  }
+
+  svg {
+    @apply w-4 h-4;
+  }
+}

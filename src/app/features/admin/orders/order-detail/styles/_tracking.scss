@@ -1,0 +1,157 @@
+// ============================================
+// VEHICLE SECTION (new)
+// ============================================
+
+.vehicle-block {
+  @apply pt-3 pb-3 last:pb-0 border-b last:border-b-0 border-gray-100 dark:border-gray-700/50;
+}
+
+.vehicle-header {
+  @apply flex items-center justify-between mb-2.5 px-5 sm:px-6;
+}
+
+.vehicle-name {
+  @apply font-semibold text-gray-900 dark:text-white;
+}
+
+.vehicle-plate {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-mono font-bold;
+  @apply bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300;
+}
+
+// ============================================
+// DISPATCH TIMELINE
+// ============================================
+
+.current-dispatch-row {
+  @apply flex items-center mb-3 px-5 sm:px-6 pt-4;
+}
+
+.timeline {
+  @apply relative space-y-4 mt-3 px-5 sm:px-6 pb-4;
+
+  &::before {
+    content: '';
+    @apply absolute w-0.5 bg-gray-200 dark:bg-gray-700;
+    left: calc(1.25rem + 7px);
+    top: 0.5rem;
+    bottom: 0.5rem;
+  }
+}
+
+@media (min-width: 640px) {
+  .timeline::before {
+    left: calc(1.5rem + 7px);
+  }
+}
+
+.timeline-entry {
+  @apply relative flex items-start gap-3 pl-5;
+}
+
+.timeline-dot {
+  @apply absolute left-0 top-1.5 w-[15px] h-[15px] rounded-full border-[3px] z-10;
+  @apply border-blue-500 bg-white dark:bg-gray-800;
+}
+
+.timeline-content {
+  @apply flex flex-col gap-0.5 flex-1 min-w-0;
+}
+
+.timeline-badge {
+  @apply inline-flex w-fit items-center px-2 py-0.5 text-[10px] font-medium rounded-full;
+}
+
+.timeline-date {
+  @apply text-xs text-gray-500 dark:text-gray-400;
+}
+
+.timeline-note {
+  @apply text-xs text-gray-700 dark:text-gray-300 italic;
+}
+
+.empty-hint {
+  @apply text-sm text-gray-400 dark:text-gray-500 italic px-5 sm:px-6 py-4;
+}
+
+// ============================================
+// SERVICE TRACKING (oil change)
+// ============================================
+
+.service-mechanic {
+  @apply flex items-center gap-3 mb-4 pb-4 px-5 sm:px-6 pt-4 border-b border-gray-100 dark:border-gray-700/50;
+}
+
+.service-mechanic-text {
+  @apply flex flex-col min-w-0;
+}
+
+.service-mechanic-name {
+  @apply font-semibold text-gray-900 dark:text-white truncate;
+}
+
+.service-mechanic-phone {
+  @apply text-xs text-gray-500 dark:text-gray-400;
+}
+
+// Horizontal stepper. Wrapping breaks the visual metaphor of progress,
+// so on narrow viewports we let the row scroll horizontally instead.
+.service-stepper {
+  @apply mt-4 flex items-start justify-between px-5 sm:px-6 pb-5 pt-2;
+  gap: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar { display: none; }
+}
+
+.stepper-item {
+  @apply flex flex-col items-center gap-2 flex-shrink-0;
+  width: 72px;
+
+  &.stepper-done .stepper-indicator {
+    @apply bg-emerald-500 text-white border-emerald-500;
+  }
+
+  &.stepper-current .stepper-indicator {
+    @apply border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20;
+  }
+
+  &.stepper-done .stepper-label {
+    @apply text-emerald-700 dark:text-emerald-300;
+  }
+
+  &.stepper-current .stepper-label {
+    @apply text-blue-700 dark:text-blue-300 font-semibold;
+  }
+}
+
+.stepper-indicator {
+  @apply w-8 h-8 rounded-full border-2 flex items-center justify-center;
+  @apply border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 text-xs font-bold;
+  @apply transition-colors;
+
+  svg { @apply w-4 h-4; }
+}
+
+.stepper-content {
+  @apply flex flex-col items-center text-center;
+}
+
+.stepper-label {
+  @apply text-xs font-medium text-gray-700 dark:text-gray-300 leading-tight;
+}
+
+.stepper-time {
+  @apply text-[10px] text-gray-500 dark:text-gray-400 leading-tight mt-0.5;
+}
+
+.stepper-connector {
+  @apply flex-1 h-0.5 bg-gray-200 dark:bg-gray-700 mt-4 transition-colors;
+  min-width: 12px;
+
+  &.stepper-connector-done {
+    @apply bg-emerald-500;
+  }
+}
