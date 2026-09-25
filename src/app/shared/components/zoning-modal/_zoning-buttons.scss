@@ -11,10 +11,10 @@
   }
 }
 
-// One column: each municipality carries a delivery badge, and half a row is
-// too narrow for it next to a long name.
+// Each municipality carries a delivery badge: one column on phones, where half
+// a row is too narrow for it, two from tablets up (the modal widens there).
 .zone-list {
-  @apply grid grid-cols-1 gap-2;
+  @apply grid grid-cols-1 sm:grid-cols-2 gap-2;
 }
 
 // `--current`: the customer's own state or municipality, shown as if hovered.

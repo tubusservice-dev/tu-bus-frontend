@@ -16,7 +16,8 @@
 }
 
 .zoning-modal {
-  @apply relative w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl;
+  // Wider from tablets up so the municipality list fits two columns.
+  @apply relative w-full max-w-lg sm:max-w-2xl rounded-2xl overflow-hidden shadow-2xl;
   background-color: var(--bg-primary);
   // Scrolls internally; the bar is hidden by the global `.no-scrollbar`.
   max-height: 80vh;
