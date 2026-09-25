@@ -581,6 +581,12 @@ export class AdminOrderDetailComponent implements OnInit {
     return parts.join(', ');
   }
 
+  /** "City, State" without a dangling comma when one of them is missing. */
+  getRecipientLocation(order: Order): string {
+    const d = order.dispatchDetails;
+    return [d?.recipientCity, d?.recipientState].filter(Boolean).join(', ');
+  }
+
   getStatusLabel(status: OrderStatus): string {
     return ORDER_STATUS_LABELS[status] || status;
   }
