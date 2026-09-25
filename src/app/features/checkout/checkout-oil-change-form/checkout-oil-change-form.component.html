@@ -120,29 +120,19 @@
           </div>
 
           <div class="form-grid">
-            <div class="form-group">
-              <label for="cityCode">Ciudad <span class="required">*</span></label>
-              <select id="cityCode" formControlName="cityCode" class="input" [class.error]="hasError('cityCode')" (change)="onCityChange($any($event.target).value)">
-                <option value="">Seleccionar ciudad...</option>
-                @for (city of branchCities(); track city.code) {
-                  <option [value]="city.code">{{ city.name }}</option>
-                }
-              </select>
-              @if (hasError('cityCode')) {
-                <span class="error-message">{{ getErrorMessage('cityCode') }}</span>
-              }
-            </div>
-
-            <div class="form-group">
-              <label for="municipalityCode">Municipio <span class="required">*</span></label>
-              <select id="municipalityCode" formControlName="municipalityCode" class="input" [class.error]="hasError('municipalityCode')" [attr.disabled]="availableMunicipalities().length === 0 ? '' : null">
-                <option value="">Seleccionar municipio...</option>
-                @for (mun of availableMunicipalities(); track mun.code) {
-                  <option [value]="mun.code">{{ mun.name }}</option>
-                }
-              </select>
-              @if (hasError('municipalityCode')) {
-                <span class="error-message">{{ getErrorMessage('municipalityCode') }}</span>
+            <div class="form-group full-width">
+              <!-- The mechanic travels to every covered parish, delivery or not. -->
+              <app-location-cascade
+                formControlName="location"
+                source="coverage"
+                [levels]="['city', 'parish']"
+                [fixed]="fixedPlace()"
+                [deliverableOnly]="false"
+                fixedPrefix="Te atendemos en tu zona:"
+                fixedNote="Para cambiarla, hazlo desde el inicio."
+              />
+              @if (hasError('location')) {
+                <span class="error-message">{{ getErrorMessage('location') }}</span>
               }
             </div>
 
@@ -299,9 +289,6 @@
 
         <!-- Acciones -->
         <div class="form-actions">
-          @if (submitError()) {
-            <p class="error-message submit-error" role="alert">{{ submitError() }}</p>
-          }
           <button type="submit" class="btn-continue">
             Continuar al resumen
           </button>

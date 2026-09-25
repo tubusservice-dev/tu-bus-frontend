@@ -5,29 +5,32 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { CheckoutService, RequestedServiceDate } from '../services/checkout.service';
 import { CartService } from '@core/services/cart.service';
+import { CartPriceSyncService } from '@core/services/cart-price-sync.service';
 import { OrderService } from '@core/services/order.service';
-import { LocationService, BranchSummary } from '@core/services/location.service';
+import { BranchSummary } from '@models/geo.model';
 import { ProductService } from '@core/services/product.service';
 import { ExchangeRateService } from '@core/services/exchange-rate.service';
 import { BranchAvailabilityService, AvailabilityMode } from '@core/services/branch-availability.service';
 import { BranchAvailability } from '@models/branch-availability.model';
 import { CreateOrderRequest, EngineModificationStatus } from '@models/order.model';
 import { PaymentMethodGroup } from '@models/payment-method.model';
-import { CopyableValueComponent } from '@shared/components/copyable-value/copyable-value.component';
-import { DateInputComponent } from '@shared/components/date-input/date-input.component';
 import { ServiceDatePickerComponent } from '@shared/components/service-date-picker/service-date-picker.component';
 import { BodyScrollLockService } from '@shared/services/body-scroll-lock.service';
 import { CheckoutHeaderComponent } from '../components/checkout-header/checkout-header.component';
+import { LocationCascadeComponent } from '@shared/components/location-cascade/location-cascade.component';
 import { businessTodayIso } from '@shared/utils/business-date.util';
 import { CheckoutPaymentUiService } from './services/checkout-payment-ui.service';
 import { CheckoutBillingService } from './services/checkout-billing.service';
 import { CheckoutBranchStockService } from './services/checkout-branch-stock.service';
+import { CheckoutPaymentModalComponent } from './components/checkout-payment-modal/checkout-payment-modal.component';
 import { ANALYTICS, AnalyticsEvent } from '@platform';
+import { cityAndParishLabel, toStoredLocation } from '@shared/utils/location-ref.util';
+import { dismissOnBack } from '@core/services/back-dismiss.service';
 
 @Component({
   selector: 'app-checkout-summary',
   standalone: true,
-  imports: [CurrencyPipe, CommonModule, ReactiveFormsModule, CopyableValueComponent, DateInputComponent, ServiceDatePickerComponent, CheckoutHeaderComponent],
+  imports: [CurrencyPipe, CommonModule, ReactiveFormsModule, ServiceDatePickerComponent, CheckoutHeaderComponent, LocationCascadeComponent, CheckoutPaymentModalComponent],
   templateUrl: './checkout-summary.component.html',
   styleUrl: './checkout-summary.component.scss',
   providers: [CheckoutPaymentUiService, CheckoutBillingService, CheckoutBranchStockService],
@@ -37,7 +40,8 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
   protected readonly checkoutService = inject(CheckoutService);
   protected readonly cartService = inject(CartService);
   private readonly orderService = inject(OrderService);
-  protected readonly locationService = inject(LocationService);
+  /** "Tocuyito, parroquia Independencia" for the delivery address rows. */
+  protected readonly cityAndParish = cityAndParishLabel;
   private readonly productService = inject(ProductService);
   private readonly router = inject(Router);
   protected readonly exchangeRateService = inject(ExchangeRateService);
@@ -49,6 +53,7 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
   private readonly paymentUi = inject(CheckoutPaymentUiService);
   private readonly billing = inject(CheckoutBillingService);
   private readonly branchStock = inject(CheckoutBranchStockService);
+  private readonly cartPriceSync = inject(CartPriceSyncService);
 
   // ──────────────────────────────────────────────────────────────────────
   // Branch availability loader
@@ -69,6 +74,9 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
   };
 
   constructor() {
+    // The Android back button closes this modal like its ✕ does.
+    dismissOnBack(() => this.showConfirmModal(), () => this.onCancelOrder());
+
     // Branch-availability loader effect. Lives inside the constructor so it
     // registers in the component's injection context without leaving an
     // "unused field" reference behind (the return value of `effect()` is
@@ -95,6 +103,17 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
         },
       });
     });
+
+    // Prices follow the catalogue silently until the customer starts paying
+    // or confirming; from then on the order keeps what they saw and paid.
+    effect(() => {
+      this.cartPriceSync.setLocked(
+        this.paymentUi.showModal() ||
+          this.paymentUi.paymentSubmitted() ||
+          this.showConfirmModal() ||
+          this.isGenerating(),
+      );
+    });
   }
 
   // ── Scroll lock helpers (used only for the confirm-order modal; the
@@ -103,6 +122,7 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
   private confirmTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
   ngOnDestroy(): void {
+    this.cartPriceSync.setLocked(false);
     if (this.confirmTimeoutId !== null) {
       clearTimeout(this.confirmTimeoutId);
       this.confirmTimeoutId = null;
@@ -190,25 +210,9 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
   protected readonly paymentMethods = this.paymentUi.paymentMethods;
   protected readonly loadingMethods = this.paymentUi.loadingMethods;
   protected readonly paymentGroups = this.paymentUi.paymentGroups;
-  protected readonly showModal = this.paymentUi.showModal;
-  protected readonly selectedGroup = this.paymentUi.selectedGroup;
-  protected readonly selectedMethodInModal = this.paymentUi.selectedMethodInModal;
-  protected readonly isSubmittingPayment = this.paymentUi.isSubmittingPayment;
-  protected readonly formReferenceNumber = this.paymentUi.formReferenceNumber;
-  protected readonly formSourceBank = this.paymentUi.formSourceBank;
-  protected readonly formSenderName = this.paymentUi.formSenderName;
-  protected readonly formAmount = this.paymentUi.formAmount;
-  protected readonly formPaymentDate = this.paymentUi.formPaymentDate;
-  protected readonly formProofFile = this.paymentUi.formProofFile;
-  protected readonly formProofPreview = this.paymentUi.formProofPreview;
-  protected readonly isPaymentDateInvalid = this.paymentUi.isPaymentDateInvalid;
   protected readonly paymentSubmitted = this.paymentUi.paymentSubmitted;
   protected readonly submittedPayment = this.paymentUi.submittedPayment;
   protected readonly submittedMethodType = this.paymentUi.submittedMethodType;
-  protected readonly copiedAll = this.paymentUi.copiedAll;
-  protected readonly venezuelanBanks = this.paymentUi.venezuelanBanks;
-  protected readonly infoOnlyMessage = this.paymentUi.infoOnlyMessage;
-  protected readonly amountReadonly = this.paymentUi.amountReadonly;
 
   // Billing ─ template-facing signals
   protected readonly billingSource = this.billing.billingSource;
@@ -327,13 +331,9 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
 
   private readonly shippingCostSignal = computed<number>(() => {
     const dt = this.checkoutService.dispatchType();
-    if (dt === 'shipping_agency') {
+    // Local delivery is priced by the parish picked in the delivery form.
+    if (dt === 'shipping_agency' || dt === 'local_delivery') {
       return this.checkoutService.getShippingCost() ?? 0;
-    }
-    if (dt === 'local_delivery') {
-      const config = this.getLocalDeliveryConfig();
-      if (config?.additionalCharge) return config.additionalChargeAmount;
-      return 0;
     }
     return 0;
   });
@@ -418,6 +418,9 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
     // warning can evaluate correctly.
     this.rehydrateLegacyCartItems();
 
+    // Show the current prices on arrival, not only at the next periodic refresh.
+    void this.cartPriceSync.sync();
+
     // Load per-branch stock to determine which branches can fulfill the cart
     this.branchStock.loadBranchStockForCart();
 
@@ -472,10 +475,6 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
     return this.checkoutService.dispatchType();
   }
 
-  get storeInfo() {
-    return this.checkoutService.storeInfo();
-  }
-
   get shippingAgency() {
     return this.checkoutService.selectedShippingAgency();
   }
@@ -501,27 +500,13 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
       return this.checkoutService.getShippingCostLabel();
     }
     if (this.dispatchType === 'local_delivery') {
-      const config = this.getLocalDeliveryConfig();
-      if (config?.additionalCharge) {
-        return `+$${config.additionalChargeAmount.toFixed(2)}`;
-      }
-      return 'Delivery gratis';
+      return this.checkoutService.getShippingCostLabel() || 'Delivery gratis';
     }
     return 'Gratis';
   }
 
   get shippingCost(): number {
     return this.shippingCostSignal();
-  }
-
-  private getLocalDeliveryConfig(): { freeDelivery: boolean; additionalCharge: boolean; additionalChargeAmount: number } | null {
-    const dc = this.locationService.deliveryConfig();
-    if (!dc) return null;
-    return {
-      freeDelivery: dc.freeDelivery,
-      additionalCharge: !dc.freeDelivery && dc.deliveryCharge > 0,
-      additionalChargeAmount: dc.deliveryCharge,
-    };
   }
 
   get isPayOnDelivery(): boolean {
@@ -538,26 +523,12 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
   // ── Payment-method passthroughs (template-facing methods) ───────────────
 
   getIconClass = (type: Parameters<CheckoutPaymentUiService['getIconClass']>[0]) => this.paymentUi.getIconClass(type);
-  getCurrencySymbol = (type?: string) => this.paymentUi.getCurrencySymbol(type);
   formatPaymentAmount = (amount?: number, type?: string) => this.paymentUi.formatPaymentAmount(amount, type);
-  protected totalUsdRaw = () => this.paymentUi.totalUsdRaw();
-  protected totalBsRaw = () => this.paymentUi.totalBsRaw();
-  copyAllPaymentDetails = () => this.paymentUi.copyAllPaymentDetails();
-  isFormType = (type: Parameters<CheckoutPaymentUiService['isFormType']>[0]) => this.paymentUi.isFormType(type);
-  isInfoOnlyType = (type: Parameters<CheckoutPaymentUiService['isInfoOnlyType']>[0]) => this.paymentUi.isInfoOnlyType(type);
   selectBranch = (branch: BranchSummary & { insufficientStock?: boolean }) => {
     if (branch.insufficientStock) return; // Prevent selecting branch with insufficient stock
     this.checkoutService.selectBranch(branch);
   };
   openPaymentModal = (group: PaymentMethodGroup) => this.paymentUi.openPaymentModal(group);
-  protected referenceLabel = () => this.paymentUi.referenceLabel();
-  closeModal = () => this.paymentUi.closeModal();
-  selectMethodInModal = (m: Parameters<CheckoutPaymentUiService['selectMethodInModal']>[0]) => this.paymentUi.selectMethodInModal(m);
-  onFormInput = (field: string, event: Event) => this.paymentUi.onFormInput(field, event);
-  onProofFileChange = (event: Event) => this.paymentUi.onProofFileChange(event);
-  removeProofFile = () => this.paymentUi.removeProofFile();
-  isFormValid = () => this.paymentUi.isFormValid();
-  submitPayment = () => this.paymentUi.submitPayment();
   clearPaymentSubmission = () => this.paymentUi.clearPaymentSubmission();
 
   // ── Billing passthroughs ────────────────────────────────────────────────
@@ -611,7 +582,6 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
     const localDelivery = this.localDeliveryInfo;
     const sellerAgreement = this.sellerAgreementInfo;
     const agency = this.shippingAgency;
-    const store = this.storeInfo;
     const selectedVehicles = this.checkoutService.selectedVehicles();
     const selectedBranch = this.checkoutService.selectedBranch();
 
@@ -634,12 +604,6 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
       dispatchDetails.storeAddress = selectedBranch.address;
     }
 
-    // Store pickup fallback
-    if (this.dispatchType === 'store_pickup' && !selectedBranch && store) {
-      dispatchDetails.storeAddress = store.address;
-      dispatchDetails.storeSchedule = store.schedule;
-    }
-
     // Shipping agency + recipient
     if (this.dispatchType === 'shipping_agency') {
       if (agency) {
@@ -653,6 +617,7 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
         dispatchDetails.recipientAddress = recipient.address;
         dispatchDetails.recipientState = recipient.state;
         dispatchDetails.recipientCity = recipient.city;
+        if (recipient.location) dispatchDetails.location = toStoredLocation(recipient.location);
         dispatchDetails.agencyOfficeCode = recipient.agencyOfficeCode;
         dispatchDetails.referencePoint = recipient.referencePoint;
       }
@@ -664,8 +629,8 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
       dispatchDetails.recipientDocument = `${localDelivery.documentType}-${localDelivery.documentNumber}`;
       dispatchDetails.recipientPhone = localDelivery.phone;
       dispatchDetails.recipientAddress = localDelivery.address;
-      dispatchDetails.recipientCity = localDelivery.cityName;
-      dispatchDetails.recipientMunicipality = localDelivery.municipalityName;
+      // The server fills state, city and municipality text from the location.
+      dispatchDetails.location = toStoredLocation(localDelivery.location);
       dispatchDetails.referencePoint = localDelivery.referencePoint;
     }
 
@@ -682,8 +647,7 @@ export class CheckoutSummaryComponent implements OnInit, OnDestroy {
       dispatchDetails.recipientDocument = `${this.oilChangeServiceInfo.documentType}-${this.oilChangeServiceInfo.documentNumber}`;
       dispatchDetails.recipientPhone = this.oilChangeServiceInfo.phone;
       dispatchDetails.recipientAddress = this.oilChangeServiceInfo.address;
-      dispatchDetails.recipientCity = this.oilChangeServiceInfo.cityName;
-      dispatchDetails.recipientMunicipality = this.oilChangeServiceInfo.municipalityName;
+      dispatchDetails.location = toStoredLocation(this.oilChangeServiceInfo.location);
       dispatchDetails.referencePoint = this.oilChangeServiceInfo.referencePoint;
     }
 

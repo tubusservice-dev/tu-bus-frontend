@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import { BodyScrollLockService } from '@shared/services/body-scroll-lock.service';
 import { PlatformService } from '@platform';
+import { dismissOnBack } from '@core/services/back-dismiss.service';
 
 /**
  * Reusable modal that explains how to re-enable push notifications when
@@ -169,6 +170,9 @@ export class PushUnblockModalComponent implements OnDestroy {
   private hasScrollLock = false;
 
   constructor() {
+    // The Android back button closes this modal like its ✕ does.
+    dismissOnBack(() => this.isOpen(), () => this.onClose());
+
     effect(() => {
       if (this.isOpen()) this.acquireScrollLock();
       else this.releaseScrollLock();

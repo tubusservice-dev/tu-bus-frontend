@@ -2,6 +2,7 @@ import { Component, signal, output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { AuthService } from '@core/services';
+import { dismissOnBack } from '@core/services/back-dismiss.service';
 
 /**
  * Standalone modal that asks the user for an email and triggers
@@ -40,6 +41,11 @@ export class ForgotPasswordModalComponent {
 
   protected readonly isLoading = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
+
+  constructor() {
+    // The Android back button closes this modal like its ✕ does.
+    dismissOnBack(() => true, () => this.closeModal.emit());
+  }
 
   onSubmit(): void {
     if (this.form.invalid) {

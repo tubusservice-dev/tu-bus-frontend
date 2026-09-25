@@ -9,6 +9,7 @@ import {
   minAgeValidator,
 } from '@shared/validators/form-validators';
 import { ToastService } from '@shared/services/toast.service';
+import { dismissOnBack } from '@core/services/back-dismiss.service';
 
 const MIN_REGISTRATION_AGE = 18;
 
@@ -59,6 +60,11 @@ export class CompleteProfileModalComponent implements OnInit, OnDestroy {
   protected readonly isLoading = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly isJuridical = computed(() => this.form.get('documentType')?.value === 'J');
+
+  constructor() {
+    // The Android back button closes this modal like its ✕ does.
+    dismissOnBack(() => true, () => this.closeModal.emit());
+  }
 
   /**
    * Custom dropdown state for the document-type selector. We render our

@@ -1,24 +1,30 @@
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { CheckoutService, ShippingRecipientInfo } from '../services/checkout.service';
 import { CartService } from '@core/services/cart.service';
 import { AuthService } from '@core/services/auth.service';
-import { getStates, getCitiesByState, getMunicipalitiesByState } from '@shared/data/venezuela-states';
+import { LocationRef } from '@models/geo.model';
+import { fromStoredLocation } from '@shared/utils/location-ref.util';
 import {
   NAME_PATTERN, PHONE_VE_PATTERN, DOCUMENT_NUMBER_PATTERN, EMAIL_PATTERN,
   MAX_FULLNAME_LENGTH, MAX_ADDRESS_LENGTH, MAX_REFERENCE_LENGTH, MAX_NOTES_LENGTH,
   noNumbersValidator, scrollToFirstFormError,
 } from '@shared/validators/form-validators';
 import { CheckoutHeaderComponent } from '../components/checkout-header/checkout-header.component';
+import { LocationCascadeComponent } from '@shared/components/location-cascade/location-cascade.component';
 import { PhoneMaskDirective } from '@shared/directives/phone-mask.directive';
 import { ANALYTICS, AnalyticsEvent } from '@platform';
+import {
+  ADDRESS_FIELDS, CheckoutFieldLocks, DOCUMENT_TYPES, PERSONAL_FIELDS,
+  clearPersonalFields, fieldErrorMessage, fieldHasError, profileAddressLine,
+} from '../utils/checkout-contact-form';
 
 @Component({
   selector: 'app-checkout-shipping-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, CheckoutHeaderComponent, PhoneMaskDirective],
+  imports: [CommonModule, ReactiveFormsModule, CheckoutHeaderComponent, LocationCascadeComponent, PhoneMaskDirective],
   templateUrl: './checkout-shipping-form.component.html',
   styleUrl: './checkout-shipping-form.component.scss',
 })
@@ -32,19 +38,11 @@ export class CheckoutShippingFormComponent implements OnInit {
 
   protected shippingForm!: FormGroup;
   protected readonly selectedAgency = this.checkoutService.selectedShippingAgency;
-  protected readonly lockedFields = signal<Record<string, boolean>>({});
+  private readonly locks = new CheckoutFieldLocks(() => this.shippingForm);
+  protected readonly hasLockedFields = this.locks.hasLockedPersonal;
+  protected readonly hasLockedAddressFields = this.locks.hasLockedAddress;
 
-  // Reference data — all 24 Venezuelan states with cities and municipalities
-  protected readonly states = signal<{ code: string; name: string }[]>([]);
-  protected readonly cities = signal<{ code: string; name: string }[]>([]);
-  protected readonly municipalities = signal<{ code: string; name: string }[]>([]);
-
-  protected readonly documentTypes = [
-    { code: 'V', name: 'V - Venezolano' },
-    { code: 'E', name: 'E - Extranjero' },
-    { code: 'J', name: 'J - Jurídico' },
-    { code: 'P', name: 'P - Pasaporte' },
-  ];
+  protected readonly documentTypes = DOCUMENT_TYPES;
 
   ngOnInit(): void {
     // Initialize the form FIRST so the template has a valid FormGroup during
@@ -58,12 +56,7 @@ export class CheckoutShippingFormComponent implements OnInit {
       return;
     }
 
-    this.loadReferenceStates();
     this.loadSavedData();
-  }
-
-  private loadReferenceStates(): void {
-    this.states.set(getStates());
   }
 
   private initForm(): void {
@@ -74,9 +67,7 @@ export class CheckoutShippingFormComponent implements OnInit {
       phone: ['', [Validators.required, Validators.pattern(PHONE_VE_PATTERN)]],
       alternativePhone: ['', [Validators.pattern(PHONE_VE_PATTERN)]],
       email: ['', [Validators.pattern(EMAIL_PATTERN)]],
-      stateCode: ['', Validators.required],
-      cityCode: ['', Validators.required],
-      municipalityCode: [''],
+      location: [null as LocationRef | null, Validators.required],
       address: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(MAX_ADDRESS_LENGTH)]],
       referencePoint: ['', Validators.maxLength(MAX_REFERENCE_LENGTH)],
       agencyOfficeCode: ['', Validators.maxLength(50)],
@@ -87,7 +78,7 @@ export class CheckoutShippingFormComponent implements OnInit {
   private loadSavedData(): void {
     const savedInfo = this.checkoutService.shippingRecipientInfo();
     if (savedInfo) {
-      this.shippingForm.patchValue(savedInfo);
+      this.shippingForm.patchValue({ ...savedInfo, location: savedInfo.location ?? null });
     } else {
       // Refresh user profile from server to get latest data, then prefill
       this.authService.loadUserProfile().subscribe({
@@ -101,156 +92,38 @@ export class CheckoutShippingFormComponent implements OnInit {
     const user = this.authService.currentUser();
     if (!user) return;
 
-    const locked: Record<string, boolean> = {};
-    const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
-
-    if (fullName) {
-      this.shippingForm.patchValue({ fullName });
-      this.shippingForm.get('fullName')?.disable();
-      locked['fullName'] = true;
+    this.locks.lockPersonalFromProfile(user);
+    if (user.location) {
+      const { parish: _parish, ...place } = fromStoredLocation(user.location);
+      this.locks.lock('location', place);
     }
-    if (user.documentType) {
-      this.shippingForm.patchValue({ documentType: user.documentType });
-      this.shippingForm.get('documentType')?.disable();
-      locked['documentType'] = true;
-    }
-    if (user.documentNumber) {
-      this.shippingForm.patchValue({ documentNumber: user.documentNumber });
-      this.shippingForm.get('documentNumber')?.disable();
-      locked['documentNumber'] = true;
-    }
-    if (user.phone) {
-      this.shippingForm.patchValue({ phone: user.phone });
-      this.shippingForm.get('phone')?.disable();
-      locked['phone'] = true;
-    }
-    if (user.alternativePhone) {
-      this.shippingForm.patchValue({ alternativePhone: user.alternativePhone });
-      this.shippingForm.get('alternativePhone')?.disable();
-      locked['alternativePhone'] = true;
-    }
-    if (user.email) {
-      this.shippingForm.patchValue({ email: user.email });
-      this.shippingForm.get('email')?.disable();
-      locked['email'] = true;
-    }
-
-    // Prefill address fields and lock them
-    if (user.stateName) {
-      const stateMatch = this.states().find((s: any) => s.name === user.stateName);
-      if (stateMatch) {
-        this.shippingForm.patchValue({ stateCode: stateMatch.code });
-        this.shippingForm.get('stateCode')?.disable();
-        locked['stateCode'] = true;
-        this.loadReferenceCities(stateMatch.code, user.cityCode, user.municipalityCode);
-      }
-    }
-    if (user.cityCode || user.cityName) {
-      locked['cityCode'] = true;
-    }
-    if (user.municipalityCode || user.municipalityName) {
-      locked['municipalityCode'] = true;
-    }
-    const addressParts = [user.street, user.houseNumber, user.neighborhood].filter(Boolean);
-    if (addressParts.length > 0) {
-      this.shippingForm.patchValue({ address: addressParts.join(', ') });
-      this.shippingForm.get('address')?.disable();
-      locked['address'] = true;
-    }
-    if (user.referencePoint) {
-      this.shippingForm.patchValue({ referencePoint: user.referencePoint });
-      this.shippingForm.get('referencePoint')?.disable();
-      locked['referencePoint'] = true;
-    }
-
-    this.lockedFields.set(locked);
+    const address = profileAddressLine(user);
+    if (address) this.locks.lock('address', address);
+    if (user.referencePoint) this.locks.lock('referencePoint', user.referencePoint);
   }
-
-  protected onStateChange(): void {
-    const stateCode = this.shippingForm.get('stateCode')?.value;
-    this.shippingForm.patchValue({ cityCode: '', municipalityCode: '' });
-    this.cities.set([]);
-    this.municipalities.set([]);
-    if (stateCode) {
-      this.cities.set(getCitiesByState(stateCode));
-      this.municipalities.set(getMunicipalitiesByState(stateCode));
-    }
-  }
-
-  protected onCityChange(): void {
-    // City and municipality are independent lists within a state — no cascade needed
-  }
-
-  private loadReferenceCities(stateCode: string, preselectedCity?: string, preselectedMuni?: string): void {
-    this.cities.set(getCitiesByState(stateCode));
-    this.municipalities.set(getMunicipalitiesByState(stateCode));
-
-    if (preselectedCity) {
-      this.shippingForm.patchValue({ cityCode: preselectedCity });
-      this.shippingForm.get('cityCode')?.disable();
-    }
-    if (preselectedMuni) {
-      this.shippingForm.patchValue({ municipalityCode: preselectedMuni });
-      this.shippingForm.get('municipalityCode')?.disable();
-    }
-  }
-
-  protected readonly hasLockedFields = computed(() => {
-    const locked = this.lockedFields();
-    return ['fullName', 'documentType', 'documentNumber', 'phone', 'alternativePhone', 'email']
-      .some(f => locked[f]);
-  });
-
-  protected readonly hasLockedAddressFields = computed(() => {
-    const locked = this.lockedFields();
-    return ['stateCode', 'cityCode', 'municipalityCode', 'address', 'referencePoint']
-      .some(f => locked[f]);
-  });
 
   protected unlockAddressFields(): void {
-    const fields = ['stateCode', 'cityCode', 'municipalityCode', 'address', 'referencePoint'];
-    fields.forEach(field => this.shippingForm.get(field)?.enable());
-    const updated = { ...this.lockedFields() };
-    fields.forEach(f => delete updated[f]);
-    this.lockedFields.set(updated);
+    this.locks.unlock(ADDRESS_FIELDS);
   }
 
+  /** Here the personal unlock also frees the address (unlike the other forms). */
   protected unlockPersonalFields(): void {
-    const allFields = ['fullName', 'documentType', 'documentNumber', 'phone', 'alternativePhone', 'email',
-      'stateCode', 'cityCode', 'municipalityCode', 'address', 'referencePoint'];
-    allFields.forEach(field => this.shippingForm.get(field)?.enable());
-    this.lockedFields.set({});
+    this.locks.unlock([...PERSONAL_FIELDS, ...ADDRESS_FIELDS]);
   }
 
   protected clearPersonalFields(): void {
-    this.shippingForm.patchValue({
-      fullName: '',
-      documentType: 'V',
-      documentNumber: '',
-      phone: '',
-      alternativePhone: '',
-      email: '',
-    });
+    clearPersonalFields(this.shippingForm);
   }
 
   protected clearShippingFields(): void {
-    const addressFields = ['stateCode', 'cityCode', 'municipalityCode', 'address', 'referencePoint', 'agencyOfficeCode', 'notes'];
-    addressFields.forEach(field => this.shippingForm.get(field)?.enable());
+    this.locks.unlock([...ADDRESS_FIELDS, 'agencyOfficeCode', 'notes']);
     this.shippingForm.patchValue({
-      stateCode: '',
-      cityCode: '',
-      municipalityCode: '',
+      location: null,
       address: '',
       referencePoint: '',
       agencyOfficeCode: '',
       notes: '',
     });
-    // Remove address locks
-    const updated = { ...this.lockedFields() };
-    addressFields.forEach(f => delete updated[f]);
-    this.lockedFields.set(updated);
-    this.cities.set([]);
-    this.municipalities.set([]);
   }
 
   onSubmit(): void {
@@ -262,9 +135,7 @@ export class CheckoutShippingFormComponent implements OnInit {
     }
 
     const formValue = this.shippingForm.getRawValue();
-    const selectedState = this.states().find((s: any) => s.code === formValue.stateCode);
-    const selectedCity = this.cities().find((c: any) => c.code === formValue.cityCode);
-    const selectedMuni = this.municipalities().find((m: any) => m.code === formValue.municipalityCode);
+    const location: LocationRef = formValue.location;
 
     const shippingInfo: ShippingRecipientInfo = {
       fullName: formValue.fullName.trim(),
@@ -273,9 +144,10 @@ export class CheckoutShippingFormComponent implements OnInit {
       phone: formValue.phone,
       alternativePhone: formValue.alternativePhone || undefined,
       email: formValue.email || undefined,
-      state: selectedState?.name || formValue.stateCode,
-      city: selectedCity?.name || formValue.cityCode,
-      municipality: selectedMuni?.name || undefined,
+      location,
+      state: location.state.name,
+      city: location.city?.name ?? location.municipality.name,
+      municipality: location.municipality.name,
       address: formValue.address.trim(),
       referencePoint: formValue.referencePoint?.trim() || undefined,
       agencyOfficeCode: formValue.agencyOfficeCode?.trim() || undefined,
@@ -290,32 +162,11 @@ export class CheckoutShippingFormComponent implements OnInit {
     this.router.navigate(['/checkout/agencia']);
   }
 
-  getStateName(code: string): string {
-    return this.states().find((s: any) => s.code === code)?.name || code;
-  }
-
   hasError(field: string): boolean {
-    const control = this.shippingForm.get(field);
-    return control ? control.invalid && control.touched : false;
+    return fieldHasError(this.shippingForm.get(field));
   }
 
   getErrorMessage(field: string): string {
-    const control = this.shippingForm.get(field);
-    if (!control || !control.errors) return '';
-
-    if (control.errors['required']) return 'Este campo es obligatorio';
-    if (control.errors['minlength']) return `Mínimo ${control.errors['minlength'].requiredLength} caracteres`;
-    if (control.errors['maxlength']) return `Máximo ${control.errors['maxlength'].requiredLength} caracteres`;
-    if (control.errors['noNumbers']) return 'No se permiten números en este campo';
-    if (control.errors['pattern']) {
-      if (field === 'documentNumber') return 'Solo números, entre 6 y 10 dígitos';
-      if (field === 'phone' || field === 'alternativePhone') return 'Formato: 04XX-XXXXXXX (ej: 04141234567)';
-      if (field === 'email') return 'Ingresa un email válido (ej: nombre@correo.com)';
-      if (field === 'fullName') return 'Solo letras, sin números';
-      return 'Formato inválido';
-    }
-    if (control.errors['email']) return 'Ingresa un email válido';
-
-    return 'Campo inválido';
+    return fieldErrorMessage(this.shippingForm.get(field), field);
   }
 }

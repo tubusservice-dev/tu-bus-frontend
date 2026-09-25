@@ -1,7 +1,8 @@
 import { Injectable, computed, signal, inject } from '@angular/core';
 import { SettingsService } from '@core/services/settings.service';
 import { CartService } from '@core/services/cart.service';
-import { LocationService, BranchSummary } from '@core/services/location.service';
+import { LocationStore } from '@core/services/location-store.service';
+import { BranchSummary, LocationRef, ParishDelivery, StoredLocation } from '@models/geo.model';
 import { ShippingAgency } from '@models/product.model';
 import { Vehicle } from '@models/vehicle.model';
 import { EngineModificationStatus } from '@models/order.model';
@@ -26,13 +27,8 @@ export interface DispatchOption {
   icon: string;
   price: number | null;
   isAvailable: boolean;
-}
-
-export interface StorePickupInfo {
-  address: string;
-  schedule: string;
-  phone?: string;
-  additionalInfo?: string;
+  /** Shown without a location: picking it opens the zone selector first. */
+  requiresLocation?: boolean;
 }
 
 export interface ShippingRecipientInfo {
@@ -42,6 +38,8 @@ export interface ShippingRecipientInfo {
   phone: string;
   alternativePhone?: string;
   email?: string;
+  /** State, municipality and city picked in the national cascade; the text fields below keep their names. */
+  location?: LocationRef;
   state: string;
   city: string;
   municipality?: string;
@@ -58,10 +56,8 @@ export interface LocalDeliveryRecipientInfo {
   phone: string;
   alternativePhone?: string;
   email?: string;
-  cityCode: string;
-  cityName: string;
-  municipalityCode: string;
-  municipalityName: string;
+  /** State and municipality of the customer's location, city and parish picked in the form. */
+  location: LocationRef;
   address: string;
   referencePoint?: string;
   notes?: string;
@@ -82,10 +78,8 @@ export interface OilChangeServiceInfo {
   documentNumber: string;
   phone: string;
   email?: string;
-  cityCode: string;
-  cityName: string;
-  municipalityCode: string;
-  municipalityName: string;
+  /** State and municipality of the customer's location, city and parish picked in the form. */
+  location: LocationRef;
   address: string;
   referencePoint?: string;
   vehicleInfo?: string;
@@ -109,6 +103,8 @@ export interface BillingAddress {
   municipality?: string;
   state?: string;
   referencePoint?: string;
+  /** Billing place (ubicaciones v2), when the source carries one. */
+  location?: StoredLocation;
 }
 
 // ============================================
@@ -117,7 +113,6 @@ export interface BillingAddress {
 
 export interface CheckoutState {
   dispatchType: DispatchType;
-  storePickupInfo: StorePickupInfo | null;
   selectedShippingAgency: ShippingAgency | null;
   shippingRecipientInfo: ShippingRecipientInfo | null;
   localDeliveryRecipientInfo: LocalDeliveryRecipientInfo | null;
@@ -140,7 +135,6 @@ const BRANCH_AWARE_DISPATCH_TYPES: DispatchType[] = [
 
 const INITIAL_STATE: CheckoutState = {
   dispatchType: null,
-  storePickupInfo: null,
   selectedShippingAgency: null,
   shippingRecipientInfo: null,
   localDeliveryRecipientInfo: null,
@@ -165,63 +159,65 @@ const INITIAL_STATE: CheckoutState = {
 export class CheckoutService {
   private readonly settingsService = inject(SettingsService);
   private readonly cartService = inject(CartService);
-  private readonly locationService = inject(LocationService);
+  private readonly locationStore = inject(LocationStore);
   private readonly _state = signal<CheckoutState>(INITIAL_STATE);
+  /** Delivery terms of the parish picked in the delivery form; the price of local delivery. */
+  private readonly _deliveryQuote = signal<ParishDelivery | null>(null);
 
   // ==================== PUBLIC READONLY STATE ====================
 
   readonly state = this._state.asReadonly();
   readonly dispatchType = computed(() => this._state().dispatchType);
+  readonly deliveryQuote = this._deliveryQuote.asReadonly();
   readonly hasDispatchType = computed(() => this._state().dispatchType !== null);
 
   // Dispatch config from admin settings
   private readonly dispatchConfig = computed(() => this.settingsService.dispatchConfig());
 
-  // Store pickup info (from settings fallback)
-  readonly storeInfo = computed<StorePickupInfo>(() => {
-    const config = this.dispatchConfig();
-    return {
-      address: config.storePickup.address,
-      schedule: config.storePickup.schedule,
-      phone: config.storePickup.phone,
-      additionalInfo: config.storePickup.additionalInfo,
-    };
-  });
-
   // ==================== DISPATCH OPTIONS ====================
 
+  /**
+   * What the customer can choose. Without a location the zone-bound options
+   * (home oil change, in-store oil change, local delivery) still show, marked
+   * `requiresLocation`, so the customer learns they exist; picking one opens
+   * the zone selector. With a location, each shows only where it is offered.
+   */
   readonly dispatchOptions = computed<DispatchOption[]>(() => {
     const config = this.dispatchConfig();
     const modules = config.modules;
     const options: DispatchOption[] = [];
-    const hasCoverage = this.locationService.hasCoverage();
+    const located = this.locationStore.hasLocation();
+    const hasCoverage = this.locationStore.hasCoverage();
     const hasOilChange = this.cartService.hasOilChangeService();
+    const pickLocation = 'Elige tu ubicación para ver si llegamos a tu zona';
 
     // 1. Cambio de Aceite a Domicilio — oil combo + coverage (priority)
-    if (hasOilChange && hasCoverage) {
+    if (hasOilChange && (!located || hasCoverage)) {
       options.push({
         id: 'oil_change_service',
         name: 'Cambio de Aceite a Domicilio',
-        description: 'Servicio de cambio de aceite gratis incluido con tu compra',
+        description: located ? 'Servicio de cambio de aceite gratis incluido con tu compra' : pickLocation,
         icon: 'oil',
         price: null,
         isAvailable: true,
+        requiresLocation: !located,
       });
     }
 
-    // 2. Cambio de Aceite en Tienda — oil combo + branch has service
-    if (hasOilChange && this.locationService.hasInStoreOilChange()) {
+    // 2. Cambio de Aceite en Tienda — oil combo + a branch of the zone offers it
+    if (hasOilChange && (!located || this.locationStore.hasInStoreOilChange())) {
       options.push({
         id: 'in_store_oil_change',
         name: 'Cambio de Aceite en Tienda',
-        description: 'Lleva tu vehiculo a la sucursal para el cambio de aceite',
+        description: located ? 'Lleva tu vehiculo a la sucursal para el cambio de aceite' : pickLocation,
         icon: 'wrench',
         price: null,
         isAvailable: true,
+        requiresLocation: !located,
       });
     }
 
-    // 3. Retiro en Tienda — ALWAYS
+    // 3. Retiro en Tienda — ALWAYS (without a location, every active branch is offered)
     if (modules.storePickup) {
       options.push({
         id: 'store_pickup',
@@ -233,20 +229,22 @@ export class CheckoutService {
       });
     }
 
-    // 4. Delivery Local — ONLY if coverage AND delivery enabled
-    if (hasCoverage && this.locationService.hasDelivery()) {
-      const dc = this.locationService.deliveryConfig();
-      const isFree = dc?.freeDelivery ?? false;
-      const charge = dc?.deliveryCharge ?? 0;
+    // 4. Delivery Local — where some parish of the municipality gets it.
+    // The exact price depends on the parish, picked in the delivery form.
+    if (!located || (hasCoverage && this.locationStore.deliveryStatus() !== 'none')) {
+      const min = this.locationStore.minDeliveryCharge();
       options.push({
         id: 'local_delivery',
         name: 'Delivery Local',
-        description: isFree
-          ? 'Entrega a domicilio gratis en tu zona'
-          : `Entrega a domicilio en tu zona ($${charge.toFixed(2)})`,
+        description: !located
+          ? pickLocation
+          : this.locationStore.allFree()
+            ? 'Entrega a domicilio gratis en tu zona'
+            : `Entrega a domicilio en tu zona (desde $${(min ?? 0).toFixed(2)})`,
         icon: 'bike',
-        price: isFree ? null : charge,
+        price: null,
         isAvailable: true,
+        requiresLocation: !located,
       });
     }
 
@@ -366,10 +364,10 @@ export class CheckoutService {
   // ==================== DISPATCH ACTIONS ====================
 
   selectDispatchType(type: DispatchType): void {
+    if (type !== 'local_delivery') this._deliveryQuote.set(null);
     this._state.update((state) => ({
       ...state,
       dispatchType: type,
-      storePickupInfo: type === 'store_pickup' ? this.storeInfo() : null,
       selectedShippingAgency: type === 'shipping_agency' ? state.selectedShippingAgency : null,
       shippingRecipientInfo: type === 'shipping_agency' ? state.shippingRecipientInfo : null,
       localDeliveryRecipientInfo: type === 'local_delivery' ? state.localDeliveryRecipientInfo : null,
@@ -395,6 +393,11 @@ export class CheckoutService {
 
   setShippingRecipientInfo(info: ShippingRecipientInfo): void {
     this._state.update((s) => ({ ...s, shippingRecipientInfo: info }));
+  }
+
+  /** The parish picked in the delivery form fixes the price; null while none is picked. */
+  setDeliveryQuote(quote: ParishDelivery | null): void {
+    this._deliveryQuote.set(quote);
   }
 
   setLocalDeliveryRecipientInfo(info: LocalDeliveryRecipientInfo): void {
@@ -498,7 +501,6 @@ export class CheckoutService {
     this._state.update((s) => ({
       ...s,
       dispatchType: null,
-      storePickupInfo: null,
       selectedShippingAgency: null,
       shippingRecipientInfo: null,
       localDeliveryRecipientInfo: null,
@@ -512,6 +514,7 @@ export class CheckoutService {
 
   resetCheckout(): void {
     this._state.set(INITIAL_STATE);
+    this._deliveryQuote.set(null);
   }
 
   // ==================== HELPERS ====================
@@ -525,9 +528,9 @@ export class CheckoutService {
 
     // Delivery local cost
     if (state.dispatchType === 'local_delivery') {
-      const dc = this.locationService.deliveryConfig();
-      if (dc?.freeDelivery) return 0;
-      return dc?.deliveryCharge ?? null;
+      const quote = this._deliveryQuote();
+      if (!quote) return null;
+      return quote.freeDelivery ? 0 : quote.deliveryCharge;
     }
 
     // Agency cost
@@ -544,10 +547,10 @@ export class CheckoutService {
     const state = this._state();
 
     if (state.dispatchType === 'local_delivery') {
-      const dc = this.locationService.deliveryConfig();
-      if (dc?.freeDelivery) return 'Delivery gratis';
-      if (dc?.deliveryCharge) return `+$${dc.deliveryCharge.toFixed(2)}`;
-      return '';
+      const quote = this._deliveryQuote();
+      if (!quote) return '';
+      if (quote.freeDelivery) return 'Delivery gratis';
+      return `+$${quote.deliveryCharge.toFixed(2)}`;
     }
 
     const agency = state.selectedShippingAgency;

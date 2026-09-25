@@ -1,8 +1,10 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { forkJoin } from 'rxjs';
+import { Observable, forkJoin, map, of } from 'rxjs';
 import { CartService } from '@core/services/cart.service';
-import { LocationService, BranchSummary } from '@core/services/location.service';
+import { LocationStore } from '@core/services/location-store.service';
+import { BranchSummary } from '@models/geo.model';
 import { BranchProductService } from '@core/services/branch-product.service';
+import { BranchService } from '@core/services/branch.service';
 import { CheckoutService } from '@features/checkout/services/checkout.service';
 
 /**
@@ -16,9 +18,13 @@ import { CheckoutService } from '@features/checkout/services/checkout.service';
 @Injectable()
 export class CheckoutBranchStockService {
   private readonly cartService = inject(CartService);
-  private readonly locationService = inject(LocationService);
+  private readonly locationStore = inject(LocationStore);
   private readonly branchProductService = inject(BranchProductService);
   private readonly checkoutService = inject(CheckoutService);
+  private readonly branchService = inject(BranchService);
+
+  /** Every active branch: store pickup without a location may use any of them. */
+  private readonly activeBranches = signal<BranchSummary[]>([]);
 
   /** Per-branch stock map: branchId → Map<productId, stock>. */
   readonly branchStockMap = signal<Map<string, Map<string, number>>>(new Map());
@@ -31,8 +37,9 @@ export class CheckoutBranchStockService {
    */
   private readonly allBranches = computed<BranchSummary[]>(() => {
     const dt = this.checkoutService.dispatchType();
-    if (dt === 'in_store_oil_change') return this.locationService.branchesWithOilChange();
-    return this.locationService.branches();
+    if (dt === 'in_store_oil_change') return this.locationStore.branchesWithOilChange();
+    if (dt === 'store_pickup' && !this.locationStore.hasLocation()) return this.activeBranches();
+    return this.locationStore.branches();
   });
 
   /**
@@ -71,10 +78,44 @@ export class CheckoutBranchStockService {
    */
   loadBranchStockForCart(): void {
     const cartItems = this.cartService.items();
-    const branchIds = this.locationService.branchIds();
-    if (cartItems.length === 0 || branchIds.length === 0) return;
+    if (cartItems.length === 0) return;
 
     this.isLoadingBranchStock.set(true);
+    this.candidateBranches().subscribe({
+      next: (branches) => {
+        if (branches.length === 0) {
+          this.isLoadingBranchStock.set(false);
+          return;
+        }
+        this.loadStock(branches.map((b) => b.id));
+      },
+      error: () => this.isLoadingBranchStock.set(false),
+    });
+  }
+
+  /** The branches whose stock matters: the zone's, or every active one for pickup without a location. */
+  private candidateBranches(): Observable<BranchSummary[]> {
+    const pickupAnywhere = this.checkoutService.dispatchType() === 'store_pickup' && !this.locationStore.hasLocation();
+    if (!pickupAnywhere) return of(this.allBranches());
+    return this.branchService.getActive().pipe(
+      map((res) => {
+        const branches: BranchSummary[] = (res.data ?? []).map((b) => ({
+          id: b.id,
+          name: b.name,
+          address: b.address,
+          whatsappPhone: b.whatsappPhone,
+          schedule: b.schedule ?? [],
+          coordinates: b.coordinates,
+          hasInStoreOilChange: b.hasInStoreOilChange ?? false,
+        }));
+        this.activeBranches.set(branches);
+        return branches;
+      }),
+    );
+  }
+
+  private loadStock(branchIds: string[]): void {
+    const cartItems = this.cartService.items();
 
     const requests = cartItems.map(item =>
       this.branchProductService.getAggregatedStock(item.id, branchIds)

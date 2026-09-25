@@ -2,6 +2,8 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AuthService } from '@core/services/auth.service';
 import { CheckoutService } from '@features/checkout/services/checkout.service';
+import { LocationRef, StoredLocation } from '@models/geo.model';
+import { cityAndParishLabel, toStoredLocation } from '@shared/utils/location-ref.util';
 
 /**
  * Encapsulates the billing-address sub-flow on the checkout summary:
@@ -44,9 +46,7 @@ export class CheckoutBillingService {
       documentType: ['V', Validators.required],
       documentNumber: ['', [Validators.required, Validators.pattern(/^\d{6,10}$/)]],
       address: ['', [Validators.required, Validators.minLength(10)]],
-      city: ['', Validators.required],
-      municipality: [''],
-      state: [''],
+      location: [null as LocationRef | null, Validators.required],
       referencePoint: [''],
     });
   }
@@ -70,12 +70,14 @@ export class CheckoutBillingService {
   buildFromShipping(): void {
     const dt = this.checkoutService.dispatchType();
     let address = '', city = '', municipality = '', state = '', fullName = '', docType = '', docNum = '', refPoint = '';
+    let location: StoredLocation | undefined;
 
     if (dt === 'local_delivery') {
       const info = this.checkoutService.localDeliveryRecipientInfo();
       if (info) {
         fullName = info.fullName; docType = info.documentType; docNum = info.documentNumber;
-        address = info.address; city = info.cityName; municipality = info.municipalityName;
+        address = info.address; location = toStoredLocation(info.location);
+        city = cityAndParishLabel(info.location); municipality = info.location.municipality.name; state = info.location.state.name;
         refPoint = info.referencePoint || '';
       }
     } else if (dt === 'shipping_agency') {
@@ -84,12 +86,14 @@ export class CheckoutBillingService {
         fullName = info.fullName; docType = info.documentType; docNum = info.documentNumber;
         address = info.address; city = info.city; state = info.state;
         municipality = info.municipality || ''; refPoint = info.referencePoint || '';
+        if (info.location) location = toStoredLocation(info.location);
       }
     } else if (dt === 'oil_change_service') {
       const info = this.checkoutService.oilChangeServiceInfo();
       if (info) {
         fullName = info.fullName; docType = info.documentType; docNum = info.documentNumber;
-        address = info.address; city = info.cityName; municipality = info.municipalityName;
+        address = info.address; location = toStoredLocation(info.location);
+        city = cityAndParishLabel(info.location); municipality = info.location.municipality.name; state = info.location.state.name;
         refPoint = info.referencePoint || '';
       }
     }
@@ -97,6 +101,7 @@ export class CheckoutBillingService {
     this.checkoutService.setBillingAddress({
       source: 'shipping', fullName, documentType: docType, documentNumber: docNum,
       address, city, municipality, state, referencePoint: refPoint,
+      ...(location ? { location } : {}),
     });
   }
 
@@ -118,6 +123,7 @@ export class CheckoutBillingService {
       municipality: user.municipalityName || '',
       state: user.stateName || '',
       referencePoint: user.referencePoint || '',
+      ...(user.location ? { location: user.location } : {}),
     });
   }
 
@@ -128,15 +134,17 @@ export class CheckoutBillingService {
       return;
     }
     const v = this.billingForm.getRawValue();
+    const place: LocationRef = v.location;
     this.checkoutService.setBillingAddress({
       source: 'custom',
       fullName: v.fullName?.trim(),
       documentType: v.documentType,
       documentNumber: v.documentNumber?.trim(),
       address: v.address?.trim(),
-      city: v.city?.trim(),
-      municipality: v.municipality?.trim(),
-      state: v.state?.trim(),
+      city: place.city?.name ?? place.municipality.name,
+      municipality: place.municipality.name,
+      state: place.state.name,
+      location: toStoredLocation(place),
       referencePoint: v.referencePoint?.trim(),
     });
   }

@@ -9,7 +9,7 @@ import {
   ShowcaseProduct,
   ShowcaseAvailability,
 } from '../../../../../core/services/product.service';
-import { LocationService } from '../../../../../core/services/location.service';
+import { LocationStore } from '@core/services/location-store.service';
 import { OverlayStackService } from '../../../../../core/services/overlay-stack.service';
 import { VehicleType, VEHICLE_TYPE_LABELS } from '../../../../../models/product.model';
 
@@ -27,7 +27,7 @@ interface FilterTab {
 })
 export class TubusCombosComponent {
   private readonly productService = inject(ProductService);
-  private readonly locationService = inject(LocationService);
+  private readonly locationStore = inject(LocationStore);
   private readonly overlayService = inject(OverlayStackService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -66,7 +66,7 @@ export class TubusCombosComponent {
     this.tabRequest$
       .pipe(
         switchMap(vt => {
-          const branchIds = this.locationService.branchIds();
+          const branchIds = this.locationStore.stockBranchIds();
           const branchParam = branchIds.length > 0 ? branchIds.join(',') : undefined;
           return this.productService.getFeaturedShowcase(
             branchParam,
@@ -89,16 +89,16 @@ export class TubusCombosComponent {
     // Re-evaluate availability + reload current tab whenever branches resolve
     // or change (e.g. user picks a different city).
     effect(() => {
-      const resolved = this.locationService.isResolved();
+      const resolved = this.locationStore.isResolved();
       if (!resolved) return;
-      // Depend on branchIds so location changes re-fire.
-      this.locationService.branchIds();
+      // Depend on the stock branches so location changes re-fire.
+      this.locationStore.stockBranchIds();
       untracked(() => this.refresh());
     });
   }
 
   private refresh(): void {
-    const branchIds = this.locationService.branchIds();
+    const branchIds = this.locationStore.stockBranchIds();
     const branchParam = branchIds.length > 0 ? branchIds.join(',') : undefined;
 
     this.isLoading.set(true);

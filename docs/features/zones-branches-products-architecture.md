@@ -1,5 +1,7 @@
 # Zones, Branches & Products — Architecture Redesign
 
+> **Update 2026-09-24 — partly superseded by `locations-v2.md`.** The City model, the Zone shape (one city + municipalities), the BranchZone per-municipality `deliveryConfig`, the admin zone/branch flows and the public location queries described below were replaced by Locations v2 (State › Municipality › City › Parish; zones made of parishes across states; delivery per city with parish exceptions; legacy routes answered from parishes). The legacy fields still exist for the published app 1.1.2 until phase 8. **BranchProduct (stock per branch) and the engineering principles below remain valid.**
+
 > **Status:** Approved Design — Ready for Implementation
 > **Scope:** Admin Module only (client-side checkout will be addressed separately)
 > **Date:** 2026-03-27

@@ -1,17 +1,18 @@
-import { Component, inject, signal, OnInit, computed, HostListener, effect, DestroyRef } from '@angular/core';
+import { Component, inject, signal, OnInit, computed, HostListener, effect, untracked, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Observable, Subject, of, switchMap, catchError } from 'rxjs';
+import { Observable, Subject, of, switchMap, catchError, timeout } from 'rxjs';
 import { ProductService, ProductCardDTO, ProductCardListResponse } from '../../core/services/product.service';
 import { BrandService } from '../../core/services/brand.service';
 import { CategoryService } from '../../core/services/category.service';
 import { SettingsService } from '../../core/services/settings.service';
 import { VehicleService } from '../../core/services/vehicle.service';
-import { LocationService } from '../../core/services/location.service';
+import { LocationStore } from '@core/services/location-store.service';
 import { ProductCardComponent, ProductCardData } from '../../shared/components/product-card/product-card.component';
 import { SearchInputComponent } from '../../shared/components/search-input/search-input.component';
+import { LoadErrorStateComponent } from '@shared/components/load-error-state/load-error-state.component';
 import {
   Brand,
   Category,
@@ -20,6 +21,13 @@ import {
 } from '../../models';
 import { PAGINATION_OPTIONS } from '../../models/settings.model';
 import { ANALYTICS, AnalyticsEvent } from '@platform';
+
+/**
+ * A catalog request that has not answered by then counts as failed, so the
+ * "could not load" state shows instead of an endless skeleton (a request
+ * caught by a network drop on a phone may otherwise never settle).
+ */
+const CATALOG_REQUEST_TIMEOUT_MS = 20_000;
 
 interface FilterState {
   search: string;
@@ -34,7 +42,7 @@ interface FilterState {
 @Component({
   selector: 'app-catalog',
   standalone: true,
-  imports: [CommonModule, FormsModule, ProductCardComponent, SearchInputComponent],
+  imports: [CommonModule, FormsModule, ProductCardComponent, SearchInputComponent, LoadErrorStateComponent],
   templateUrl: './catalog.component.html',
   styleUrl: './catalog.component.scss',
 })
@@ -45,7 +53,7 @@ export class CatalogComponent implements OnInit {
   private readonly settingsService = inject(SettingsService);
 
   protected readonly vehicleService = inject(VehicleService);
-  protected readonly locationService = inject(LocationService);
+  protected readonly locationStore = inject(LocationStore);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
@@ -72,9 +80,13 @@ export class CatalogComponent implements OnInit {
 
   // Tracks whether initial product load has been triggered
   private initialLoadDone = false;
+  /** Branches the products on screen were loaded for. */
+  private loadedBranchKey = '';
 
   // Estado
   protected readonly isLoading = signal(true);
+  /** The last catalog request failed (usually no connection), as opposed to "no results". */
+  protected readonly loadFailed = signal(false);
   // Products already arrive filtered + sorted from the backend. No client-side
   // post-processing needed — avoids the pagination/count desync bug that the
   // previous filterByVehicle() implementation caused.
@@ -155,13 +167,17 @@ export class CatalogComponent implements OnInit {
   });
 
   constructor() {
-    // Wait for LocationService to resolve before loading products.
+    // Load once the location is resolved, and again whenever the branches
+    // whose stock counts change (a new zone, or removing the location).
     effect(() => {
-      const resolved = this.locationService.isResolved();
-      if (resolved && !this.initialLoadDone) {
+      const branchKey = this.locationStore.stockBranchIds().join(',');
+      if (!this.locationStore.isResolved()) return;
+      untracked(() => {
+        if (this.initialLoadDone && branchKey === this.loadedBranchKey) return;
         this.initialLoadDone = true;
+        this.loadedBranchKey = branchKey;
         this.loadProducts();
-      }
+      });
     });
 
     // Reactive pipeline: each loadTrigger$.next() cancels the previous
@@ -192,6 +208,7 @@ export class CatalogComponent implements OnInit {
           freeOilChangeService: p.freeOilChangeService,
           vehicleTypes: p.vehicleTypes,
         }));
+        this.loadFailed.set(false);
         this.products.set(mapped);
         this.totalPages.set(response.pagination?.pages || 1);
         this.totalProducts.set(response.pagination?.total || 0);
@@ -236,8 +253,9 @@ export class CatalogComponent implements OnInit {
     this.loadCategories();
 
     // If location is already resolved, load immediately
-    if (this.locationService.isResolved() && !this.initialLoadDone) {
+    if (this.locationStore.isResolved() && !this.initialLoadDone) {
       this.initialLoadDone = true;
+      this.loadedBranchKey = this.locationStore.stockBranchIds().join(',');
       this.loadProducts();
     }
   }
@@ -262,6 +280,19 @@ export class CatalogComponent implements OnInit {
 
   loadProducts(): void {
     this.loadTrigger$.next();
+  }
+
+  /** Retries everything a failed load left empty. */
+  retryLoad(): void {
+    if (this.brands().length === 0) this.loadBrands();
+    if (this.categories().length === 0) this.loadCategories();
+    this.loadProducts();
+  }
+
+  /** Coming back online after a failed load retries on its own. */
+  @HostListener('window:online')
+  onBackOnline(): void {
+    if (this.loadFailed()) this.retryLoad();
   }
 
   /**
@@ -291,8 +322,8 @@ export class CatalogComponent implements OnInit {
       sortOrder = 'desc';
     }
 
-    // Include branchIds from user's selected location
-    const ids = this.locationService.branchIds();
+    // The zone's branches, or every active one while exploring without a location
+    const ids = this.locationStore.stockBranchIds();
     const branchIds = ids.length > 0 ? ids.join(',') : undefined;
 
     // Garage→catalog flow filters by vehicleType only. Engine-level matching
@@ -316,9 +347,11 @@ export class CatalogComponent implements OnInit {
         comboFirst: f.onlyCombos || undefined,
       })
       .pipe(
+        timeout(CATALOG_REQUEST_TIMEOUT_MS),
         catchError(() => {
           this.isLoading.set(false);
           this.isSearching.set(false);
+          this.loadFailed.set(true);
           return of(null);
         }),
       );

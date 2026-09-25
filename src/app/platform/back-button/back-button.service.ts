@@ -2,6 +2,7 @@ import { Injectable, NgZone, inject } from '@angular/core';
 import { Location } from '@angular/common';
 import { PlatformService } from '../platform.service';
 import { OverlayStackService } from '@core/services/overlay-stack.service';
+import { BackDismissService } from '@core/services/back-dismiss.service';
 
 /**
  * Hardware back button manager for Android.
@@ -12,9 +13,10 @@ import { OverlayStackService } from '@core/services/overlay-stack.service';
  * Native (Android): the OS dispatches the hardware back button to the
  * Capacitor `App.backButton` event, NOT to `window.popstate`. We bind a
  * listener that:
- *   1. Closes the top overlay if any (delegating to OverlayStackService.goBack).
- *   2. Otherwise, navigates back in the router history if possible.
- *   3. Otherwise, exits the app.
+ *   1. Closes the top modal or dialog if any (BackDismissService).
+ *   2. Otherwise closes the top overlay if any (OverlayStackService.goBack).
+ *   3. Otherwise, navigates back in the router history if possible.
+ *   4. Otherwise, exits the app.
  *
  * `init()` is invoked once during app bootstrap by an APP_INITIALIZER.
  */
@@ -24,6 +26,7 @@ export class BackButtonService {
   private readonly zone = inject(NgZone);
   private readonly location = inject(Location);
   private readonly overlayStack = inject(OverlayStackService);
+  private readonly backDismiss = inject(BackDismissService);
 
   private listenerAttached = false;
 
@@ -36,6 +39,7 @@ export class BackButtonService {
       // Capacitor invokes the listener outside the Angular zone — wrap so
       // signal updates trigger change detection.
       this.zone.run(async () => {
+        if (this.backDismiss.dismissTop()) return;
         if (this.overlayStack.isOpen()) {
           this.overlayStack.goBack();
           return;

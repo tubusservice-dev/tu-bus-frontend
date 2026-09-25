@@ -1,0 +1,41 @@
+<app-zoning-modal
+  [isOpen]="selector.isOpen()"
+  [busy]="busy()"
+  [hasLocation]="locationStore.hasLocation()"
+  [currentStateId]="locationStore.location()?.state?.id ?? null"
+  [currentMunicipalityId]="locationStore.location()?.municipality?.id ?? null"
+  (picked)="onPicked($event)"
+  (explore)="onExplore()"
+  (closed)="onClosed()"
+/>
+
+<!-- Zone change that would remove items from the cart -->
+@if (pending(); as plan) {
+  <div class="zone-confirm-backdrop" (click)="cancel()">
+    <div class="zone-confirm-modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <div class="zone-confirm-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+        </svg>
+      </div>
+      <h3 class="zone-confirm-title">¿Cambiar a {{ plan.municipality.name }}?</h3>
+      <p class="zone-confirm-text">
+        @if (plan.unavailable.length === 1) {
+          Este producto no está disponible en las sucursales de esa zona y se quitará de tu carrito:
+        } @else {
+          Estos productos no están disponibles en las sucursales de esa zona y se quitarán de tu carrito:
+        }
+      </p>
+      <ul class="zone-confirm-list">
+        @for (item of plan.unavailable; track item.id) {
+          <li>{{ item.name }}</li>
+        }
+      </ul>
+      <p class="zone-confirm-text">El resto de tu carrito se queda como está.</p>
+      <div class="zone-confirm-actions">
+        <button type="button" class="zone-confirm-btn confirm" (click)="confirm()">Sí, cambiar zona</button>
+        <button type="button" class="zone-confirm-btn cancel" (click)="cancel()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+}

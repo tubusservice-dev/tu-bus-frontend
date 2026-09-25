@@ -3,7 +3,10 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { AuthService, UserService, UploadService, UpdateProfileRequest, UserNotificationService } from '../../../core';
 import { PushPermissionToggleComponent } from '../../../shared/components/push-permission-toggle/push-permission-toggle.component';
-import { getStates, getCitiesByState, getMunicipalitiesByState } from '../../../shared/data/venezuela-states';
+import { GeoService } from '@core/services/geo.service';
+import { LocationRef } from '@models/geo.model';
+import { fromStoredLocation, toStoredLocation } from '@shared/utils/location-ref.util';
+import { LocationCascadeComponent } from '@shared/components/location-cascade/location-cascade.component';
 import {
   NAME_PATTERN, PHONE_VE_PATTERN, DOCUMENT_NUMBER_PATTERN, RIF_PATTERN, ZIPCODE_PATTERN,
   MAX_NAME_LENGTH, MAX_ADDRESS_LENGTH, MAX_REFERENCE_LENGTH, MAX_COMPANY_NAME_LENGTH,
@@ -19,7 +22,7 @@ import { PushUnblockModalComponent } from '../../../shared/components/push-unblo
 @Component({
   selector: 'app-profile-info',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ChangePasswordModalComponent, DeleteAccountModalComponent, CopyableValueComponent, DateInputComponent, PushPermissionToggleComponent, PushUnblockModalComponent],
+  imports: [CommonModule, ReactiveFormsModule, ChangePasswordModalComponent, DeleteAccountModalComponent, CopyableValueComponent, DateInputComponent, PushPermissionToggleComponent, PushUnblockModalComponent, LocationCascadeComponent],
   templateUrl: './profile-info.component.html',
   styleUrl: './profile-info.component.scss',
 })
@@ -81,10 +84,9 @@ export class ProfileInfoComponent implements OnInit {
     { code: 'G', label: 'Gubernamental' },
   ];
 
-  // Zone data for selects (all Venezuela reference data)
-  protected readonly allStates = signal<any[]>([]);
-  protected readonly availableCities = signal<any[]>([]);
-  protected readonly availableMunicipalities = signal<any[]>([]);
+  /** Official state code by state id ("VE-G"), for the legacy profile fields the published app reads. */
+  private readonly stateCodes = signal<ReadonlyMap<string, string>>(new Map());
+  private readonly geoService = inject(GeoService);
 
   // Computed: is juridical person (J)
   protected readonly isJuridical = computed(() => {
@@ -100,7 +102,9 @@ export class ProfileInfoComponent implements OnInit {
   ngOnInit(): void {
     this.initForm();
     this.loadProfile();
-    this.loadAllStates();
+    this.geoService.states().subscribe({
+      next: (states) => this.stateCodes.set(new Map(states.map((st) => [st.id, st.code]))),
+    });
   }
 
   private initForm(): void {
@@ -118,9 +122,7 @@ export class ProfileInfoComponent implements OnInit {
       phone: [user?.phone || '', [Validators.pattern(PHONE_VE_PATTERN)]],
       alternativePhone: [user?.alternativePhone || '', [Validators.pattern(PHONE_VE_PATTERN)]],
       // Direccion
-      stateCode: [user?.stateCode || ''],
-      cityCode: [user?.cityCode || ''],
-      municipalityCode: [user?.municipalityCode || ''],
+      location: [user?.location ? fromStoredLocation(user.location) : (null as LocationRef | null)],
       neighborhood: [user?.neighborhood || '', [Validators.maxLength(MAX_STREET_LENGTH)]],
       street: [user?.street || '', [Validators.maxLength(MAX_STREET_LENGTH)]],
       houseNumber: [user?.houseNumber || '', [Validators.maxLength(MAX_HOUSE_NUMBER_LENGTH)]],
@@ -131,48 +133,26 @@ export class ProfileInfoComponent implements OnInit {
       companyName: [user?.companyName || '', [Validators.maxLength(MAX_COMPANY_NAME_LENGTH)]],
       companyRif: [user?.companyRif || '', [Validators.pattern(RIF_PATTERN)]],
     });
-
-    // Load cities/municipalities if user already has data
-    if (user?.stateCode) {
-      this.loadReferenceCities(user.stateCode, user?.cityCode);
-    }
   }
 
-  protected onStateChange(): void {
-    const stateCode = this.profileForm.get('stateCode')?.value;
-    this.profileForm.get('cityCode')?.setValue('');
-    this.profileForm.get('municipalityCode')?.setValue('');
-    this.availableCities.set([]);
-    this.availableMunicipalities.set([]);
-    if (stateCode) {
-      this.availableCities.set(getCitiesByState(stateCode));
-      this.availableMunicipalities.set(getMunicipalitiesByState(stateCode));
-    }
+  /**
+   * The structured place plus the six text fields the published app still
+   * reads: its state code is the letter of the official code ("G" for
+   * "VE-G"), its city and municipality codes are their names.
+   */
+  private addressFields(place: LocationRef): Record<string, unknown> {
+    const city = place.city?.name ?? place.municipality.name;
+    const code = this.stateCodes().get(place.state.id);
+    return {
+      location: toStoredLocation(place),
+      ...(code ? { stateCode: code.replace(/^VE-/, '') } : {}),
+      stateName: place.state.name,
+      cityCode: city,
+      cityName: city,
+      municipalityCode: place.municipality.name,
+      municipalityName: place.municipality.name,
+    };
   }
-
-  protected onCityChange(): void {
-    // City and municipality are independent lists — no cascade
-  }
-
-  private loadReferenceCities(stateCode: string, preselectedCityCode?: string): void {
-    this.availableCities.set(getCitiesByState(stateCode));
-    this.availableMunicipalities.set(getMunicipalitiesByState(stateCode));
-
-    if (preselectedCityCode) {
-      this.profileForm.get('cityCode')?.setValue(preselectedCityCode);
-    }
-  }
-
-  private loadAllStates(): void {
-    this.allStates.set(getStates());
-
-    // If user already has a state saved, pre-load the cities cascade
-    const user = this.user();
-    if (user?.stateCode) {
-      this.loadReferenceCities(user.stateCode, user.cityCode);
-    }
-  }
-
 
   private formatDateForInput(date: string | Date): string {
     if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(date)) {
@@ -332,10 +312,7 @@ export class ProfileInfoComponent implements OnInit {
         this.isUploadingAvatar.set(false);
       }
 
-      // Get names from codes
-      const selectedState = this.allStates().find((s: any) => s.code === this.profileForm.get('stateCode')?.value);
-      const selectedCity = this.availableCities().find((c: any) => c.code === this.profileForm.get('cityCode')?.value);
-      const selectedMuni = this.availableMunicipalities().find((m: any) => m.code === this.profileForm.get('municipalityCode')?.value);
+      const place: LocationRef | null = this.profileForm.get('location')?.value ?? null;
 
       const rawData: Record<string, unknown> = {
         firstName: this.profileForm.get('firstName')?.value,
@@ -346,12 +323,7 @@ export class ProfileInfoComponent implements OnInit {
         phone: this.profileForm.get('phone')?.value || undefined,
         alternativePhone: this.profileForm.get('alternativePhone')?.value || undefined,
         // Direccion
-        stateCode: this.profileForm.get('stateCode')?.value || undefined,
-        stateName: selectedState?.name || undefined,
-        cityCode: this.profileForm.get('cityCode')?.value || undefined,
-        cityName: selectedCity?.name || undefined,
-        municipalityCode: this.profileForm.get('municipalityCode')?.value || undefined,
-        municipalityName: selectedMuni?.name || undefined,
+        ...(place ? this.addressFields(place) : {}),
         neighborhood: this.profileForm.get('neighborhood')?.value || undefined,
         street: this.profileForm.get('street')?.value || undefined,
         houseNumber: this.profileForm.get('houseNumber')?.value || undefined,

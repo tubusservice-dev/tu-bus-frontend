@@ -1,6 +1,7 @@
 import { Component, input, output, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '@core/services';
+import { dismissOnBack } from '@core/services/back-dismiss.service';
 
 /**
  * Post-registration modal shown when EMAIL_VERIFICATION_REQUIRED is on.
@@ -27,6 +28,11 @@ export class VerifyEmailPendingModalComponent {
   protected readonly isResending = signal(false);
   protected readonly resendSuccess = signal(false);
   protected readonly resendError = signal<string | null>(null);
+
+  constructor() {
+    // The Android back button closes this modal like its ✕ does.
+    dismissOnBack(() => true, () => this.closeModal.emit());
+  }
 
   onResend(): void {
     const email = this.email();

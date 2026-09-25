@@ -1,0 +1,14 @@
+@use '../zoning-buttons';
+
+.search-box {
+  @apply mb-4;
+}
+
+.hit-list {
+  @apply flex flex-col gap-2;
+}
+
+.no-results {
+  @apply text-center text-sm py-6;
+  color: var(--text-secondary);
+}

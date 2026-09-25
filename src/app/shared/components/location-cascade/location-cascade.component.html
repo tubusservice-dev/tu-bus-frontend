@@ -1,0 +1,44 @@
+@if (fixedLabel(); as place) {
+  <div class="cascade-fixed">
+    <p class="cascade-fixed__place">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+      </svg>
+      <span>
+        @if (fixedPrefix()) {
+          {{ fixedPrefix() }}
+        }
+        <strong>{{ place }}</strong>
+      </span>
+    </p>
+    @if (fixedNote()) {
+      <p class="cascade-fixed__note">{{ fixedNote() }}</p>
+    }
+  </div>
+}
+
+<div class="cascade-grid">
+  @for (level of levels(); track level) {
+    <div class="cascade-field">
+      <label [for]="uid + '-' + level">
+        {{ labels[level] }}
+        @if (!isOptional(level)) {
+          <span class="required">*</span>
+        }
+      </label>
+      <select
+        class="input"
+        [id]="uid + '-' + level"
+        [value]="selectedId(level)"
+        [disabled]="!isEnabled(level)"
+        (change)="onSelect(level, $any($event.target).value)"
+      >
+        <option value="">Seleccionar {{ labels[level].toLowerCase() }}...</option>
+        @for (option of optionsOf(level); track option.id) {
+          <option [value]="option.id" [selected]="option.id === selectedId(level)">{{ option.name }}</option>
+        }
+      </select>
+    </div>
+  }
+</div>

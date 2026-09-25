@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { DocumentType, User } from '../../models';
+import { StoredLocation } from '@models/geo.model';
 
 export interface UpdateProfileRequest {
   firstName?: string;
@@ -19,6 +20,8 @@ export interface UpdateProfileRequest {
   cityName?: string;
   municipalityCode?: string;
   municipalityName?: string;
+  /** Structured place (ubicaciones v2). */
+  location?: StoredLocation;
   neighborhood?: string;
   street?: string;
   houseNumber?: string;

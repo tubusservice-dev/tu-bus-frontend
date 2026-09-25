@@ -1,0 +1,298 @@
+// Alerts, buttons, customer-support fields, dispatch modules, payment methods and the modal.
+
+// ========== Alerts ==========
+.alert {
+  @apply p-3 rounded-lg text-sm;
+
+  &.alert-error {
+    @apply bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400;
+  }
+
+  &.alert-success {
+    @apply bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400;
+  }
+}
+
+// ========== Buttons ==========
+.btn-save {
+  @apply inline-flex items-center justify-center gap-2 px-6 py-2.5 text-white font-medium rounded-lg transition-colors disabled:opacity-50;
+  background-color: var(--accent-primary);
+
+  &:hover:not(:disabled) {
+    background-color: var(--accent-hover);
+  }
+
+  .btn-spinner {
+    @apply w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin;
+  }
+}
+
+// Outline-danger variant used by the per-field "Eliminar" buttons in the
+// "Atención al Cliente" accordion. Subdued by default so it doesn't compete
+// with the primary "Guardar"; saturates on hover.
+.btn-delete {
+  @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 font-medium rounded-lg transition-colors disabled:opacity-50;
+  background-color: transparent;
+  color: #ef4444;
+  border: 1px solid #ef4444;
+
+  &:hover:not(:disabled) {
+    background-color: #ef4444;
+    color: #ffffff;
+  }
+}
+
+// Per-field row inside the customer-support accordion: input on the left,
+// independent [Guardar] [Eliminar] pair on the right. Stacks on narrow
+// screens so the buttons remain reachable.
+.customer-field {
+  & + .customer-field {
+    @apply mt-5;
+  }
+}
+
+.customer-field-row {
+  @apply flex items-stretch gap-3;
+
+  .form-input {
+    @apply flex-1 min-w-0;
+  }
+
+  @media (max-width: 639px) {
+    @apply flex-col;
+  }
+}
+
+.customer-field-actions {
+  @apply flex items-center gap-2 flex-shrink-0;
+
+  @media (max-width: 639px) {
+    @apply w-full;
+
+    .btn-save, .btn-delete {
+      @apply flex-1;
+    }
+  }
+}
+
+// ========== Dispatch Modules ==========
+.dispatch-module-item {
+  @apply p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-200 dark:border-gray-600 transition-all duration-200;
+
+  & + .dispatch-module-item {
+    @apply mt-3;
+  }
+
+  .toggle-container {
+    @apply w-full;
+  }
+
+  .toggle-info {
+    @apply flex flex-col;
+
+    .toggle-label {
+      @apply font-medium text-gray-900 dark:text-white m-0;
+    }
+
+    .toggle-hint {
+      @apply text-xs text-gray-500 dark:text-gray-400 mt-0.5 ml-0;
+    }
+  }
+}
+
+// ========== Dispatch Config ==========
+.dispatch-section {
+  @apply p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl space-y-4 border border-gray-200 dark:border-gray-600 transition-all duration-200;
+
+  .dispatch-header {
+    @apply flex items-center justify-between gap-4;
+  }
+
+  .dispatch-info {
+    @apply flex-1;
+
+    h4 {
+      @apply text-sm font-semibold text-gray-900 dark:text-white;
+    }
+
+    .dispatch-description {
+      @apply text-xs text-gray-500 dark:text-gray-400 mt-0.5;
+    }
+  }
+
+  .dispatch-fields {
+    @apply pt-4 border-t border-gray-200 dark:border-gray-600 space-y-4;
+  }
+}
+
+// ========== Empty State ==========
+.empty-state {
+  @apply p-8 text-center bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-dashed border-gray-300 dark:border-gray-600;
+
+  p {
+    @apply text-gray-600 dark:text-gray-400;
+  }
+
+  .hint {
+    @apply text-sm text-gray-500 dark:text-gray-500 mt-2;
+  }
+}
+
+// ========== Métodos de Pago ==========
+.pm-header-row {
+  @apply flex items-center justify-between gap-4 pb-4 border-b border-gray-100 dark:border-gray-700;
+
+  .pm-desc {
+    @apply pb-0 border-0 flex-1;
+  }
+}
+
+.btn-add-method {
+  @apply inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white rounded-lg transition-colors flex-shrink-0;
+  background-color: var(--accent-primary);
+
+  &:hover {
+    background-color: var(--accent-hover);
+  }
+
+  svg {
+    @apply w-4 h-4;
+  }
+}
+
+.pm-loading {
+  @apply flex items-center justify-center gap-3 py-8 text-gray-500 dark:text-gray-400 text-sm;
+}
+
+.spinner-sm-settings {
+  @apply w-5 h-5 border-2 border-gray-200 dark:border-gray-600 border-t-red-600 rounded-full animate-spin;
+}
+
+.pm-empty {
+  @apply flex flex-col items-center justify-center py-8 text-center;
+
+  svg {
+    @apply w-10 h-10 text-gray-300 dark:text-gray-600 mb-2;
+  }
+
+  p {
+    @apply text-sm text-gray-500 dark:text-gray-400;
+  }
+}
+
+.pm-list {
+  @apply divide-y divide-gray-100 dark:divide-gray-700;
+}
+
+.pm-row {
+  @apply flex items-center justify-between gap-3 py-3;
+
+  &:first-child {
+    @apply pt-1;
+  }
+
+  &.pm-inactive {
+    @apply opacity-40;
+  }
+}
+
+.pm-row-left {
+  @apply flex flex-col gap-0.5 min-w-0 flex-1;
+}
+
+.pm-name {
+  @apply text-sm font-medium text-gray-900 dark:text-white truncate;
+}
+
+.pm-meta {
+  @apply text-xs text-gray-400 dark:text-gray-500 truncate;
+}
+
+.pm-row-right {
+  @apply flex items-center gap-1.5 flex-shrink-0;
+}
+
+.pm-dot {
+  @apply w-2 h-2 rounded-full mr-1;
+
+  &.dot-active {
+    @apply bg-green-500;
+  }
+
+  &.dot-inactive {
+    @apply bg-gray-300 dark:bg-gray-600;
+  }
+}
+
+.pm-icon-btn {
+  @apply p-1.5 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors disabled:opacity-50;
+
+  svg {
+    @apply w-3.5 h-3.5;
+  }
+
+  &.pm-icon-delete:hover {
+    @apply text-red-500;
+  }
+}
+
+.spinner-xs {
+  @apply w-3.5 h-3.5 border-2 border-gray-300 dark:border-gray-600 border-t-current rounded-full animate-spin;
+}
+
+// ========== Modal ==========
+.modal-overlay {
+  @apply fixed inset-0 z-50 flex items-center justify-center p-4;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  @apply bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-sm text-center;
+  animation: modal-in 0.2s ease-out;
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.modal-icon {
+  @apply mx-auto w-12 h-12 flex items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30 mb-4;
+
+  svg {
+    @apply w-6 h-6 text-red-600 dark:text-red-400;
+  }
+}
+
+.modal-title {
+  @apply text-lg font-semibold text-gray-900 dark:text-white mb-2;
+}
+
+.modal-message {
+  @apply text-sm text-gray-500 dark:text-gray-400 mb-6;
+
+  strong {
+    @apply text-gray-900 dark:text-white;
+  }
+}
+
+.modal-actions {
+  @apply flex items-center gap-3 justify-center;
+}
+
+.btn-modal-cancel {
+  @apply px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg;
+  @apply hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors;
+}
+
+.btn-modal-delete {
+  @apply inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg;
+  @apply hover:bg-red-700 transition-colors disabled:opacity-50;
+}

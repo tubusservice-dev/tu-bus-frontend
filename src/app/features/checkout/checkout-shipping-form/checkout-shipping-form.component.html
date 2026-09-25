@@ -186,62 +186,17 @@
           </h3>
 
           <div class="form-grid">
-            <!-- Estado -->
-            <div class="form-group">
-              <label for="stateCode">Estado <span class="required">*</span></label>
-              <select
-                id="stateCode"
-                formControlName="stateCode"
-                class="input"
-                [class.error]="hasError('stateCode')"
-                (change)="onStateChange()"
-              >
-                <option value="">Selecciona un estado</option>
-                @for (state of states(); track state.code) {
-                  <option [value]="state.code">{{ state.name }}</option>
-                }
-              </select>
-              @if (hasError('stateCode')) {
-                <span class="error-message">Selecciona un estado</span>
+            <!-- Estado › Municipio › Ciudad: any place in the country (agencies ship nationwide) -->
+            <div class="form-group full-width">
+              <app-location-cascade
+                formControlName="location"
+                source="national"
+                [levels]="['state', 'municipality', 'city']"
+              />
+              @if (hasError('location')) {
+                <span class="error-message">Elige el estado, el municipio y la ciudad</span>
               }
             </div>
-
-            <!-- Ciudad -->
-            <div class="form-group">
-              <label for="cityCode">Ciudad <span class="required">*</span></label>
-              <select
-                id="cityCode"
-                formControlName="cityCode"
-                class="input"
-                [class.error]="hasError('cityCode')"
-                (change)="onCityChange()"
-              >
-                <option value="">Selecciona una ciudad</option>
-                @for (city of cities(); track city.code) {
-                  <option [value]="city.code">{{ city.name }}</option>
-                }
-              </select>
-              @if (hasError('cityCode')) {
-                <span class="error-message">Selecciona una ciudad</span>
-              }
-            </div>
-
-            <!-- Municipio -->
-            @if (municipalities().length > 0) {
-              <div class="form-group">
-                <label for="municipalityCode">Municipio</label>
-                <select
-                  id="municipalityCode"
-                  formControlName="municipalityCode"
-                  class="input"
-                >
-                  <option value="">Selecciona un municipio</option>
-                  @for (muni of municipalities(); track muni.code) {
-                    <option [value]="muni.code">{{ muni.name }}</option>
-                  }
-                </select>
-              </div>
-            }
 
             <!-- Dirección completa -->
             <div class="form-group full-width">

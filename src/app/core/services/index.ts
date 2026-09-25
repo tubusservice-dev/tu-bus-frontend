@@ -23,7 +23,7 @@ export * from './admin-notification.service';
 export * from './user-notification.service';
 export * from './mechanic.service';
 export * from './payment-method.service';
-export * from './location.service';
+export * from './location-store.service';
 export * from './branch-availability.service';
 export * from './overlay-stack.service';
 export * from './pwa.service';

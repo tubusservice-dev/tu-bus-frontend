@@ -184,34 +184,13 @@
           <!-- Seccion 3: Direccion -->
           <h3 class="section-subtitle">Dirección</h3>
           <div class="form-grid">
-            <div class="form-group">
-              <label class="form-label">Estado</label>
-              <select formControlName="stateCode" class="form-input" (change)="onStateChange()">
-                <option value="">Seleccionar estado...</option>
-                @for (state of allStates(); track state.code) {
-                  <option [value]="state.code">{{ state.name }}</option>
-                }
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Ciudad</label>
-              <select formControlName="cityCode" class="form-input" (change)="onCityChange()">
-                <option value="">Seleccionar ciudad...</option>
-                @for (city of availableCities(); track city.code) {
-                  <option [value]="city.code">{{ city.name }}</option>
-                }
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Municipio</label>
-              <select formControlName="municipalityCode" class="form-input">
-                <option value="">Seleccionar municipio...</option>
-                @for (muni of availableMunicipalities(); track muni.code) {
-                  <option [value]="muni.code">{{ muni.name }}</option>
-                }
-              </select>
+            <div class="form-group full-width">
+              <app-location-cascade
+                formControlName="location"
+                source="national"
+                [levels]="['state', 'municipality', 'city', 'parish']"
+                [optionalLevels]="['parish']"
+              />
             </div>
 
             <div class="form-group">

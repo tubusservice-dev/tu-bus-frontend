@@ -1,5 +1,6 @@
 import { Component, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { dismissOnBack } from '@core/services/back-dismiss.service';
 
 /**
  * Generic confirmation modal: "we sent an email, check your inbox".
@@ -19,4 +20,9 @@ export class EmailSentModalComponent {
   readonly subtitle = input<string>('Te hemos enviado un correo. Revisa tu bandeja de entrada.');
 
   readonly closeModal = output<void>();
+
+  constructor() {
+    // The Android back button closes this modal like its ✕ does.
+    dismissOnBack(() => true, () => this.closeModal.emit());
+  }
 }

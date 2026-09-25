@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { CheckoutService } from './checkout.service';
 import { SettingsService } from '@core/services/settings.service';
 import { CartService } from '@core/services/cart.service';
-import { LocationService } from '@core/services/location.service';
+import { LocationStore } from '@core/services/location-store.service';
 import { Vehicle } from '@models/vehicle.model';
 
 // ============================================
@@ -43,11 +43,13 @@ const mockCartService = {
   hasOilChangeService: () => false,
 };
 
-const mockLocationService = {
+const mockLocationStore = {
+  hasLocation: () => true,
   hasCoverage: () => true,
-  hasDelivery: () => true,
   hasInStoreOilChange: () => false,
-  deliveryConfig: () => ({ freeDelivery: true, deliveryCharge: 0 }),
+  deliveryStatus: () => 'full',
+  allFree: () => true,
+  minDeliveryCharge: () => 0,
   branches: () => [
     { id: 'b-1', name: 'Sucursal A', address: 'Dir A', whatsappPhone: '0412', hasInStoreOilChange: false, schedule: [] },
     { id: 'b-2', name: 'Sucursal B', address: 'Dir B', whatsappPhone: '0414', hasInStoreOilChange: true, schedule: [] },
@@ -66,7 +68,7 @@ describe('CheckoutService', () => {
         CheckoutService,
         { provide: SettingsService, useValue: mockSettingsService },
         { provide: CartService, useValue: mockCartService },
-        { provide: LocationService, useValue: mockLocationService },
+        { provide: LocationStore, useValue: mockLocationStore },
       ],
     });
     service = TestBed.inject(CheckoutService);

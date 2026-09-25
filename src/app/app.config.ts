@@ -4,6 +4,7 @@ import {
   provideBrowserGlobalErrorListeners,
   provideZoneChangeDetection,
   APP_INITIALIZER,
+  provideAppInitializer,
   LOCALE_ID,
   inject,
 } from '@angular/core';
@@ -18,6 +19,7 @@ import { ExchangeRateService } from '@core/services/exchange-rate.service';
 import { PwaService } from '@core/services/pwa.service';
 import { NotificationRouterService } from '@core/services/notification-router.service';
 import { UserNotificationService } from '@core/services/user-notification.service';
+import { CartPriceSyncService } from '@core/services/cart-price-sync.service';
 import {
   ChunkLoadErrorHandler,
   isChunkLoadError,
@@ -164,6 +166,14 @@ function initializeNotificationPermissionSync(): () => void {
  * Crashlytics; web Analytics activates only when a `measurementId` is set.
  * Non-blocking — telemetry must never delay the first paint.
  */
+/**
+ * Starts the silent refresh of the saved cart's prices, so the cart and the
+ * checkout always show the current catalogue price. Non-blocking.
+ */
+function initializeCartPriceSync(): void {
+  inject(CartPriceSyncService).start();
+}
+
 function initializeAnalytics(): () => void {
   const analyticsBootstrap = inject(AnalyticsBootstrapService);
   return () => analyticsBootstrap.start();
@@ -245,6 +255,7 @@ export const appConfig: ApplicationConfig = {
       useFactory: initializeNotificationPermissionSync,
       multi: true,
     },
+    provideAppInitializer(initializeCartPriceSync),
     {
       provide: APP_INITIALIZER,
       useFactory: initializeAnalytics,
