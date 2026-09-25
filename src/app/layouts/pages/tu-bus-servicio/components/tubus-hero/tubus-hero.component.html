@@ -65,18 +65,22 @@
       <div class="hero-image-container">
         <div class="image-wrapper">
           <!-- Persistent dual-layer crossfade -->
-          <img
-            [src]="layerSrc()[0]"
-            alt="Hero imagen"
-            class="service-image carousel-layer"
-            [class.active]="activeLayer() === 0"
-          />
-          <img
-            [src]="layerSrc()[1]"
-            alt="Hero imagen"
-            class="service-image carousel-layer"
-            [class.active]="activeLayer() === 1"
-          />
+          @if (layerSrc()[0]; as src) {
+            <img
+              [src]="src"
+              alt="Hero imagen"
+              class="service-image carousel-layer"
+              [class.active]="activeLayer() === 0"
+            />
+          }
+          @if (layerSrc()[1]; as src) {
+            <img
+              [src]="src"
+              alt="Hero imagen"
+              class="service-image carousel-layer"
+              [class.active]="activeLayer() === 1"
+            />
+          }
           <div class="image-overlay"></div>
         </div>
         <!-- Floating stats -->
