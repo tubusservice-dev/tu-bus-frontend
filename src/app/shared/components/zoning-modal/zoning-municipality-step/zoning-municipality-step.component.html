@@ -8,7 +8,7 @@
 <h2 class="step-title">{{ entry().state.name }}</h2>
 <p class="step-subtitle">Elige tu municipio</p>
 
-<div class="zone-grid">
+<div class="zone-list">
   @for (municipality of entry().municipalities; track municipality.id) {
     <button
       type="button"

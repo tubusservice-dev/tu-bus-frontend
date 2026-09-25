@@ -11,6 +11,12 @@
   }
 }
 
+// One column: each municipality carries a delivery badge, and half a row is
+// too narrow for it next to a long name.
+.zone-list {
+  @apply grid grid-cols-1 gap-2;
+}
+
 // `--current`: the customer's own state or municipality, shown as if hovered.
 .zone-btn {
   @apply flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl border-2 text-left transition-all duration-200;
@@ -54,7 +60,7 @@
 
 // What a municipality gets: delivery, delivery in part of it, or pickup only.
 .delivery-badge {
-  @apply inline-block self-start mt-1 px-2 py-0.5 rounded-full text-[11px] font-medium;
+  @apply inline-block self-start mt-1 px-2 py-0.5 rounded-full text-[11px] font-medium whitespace-nowrap;
 
   &--full {
     background-color: rgba(16, 185, 129, 0.1);
