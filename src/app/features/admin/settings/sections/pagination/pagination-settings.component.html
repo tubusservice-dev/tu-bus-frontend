@@ -1,0 +1,91 @@
+<form [formGroup]="paginationForm()" class="section-form">
+  <p class="section-description">
+    Configura la cantidad de productos por página en el catálogo y el panel de administración.
+  </p>
+
+  <!-- Catálogo -->
+  <div class="form-group">
+    <label for="catalogLimit">Productos por página en catálogo</label>
+    <div class="inline-save-group">
+      <select
+        id="catalogLimit"
+        formControlName="catalogLimit"
+        class="input select"
+      >
+        @for (option of paginationOptions; track option) {
+          <option [ngValue]="option">{{ option }} productos</option>
+        }
+      </select>
+      <button
+        type="button"
+        class="btn-inline-save"
+        (click)="saveCatalogSettings()"
+        [disabled]="paginationSaving()['catalogLimit']"
+        [class.success]="paginationSuccess()['catalogLimit']"
+      >
+        @if (paginationSaving()['catalogLimit']) {
+          <span class="btn-spinner-small"></span>
+        } @else if (paginationSuccess()['catalogLimit']) {
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="icon-check">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+          </svg>
+        } @else {
+          Guardar
+        }
+      </button>
+    </div>
+    @if (paginationError()['catalogLimit']) {
+      <small class="error">{{ paginationError()['catalogLimit'] }}</small>
+    }
+    <small class="hint">Cantidad de productos visibles en el catálogo del cliente</small>
+
+    <!-- Toggle de personalización (relacionado con catálogo) -->
+    <label class="toggle-container catalog-toggle">
+      <input
+        type="checkbox"
+        formControlName="allowUserCustomization"
+        class="toggle-input"
+        (change)="saveAllowUserCustomization()"
+      />
+      <span class="toggle-switch"></span>
+      <span class="toggle-label">Permitir que el usuario cambie el límite en el catálogo</span>
+    </label>
+  </div>
+
+  <!-- Admin -->
+  <div class="form-group">
+    <label for="adminLimit">Productos por página en admin</label>
+    <div class="inline-save-group">
+      <select
+        id="adminLimit"
+        formControlName="adminLimit"
+        class="input select"
+      >
+        @for (option of paginationOptions; track option) {
+          <option [ngValue]="option">{{ option }} productos</option>
+        }
+      </select>
+      <button
+        type="button"
+        class="btn-inline-save"
+        (click)="saveAdminLimit()"
+        [disabled]="paginationSaving()['adminLimit']"
+        [class.success]="paginationSuccess()['adminLimit']"
+      >
+        @if (paginationSaving()['adminLimit']) {
+          <span class="btn-spinner-small"></span>
+        } @else if (paginationSuccess()['adminLimit']) {
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="icon-check">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+          </svg>
+        } @else {
+          Guardar
+        }
+      </button>
+    </div>
+    @if (paginationError()['adminLimit']) {
+      <small class="error">{{ paginationError()['adminLimit'] }}</small>
+    }
+    <small class="hint">Cantidad de productos visibles en la lista del panel admin</small>
+  </div>
+</form>

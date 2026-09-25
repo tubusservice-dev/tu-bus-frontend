@@ -1,0 +1,55 @@
+// ========== Acordeón ==========
+.accordion-item {
+  @apply bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden transition-all duration-200;
+
+  &.expanded {
+    @apply shadow-md;
+  }
+}
+
+.accordion-header {
+  @apply w-full flex items-center justify-between p-5 text-left bg-transparent hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer;
+
+  .header-content {
+    @apply flex items-center gap-3;
+  }
+
+  .icon {
+    @apply w-10 h-10 flex items-center justify-center rounded-lg;
+    background-color: var(--accent-light);
+    color: var(--accent-primary);
+
+    svg {
+      @apply w-5 h-5;
+    }
+  }
+
+  .title {
+    @apply text-lg font-semibold text-gray-900 dark:text-white;
+  }
+
+  .chevron {
+    @apply text-gray-400 transition-transform duration-200;
+
+    svg {
+      @apply w-5 h-5;
+    }
+
+    &.rotated {
+      @apply rotate-180;
+    }
+  }
+}
+
+.accordion-content {
+  @apply max-h-0 overflow-hidden transition-all duration-300 ease-in-out;
+
+  &.open {
+    @apply max-h-[2000px];
+  }
+}
+
+// Block host so the surrounding spacing applies as it did to the markup it wraps.
+:host {
+  display: block;
+}

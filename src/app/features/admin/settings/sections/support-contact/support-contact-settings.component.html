@@ -1,0 +1,58 @@
+<div class="section-form">
+  <p class="section-description">
+    Información de contacto del administrador visible para los mecánicos en su pantalla de servicio.
+  </p>
+
+  <form [formGroup]="supportContactForm()" (ngSubmit)="saveSupportContact()">
+    <div class="form-grid-2">
+      <div class="form-group">
+        <label class="form-label">Nombre</label>
+        <input type="text" formControlName="firstName" class="form-input" placeholder="Nombre" maxlength="20" />
+        @if (supportContactForm().get('firstName')?.touched && supportContactForm().get('firstName')?.invalid) {
+          <small class="form-error">Requerido (máx. 20 caracteres)</small>
+        }
+      </div>
+      <div class="form-group">
+        <label class="form-label">Apellido</label>
+        <input type="text" formControlName="lastName" class="form-input" placeholder="Apellido" maxlength="20" />
+        @if (supportContactForm().get('lastName')?.touched && supportContactForm().get('lastName')?.invalid) {
+          <small class="form-error">Requerido (máx. 20 caracteres)</small>
+        }
+      </div>
+    </div>
+
+    <div class="form-grid-2">
+      <div class="form-group">
+        <label class="form-label">Teléfono</label>
+        <input type="tel" formControlName="phone" class="form-input" placeholder="0412-1234567" maxlength="12" />
+        @if (supportContactForm().get('phone')?.touched && supportContactForm().get('phone')?.invalid) {
+          <small class="form-error">Formato: 04XX-XXXXXXX o 04XXXXXXXXXX</small>
+        }
+      </div>
+      <div class="form-group">
+        <label class="form-label">Teléfono de WhatsApp</label>
+        <input type="tel" formControlName="whatsapp" class="form-input" placeholder="+58412XXXXXXX o 0412-XXXXXXX" maxlength="20" />
+        @if (supportContactForm().get('whatsapp')?.touched && supportContactForm().get('whatsapp')?.invalid) {
+          <small class="form-error">Formato inválido. Usa +58412XXXXXXX o 0412-XXXXXXX</small>
+        }
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn-save" [disabled]="isSaving() || supportContactForm().invalid">
+        @if (isSaving()) {
+          <span class="btn-spinner-small"></span>
+          Guardando...
+        } @else {
+          Guardar
+        }
+      </button>
+      @if (saveSuccess()) {
+        <span class="save-success-text">Guardado correctamente</span>
+      }
+      @if (errorMessage()) {
+        <span class="save-error-text">{{ errorMessage() }}</span>
+      }
+    </div>
+  </form>
+</div>

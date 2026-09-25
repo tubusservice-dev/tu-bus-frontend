@@ -1,0 +1,31 @@
+// Contact forms: two-column grid, labels, inputs, errors and save feedback.
+
+// ========== Support Contact Section ==========
+.form-grid-2 {
+  @apply grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4;
+}
+
+.form-label {
+  @apply block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5;
+}
+
+.form-input {
+  @apply w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:border-transparent transition-colors;
+  &:focus { --tw-ring-color: var(--accent-primary); }
+}
+
+.form-error {
+  @apply block text-xs text-red-600 dark:text-red-400 mt-1;
+}
+
+.form-actions {
+  @apply flex items-center gap-3 pt-2;
+}
+
+.save-success-text {
+  @apply text-sm text-green-600 dark:text-green-400 font-medium;
+}
+
+.save-error-text {
+  @apply text-sm text-red-600 dark:text-red-400 font-medium;
+}

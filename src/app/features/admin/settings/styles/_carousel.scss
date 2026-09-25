@@ -1,0 +1,78 @@
+// Carousel config card with the interval slider.
+
+// ========== Carousel Config ==========
+.carousel-config {
+  @apply p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl space-y-4 border border-gray-200 dark:border-gray-600 transition-all duration-200;
+
+  & + .carousel-config {
+    @apply mt-4;
+  }
+
+  &.disabled {
+    @apply opacity-60;
+
+    .carousel-info h4 {
+      @apply text-gray-500 dark:text-gray-400;
+    }
+  }
+
+  .carousel-header {
+    @apply flex items-center justify-between gap-4;
+  }
+
+  .carousel-info {
+    @apply flex-1;
+
+    h4 {
+      @apply text-sm font-semibold text-gray-900 dark:text-white;
+    }
+
+    .carousel-description {
+      @apply text-xs text-gray-500 dark:text-gray-400 mt-0.5;
+    }
+  }
+}
+
+.slider-group {
+  @apply space-y-3;
+
+  label {
+    @apply block text-sm font-medium text-gray-700 dark:text-gray-300;
+  }
+}
+
+.slider {
+  @apply w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer;
+
+  &::-webkit-slider-thumb {
+    @apply appearance-none w-5 h-5 rounded-full cursor-pointer transition-all shadow-md;
+    background-color: var(--accent-primary);
+
+    &:hover {
+      background-color: var(--accent-hover);
+      transform: scale(1.1);
+    }
+  }
+
+  &::-moz-range-thumb {
+    @apply w-5 h-5 rounded-full cursor-pointer border-0 shadow-md;
+    background-color: var(--accent-primary);
+
+    &:hover {
+      background-color: var(--accent-hover);
+    }
+  }
+
+  &:focus {
+    outline: none;
+
+    &::-webkit-slider-thumb {
+      box-shadow: 0 0 0 3px rgba(var(--accent-primary), 0.2);
+    }
+  }
+}
+
+.slider-labels {
+  @apply flex justify-between text-xs text-gray-500 dark:text-gray-400 font-medium;
+}
+

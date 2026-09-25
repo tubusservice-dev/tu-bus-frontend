@@ -1,0 +1,107 @@
+// Shared settings partials, in the page's original cascade order.
+@use '../../styles/section-form';
+@use '../../styles/modal';
+
+// Block host so the surrounding spacing applies as it did to the markup it wraps.
+:host {
+  display: block;
+}
+
+// ========== Métodos de Pago ==========
+.pm-header-row {
+  @apply flex items-center justify-between gap-4 pb-4 border-b border-gray-100 dark:border-gray-700;
+
+  .pm-desc {
+    @apply pb-0 border-0 flex-1;
+  }
+}
+
+.btn-add-method {
+  @apply inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white rounded-lg transition-colors flex-shrink-0;
+  background-color: var(--accent-primary);
+
+  &:hover {
+    background-color: var(--accent-hover);
+  }
+
+  svg {
+    @apply w-4 h-4;
+  }
+}
+
+.pm-loading {
+  @apply flex items-center justify-center gap-3 py-8 text-gray-500 dark:text-gray-400 text-sm;
+}
+
+.spinner-sm-settings {
+  @apply w-5 h-5 border-2 border-gray-200 dark:border-gray-600 border-t-red-600 rounded-full animate-spin;
+}
+
+.pm-empty {
+  @apply flex flex-col items-center justify-center py-8 text-center;
+
+  svg {
+    @apply w-10 h-10 text-gray-300 dark:text-gray-600 mb-2;
+  }
+
+  p {
+    @apply text-sm text-gray-500 dark:text-gray-400;
+  }
+}
+
+.pm-list {
+  @apply divide-y divide-gray-100 dark:divide-gray-700;
+}
+
+.pm-row {
+  @apply flex items-center justify-between gap-3 py-3;
+
+  &:first-child {
+    @apply pt-1;
+  }
+
+  &.pm-inactive {
+    @apply opacity-40;
+  }
+}
+
+.pm-row-left {
+  @apply flex flex-col gap-0.5 min-w-0 flex-1;
+}
+
+.pm-name {
+  @apply text-sm font-medium text-gray-900 dark:text-white truncate;
+}
+
+.pm-meta {
+  @apply text-xs text-gray-400 dark:text-gray-500 truncate;
+}
+
+.pm-row-right {
+  @apply flex items-center gap-1.5 flex-shrink-0;
+}
+
+.pm-dot {
+  @apply w-2 h-2 rounded-full mr-1;
+
+  &.dot-active {
+    @apply bg-green-500;
+  }
+
+  &.dot-inactive {
+    @apply bg-gray-300 dark:bg-gray-600;
+  }
+}
+
+.pm-icon-btn {
+  @apply p-1.5 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors disabled:opacity-50;
+
+  svg {
+    @apply w-3.5 h-3.5;
+  }
+
+  &.pm-icon-delete:hover {
+    @apply text-red-500;
+  }
+}
+

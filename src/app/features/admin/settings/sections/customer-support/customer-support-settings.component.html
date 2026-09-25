@@ -1,0 +1,121 @@
+<div class="section-form">
+  <p class="section-description">
+    Canales que ve el cliente en el landing: el botón de WhatsApp y los iconos sociales del footer.
+    Cada campo se guarda o elimina de forma independiente. Los campos vacíos muestran un toast de
+    "Próximamente" en el footer.
+  </p>
+
+  <form [formGroup]="customerSupportForm()">
+
+    <!-- WhatsApp -->
+    <div class="form-group customer-field">
+      <label class="form-label">WhatsApp para atención al cliente</label>
+      <div class="customer-field-row">
+        <input type="tel" formControlName="whatsapp" class="form-input" placeholder="+58412XXXXXXX o 0412-XXXXXXX" maxlength="20" />
+        <div class="customer-field-actions">
+          <button type="button" class="btn-save" [disabled]="customerFieldSaving()['whatsapp'] || customerSupportForm().get('whatsapp')?.invalid" (click)="saveCustomerField('whatsapp')">
+            @if (customerFieldSaving()['whatsapp']) {
+              <span class="btn-spinner-small"></span> Guardando...
+            } @else {
+              Guardar
+            }
+          </button>
+          <button type="button" class="btn-delete" [disabled]="customerFieldSaving()['whatsapp']" (click)="askDeleteCustomerField('whatsapp')">
+            Eliminar
+          </button>
+        </div>
+      </div>
+      @if (customerSupportForm().get('whatsapp')?.touched && customerSupportForm().get('whatsapp')?.invalid) {
+        <small class="form-error">Formato inválido. Usa +58412XXXXXXX o 0412-XXXXXXX</small>
+      }
+      @if (customerFieldSuccess()['whatsapp']) { <span class="save-success-text">Guardado</span> }
+      @if (customerFieldError()['whatsapp']) { <span class="save-error-text">{{ customerFieldError()['whatsapp'] }}</span> }
+    </div>
+
+    <!-- Instagram -->
+    <div class="form-group customer-field">
+      <label class="form-label">Instagram</label>
+      <div class="customer-field-row">
+        <input type="url" formControlName="instagram" class="form-input" placeholder="https://www.instagram.com/usuario" maxlength="200" />
+        <div class="customer-field-actions">
+          <button type="button" class="btn-save" [disabled]="customerFieldSaving()['instagram'] || customerSupportForm().get('instagram')?.invalid" (click)="saveCustomerField('instagram')">
+            @if (customerFieldSaving()['instagram']) {
+              <span class="btn-spinner-small"></span> Guardando...
+            } @else {
+              Guardar
+            }
+          </button>
+          <button type="button" class="btn-delete" [disabled]="customerFieldSaving()['instagram']" (click)="askDeleteCustomerField('instagram')">
+            Eliminar
+          </button>
+        </div>
+      </div>
+      @if (customerSupportForm().get('instagram')?.touched && customerSupportForm().get('instagram')?.invalid) {
+        <small class="form-error">URL inválida. Debe iniciar con http:// o https://</small>
+      }
+      @if (customerFieldSuccess()['instagram']) { <span class="save-success-text">Guardado</span> }
+      @if (customerFieldError()['instagram']) { <span class="save-error-text">{{ customerFieldError()['instagram'] }}</span> }
+    </div>
+
+    <!-- Facebook -->
+    <div class="form-group customer-field">
+      <label class="form-label">Facebook</label>
+      <div class="customer-field-row">
+        <input type="url" formControlName="facebook" class="form-input" placeholder="https://www.facebook.com/pagina" maxlength="200" />
+        <div class="customer-field-actions">
+          <button type="button" class="btn-save" [disabled]="customerFieldSaving()['facebook'] || customerSupportForm().get('facebook')?.invalid" (click)="saveCustomerField('facebook')">
+            @if (customerFieldSaving()['facebook']) {
+              <span class="btn-spinner-small"></span> Guardando...
+            } @else {
+              Guardar
+            }
+          </button>
+          <button type="button" class="btn-delete" [disabled]="customerFieldSaving()['facebook']" (click)="askDeleteCustomerField('facebook')">
+            Eliminar
+          </button>
+        </div>
+      </div>
+      @if (customerSupportForm().get('facebook')?.touched && customerSupportForm().get('facebook')?.invalid) {
+        <small class="form-error">URL inválida. Debe iniciar con http:// o https://</small>
+      }
+      @if (customerFieldSuccess()['facebook']) { <span class="save-success-text">Guardado</span> }
+      @if (customerFieldError()['facebook']) { <span class="save-error-text">{{ customerFieldError()['facebook'] }}</span> }
+    </div>
+
+    <!-- X -->
+    <div class="form-group customer-field">
+      <label class="form-label">X</label>
+      <div class="customer-field-row">
+        <input type="url" formControlName="x" class="form-input" placeholder="https://x.com/usuario" maxlength="200" />
+        <div class="customer-field-actions">
+          <button type="button" class="btn-save" [disabled]="customerFieldSaving()['x'] || customerSupportForm().get('x')?.invalid" (click)="saveCustomerField('x')">
+            @if (customerFieldSaving()['x']) {
+              <span class="btn-spinner-small"></span> Guardando...
+            } @else {
+              Guardar
+            }
+          </button>
+          <button type="button" class="btn-delete" [disabled]="customerFieldSaving()['x']" (click)="askDeleteCustomerField('x')">
+            Eliminar
+          </button>
+        </div>
+      </div>
+      @if (customerSupportForm().get('x')?.touched && customerSupportForm().get('x')?.invalid) {
+        <small class="form-error">URL inválida. Debe iniciar con http:// o https://</small>
+      }
+      @if (customerFieldSuccess()['x']) { <span class="save-success-text">Guardado</span> }
+      @if (customerFieldError()['x']) { <span class="save-error-text">{{ customerFieldError()['x'] }}</span> }
+    </div>
+
+  </form>
+</div>
+
+<!-- Confirmación: borrar un dato de contacto de atención al cliente -->
+<app-confirm-dialog
+  [isOpen]="customerFieldToDelete() !== null"
+  title="Eliminar dato de contacto"
+  message="Este contacto dejará de aparecer para los clientes. Puedes volver a escribirlo cuando quieras."
+  confirmLabel="Eliminar"
+  (confirmed)="confirmDeleteCustomerField()"
+  (cancelled)="cancelDeleteCustomerField()"
+/>

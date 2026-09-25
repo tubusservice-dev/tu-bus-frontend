@@ -1,0 +1,42 @@
+// Shared settings partials, in the page's original cascade order.
+@use '../../styles/section-form';
+@use '../../styles/toggle';
+@use '../../styles/module-item';
+@use '../../styles/contact-form';
+
+// Block host so the surrounding spacing applies as it did to the markup it wraps.
+:host {
+  display: block;
+}
+
+.notification-separator {
+  @apply my-4 h-px bg-gray-200 dark:bg-gray-700;
+}
+
+.push-permission-toggle {
+  @apply block mt-3;
+}
+
+.push-unblock-box {
+  @apply mt-3 p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800;
+
+  strong {
+    @apply block mb-2 text-sm font-semibold text-red-900 dark:text-red-300;
+  }
+
+  ol {
+    @apply list-decimal list-outside ml-5 space-y-2 text-xs text-red-900 dark:text-red-200 leading-relaxed;
+  }
+
+  code {
+    @apply px-1.5 py-0.5 rounded bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300 font-mono text-[11px];
+  }
+
+  b {
+    @apply font-semibold;
+  }
+
+  i {
+    @apply italic;
+  }
+}

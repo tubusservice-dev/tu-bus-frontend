@@ -1,0 +1,62 @@
+// Confirmation modal and the small inline spinner used by its buttons.
+
+.spinner-xs {
+  @apply w-3.5 h-3.5 border-2 border-gray-300 dark:border-gray-600 border-t-current rounded-full animate-spin;
+}
+
+// ========== Modal ==========
+.modal-overlay {
+  @apply fixed inset-0 z-50 flex items-center justify-center p-4;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  @apply bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-sm text-center;
+  animation: modal-in 0.2s ease-out;
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.modal-icon {
+  @apply mx-auto w-12 h-12 flex items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30 mb-4;
+
+  svg {
+    @apply w-6 h-6 text-red-600 dark:text-red-400;
+  }
+}
+
+.modal-title {
+  @apply text-lg font-semibold text-gray-900 dark:text-white mb-2;
+}
+
+.modal-message {
+  @apply text-sm text-gray-500 dark:text-gray-400 mb-6;
+
+  strong {
+    @apply text-gray-900 dark:text-white;
+  }
+}
+
+.modal-actions {
+  @apply flex items-center gap-3 justify-center;
+}
+
+.btn-modal-cancel {
+  @apply px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg;
+  @apply hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors;
+}
+
+.btn-modal-delete {
+  @apply inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg;
+  @apply hover:bg-red-700 transition-colors disabled:opacity-50;
+}

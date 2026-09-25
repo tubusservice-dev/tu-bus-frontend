@@ -1,0 +1,57 @@
+// Shared settings partials, in the page's original cascade order.
+@use '../../styles/section-form';
+@use '../../styles/toggle';
+
+// Block host so the surrounding spacing applies as it did to the markup it wraps.
+:host {
+  display: block;
+}
+
+.input {
+  @apply w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:border-transparent transition-colors;
+  &:focus { --tw-ring-color: var(--accent-primary); }
+
+  /* Select arrow styling handled by global styles.scss (select.select) */
+}
+
+.catalog-toggle {
+  @apply mt-3 pt-3 border-t border-gray-100 dark:border-gray-700;
+}
+
+// ========== Inline Save Group ==========
+.inline-save-group {
+  @apply flex items-center gap-3;
+
+  .input.select {
+    @apply flex-1;
+  }
+
+  &.toggle-row {
+    @apply justify-between;
+  }
+}
+
+.btn-inline-save {
+  @apply inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium text-white rounded-lg transition-all min-w-[80px];
+  background-color: var(--accent-primary);
+
+  &:hover:not(:disabled) {
+    background-color: var(--accent-hover);
+  }
+
+  &:disabled {
+    @apply opacity-70 cursor-not-allowed;
+  }
+
+  &.success {
+    @apply bg-green-600;
+  }
+
+  .btn-spinner-small {
+    @apply w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin;
+  }
+
+  .icon-check {
+    @apply w-5 h-5;
+  }
+}
