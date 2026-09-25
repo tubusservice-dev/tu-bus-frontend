@@ -1,0 +1,162 @@
+<!-- Backdrop (always rendered — modal pattern) -->
+<div class="picker-backdrop" (click)="onBackdropClick()"></div>
+
+<div
+  class="picker-panel"
+  role="dialog"
+  aria-modal="true"
+  aria-label="Selector de fecha"
+  (click)="$event.stopPropagation()"
+>
+  <!-- Close button -->
+  <button
+    type="button"
+    class="picker-close"
+    aria-label="Cerrar selector"
+    (click)="onCancel()"
+  >
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+    </svg>
+  </button>
+
+  <!-- Header: nav + clickable title -->
+  <header class="picker-header">
+    <button
+      type="button"
+      class="picker-nav-btn"
+      [attr.aria-label]="prevAriaLabel()"
+      [disabled]="!canGoPrev()"
+      (click)="goPrev()"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+      </svg>
+    </button>
+
+    <button
+      type="button"
+      class="picker-title-btn"
+      [attr.aria-label]="titleAriaLabel()"
+      (click)="onTitleClick()"
+    >
+      <span class="picker-title">{{ headerLabel() }}</span>
+      <svg
+        class="picker-title-chevron"
+        [class.rotated]="viewMode() !== 'days'"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+      </svg>
+    </button>
+
+    <button
+      type="button"
+      class="picker-nav-btn"
+      [attr.aria-label]="nextAriaLabel()"
+      [disabled]="!canGoNext()"
+      (click)="goNext()"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+      </svg>
+    </button>
+  </header>
+
+  <!-- View: days grid -->
+  @if (viewMode() === 'days') {
+    <div class="picker-weekdays">
+      @for (wd of weekdayNames; track wd) {
+        <span class="picker-weekday">{{ wd }}</span>
+      }
+    </div>
+    <div class="picker-grid" role="grid">
+      @for (cell of dayCells(); track cell.iso) {
+        <button
+          type="button"
+          class="picker-cell"
+          [class.other-month]="!cell.isCurrentMonth"
+          [class.today]="cell.isToday"
+          [class.selected]="cell.isSelected"
+          [disabled]="cell.isDisabled"
+          [attr.aria-label]="cell.iso"
+          [attr.aria-pressed]="cell.isSelected"
+          (click)="onSelectDay(cell)"
+        >
+          {{ cell.dayNumber }}
+        </button>
+      }
+    </div>
+  }
+
+  <!-- View: months grid -->
+  @if (viewMode() === 'months') {
+    <div class="picker-months-grid" role="grid">
+      @for (cell of monthCells(); track cell.monthIndex) {
+        <button
+          type="button"
+          class="picker-month-cell"
+          [class.selected]="cell.isSelected"
+          [class.current]="cell.isCurrent"
+          [disabled]="cell.isDisabled"
+          [attr.aria-label]="cell.monthName"
+          [attr.aria-pressed]="cell.isSelected"
+          (click)="onSelectMonth(cell)"
+        >
+          {{ cell.monthName }}
+        </button>
+      }
+    </div>
+  }
+
+  <!-- View: years grid -->
+  @if (viewMode() === 'years') {
+    <div class="picker-years-grid" role="grid">
+      @for (cell of yearCells(); track cell.year) {
+        <button
+          type="button"
+          class="picker-year-cell"
+          [class.selected]="cell.isSelected"
+          [class.current]="cell.isCurrent"
+          [disabled]="cell.isDisabled"
+          [attr.aria-label]="cell.year"
+          [attr.aria-pressed]="cell.isSelected"
+          (click)="onSelectYear(cell)"
+        >
+          {{ cell.year }}
+        </button>
+      }
+    </div>
+  }
+
+  <!-- Action bar -->
+  <footer class="picker-footer">
+    <div class="picker-action-left">
+      @if (draftValue()) {
+        <button
+          type="button"
+          class="picker-action picker-action-danger"
+          (click)="onClear()"
+        >
+          Borrar
+        </button>
+      }
+    </div>
+    <div class="picker-action-right">
+      <button type="button" class="picker-action picker-action-cancel" (click)="onCancel()">
+        Cancelar
+      </button>
+      <button
+        type="button"
+        class="picker-action picker-action-confirm"
+        [disabled]="!draftValue()"
+        (click)="onConfirm()"
+      >
+        Confirmar
+      </button>
+    </div>
+  </footer>
+</div>

@@ -1,0 +1,56 @@
+// ============================================
+// PHONE WITH CALL/WHATSAPP POPOVER
+// ============================================
+
+.info-row-phone {
+  @apply items-center;
+}
+
+.phone-wrapper {
+  @apply relative inline-block;
+}
+
+.phone-btn {
+  @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-colors;
+  @apply text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100;
+  @apply hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-700 dark:hover:text-blue-300;
+
+  svg {
+    @apply w-3.5 h-3.5 text-gray-400;
+  }
+
+  &:hover svg {
+    @apply text-blue-500;
+  }
+}
+
+.phone-popover {
+  @apply absolute right-0 top-full mt-1 z-40 min-w-[140px];
+  @apply bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg;
+  @apply py-1 flex flex-col;
+  max-width: calc(100vw - 1.5rem);
+  animation: phonePopoverFadeIn 0.15s ease-out;
+}
+
+@keyframes phonePopoverFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.popover-option {
+  @apply flex items-center gap-2 px-3 py-2 text-sm transition-colors;
+  @apply text-gray-700 dark:text-gray-200;
+  @apply hover:bg-gray-50 dark:hover:bg-gray-700/50;
+
+  svg {
+    @apply w-4 h-4;
+  }
+
+  &.popover-whatsapp {
+    @apply text-green-600 dark:text-green-400;
+
+    &:hover {
+      @apply bg-green-50 dark:bg-green-900/20;
+    }
+  }
+}

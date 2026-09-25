@@ -1,171 +1,67 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { SettingsService } from '@core/services/settings.service';
-import { PaymentMethodService } from '@core/services/payment-method.service';
-import { UploadService } from '@core/services/upload.service';
 import { ExchangeRateService } from '@core/services/exchange-rate.service';
-import { AdminNotificationsService } from '@core/services/admin-notifications.service';
-import { PushPermissionToggleComponent } from '@shared/components/push-permission-toggle/push-permission-toggle.component';
-import { Settings, HeroImage, FloatingStat, PAGINATION_OPTIONS } from '@models/settings.model';
-import {
-  PaymentMethodConfig,
-  PaymentMethodType,
-  PAYMENT_METHOD_TYPE_LABELS,
-  getPaymentMethodSummary,
-} from '@models/payment-method.model';
-import { ConfirmDialogComponent } from '@shared/components/confirm-dialog/confirm-dialog.component';
+import { HeroImage } from '@models/settings.model';
+import { SettingsAccordionItemComponent } from '@features/admin/settings/accordion-item/settings-accordion-item.component';
+import { HeroImagesSettingsComponent } from '@features/admin/settings/sections/hero-images/hero-images-settings.component';
+import { CarouselsSettingsComponent } from '@features/admin/settings/sections/carousels/carousels-settings.component';
+import { PaginationSettingsComponent } from '@features/admin/settings/sections/pagination/pagination-settings.component';
+import { DispatchModulesSettingsComponent } from '@features/admin/settings/sections/dispatch-modules/dispatch-modules-settings.component';
+import { PaymentMethodsSettingsComponent } from '@features/admin/settings/sections/payment-methods/payment-methods-settings.component';
+import { ExchangeRateSettingsComponent } from '@features/admin/settings/sections/exchange-rate/exchange-rate-settings.component';
+import { AdminNotificationsSettingsComponent } from '@features/admin/settings/sections/admin-notifications/admin-notifications-settings.component';
+import { SupportContactSettingsComponent } from '@features/admin/settings/sections/support-contact/support-contact-settings.component';
+import { CustomerSupportSettingsComponent } from '@features/admin/settings/sections/customer-support/customer-support-settings.component';
+import { SETTINGS_SECTION_ICONS, SettingsSectionKey } from '@features/admin/settings/settings-sections';
 
-type SectionKey = 'heroImages' | 'homeHero' | 'whatsapp' | 'carousels' | 'pagination' | 'dispatchModules' | 'dispatch' | 'paymentMethods' | 'exchangeRate' | 'supportContact' | 'customerSupport' | 'adminNotifications';
-type CustomerSupportField = 'whatsapp' | 'instagram' | 'facebook' | 'x';
-type PaginationSubKey = 'catalogLimit' | 'adminLimit';
-
+/**
+ * Admin settings page. Loads the settings once, owns every section form and
+ * the open accordion section; each section component edits and saves its
+ * own slice.
+ */
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink, PushPermissionToggleComponent, ConfirmDialogComponent],
+  imports: [
+    SettingsAccordionItemComponent,
+    HeroImagesSettingsComponent,
+    CarouselsSettingsComponent,
+    PaginationSettingsComponent,
+    DispatchModulesSettingsComponent,
+    PaymentMethodsSettingsComponent,
+    ExchangeRateSettingsComponent,
+    AdminNotificationsSettingsComponent,
+    SupportContactSettingsComponent,
+    CustomerSupportSettingsComponent,
+  ],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss',
 })
 export class SettingsComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly settingsService = inject(SettingsService);
-  private readonly paymentMethodService = inject(PaymentMethodService);
-  private readonly uploadService = inject(UploadService);
-  protected readonly exchangeRateService = inject(ExchangeRateService);
-  protected readonly adminNotifications = inject(AdminNotificationsService);
+  private readonly exchangeRateService = inject(ExchangeRateService);
 
-  // Current site location — used in inline help text so prod admins see
-  // their real domain instead of "localhost:4200".
-  protected readonly currentHost = window.location.host;
-  protected readonly currentOrigin = window.location.origin;
+  protected readonly icons = SETTINGS_SECTION_ICONS;
 
   // Estado
   protected readonly isLoading = signal(true);
-  protected readonly settings = signal<Settings | null>(null);
-  protected readonly activeSection = signal<SectionKey | null>('heroImages');
+  protected readonly activeSection = signal<SettingsSectionKey | null>('heroImages');
 
-  // Hero Images
+  // Loaded values edited by the sections (two-way bound)
   protected readonly heroImages = signal<HeroImage[]>([]);
-  protected readonly isUploadingHeroImage = signal(false);
-  protected readonly heroImagePreview = signal<string | null>(null);
-
-  // Métodos de pago
-  protected readonly paymentMethods = signal<PaymentMethodConfig[]>([]);
-  protected readonly isLoadingMethods = signal(false);
-  protected readonly isTogglingMethod = signal<string | null>(null);
-  protected readonly isDeletingMethod = signal<string | null>(null);
-  protected readonly methodToDelete = signal<PaymentMethodConfig | null>(null);
-
-  // Exchange Rate
-  protected readonly isRefreshing = signal(false);
-  protected readonly refreshMessage = signal<string | null>(null);
-  protected readonly refreshChanged = signal<boolean | null>(null);
-  protected readonly rateError = signal<string | null>(null);
   protected readonly showBsPrice = signal(false);
-  protected readonly toggleSaving = signal(false);
   protected readonly useCustomRate = signal(false);
-  protected readonly customToggleSaving = signal(false);
-  protected readonly showCustomRateModal = signal(false);
-  protected readonly customRateInput = signal<number | null>(null);
-  protected readonly customRateSaving = signal(false);
-  protected readonly customRateError = signal<string | null>(null);
-  protected readonly customRateSuccess = signal<string | null>(null);
-  protected readonly isEditingCustom = signal(false);
-
-  // Estados de guardado por sección
-  protected readonly isSaving = signal<Record<SectionKey, boolean>>({
-    heroImages: false,
-    homeHero: false,
-    whatsapp: false,
-    carousels: false,
-    pagination: false,
-    dispatchModules: false,
-    dispatch: false,
-    paymentMethods: false,
-    exchangeRate: false,
-    supportContact: false,
-    customerSupport: false,
-    adminNotifications: false,
-  });
-
-  protected readonly saveSuccess = signal<Record<SectionKey, boolean>>({
-    heroImages: false,
-    homeHero: false,
-    whatsapp: false,
-    carousels: false,
-    pagination: false,
-    dispatchModules: false,
-    dispatch: false,
-    paymentMethods: false,
-    exchangeRate: false,
-    supportContact: false,
-    customerSupport: false,
-    adminNotifications: false,
-  });
-
-  protected readonly errorMessage = signal<Record<SectionKey, string | null>>({
-    heroImages: null,
-    homeHero: null,
-    whatsapp: null,
-    carousels: null,
-    pagination: null,
-    dispatchModules: null,
-    dispatch: null,
-    paymentMethods: null,
-    exchangeRate: null,
-    supportContact: null,
-    customerSupport: null,
-    adminNotifications: null,
-  });
-
-  // Opciones de paginación
-  protected readonly paginationOptions = PAGINATION_OPTIONS;
-
-  // Estados de guardado separados para paginación
-  protected readonly paginationSaving = signal<Record<PaginationSubKey, boolean>>({
-    catalogLimit: false,
-    adminLimit: false,
-  });
-
-  protected readonly paginationSuccess = signal<Record<PaginationSubKey, boolean>>({
-    catalogLimit: false,
-    adminLimit: false,
-  });
-
-  protected readonly paginationError = signal<Record<PaginationSubKey, string | null>>({
-    catalogLimit: null,
-    adminLimit: null,
-  });
 
   // Formularios
   protected heroImagesCarouselForm!: FormGroup;
   protected floatingStatsForm!: FormGroup;
-  protected homeHeroForm!: FormGroup;
-  protected whatsappForm!: FormGroup;
   protected carouselsForm!: FormGroup;
   protected paginationForm!: FormGroup;
   protected dispatchModulesForm!: FormGroup;
-  protected dispatchForm!: FormGroup;
   protected supportContactForm!: FormGroup;
   protected customerSupportForm!: FormGroup;
-
-  /**
-   * Per-field state for the "Atención al Cliente" accordion. Each input
-   * (whatsapp / instagram / facebook / x) ships an independent pair of
-   * buttons (Guardar / Eliminar) so we track saving and feedback per key
-   * instead of a single section-level flag.
-   */
-  protected readonly customerFieldSaving = signal<Record<CustomerSupportField, boolean>>({
-    whatsapp: false, instagram: false, facebook: false, x: false,
-  });
-  protected readonly customerFieldSuccess = signal<Record<CustomerSupportField, boolean>>({
-    whatsapp: false, instagram: false, facebook: false, x: false,
-  });
-  protected readonly customerFieldError = signal<Record<CustomerSupportField, string | null>>({
-    whatsapp: null, instagram: null, facebook: null, x: null,
-  });
   protected adminNotificationsForm!: FormGroup;
 
   ngOnInit(): void {
@@ -191,17 +87,6 @@ export class SettingsComponent implements OnInit {
       }),
     });
 
-    this.homeHeroForm = this.fb.group({
-      title: ['', [Validators.required, Validators.maxLength(100)]],
-      titleAccent: ['', [Validators.required, Validators.maxLength(100)]],
-      description: ['', [Validators.required, Validators.maxLength(500)]],
-    });
-
-    this.whatsappForm = this.fb.group({
-      phoneNumber: ['', [Validators.required, Validators.pattern(/^\d{10,15}$/)]],
-      isEnabled: [true],
-    });
-
     this.carouselsForm = this.fb.group({
       homeCarousel: this.fb.group({
         isEnabled: [true],
@@ -220,15 +105,6 @@ export class SettingsComponent implements OnInit {
       shippingAgency: [false],
       localDelivery: [false],
       sellerAgreement: [false],
-    });
-
-    this.dispatchForm = this.fb.group({
-      storePickup: this.fb.group({
-        address: ['', [Validators.required, Validators.minLength(5), Validators.maxLength(300)]],
-        schedule: ['', [Validators.required, Validators.minLength(5), Validators.maxLength(200)]],
-        phone: ['', [Validators.required, Validators.minLength(7), Validators.maxLength(20)]],
-        additionalInfo: ['', Validators.maxLength(500)],
-      }),
     });
 
     this.supportContactForm = this.fb.group({
@@ -259,7 +135,6 @@ export class SettingsComponent implements OnInit {
     this.settingsService.getSettings().subscribe({
       next: (response) => {
         const data = response.data;
-        this.settings.set(data);
 
         // Poblar formularios
         if (data.heroImages) {
@@ -280,19 +155,12 @@ export class SettingsComponent implements OnInit {
             }
           }
         }
-        this.homeHeroForm.patchValue(data.homeHero);
-        this.whatsappForm.patchValue(data.whatsapp);
         this.carouselsForm.patchValue(data.carousels);
         if (data.pagination) {
           this.paginationForm.patchValue(data.pagination);
         }
-        if (data.dispatch) {
-          if (data.dispatch.modules) {
-            this.dispatchModulesForm.patchValue(data.dispatch.modules);
-          }
-          if (data.dispatch.storePickup) {
-            this.dispatchForm.patchValue({ storePickup: data.dispatch.storePickup });
-          }
+        if (data.dispatch?.modules) {
+          this.dispatchModulesForm.patchValue(data.dispatch.modules);
         }
 
         // Support contact
@@ -328,664 +196,7 @@ export class SettingsComponent implements OnInit {
     });
   }
 
-  toggleSection(section: SectionKey): void {
-    if (this.activeSection() === section) {
-      this.activeSection.set(null);
-    } else {
-      this.activeSection.set(section);
-      if (section === 'paymentMethods') {
-        this.loadPaymentMethods();
-      }
-    }
-  }
-
-  // ========== Hero Images ==========
-  onHeroImageSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
-
-    if (this.heroImages().length >= 5) {
-      this.setError('heroImages', 'Máximo 5 imágenes permitidas');
-      input.value = '';
-      return;
-    }
-
-    if (!file.type.startsWith('image/')) {
-      this.setError('heroImages', 'Solo se permiten archivos de imagen');
-      input.value = '';
-      return;
-    }
-
-    this.isUploadingHeroImage.set(true);
-    this.clearMessages('heroImages');
-
-    this.uploadService.uploadImage(file, 'hero').subscribe({
-      next: (response) => {
-        const newImage: HeroImage = {
-          url: response.data.url,
-          publicId: response.data.publicId,
-          order: this.heroImages().length,
-        };
-        this.heroImages.update((images) => [...images, newImage]);
-        this.isUploadingHeroImage.set(false);
-        input.value = '';
-      },
-      error: (error) => {
-        this.isUploadingHeroImage.set(false);
-        this.setError('heroImages', error.error?.message || 'Error al subir imagen');
-        input.value = '';
-      },
-    });
-  }
-
-  /** Banner image awaiting confirmation; `null` closes the dialog. Deleting one
-   *  hits Cloudinary immediately and cannot be undone, hence the prompt. */
-  protected readonly heroImageToRemove = signal<number | null>(null);
-
-  askRemoveHeroImage(index: number): void { this.heroImageToRemove.set(index); }
-  cancelRemoveHeroImage(): void { this.heroImageToRemove.set(null); }
-
-  confirmRemoveHeroImage(): void {
-    const index = this.heroImageToRemove();
-    if (index === null) return;
-    this.heroImageToRemove.set(null);
-    this.removeHeroImage(index);
-  }
-
-  private removeHeroImage(index: number): void {
-    const image = this.heroImages()[index];
-    if (!image) return;
-
-    this.uploadService.deleteImage(image.publicId).subscribe({
-      next: () => {
-        this.heroImages.update((images) => {
-          const updated = images.filter((_, i) => i !== index);
-          return updated.map((img, i) => ({ ...img, order: i }));
-        });
-      },
-      error: () => {
-        // Remove from local state even if Cloudinary delete fails
-        this.heroImages.update((images) => {
-          const updated = images.filter((_, i) => i !== index);
-          return updated.map((img, i) => ({ ...img, order: i }));
-        });
-      },
-    });
-  }
-
-  moveHeroImage(index: number, direction: 'up' | 'down'): void {
-    const images = [...this.heroImages()];
-    const targetIndex = direction === 'up' ? index - 1 : index + 1;
-
-    if (targetIndex < 0 || targetIndex >= images.length) return;
-
-    [images[index], images[targetIndex]] = [images[targetIndex], images[index]];
-    this.heroImages.set(images.map((img, i) => ({ ...img, order: i })));
-  }
-
-  protected isAutoRating(): boolean {
-    return this.floatingStatsForm.get('stat2.source')?.value === 'reviews_average';
-  }
-
-  protected toggleAutoRating(event: Event): void {
-    const checked = (event.target as HTMLInputElement).checked;
-    this.floatingStatsForm.get('stat2.source')?.setValue(checked ? 'reviews_average' : 'manual');
-  }
-
-  saveHeroImages(): void {
-    if (this.floatingStatsForm.invalid) {
-      this.floatingStatsForm.markAllAsTouched();
-      this.setError('heroImages', 'Revisa los campos de los indicadores flotantes');
-      return;
-    }
-
-    this.setSaving('heroImages', true);
-    this.clearMessages('heroImages');
-
-    const stat1 = this.floatingStatsForm.get('stat1')?.value;
-    const stat2 = this.floatingStatsForm.get('stat2')?.value;
-
-    // Labels are hardcoded on the landing, but the backend schema requires
-    // the field — we inject a fixed placeholder to satisfy validation.
-    const floatingStats: FloatingStat[] = [
-      { ...stat1, label: 'Servicios', position: 'left' as const, source: 'manual' as const },
-      { ...stat2, label: 'Valoración', position: 'right' as const },
-    ];
-
-    const payload = {
-      images: this.heroImages(),
-      carousel: this.heroImagesCarouselForm.value,
-      floatingStats,
-    };
-
-    this.settingsService.updateHeroImages(payload).subscribe({
-      next: () => {
-        this.setSaving('heroImages', false);
-        this.setSuccess('heroImages', true);
-        setTimeout(() => this.setSuccess('heroImages', false), 3000);
-      },
-      error: (error) => {
-        this.setSaving('heroImages', false);
-        this.setError('heroImages', error.error?.message || 'Error al guardar');
-      },
-    });
-  }
-
-  openHeroImagePreview(url: string): void {
-    this.heroImagePreview.set(url);
-  }
-
-  closeHeroImagePreview(): void {
-    this.heroImagePreview.set(null);
-  }
-
-  getHeroCarouselIntervalInSeconds(): number {
-    return (this.heroImagesCarouselForm.get('interval')?.value || 5000) / 1000;
-  }
-
-  // ========== Home Hero ==========
-  saveHomeHero(): void {
-    if (this.homeHeroForm.invalid) {
-      this.homeHeroForm.markAllAsTouched();
-      return;
-    }
-
-    this.setSaving('homeHero', true);
-    this.clearMessages('homeHero');
-
-    this.settingsService.updateHomeHero(this.homeHeroForm.value).subscribe({
-      next: () => {
-        this.setSaving('homeHero', false);
-        this.setSuccess('homeHero', true);
-        setTimeout(() => this.setSuccess('homeHero', false), 3000);
-      },
-      error: (error) => {
-        this.setSaving('homeHero', false);
-        this.setError('homeHero', error.error?.message || 'Error al guardar');
-      },
-    });
-  }
-
-  // ========== WhatsApp ==========
-  saveWhatsApp(): void {
-    if (this.whatsappForm.invalid) {
-      this.whatsappForm.markAllAsTouched();
-      return;
-    }
-
-    this.setSaving('whatsapp', true);
-    this.clearMessages('whatsapp');
-
-    this.settingsService.updateWhatsApp(this.whatsappForm.value).subscribe({
-      next: () => {
-        this.setSaving('whatsapp', false);
-        this.setSuccess('whatsapp', true);
-        setTimeout(() => this.setSuccess('whatsapp', false), 3000);
-      },
-      error: (error) => {
-        this.setSaving('whatsapp', false);
-        this.setError('whatsapp', error.error?.message || 'Error al guardar');
-      },
-    });
-  }
-
-  // ========== Carruseles ==========
-  saveCarousels(): void {
-    if (this.carouselsForm.invalid) {
-      this.carouselsForm.markAllAsTouched();
-      return;
-    }
-
-    this.setSaving('carousels', true);
-    this.clearMessages('carousels');
-
-    this.settingsService.updateCarousels(this.carouselsForm.value).subscribe({
-      next: () => {
-        this.setSaving('carousels', false);
-        this.setSuccess('carousels', true);
-        setTimeout(() => this.setSuccess('carousels', false), 3000);
-      },
-      error: (error) => {
-        this.setSaving('carousels', false);
-        this.setError('carousels', error.error?.message || 'Error al guardar');
-      },
-    });
-  }
-
-  getIntervalInSeconds(control: string): number {
-    const group = this.carouselsForm.get(control) as FormGroup;
-    return (group?.get('interval')?.value || 5000) / 1000;
-  }
-
-  // ========== Paginación ==========
-  saveCatalogSettings(): void {
-    const catalogLimit = Number(this.paginationForm.get('catalogLimit')?.value);
-    const allowUserCustomization = this.paginationForm.get('allowUserCustomization')?.value;
-    this.savePaginationField('catalogLimit', { catalogLimit, allowUserCustomization });
-  }
-
-  saveAdminLimit(): void {
-    const value = Number(this.paginationForm.get('adminLimit')?.value);
-    this.savePaginationField('adminLimit', { adminLimit: value });
-  }
-
-  saveAllowUserCustomization(): void {
-    const value = this.paginationForm.get('allowUserCustomization')?.value;
-    this.settingsService.updatePagination({ allowUserCustomization: value }).subscribe();
-  }
-
-  private savePaginationField(field: PaginationSubKey, data: Record<string, unknown>): void {
-    this.paginationSaving.update((s) => ({ ...s, [field]: true }));
-    this.paginationError.update((s) => ({ ...s, [field]: null }));
-    this.paginationSuccess.update((s) => ({ ...s, [field]: false }));
-
-    this.settingsService.updatePagination(data).subscribe({
-      next: () => {
-        this.paginationSaving.update((s) => ({ ...s, [field]: false }));
-        this.paginationSuccess.update((s) => ({ ...s, [field]: true }));
-        setTimeout(() => {
-          this.paginationSuccess.update((s) => ({ ...s, [field]: false }));
-        }, 2000);
-      },
-      error: (error) => {
-        this.paginationSaving.update((s) => ({ ...s, [field]: false }));
-        this.paginationError.update((s) => ({ ...s, [field]: error.error?.message || 'Error al guardar' }));
-      },
-    });
-  }
-
-  // ========== Módulos de Despacho ==========
-  saveDispatchModule(module: 'storePickup' | 'shippingAgency' | 'localDelivery' | 'sellerAgreement'): void {
-    const value = this.dispatchModulesForm.get(module)?.value;
-    this.settingsService.updateDispatch({ modules: { [module]: value } }).subscribe();
-  }
-
-  // ========== Despacho (Configuración) ==========
-  saveDispatch(): void {
-    if (this.dispatchForm.invalid) {
-      this.dispatchForm.markAllAsTouched();
-      return;
-    }
-
-    this.setSaving('dispatch', true);
-    this.clearMessages('dispatch');
-
-    this.settingsService.updateDispatch(this.dispatchForm.value).subscribe({
-      next: () => {
-        this.setSaving('dispatch', false);
-        this.setSuccess('dispatch', true);
-        setTimeout(() => this.setSuccess('dispatch', false), 3000);
-      },
-      error: (error) => {
-        this.setSaving('dispatch', false);
-        this.setError('dispatch', error.error?.message || 'Error al guardar');
-      },
-    });
-  }
-
-  // ========== Métodos de Pago ==========
-  loadPaymentMethods(): void {
-    if (this.paymentMethods().length > 0) return; // Ya cargados
-    this.isLoadingMethods.set(true);
-    this.paymentMethodService.getAll().subscribe({
-      next: (response) => {
-        this.paymentMethods.set(response.data);
-        this.isLoadingMethods.set(false);
-      },
-      error: () => {
-        this.isLoadingMethods.set(false);
-      },
-    });
-  }
-
-  getMethodTypeLabel(type: PaymentMethodType): string {
-    return PAYMENT_METHOD_TYPE_LABELS[type] || type;
-  }
-
-  /** Template-facing alias that delegates to the shared helper so both admin
-   *  list views (this settings section and `/admin/payment-methods`) stay
-   *  in sync when a new PaymentMethodType is added. */
-  protected readonly getMethodDetails = getPaymentMethodSummary;
-
-  toggleMethodStatus(method: PaymentMethodConfig): void {
-    this.isTogglingMethod.set(method.id);
-    this.paymentMethodService.toggleActive(method.id).subscribe({
-      next: (response) => {
-        this.paymentMethods.update((items) =>
-          items.map((m) => (m.id === method.id ? response.data : m))
-        );
-        this.isTogglingMethod.set(null);
-      },
-      error: () => {
-        this.isTogglingMethod.set(null);
-      },
-    });
-  }
-
-  openDeleteMethodModal(method: PaymentMethodConfig): void {
-    this.methodToDelete.set(method);
-  }
-
-  closeDeleteMethodModal(): void {
-    this.methodToDelete.set(null);
-  }
-
-  confirmDeleteMethod(): void {
-    const method = this.methodToDelete();
-    if (!method) return;
-
-    this.isDeletingMethod.set(method.id);
-    this.paymentMethodService.delete(method.id).subscribe({
-      next: () => {
-        this.paymentMethods.update((items) => items.filter((m) => m.id !== method.id));
-        this.isDeletingMethod.set(null);
-        this.methodToDelete.set(null);
-      },
-      error: () => {
-        this.isDeletingMethod.set(null);
-      },
-    });
-  }
-
-  // ========== Contacto de Soporte ==========
-  saveSupportContact(): void {
-    if (this.supportContactForm.invalid) {
-      this.supportContactForm.markAllAsTouched();
-      return;
-    }
-
-    this.setSaving('supportContact', true);
-    this.clearMessages('supportContact');
-
-    this.settingsService.updateSupportContact(this.supportContactForm.value).subscribe({
-      next: () => {
-        this.setSaving('supportContact', false);
-        this.setSuccess('supportContact', true);
-        setTimeout(() => this.setSuccess('supportContact', false), 3000);
-      },
-      error: (error) => {
-        this.setSaving('supportContact', false);
-        this.setError('supportContact', error.error?.message || 'Error al guardar');
-      },
-    });
-  }
-
-  // ========== Contacto para Atención al Cliente (per-field save/delete) ==========
-
-  /**
-   * Save a single customer-support field. The other 3 channels are
-   * preserved because the backend endpoint accepts a partial payload.
-   */
-  saveCustomerField(field: CustomerSupportField): void {
-    const ctrl = this.customerSupportForm.get(field);
-    if (!ctrl || ctrl.invalid) {
-      ctrl?.markAsTouched();
-      return;
-    }
-    this.setCustomerFieldSaving(field, true);
-    this.setCustomerFieldError(field, null);
-
-    this.settingsService.updateCustomerSupport({ [field]: ctrl.value || '' }).subscribe({
-      next: () => {
-        this.setCustomerFieldSaving(field, false);
-        this.setCustomerFieldSuccess(field, true);
-        setTimeout(() => this.setCustomerFieldSuccess(field, false), 2500);
-      },
-      error: (error) => {
-        this.setCustomerFieldSaving(field, false);
-        this.setCustomerFieldError(field, error.error?.message || 'Error al guardar');
-      },
-    });
-  }
-
-  /**
-   * Clear a single customer-support field. Sends an empty string so the
-   * backend writes '' — the landing page treats that as "not configured"
-   * and falls back to the "Próximamente" toast.
-   */
-  /** Contact field awaiting confirmation; `null` closes the dialog. */
-  protected readonly customerFieldToDelete = signal<CustomerSupportField | null>(null);
-
-  askDeleteCustomerField(field: CustomerSupportField): void { this.customerFieldToDelete.set(field); }
-  cancelDeleteCustomerField(): void { this.customerFieldToDelete.set(null); }
-
-  confirmDeleteCustomerField(): void {
-    const field = this.customerFieldToDelete();
-    if (!field) return;
-    this.customerFieldToDelete.set(null);
-    this.deleteCustomerField(field);
-  }
-
-  private deleteCustomerField(field: CustomerSupportField): void {
-    this.setCustomerFieldSaving(field, true);
-    this.setCustomerFieldError(field, null);
-
-    this.settingsService.updateCustomerSupport({ [field]: '' }).subscribe({
-      next: () => {
-        this.customerSupportForm.get(field)?.setValue('');
-        this.setCustomerFieldSaving(field, false);
-        this.setCustomerFieldSuccess(field, true);
-        setTimeout(() => this.setCustomerFieldSuccess(field, false), 2500);
-      },
-      error: (error) => {
-        this.setCustomerFieldSaving(field, false);
-        this.setCustomerFieldError(field, error.error?.message || 'Error al eliminar');
-      },
-    });
-  }
-
-  private setCustomerFieldSaving(field: CustomerSupportField, value: boolean): void {
-    this.customerFieldSaving.update((s) => ({ ...s, [field]: value }));
-  }
-  private setCustomerFieldSuccess(field: CustomerSupportField, value: boolean): void {
-    this.customerFieldSuccess.update((s) => ({ ...s, [field]: value }));
-  }
-  private setCustomerFieldError(field: CustomerSupportField, value: string | null): void {
-    this.customerFieldError.update((s) => ({ ...s, [field]: value }));
-  }
-
-  // ========== Notificaciones del Admin ==========
-  /**
-   * Persists a single event-preference toggle. The push transport itself
-   * lives on the `<app-push-permission-toggle>` (browser permission + FCM
-   * token); this method only writes the per-event flags in settings.
-   */
-  saveAdminNotificationToggle(
-    field: 'newOrder' | 'paymentNote' | 'mechanicRejection' | 'customerCancellation' | 'serviceProgress'
-  ): void {
-    const value = this.adminNotificationsForm.get(field)?.value;
-
-    this.settingsService.updateAdminNotifications({ [field]: value }).subscribe({
-      next: () => {
-        this.setSuccess('adminNotifications', true);
-        setTimeout(() => this.setSuccess('adminNotifications', false), 2000);
-      },
-      error: (error) => {
-        this.setError('adminNotifications', error.error?.message || 'Error al guardar');
-      },
-    });
-  }
-
-  /**
-   * Bound to the `<app-push-permission-toggle>` activate event. Runs
-   * inside the toggle's click handler so the browser sees a real user
-   * gesture and shows the native prompt.
-   */
-  async activateBrowserPermission(): Promise<void> {
-    await this.adminNotifications.requestNotificationPermission();
-  }
-
-  /** Mirror for the deactivate event: drops the FCM token on the backend. */
-  async deactivateBrowserPermission(): Promise<void> {
-    await this.adminNotifications.unregisterToken();
-  }
-
-  /** Estado actual del permiso de notificaciones */
-  protected getBrowserPushStatus(): 'granted' | 'denied' | 'default' | 'unsupported' {
-    if (typeof window === 'undefined' || !('Notification' in window)) return 'unsupported';
-    return Notification.permission;
-  }
-
-  // ========== Tasa de Cambio ==========
-  toggleShowBsPrice(): void {
-    const newValue = !this.showBsPrice();
-    this.toggleSaving.set(true);
-    this.settingsService.updateExchangeRateConfig({ showBsPrice: newValue }).subscribe({
-      next: () => {
-        this.showBsPrice.set(newValue);
-        this.toggleSaving.set(false);
-      },
-      error: () => {
-        this.toggleSaving.set(false);
-      },
-    });
-  }
-
-  toggleCustomRate(): void {
-    if (this.useCustomRate()) {
-      // Turning OFF → disable custom rate
-      this.customToggleSaving.set(true);
-      this.settingsService.updateExchangeRateConfig({ useCustomRate: false }).subscribe({
-        next: () => {
-          this.useCustomRate.set(false);
-          this.customToggleSaving.set(false);
-        },
-        error: () => this.customToggleSaving.set(false),
-      });
-    } else {
-      // Turning ON → open modal to set custom rate
-      this.customRateInput.set(null);
-      this.customRateError.set(null);
-      this.showCustomRateModal.set(true);
-    }
-  }
-
-  onCustomRateModalInput(event: Event): void {
-    const value = parseFloat((event.target as HTMLInputElement).value);
-    this.customRateInput.set(isNaN(value) ? null : value);
-  }
-
-  cancelCustomRateModal(): void {
-    this.showCustomRateModal.set(false);
-    this.customRateInput.set(null);
-    this.customRateError.set(null);
-    // Toggle stays OFF
-  }
-
-  confirmCustomRate(): void {
-    const value = this.customRateInput();
-    if (!value || value <= 0) {
-      this.customRateError.set('Ingresa un valor mayor a 0');
-      return;
-    }
-
-    this.customRateSaving.set(true);
-    this.customRateError.set(null);
-
-    this.exchangeRateService.updateCustomRate(value).subscribe({
-      next: () => {
-        // Save custom rate, then enable useCustomRate in settings
-        this.settingsService.updateExchangeRateConfig({ useCustomRate: true }).subscribe({
-          next: () => {
-            this.useCustomRate.set(true);
-            this.customRateSaving.set(false);
-            this.showCustomRateModal.set(false);
-          },
-          error: () => {
-            this.customRateSaving.set(false);
-            this.showCustomRateModal.set(false);
-          },
-        });
-      },
-      error: (error) => {
-        this.customRateSaving.set(false);
-        this.customRateError.set(error.error?.message || 'Error al guardar la tasa');
-      },
-    });
-  }
-
-  openEditCustomModal(): void {
-    const current = this.exchangeRateService.customRate();
-    this.customRateInput.set(current);
-    this.customRateError.set(null);
-    this.isEditingCustom.set(true);
-    this.showCustomRateModal.set(true);
-  }
-
-  confirmEditCustomRate(): void {
-    const value = this.customRateInput();
-    if (!value || value <= 0) {
-      this.customRateError.set('Ingresa un valor mayor a 0');
-      return;
-    }
-
-    this.customRateSaving.set(true);
-    this.customRateError.set(null);
-
-    this.exchangeRateService.updateCustomRate(value).subscribe({
-      next: () => {
-        this.customRateSaving.set(false);
-        this.showCustomRateModal.set(false);
-        this.isEditingCustom.set(false);
-        this.customRateSuccess.set('Tasa personalizada actualizada');
-        setTimeout(() => this.customRateSuccess.set(null), 3000);
-      },
-      error: (error) => {
-        this.customRateSaving.set(false);
-        this.customRateError.set(error.error?.message || 'Error al guardar la tasa');
-      },
-    });
-  }
-
-  closeCustomRateModal(): void {
-    if (this.isEditingCustom()) {
-      this.isEditingCustom.set(false);
-      this.showCustomRateModal.set(false);
-    } else {
-      this.cancelCustomRateModal();
-    }
-  }
-
-  refreshRate(): void {
-    this.isRefreshing.set(true);
-    this.rateError.set(null);
-    this.refreshMessage.set(null);
-    this.refreshChanged.set(null);
-
-    this.exchangeRateService.refreshRate().subscribe({
-      next: (response) => {
-        this.isRefreshing.set(false);
-        this.refreshChanged.set(response.changed ?? false);
-        this.refreshMessage.set(response.message ?? 'Consulta realizada');
-        setTimeout(() => {
-          this.refreshMessage.set(null);
-          this.refreshChanged.set(null);
-        }, 5000);
-      },
-      error: (error) => {
-        this.isRefreshing.set(false);
-        this.rateError.set(error.error?.message || 'Error al consultar la tasa BCV');
-        setTimeout(() => this.rateError.set(null), 5000);
-      },
-    });
-  }
-
-  // ========== Helpers ==========
-  private setSaving(section: SectionKey, value: boolean): void {
-    this.isSaving.update((state) => ({ ...state, [section]: value }));
-  }
-
-  private setSuccess(section: SectionKey, value: boolean): void {
-    this.saveSuccess.update((state) => ({ ...state, [section]: value }));
-  }
-
-  private setError(section: SectionKey, message: string | null): void {
-    this.errorMessage.update((state) => ({ ...state, [section]: message }));
-  }
-
-  private clearMessages(section: SectionKey): void {
-    this.setError(section, null);
-    this.setSuccess(section, false);
+  protected toggleSection(section: SettingsSectionKey): void {
+    this.activeSection.update((current) => (current === section ? null : section));
   }
 }

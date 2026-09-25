@@ -1,0 +1,58 @@
+<form [formGroup]="dispatchModulesForm()" class="section-form">
+  <p class="section-description">
+    Activa o desactiva los métodos de entrega disponibles en el checkout. Solo los módulos activos se mostrarán a los clientes.
+  </p>
+
+  <!-- Toggle Retiro en Tienda -->
+  <div class="dispatch-module-item">
+    <label class="toggle-container">
+      <input
+        type="checkbox"
+        formControlName="storePickup"
+        class="toggle-input"
+        (change)="saveDispatchModule('storePickup')"
+      />
+      <span class="toggle-switch"></span>
+      <div class="toggle-info">
+        <span class="toggle-label">Retiro en Tienda</span>
+        <span class="toggle-hint">El cliente retira su pedido en la tienda física</span>
+      </div>
+    </label>
+  </div>
+
+  <!-- Toggle Agencias de Envío -->
+  <div class="dispatch-module-item">
+    <label class="toggle-container">
+      <input
+        type="checkbox"
+        formControlName="shippingAgency"
+        class="toggle-input"
+        (change)="saveDispatchModule('shippingAgency')"
+      />
+      <span class="toggle-switch"></span>
+      <div class="toggle-info">
+        <span class="toggle-label">Agencias de Envío</span>
+        <span class="toggle-hint">Envío a través de agencias de transporte (MRW, Zoom, etc.)</span>
+      </div>
+    </label>
+  </div>
+
+  <!-- Delivery Local: controlado por configuración de sucursales -->
+
+  <!-- Toggle Acordar con Vendedor -->
+  <div class="dispatch-module-item">
+    <label class="toggle-container">
+      <input
+        type="checkbox"
+        formControlName="sellerAgreement"
+        class="toggle-input"
+        (change)="saveDispatchModule('sellerAgreement')"
+      />
+      <span class="toggle-switch"></span>
+      <div class="toggle-info">
+        <span class="toggle-label">Acordar con Vendedor</span>
+        <span class="toggle-hint">El cliente coordina directamente con el vendedor</span>
+      </div>
+    </label>
+  </div>
+</form>

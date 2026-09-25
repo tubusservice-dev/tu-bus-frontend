@@ -22,8 +22,6 @@ export class TubusHeroComponent {
   private readonly reviewsAverage = signal<number | null>(null);
 
   protected readonly hero = HERO_CONTENT;
-  private static readonly FALLBACK_IMAGE = 'assets/img/promociones.jpg';
-
   private intervalId: ReturnType<typeof setInterval> | null = null;
 
   /**
@@ -35,10 +33,9 @@ export class TubusHeroComponent {
    *   2. Flip activeLayer → CSS transition fades the new layer in smoothly
    */
   protected readonly activeLayer = signal<0 | 1>(0);
-  protected readonly layerSrc = signal<[string, string]>([
-    TubusHeroComponent.FALLBACK_IMAGE,
-    TubusHeroComponent.FALLBACK_IMAGE,
-  ]);
+  // Null until the settings bring the first image: nothing is requested
+  // (or painted broken) before there is a real URL.
+  protected readonly layerSrc = signal<[string | null, string | null]>([null, null]);
 
   private currentIdx = 0;
 
@@ -99,9 +96,7 @@ export class TubusHeroComponent {
     // Initialize layer 0 with the first image
     effect(() => {
       const images = this.heroImages();
-      const src = images.length > 0
-        ? (images[0]?.url || TubusHeroComponent.FALLBACK_IMAGE)
-        : TubusHeroComponent.FALLBACK_IMAGE;
+      const src = images[0]?.url || null;
       this.currentIdx = 0;
       this.activeLayer.set(0);
       this.layerSrc.set([src, src]);
@@ -162,13 +157,13 @@ export class TubusHeroComponent {
     if (images.length <= 1) return;
 
     const nextIdx = (this.currentIdx + 1) % images.length;
-    const nextSrc = images[nextIdx]?.url || TubusHeroComponent.FALLBACK_IMAGE;
+    const nextSrc = images[nextIdx]?.url || null;
     const current = this.activeLayer();
     const inactiveLayer: 0 | 1 = current === 0 ? 1 : 0;
 
     // 1. Paint the next image on the HIDDEN (inactive) layer
     this.layerSrc.update((layers) => {
-      const copy: [string, string] = [...layers];
+      const copy: [string | null, string | null] = [...layers];
       copy[inactiveLayer] = nextSrc;
       return copy;
     });

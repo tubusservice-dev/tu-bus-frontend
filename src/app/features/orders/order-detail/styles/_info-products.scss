@@ -1,0 +1,172 @@
+// ============================================
+// INFO ROWS
+// ============================================
+.info-rows {
+  @apply flex flex-col;
+}
+
+.mechanic-identity-row {
+  @apply flex items-center gap-3 px-4 sm:px-5 py-3;
+}
+.mechanic-identity-text {
+  @apply flex flex-col min-w-0;
+}
+.mechanic-identity-label {
+  @apply text-xs text-gray-500 dark:text-gray-400;
+}
+.mechanic-identity-name {
+  @apply text-base font-semibold text-gray-900 dark:text-white;
+  // Long names wrap to a second line on narrow viewports rather than
+  // getting silently truncated with an ellipsis.
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.info-row {
+  @apply flex items-start justify-between gap-4 px-4 sm:px-5 py-2.5;
+  @apply border-b border-gray-100;
+
+  :host-context(.dark) & {
+    border-bottom-color: rgba(51, 65, 85, 0.5);
+  }
+
+  &:last-child { @apply border-b-0; }
+}
+
+.info-label {
+  @apply text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex-shrink-0;
+}
+
+.info-value {
+  @apply text-xs sm:text-sm text-gray-900 dark:text-gray-100 text-right;
+  // Allow the value to shrink inside the flex row and to break long,
+  // space-less tokens (bank references, dense addresses, mono IDs).
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+
+  &.mono { font-family: monospace; }
+  &.fw-600 { font-weight: 600; }
+}
+
+.fw-600 { font-weight: 600; }
+.mono { font-family: monospace; }
+
+.no-data {
+  @apply px-4 sm:px-5 py-6 text-sm text-center text-gray-400 dark:text-gray-500 italic;
+}
+
+// ============================================
+// SECCIÓN PRODUCTOS
+// ============================================
+.products-list {
+  @apply flex flex-col divide-y divide-gray-100 dark:divide-gray-700;
+}
+
+.product-row {
+  @apply flex items-center gap-3 px-4 sm:px-5 py-3;
+}
+
+// Wrap is the clipping context for the diagonal combo ribbon. The rounded
+// corners and overflow:hidden live here so the rotated strip trims cleanly
+// against the rounded edge without spilling onto the row.
+.product-img-wrap {
+  @apply relative w-14 h-14 rounded-lg overflow-hidden flex-shrink-0;
+  @apply bg-gray-50 dark:bg-gray-700/50;
+}
+
+.product-img {
+  @apply w-full h-full object-contain;
+}
+
+.product-info {
+  @apply flex flex-col flex-1 min-w-0;
+}
+
+.product-name-row {
+  @apply flex items-center gap-2 min-w-0;
+}
+
+.product-name {
+  @apply text-sm font-medium text-gray-900 dark:text-white truncate;
+}
+
+// Diagonal "Combo" ribbon — replaces the inline badge that previously
+// stole horizontal space from the product name. Anchored to the top-right
+// corner of the thumbnail, kept small (font-size 0.5rem) so it never
+// covers product information. Mirrors the visual language of `.free-ribbon`
+// in checkout-dispatch so the brand UX stays consistent.
+.combo-ribbon {
+  position: absolute;
+  // Tight corner anchoring: 6px / -22px lets the rotated strip clip
+  // against the rounded thumbnail without crossing the image center.
+  top: 6px;
+  right: -22px;
+  width: 74px;
+  transform: rotate(45deg);
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  color: #ffffff;
+  text-align: center;
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 1px 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  user-select: none;
+  z-index: 2;
+}
+
+.product-qty {
+  @apply text-xs text-gray-500 dark:text-gray-400 mt-0.5;
+}
+
+.product-total-col {
+  @apply flex flex-col items-end flex-shrink-0;
+}
+
+.product-total {
+  @apply text-sm font-semibold text-gray-900 dark:text-white;
+}
+
+.product-total-bs {
+  @apply text-xs text-blue-600 dark:text-blue-400 mt-0.5;
+}
+
+// Totales
+.totals-section {
+  @apply flex flex-col gap-1 px-4 sm:px-5 py-3 border-t border-gray-100 dark:border-gray-700;
+}
+
+.total-row {
+  @apply flex items-start justify-between text-sm text-gray-600 dark:text-gray-400;
+}
+
+.total-row-values {
+  @apply flex flex-col items-end;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.total-row-bs {
+  @apply text-xs text-blue-600 dark:text-blue-400 mt-0.5;
+}
+
+.shipping-value {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+:host-context(.dark) .shipping-value {
+  color: #4ade80;
+}
+
+.total-final {
+  @apply text-base font-bold text-gray-900 dark:text-white mt-1 pt-2 border-t border-gray-100 dark:border-gray-700;
+}
+
+.total-bs-final {
+  @apply text-sm;
+}

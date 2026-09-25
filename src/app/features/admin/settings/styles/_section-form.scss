@@ -1,0 +1,26 @@
+// Section body wrapper, its intro text and labelled form groups.
+
+.section-form {
+  @apply p-5 pt-0 space-y-5;
+}
+
+.section-description {
+  @apply text-gray-600 dark:text-gray-400 text-sm pb-4 border-b border-gray-100 dark:border-gray-700;
+}
+
+// ========== Form Groups ==========
+.form-group {
+  @apply space-y-2;
+
+  label {
+    @apply block text-sm font-medium text-gray-700 dark:text-gray-300;
+  }
+
+  .hint {
+    @apply block text-xs text-gray-500 dark:text-gray-400;
+  }
+
+  .error {
+    @apply block text-xs text-red-600 dark:text-red-400;
+  }
+}

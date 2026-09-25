@@ -1,10 +1,38 @@
 // ============================================================================
-// Admin settings — SCSS root
-// Split into partials by section, in their original order (the cascade is
-// unchanged). Partials hold plain rules only, so `@use` without a namespace
-// emits them exactly as before.
+// Admin settings — page shell
+// Each section component styles its own markup; rules used by several of
+// them live in `styles/` and are `@use`d in the page's original cascade
+// order (section-form, toggle, carousel, alerts-buttons, module-item, modal,
+// contact-form). Partials hold plain rules only.
 // ============================================================================
-@use 'styles/layout-forms';
-@use 'styles/home-config';
-@use 'styles/general';
-@use 'styles/exchange-support';
+.settings-page {
+  @apply space-y-6 max-w-4xl mx-auto;
+}
+
+// ========== Header ==========
+.page-header {
+  @apply mb-8;
+}
+
+.page-title {
+  @apply text-2xl font-bold text-gray-900 dark:text-white;
+}
+
+.page-subtitle {
+  @apply text-gray-500 dark:text-gray-400 mt-1;
+}
+
+// ========== Loading ==========
+.loading-container {
+  @apply flex flex-col items-center justify-center py-16 text-gray-500 dark:text-gray-400;
+
+  .spinner {
+    @apply w-10 h-10 border-4 border-gray-200 dark:border-gray-700 rounded-full animate-spin mb-4;
+    border-top-color: var(--accent-primary);
+  }
+}
+
+// ========== Acordeón ==========
+.settings-accordion {
+  @apply space-y-4;
+}

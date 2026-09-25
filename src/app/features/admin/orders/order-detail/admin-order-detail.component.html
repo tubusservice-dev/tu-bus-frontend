@@ -284,7 +284,7 @@
               @if (o.dispatchDetails.recipientState || o.dispatchDetails.recipientCity) {
                 <div class="info-row">
                   <span class="info-label">Ubicacion</span>
-                  <span class="info-value">{{ o.dispatchDetails.recipientCity }}, {{ o.dispatchDetails.recipientState }}</span>
+                  <span class="info-value">{{ getRecipientLocation(o) }}</span>
                 </div>
               }
               @if (o.dispatchDetails.agencyOfficeCode) {

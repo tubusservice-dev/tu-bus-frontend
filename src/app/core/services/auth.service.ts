@@ -1,4 +1,4 @@
-import { Injectable, Injector, signal, computed, inject } from '@angular/core';
+import { Injectable, Injector, computed, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, tap, catchError, throwError } from 'rxjs';
@@ -6,10 +6,6 @@ import { environment } from '@env';
 import {
   STORAGE,
   IStorage,
-  GOOGLE_AUTH,
-  IGoogleAuth,
-  APPLE_AUTH,
-  IAppleAuth,
   PlatformService,
   ANALYTICS,
   CRASHLYTICS,
@@ -32,34 +28,30 @@ import {
   LinkAccountResponse,
   VerifyAccountLinkResponse,
 } from '@models';
-import { ToastService } from '@shared/services/toast.service';
+import { AccountBlockedCode, AccountBlockedStore } from '@core/services/auth/account-blocked.store';
+import { AuthModalMode, AuthModalStore } from '@core/services/auth/auth-modal.store';
+import {
+  AuthSessionStore,
+  ADMIN_SESSION_SCOPE,
+  CLIENT_SESSION_SCOPE,
+} from '@core/services/auth/auth-session.store';
+import { AuthSuccessHandler } from '@core/services/auth/auth-success.handler';
+import { NativeOAuthSignInService } from '@core/services/auth/native-oauth-sign-in.service';
+import { OAuthAccountLinkService } from '@core/services/auth/oauth-account-link.service';
 
-const CLIENT_TOKEN_KEY = 'auth_token';
-const CLIENT_USER_KEY = 'auth_user';
-const ADMIN_TOKEN_KEY = 'admin_auth_token';
-const ADMIN_USER_KEY = 'admin_auth_user';
+export type { AccountBlockedCode, AccountBlockedInfo } from '@core/services/auth/account-blocked.store';
+export type { AuthModalMode } from '@core/services/auth/auth-modal.store';
 
-export type AccountBlockedCode =
-  | 'ACCOUNT_BLOCKED'
-  | 'ACCOUNT_SUSPENDED'
-  | 'ACCOUNT_DELETED'
-  | 'ACCOUNT_NOT_FOUND';
-
-export interface AccountBlockedInfo {
-  code: AccountBlockedCode;
-  message: string;
-  reason?: string;
-}
-
-const BLOCK_CODES: ReadonlySet<AccountBlockedCode> = new Set<AccountBlockedCode>([
-  'ACCOUNT_BLOCKED',
-  'ACCOUNT_SUSPENDED',
-  'ACCOUNT_DELETED',
-  'ACCOUNT_NOT_FOUND',
-]);
-
-export type AuthModalMode = 'login' | 'register' | 'linkAccount';
-
+/**
+ * Public authentication facade. Consumers depend only on this class; the
+ * actual responsibilities live in focused collaborators under `./auth/`:
+ *  - AuthSessionStore: token/user caches, signals and storage persistence.
+ *  - AuthSuccessHandler: client-login funnel (session + telemetry).
+ *  - AccountBlockedStore: blocked-account modal state.
+ *  - AuthModalStore: auth / forgot-password modal state.
+ *  - OAuthAccountLinkService: Google/Apple ↔ local-account linking.
+ *  - NativeOAuthSignInService: Capacitor Google/Apple sign-in and sign-out.
+ */
 @Injectable({
   providedIn: 'root',
 })
@@ -71,21 +63,6 @@ export class AuthService {
    * uses Capacitor Preferences (encrypted on Android M+).
    */
   private readonly storage = inject<IStorage>(STORAGE);
-
-  /**
-   * Cross-platform Google sign-in. On web triggers the redirect-based
-   * Passport flow; on native opens the OS Google account picker via the
-   * Capacitor Firebase Authentication plugin.
-   */
-  private readonly googleAuth = inject<IGoogleAuth>(GOOGLE_AUTH);
-
-  /**
-   * iOS-only Apple sign-in (App Store Guideline 4.8 compliance). On web
-   * and Android the injected strategy is a no-op that returns false from
-   * `isAvailable()` — callers must always gate on `platform.isIos()` (or
-   * `appleAuth.isAvailable()`) before invoking `signIn()`.
-   */
-  private readonly appleAuth = inject<IAppleAuth>(APPLE_AUTH);
 
   /**
    * Platform detector — used to gate the OAuth flow between web (redirect)
@@ -101,113 +78,43 @@ export class AuthService {
   private readonly analytics = inject(ANALYTICS);
   private readonly crashlytics = inject(CRASHLYTICS);
 
-  /**
-   * User-facing toast surface. Used to translate silent plugin failures
-   * (e.g. native Google sign-in errors that aren't user cancellations)
-   * into a visible message — without it, a failed sign-in looks like
-   * nothing happened, leaving the user and us with no diagnostic.
-   */
-  private readonly toast = inject(ToastService);
+  private readonly session = inject(AuthSessionStore);
+  private readonly authSuccess = inject(AuthSuccessHandler);
+  private readonly blocked = inject(AccountBlockedStore);
+  private readonly modals = inject(AuthModalStore);
+  private readonly accountLink = inject(OAuthAccountLinkService);
+  private readonly nativeSignIn = inject(NativeOAuthSignInService);
 
-  /**
-   * In-memory cache of the JWT keyed by storage scope. Keeps `getToken()`
-   * synchronous (the existing API the auth interceptor relies on) while
-   * the underlying storage is allowed to be async (native Preferences).
-   *
-   * Hydrated by `loadCacheFromStorage()` during APP_INITIALIZER. Writes
-   * update this signal synchronously and then fire-and-forget the
-   * persist call to storage — the next `getToken()` always sees the
-   * fresh value, while the OS-level write happens in background.
-   */
-  private readonly tokenCacheSignal = signal<string | null>(null);
+  // ─── Blocked account ────────────────────────────────────────
 
-  /**
-   * In-memory cache of the User object — same pattern as tokenCacheSignal.
-   */
-  private readonly userCacheSignal = signal<User | null>(null);
-
-  private readonly currentUserSignal = signal<User | null>(null);
-
-  private readonly sessionExpiredSignal = signal(false);
-
-  private readonly blockedInfoSignal = signal<AccountBlockedInfo | null>(null);
-  readonly blockedInfo = this.blockedInfoSignal.asReadonly();
+  readonly blockedInfo = this.blocked.blockedInfo;
 
   triggerAccountBlocked(error: HttpErrorResponse | null | undefined): boolean {
-    const body = error?.error as
-      | { code?: string; message?: string; details?: { reason?: string } }
-      | undefined;
-    const code = body?.code;
-    if (!code || !BLOCK_CODES.has(code as AccountBlockedCode)) return false;
-
-    this.blockedInfoSignal.set({
-      code: code as AccountBlockedCode,
-      message: body?.message || 'Tu cuenta no puede acceder al sistema.',
-      reason: body?.details?.reason,
-    });
-    return true;
+    return this.blocked.triggerAccountBlocked(error);
   }
 
   clearAccountBlocked(): void {
-    this.blockedInfoSignal.set(null);
+    this.blocked.clearAccountBlocked();
   }
 
   notifyAccountBlocked(code: AccountBlockedCode, message: string, reason?: string): void {
-    this.blockedInfoSignal.set({ code, message, reason });
+    this.blocked.notifyAccountBlocked(code, message, reason);
   }
 
-  /**
-   * True while a native Google sign-in flow is in progress (between the
-   * moment the user taps the button and the moment the backend responds
-   * — including the OS picker, idToken exchange and user profile fetch).
-   *
-   * Auth modal reads this with effect() to keep its OAuth spinner in
-   * sync. The web flow does NOT need this signal because the page
-   * navigates away (signal would be reset by app reload anyway).
-   */
-  private readonly nativeOAuthLoadingSignal = signal(false);
-  readonly nativeOAuthLoading = this.nativeOAuthLoadingSignal.asReadonly();
+  // ─── Modal state ────────────────────────────────────────────
 
-  private readonly authModalOpenSignal = signal(false);
-  readonly authModalOpen = this.authModalOpenSignal.asReadonly();
+  readonly nativeOAuthLoading = this.nativeSignIn.nativeOAuthLoading;
 
-  private readonly authModalInitialModeSignal = signal<AuthModalMode>('login');
-  readonly authModalInitialMode = this.authModalInitialModeSignal.asReadonly();
+  readonly authModalOpen = this.modals.authModalOpen;
+  readonly authModalInitialMode = this.modals.authModalInitialMode;
+  readonly authModalPrefillEmail = this.modals.authModalPrefillEmail;
+  readonly forgotPasswordModalOpen = this.modals.forgotPasswordModalOpen;
 
-  private readonly authModalPrefillEmailSignal = signal<string>('');
-  readonly authModalPrefillEmail = this.authModalPrefillEmailSignal.asReadonly();
-
-  /**
-   * Holds the Google idToken captured during a native sign-in attempt that
-   * collided with an existing local account (backend responded 409 with
-   * code EMAIL_ALREADY_REGISTERED_LOCAL). The link-google-password-modal
-   * reads this signal to know it should open; the modal posts the idToken
-   * plus the user-supplied password to `/api/auth/link-google-with-password`
-   * to attach the Google identity to the existing local account.
-   *
-   * Null means no link flow is in progress — the modal stays hidden.
-   */
-  private readonly linkGooglePendingSignal = signal<string | null>(null);
-  readonly linkGoogleModalOpen = computed(() => this.linkGooglePendingSignal() !== null);
-
-  /**
-   * Symmetric pending-link payload for Apple. Unlike Google we carry name
-   * fields alongside the identityToken because Apple only returns them on
-   * the FIRST sign-in for this app — losing them between the initial 409
-   * and the link-with-password call would leave the linked account with
-   * empty firstName/lastName until the user re-fills the profile manually.
-   *
-   * Null means no Apple link flow is in progress — the modal stays hidden.
-   */
-  private readonly linkApplePendingSignal = signal<
-    { identityToken: string; firstName?: string; lastName?: string } | null
-  >(null);
-  readonly linkAppleModalOpen = computed(() => this.linkApplePendingSignal() !== null);
+  readonly linkGoogleModalOpen = this.accountLink.linkGoogleModalOpen;
+  readonly linkAppleModalOpen = this.accountLink.linkAppleModalOpen;
 
   openAuthModal(mode: AuthModalMode = 'login', prefillEmail = ''): void {
-    this.authModalInitialModeSignal.set(mode);
-    this.authModalPrefillEmailSignal.set(prefillEmail);
-    this.authModalOpenSignal.set(true);
+    this.modals.openAuthModal(mode, prefillEmail);
   }
 
   /**
@@ -220,133 +127,57 @@ export class AuthService {
   }
 
   closeAuthModal(): void {
-    this.authModalOpenSignal.set(false);
-    this.authModalInitialModeSignal.set('login');
-    this.authModalPrefillEmailSignal.set('');
+    this.modals.closeAuthModal();
   }
 
-  /**
-   * Stages a Google idToken for the link-with-password modal. Called from
-   * `signInWithGoogleNative` when the backend rejects the native sign-in
-   * with EMAIL_ALREADY_REGISTERED_LOCAL — the user already has a local
-   * account and must prove ownership via password to attach Google.
-   *
-   * Closes the auth modal in the same step so the user sees ONE modal at a
-   * time — same pattern used by `onAccountLinkPending` and the verify-email
-   * handoff in app.ts. Without this, the auth modal stays mounted behind
-   * the link modal and reappears when the link modal closes.
-   */
+  openForgotPasswordModal(): void {
+    this.modals.openForgotPasswordModal();
+  }
+
+  closeForgotPasswordModal(): void {
+    this.modals.closeForgotPasswordModal();
+  }
+
+  // ─── OAuth ↔ local account linking ──────────────────────────
+
   openLinkGoogleModal(idToken: string): void {
-    this.linkGooglePendingSignal.set(idToken);
-    this.closeAuthModal();
+    this.accountLink.openLinkGoogleModal(idToken);
   }
 
   closeLinkGoogleModal(): void {
-    this.linkGooglePendingSignal.set(null);
+    this.accountLink.closeLinkGoogleModal();
   }
 
-  /**
-   * Posts the staged idToken + the user-supplied local password to the
-   * link endpoint. On success the backend returns the same { token, user }
-   * shape as a regular sign-in, so we route through `handleAuthSuccess`
-   * exactly like a normal login — the linked Google account is now
-   * authoritatively logged in, modal closes, blocked flow handled.
-   *
-   * Observable surface keeps the same error semantics as the rest of the
-   * service so callers can `.subscribe` with a typed HttpErrorResponse and
-   * react to specific codes (INVALID_PASSWORD, GOOGLE_ALREADY_LINKED, etc.).
-   */
   linkGoogleWithPassword(password: string): Observable<AuthResponse> {
-    const idToken = this.linkGooglePendingSignal();
-    if (!idToken) {
-      // No staged token means the modal was opened out-of-band; nothing to
-      // do. Returning an error keeps the caller's subscribe contract clean.
-      return throwError(
-        () => new Error('No hay un inicio de sesión de Google pendiente para vincular.')
-      );
-    }
-
-    return this.http
-      .post<AuthResponse>(`${this.apiUrl}/link-google-with-password`, {
-        idToken,
-        password,
-      })
-      .pipe(
-        tap((response) => {
-          this.handleAuthSuccess(response);
-          this.linkGooglePendingSignal.set(null);
-          this.closeAuthModal();
-        }),
-        catchError((error: HttpErrorResponse) => {
-          // Reuse the blocked-account modal path; if the account got blocked
-          // between the original sign-in attempt and this link attempt, the
-          // user lands on the same UI as elsewhere in the app.
-          this.triggerAccountBlocked(error);
-          return throwError(() => error);
-        })
-      );
+    return this.accountLink.linkGoogleWithPassword(password);
   }
 
-  /**
-   * Apple counterpart of `openLinkGoogleModal`. Stages the identityToken
-   * plus the (optional) name fields received from Apple's first sign-in,
-   * then closes the auth modal so the user sees a single modal at a time.
-   */
   openLinkAppleModal(
     identityToken: string,
     firstName?: string,
     lastName?: string,
   ): void {
-    this.linkApplePendingSignal.set({ identityToken, firstName, lastName });
-    this.closeAuthModal();
+    this.accountLink.openLinkAppleModal(identityToken, firstName, lastName);
   }
 
   closeLinkAppleModal(): void {
-    this.linkApplePendingSignal.set(null);
+    this.accountLink.closeLinkAppleModal();
   }
 
-  /**
-   * Apple counterpart of `linkGoogleWithPassword`. Posts the staged
-   * identityToken + name fields + the user-supplied local password to
-   * `/api/auth/link-apple-with-password`. On success the backend returns
-   * the same { token, user } shape as a regular sign-in.
-   */
   linkAppleWithPassword(password: string): Observable<AuthResponse> {
-    const pending = this.linkApplePendingSignal();
-    if (!pending) {
-      return throwError(
-        () => new Error('No hay un inicio de sesión de Apple pendiente para vincular.'),
-      );
-    }
-
-    return this.http
-      .post<AuthResponse>(`${this.apiUrl}/link-apple-with-password`, {
-        identityToken: pending.identityToken,
-        password,
-        firstName: pending.firstName,
-        lastName: pending.lastName,
-      })
-      .pipe(
-        tap((response) => {
-          this.handleAuthSuccess(response);
-          this.linkApplePendingSignal.set(null);
-          this.closeAuthModal();
-        }),
-        catchError((error: HttpErrorResponse) => {
-          this.triggerAccountBlocked(error);
-          return throwError(() => error);
-        }),
-      );
+    return this.accountLink.linkAppleWithPassword(password);
   }
 
-  readonly currentUser = this.currentUserSignal.asReadonly();
+  // ─── Session state ──────────────────────────────────────────
 
-  readonly isAuthenticated = computed(() => !!this.currentUserSignal());
+  readonly currentUser = this.session.currentUser;
 
-  readonly sessionExpired = this.sessionExpiredSignal.asReadonly();
+  readonly isAuthenticated = computed(() => !!this.session.currentUser());
+
+  readonly sessionExpired = this.session.sessionExpired;
 
   readonly userFullName = computed(() => {
-    const user = this.currentUserSignal();
+    const user = this.session.currentUser();
     if (!user) return '';
     if (user.firstName && user.lastName) {
       return `${user.firstName} ${user.lastName}`;
@@ -355,7 +186,7 @@ export class AuthService {
   });
 
   readonly userAvatar = computed(() => {
-    const user = this.currentUserSignal();
+    const user = this.session.currentUser();
     if (user?.avatar) return user.avatar;
     const name = this.userFullName();
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=001d56&color=fff&size=128`;
@@ -372,23 +203,11 @@ export class AuthService {
     private readonly injector: Injector
   ) {}
 
-  // ─── Helpers para detectar contexto ─────────────────────────
-
-  private isAdminContext(): boolean {
-    return window.location.pathname.startsWith('/admin');
-  }
-
-  private getStorageKeys(): { tokenKey: string; userKey: string } {
-    return this.isAdminContext()
-      ? { tokenKey: ADMIN_TOKEN_KEY, userKey: ADMIN_USER_KEY }
-      : { tokenKey: CLIENT_TOKEN_KEY, userKey: CLIENT_USER_KEY };
-  }
-
   // ─── Métodos públicos ───────────────────────────────────────
 
   login(credentials: LoginRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/login`, credentials).pipe(
-      tap((response) => this.handleAuthSuccess(response)),
+      tap((response) => this.authSuccess.handle(response)),
       catchError((error) => this.handleAuthError(error))
     );
   }
@@ -413,7 +232,7 @@ export class AuthService {
           !response.data?.requiresLinkVerification &&
           response.data?.token
         ) {
-          this.handleAuthSuccess(response);
+          this.authSuccess.handle(response);
         }
       }),
       catchError((error) => this.handleAuthError(error))
@@ -440,12 +259,7 @@ export class AuthService {
         tap((response) => {
           if (response.success && response.data?.token) {
             // Caso 3 (link account) is always client-scope by design.
-            this.persistSession(response.data.token, response.data.user, {
-              tokenKey: CLIENT_TOKEN_KEY,
-              userKey: CLIENT_USER_KEY,
-            });
-            this.currentUserSignal.set(response.data.user);
-            this.sessionExpiredSignal.set(false);
+            this.session.startSession(response.data.token, response.data.user, CLIENT_SESSION_SCOPE);
           }
         })
       );
@@ -481,12 +295,7 @@ export class AuthService {
           // Auto-login when the backend returns credentials: drop the user
           // straight on /perfil with the "complete profile" modal open.
           if (response.success && response.data?.token && response.data?.user) {
-            this.persistSession(response.data.token, response.data.user, {
-              tokenKey: CLIENT_TOKEN_KEY,
-              userKey: CLIENT_USER_KEY,
-            });
-            this.currentUserSignal.set(response.data.user);
-            this.sessionExpiredSignal.set(false);
+            this.session.startSession(response.data.token, response.data.user, CLIENT_SESSION_SCOPE);
           }
         })
       );
@@ -505,150 +314,19 @@ export class AuthService {
     return this.http.post<CheckEmailResponse>(`${this.apiUrl}/check-email`, { email });
   }
 
-  // ─── Forgot-password modal control ─────────────────────────────
-
-  private readonly forgotPasswordModalOpenSignal = signal(false);
-  readonly forgotPasswordModalOpen = this.forgotPasswordModalOpenSignal.asReadonly();
-
-  openForgotPasswordModal(): void {
-    this.closeAuthModal();
-    this.forgotPasswordModalOpenSignal.set(true);
-  }
-
-  closeForgotPasswordModal(): void {
-    this.forgotPasswordModalOpenSignal.set(false);
-  }
+  // ─── OAuth sign-in ──────────────────────────────────────────────
 
   loginWithOAuth(provider: OAuthProvider): void {
     if (this.platform.isNative()) {
       // Native flow: open OS Google picker → receive idToken → exchange
       // it for the app's JWT via POST /api/auth/google/native.
-      void this.signInWithGoogleNative();
+      void this.nativeSignIn.signInWithGoogle();
       return;
     }
     // Web flow (unchanged): persist return URL and let Passport handle the
     // browser redirect.
     void this.storage.set('oauth_return_url', window.location.pathname);
     window.location.href = `${this.apiUrl}/${provider}`;
-  }
-
-  /**
-   * Native Google sign-in pipeline:
-   *   1. Open the OS Google account picker via the Capacitor plugin.
-   *   2. Receive the idToken.
-   *   3. POST it to /api/auth/google/native — backend verifies and
-   *      returns the app's own JWT + user payload.
-   *   4. Persist as a normal client session (handleAuthSuccess pattern).
-   *
-   * Errors:
-   *   - Picker dismissed / cancelled → re-thrown by GoogleAuth strategy,
-   *     swallowed silently here (no toast — the user dismissed on purpose).
-   *   - Account blocked / collision → backend returns 4xx with `code` —
-   *     translated via triggerAccountBlocked() into the global modal,
-   *     same path the existing flows use.
-   *   - Network error → no UI change, the original AuthError observable
-   *     would have surfaced; here we log to console for debugging.
-   */
-  private async signInWithGoogleNative(): Promise<void> {
-    // Mark in-flight so the auth-modal can show / clear its spinner via
-    // the `nativeOAuthLoading` signal. ALWAYS clear it on the way out
-    // regardless of success/failure, so a stuck spinner can never happen.
-    this.nativeOAuthLoadingSignal.set(true);
-
-    let idToken: string;
-    try {
-      const result = await this.googleAuth.signIn();
-      if (result.flow !== 'native') {
-        this.nativeOAuthLoadingSignal.set(false);
-        return; // safety — should not happen
-      }
-      idToken = result.idToken;
-    } catch (err) {
-      this.nativeOAuthLoadingSignal.set(false);
-      // Distinguish two very different scenarios that the plugin reports
-      // through the same `throw`:
-      //   1) The user dismissed the Google account picker on purpose →
-      //      silent no-op (toasts on intentional cancellations are noise).
-      //   2) The plugin itself failed (Google Play Services missing or
-      //      outdated, SHA mismatch, no network, dev config error) →
-      //      visible toast, otherwise the user sees nothing and we get
-      //      no diagnostic from the field.
-      // Google Sign-In status code 12501 (SIGN_IN_CANCELLED) is the
-      // canonical signal; some Android OEMs only surface a message, so
-      // we also do a defensive substring match.
-      const errCode = String((err as { code?: unknown } | null)?.code ?? '').toLowerCase();
-      const errMsg = String((err as { message?: unknown } | null)?.message ?? err ?? '');
-      const isUserCancelled =
-        errCode === '12501' ||
-        /cancel/i.test(errMsg) ||
-        /dismiss/i.test(errMsg);
-
-      if (isUserCancelled) return;
-
-      console.warn('[AuthService] Google native sign-in failed:', err);
-      this.toast.error(
-        `No se pudo iniciar sesión con Google. Detalle: ${errMsg || 'Error desconocido'}`,
-        8000,
-      );
-      return;
-    }
-
-    this.http
-      .post<AuthResponse>(`${this.apiUrl}/google/native`, { idToken })
-      .pipe(
-        tap((response) => this.handleAuthSuccess(response)),
-        catchError((error: HttpErrorResponse) => {
-          // Reuse the same blocked-account modal path as the web flow.
-          this.triggerAccountBlocked(error);
-          return throwError(() => error);
-        })
-      )
-      .subscribe({
-        next: () => {
-          // Profile is already in the response; route to home (or wherever
-          // the user came from). Mirrors the web AuthCallbackComponent
-          // behaviour for the post-login redirect.
-          const user = this.currentUserSignal();
-          if (user && user.profileCompleted === false) {
-            this.router.navigate(['/perfil'], { queryParams: { completeProfile: 'true' } });
-          } else {
-            this.router.navigate(['/']);
-          }
-          this.closeAuthModal();
-          this.nativeOAuthLoadingSignal.set(false);
-        },
-        error: (err: HttpErrorResponse) => {
-          console.warn('[AuthService] Google native exchange failed:', err);
-          this.nativeOAuthLoadingSignal.set(false);
-
-          // `triggerAccountBlocked` (in catchError above) already opened the
-          // dedicated blocked-account modal for ACCOUNT_BLOCKED/SUSPENDED/
-          // DELETED/NOT_FOUND. Avoid layering a toast on top of that modal.
-          if (this.blockedInfoSignal()) return;
-
-          const body = err?.error as { code?: string; message?: string } | undefined;
-          const code = body?.code;
-
-          // Symmetric account-linking entry point: the user has a local
-          // account for this email and is now signing in with Google. Open
-          // the link modal so they can supply their password and attach
-          // Google to their account. `idToken` is in the enclosing closure
-          // because we only reach the .subscribe.error AFTER a successful
-          // plugin sign-in (the earlier try/catch already exited otherwise).
-          if (code === 'EMAIL_ALREADY_REGISTERED_LOCAL') {
-            this.openLinkGoogleModal(idToken);
-            return;
-          }
-
-          // Any other backend failure: surface a visible message instead of
-          // dying silently. Without this, native Google sign-in errors look
-          // like the button does nothing — exactly the bug we just fixed.
-          this.toast.error(
-            body?.message ?? 'No se pudo completar el inicio de sesión con Google.',
-            8000,
-          );
-        },
-      });
   }
 
   /**
@@ -662,125 +340,23 @@ export class AuthService {
    * native strategy throws and surfaces a toast via the existing handler.
    */
   loginWithApple(): void {
-    void this.signInWithAppleNative();
+    void this.nativeSignIn.signInWithApple();
   }
 
-  /**
-   * Native Apple sign-in pipeline — exact symmetric of `signInWithGoogleNative`:
-   *   1. Open the OS Sign in with Apple sheet via the Capacitor plugin.
-   *   2. Receive the identityToken + (first-sign-in-only) firstName/lastName.
-   *   3. POST to /api/auth/apple/native — backend verifies and returns
-   *      the app's own JWT + user payload.
-   *   4. Persist as a normal client session via handleAuthSuccess.
-   *
-   * Error handling mirrors the Google flow: cancel = silent, plugin
-   * failure = toast, EMAIL_ALREADY_REGISTERED_LOCAL = open link modal.
-   */
-  private async signInWithAppleNative(): Promise<void> {
-    this.nativeOAuthLoadingSignal.set(true);
-
-    let identityToken: string;
-    let firstName: string | undefined;
-    let lastName: string | undefined;
-    try {
-      const result = await this.appleAuth.signIn();
-      if (result.flow !== 'native') {
-        this.nativeOAuthLoadingSignal.set(false);
-        return; // defensive — should not happen
-      }
-      identityToken = result.identityToken;
-      firstName = result.firstName;
-      lastName = result.lastName;
-    } catch (err) {
-      this.nativeOAuthLoadingSignal.set(false);
-      // Apple's cancellation codes differ from Google's. The native plugin
-      // surfaces `1001` (ASAuthorizationErrorCanceled) on user dismiss, plus
-      // a "cancelled"/"canceled" string in the message on some bridge paths.
-      const errCode = String((err as { code?: unknown } | null)?.code ?? '').toLowerCase();
-      const errMsg = String((err as { message?: unknown } | null)?.message ?? err ?? '');
-      const isUserCancelled =
-        errCode === '1001' ||
-        /cancel/i.test(errMsg) ||
-        /dismiss/i.test(errMsg);
-
-      if (isUserCancelled) return;
-
-      console.warn('[AuthService] Apple native sign-in failed:', err);
-      this.toast.error(
-        `No se pudo iniciar sesión con Apple. Detalle: ${errMsg || 'Error desconocido'}`,
-        8000,
-      );
-      return;
-    }
-
-    this.http
-      .post<AuthResponse>(`${this.apiUrl}/apple/native`, {
-        identityToken,
-        firstName,
-        lastName,
-      })
-      .pipe(
-        tap((response) => this.handleAuthSuccess(response)),
-        catchError((error: HttpErrorResponse) => {
-          this.triggerAccountBlocked(error);
-          return throwError(() => error);
-        }),
-      )
-      .subscribe({
-        next: () => {
-          const user = this.currentUserSignal();
-          if (user && user.profileCompleted === false) {
-            this.router.navigate(['/perfil'], { queryParams: { completeProfile: 'true' } });
-          } else {
-            this.router.navigate(['/']);
-          }
-          this.closeAuthModal();
-          this.nativeOAuthLoadingSignal.set(false);
-        },
-        error: (err: HttpErrorResponse) => {
-          console.warn('[AuthService] Apple native exchange failed:', err);
-          this.nativeOAuthLoadingSignal.set(false);
-
-          if (this.blockedInfoSignal()) return;
-
-          const body = err?.error as { code?: string; message?: string } | undefined;
-          const code = body?.code;
-
-          // Symmetric account-linking entry point for Apple — same contract
-          // as the Google branch above.
-          if (code === 'EMAIL_ALREADY_REGISTERED_LOCAL') {
-            this.openLinkAppleModal(identityToken, firstName, lastName);
-            return;
-          }
-
-          this.toast.error(
-            body?.message ?? 'No se pudo completar el inicio de sesión con Apple.',
-            8000,
-          );
-        },
-      });
-  }
+  // ─── Session lifecycle ──────────────────────────────────────────
 
   /**
    * Saves an admin session in admin-only storage keys, leaving the client
    * keys untouched.
    */
   handleAdminLogin(token: string, user: User): void {
-    this.persistSession(token, user, {
-      tokenKey: ADMIN_TOKEN_KEY,
-      userKey: ADMIN_USER_KEY,
-    });
-    this.currentUserSignal.set(user);
-    this.sessionExpiredSignal.set(false);
+    this.session.startSession(token, user, ADMIN_SESSION_SCOPE);
   }
 
   handleOAuthCallback(token: string): void {
     // Clear any stale user cache before persisting the new token. The
     // user payload is fetched right after via loadUserProfile().
-    this.userCacheSignal.set(null);
-    this.currentUserSignal.set(null);
-    void this.storage.remove(CLIENT_USER_KEY);
-    this.persistTokenOnly(token, CLIENT_TOKEN_KEY);
+    this.session.beginOAuthSession(token);
   }
 
   /**
@@ -790,10 +366,8 @@ export class AuthService {
    * logueado sin tener que rehacer login.
    */
   applyNewSession(token: string, user: User): void {
-    const { tokenKey, userKey } = this.getStorageKeys();
-    this.persistSession(token, user, { tokenKey, userKey });
-    this.currentUserSignal.set(user);
-    this.sessionExpiredSignal.set(false);
+    const { tokenKey, userKey } = this.session.getStorageKeys();
+    this.session.startSession(token, user, { tokenKey, userKey });
   }
 
   /**
@@ -802,12 +376,12 @@ export class AuthService {
    * a single field server-side and return the updated payload.
    */
   patchCurrentUser(patch: Partial<User>): void {
-    const current = this.currentUserSignal();
+    const current = this.session.currentUser();
     if (!current) return;
     const merged: User = { ...current, ...patch };
-    const { userKey } = this.getStorageKeys();
-    this.persistUserOnly(merged, userKey);
-    this.currentUserSignal.set(merged);
+    const { userKey } = this.session.getStorageKeys();
+    this.session.persistUserOnly(merged, userKey);
+    this.session.setCurrentUser(merged);
   }
 
   /**
@@ -824,7 +398,7 @@ export class AuthService {
   }
 
   private async performLogoutAsync(): Promise<void> {
-    const isAdmin = this.isAdminContext();
+    const isAdmin = this.session.isAdminContext();
 
     // Best-effort cleanup BEFORE clearing the JWT:
     //   - Unregister FCM token (so the backend stops pushing to this device).
@@ -838,13 +412,13 @@ export class AuthService {
     await Promise.race([
       Promise.allSettled([
         this.unregisterFcmTokenSilent(isAdmin),
-        this.signOutGoogleSilent(),
-        this.signOutAppleSilent(),
+        this.nativeSignIn.signOutGoogleSilent(),
+        this.nativeSignIn.signOutAppleSilent(),
       ]),
       new Promise<void>((resolve) => setTimeout(resolve, 1500)),
     ]);
 
-    const { tokenKey, userKey } = this.getStorageKeys();
+    const { tokenKey, userKey } = this.session.getStorageKeys();
 
     // Best-effort server notification — proceed with local cleanup
     // regardless of network outcome.
@@ -855,9 +429,9 @@ export class AuthService {
       });
     }
 
-    this.clearStoredSession({ tokenKey, userKey });
+    this.session.clearStoredSession({ tokenKey, userKey });
     void this.storage.remove('oauth_return_url');
-    this.currentUserSignal.set(null);
+    this.session.setCurrentUser(null);
 
     // Telemetry: drop the user correlation so post-logout reports are
     // anonymous, and track the logout event.
@@ -866,41 +440,6 @@ export class AuthService {
     void this.crashlytics.setUserId(null);
 
     this.router.navigate(isAdmin ? ['/admin/login'] : ['/']);
-  }
-
-  /**
-   * Best-effort native Google sign-out. The Capacitor Firebase
-   * Authentication plugin keeps a SDK-level session (FirebaseAuth.currentUser)
-   * independent of our backend JWT. Without clearing it, the next call to
-   * `FirebaseAuthentication.signInWithGoogle()` fails with
-   * "No credentials available" — the Android Credential Manager refuses to
-   * issue new credentials while a stale session lingers. On web the strategy
-   * is a no-op (web has no native Google session of its own).
-   *
-   * Errors are swallowed because a sign-out failure must never block the
-   * app-level logout — same contract as `unregisterFcmTokenSilent`.
-   */
-  private async signOutGoogleSilent(): Promise<void> {
-    try {
-      await this.googleAuth.signOut();
-    } catch {
-      /* silent — Google sign-out failure must not block app logout */
-    }
-  }
-
-  /**
-   * Best-effort native Apple sign-out. Same rationale as
-   * `signOutGoogleSilent` — Firebase Authentication holds an SDK-level
-   * session for Sign in with Apple independent of our JWT, and a stale
-   * session can break the next sign-in attempt. The strategy is a no-op
-   * on web and Android, so calling this unconditionally is safe.
-   */
-  private async signOutAppleSilent(): Promise<void> {
-    try {
-      await this.appleAuth.signOut();
-    } catch {
-      /* silent — Apple sign-out failure must not block app logout */
-    }
   }
 
   /**
@@ -922,20 +461,21 @@ export class AuthService {
   }
 
   handleSessionExpired(): void {
-    const { tokenKey, userKey } = this.getStorageKeys();
-    this.clearStoredSession({ tokenKey, userKey });
-    this.currentUserSignal.set(null);
-    this.sessionExpiredSignal.set(true);
+    const { tokenKey, userKey } = this.session.getStorageKeys();
+    this.session.clearStoredSession({ tokenKey, userKey });
+    this.session.setCurrentUser(null);
+    this.session.setSessionExpired(true);
   }
 
   clearSessionExpired(): void {
-    this.sessionExpiredSignal.set(false);
+    this.session.setSessionExpired(false);
   }
 
   /**
    * Returns the cached JWT for the current scope (cliente or admin),
-   * synchronously. Reads from `tokenCacheSignal`, NOT from storage —
-   * `loadCacheFromStorage()` must have run during APP_INITIALIZER.
+   * synchronously. Reads from the session store's in-memory cache, NOT
+   * from storage — `loadCacheFromStorage()` must have run during
+   * APP_INITIALIZER.
    *
    * Note: the cache stores ONE token at a time. If the user navigates
    * between /admin/* and / contexts, the active scope changes. We
@@ -946,22 +486,22 @@ export class AuthService {
    * navigations that would trigger it pass through a logout/login first.
    */
   getToken(): string | null {
-    return this.tokenCacheSignal();
+    return this.session.getToken();
   }
 
   setUserFromStorage(): void {
-    const user = this.getStoredUser();
+    const user = this.session.getStoredUser();
     if (user) {
-      this.currentUserSignal.set(user);
+      this.session.setCurrentUser(user);
     }
   }
 
   isAdminSession(): boolean {
-    return this.isAdminContext();
+    return this.session.isAdminContext();
   }
 
   loadUserProfile(): Observable<{ success: boolean; data: User }> {
-    const isAdmin = this.isAdminContext();
+    const isAdmin = this.session.isAdminContext();
 
     const profileUrl = isAdmin
       ? `${environment.apiUrl}/admin/profile`
@@ -974,132 +514,34 @@ export class AuthService {
           if (response.success && response.data) {
             const role: UserRole = isAdmin ? UserRole.ADMIN : response.data.role;
             const userData = { ...response.data, role };
-            const { userKey } = this.getStorageKeys();
-            this.persistUserOnly(userData, userKey);
-            this.currentUserSignal.set(userData);
+            const { userKey } = this.session.getStorageKeys();
+            this.session.persistUserOnly(userData, userKey);
+            this.session.setCurrentUser(userData);
           }
         }),
         catchError((error) => {
           if (error.status === 401 || error.status === 403) {
-            const { tokenKey, userKey } = this.getStorageKeys();
-            this.clearStoredSession({ tokenKey, userKey });
-            this.currentUserSignal.set(null);
+            const { tokenKey, userKey } = this.session.getStorageKeys();
+            this.session.clearStoredSession({ tokenKey, userKey });
+            this.session.setCurrentUser(null);
           }
           return throwError(() => error);
         })
       );
   }
 
-  // ─── Métodos privados ───────────────────────────────────────
-
-  private handleAuthSuccess(response: AuthResponse): void {
-    if (response.success && response.data && response.data.token) {
-      this.persistSession(response.data.token, response.data.user, {
-        tokenKey: CLIENT_TOKEN_KEY,
-        userKey: CLIENT_USER_KEY,
-      });
-      this.currentUserSignal.set(response.data.user);
-      this.sessionExpiredSignal.set(false);
-
-      // Telemetry: single funnel for every client login (local, OAuth,
-      // account-link). Correlate reports with the user, then track the event.
-      const userId = response.data.user.id;
-      void this.analytics.setUserId(userId);
-      void this.crashlytics.setUserId(userId);
-      void this.analytics.logEvent(AnalyticsEvent.Login);
-    }
+  /**
+   * Hydrates the in-memory token + user caches from the platform storage.
+   * MUST be called and AWAITED during APP_INITIALIZER — see
+   * `AuthSessionStore.loadCacheFromStorage` for the full contract.
+   */
+  loadCacheFromStorage(): Promise<void> {
+    return this.session.loadCacheFromStorage();
   }
+
+  // ─── Métodos privados ───────────────────────────────────────
 
   private handleAuthError(error: unknown): Observable<never> {
     return throwError(() => error);
-  }
-
-  private getStoredUser(): User | null {
-    return this.userCacheSignal();
-  }
-
-  /**
-   * Hydrates the in-memory token + user caches from the platform storage
-   * (localStorage on web, Capacitor Preferences on native).
-   *
-   * MUST be called and AWAITED during APP_INITIALIZER before any code
-   * reads `getToken()` or `currentUser()`. The existing
-   * `auth.interceptor.ts` reads the token synchronously on every request;
-   * if this method has not run yet, the interceptor would send requests
-   * without auth even when the user is logged in.
-   *
-   * Idempotent: safe to call multiple times. Each call overwrites the
-   * cache with the latest persisted values. Reads both client and admin
-   * keys so a user with both sessions (cliente + admin in the same
-   * device) doesn't lose either cache when navigating between contexts.
-   */
-  async loadCacheFromStorage(): Promise<void> {
-    // Resolve which keys apply based on the current path. On boot the
-    // path is whatever URL the user landed on (typically '/' but could
-    // be '/admin/...').
-    const { tokenKey, userKey } = this.getStorageKeys();
-
-    const [token, userStr] = await Promise.all([
-      this.storage.get(tokenKey),
-      this.storage.get(userKey),
-    ]);
-
-    this.tokenCacheSignal.set(token);
-
-    if (userStr) {
-      try {
-        const user = JSON.parse(userStr) as User;
-        this.userCacheSignal.set(user);
-        this.currentUserSignal.set(user);
-      } catch {
-        this.userCacheSignal.set(null);
-        this.currentUserSignal.set(null);
-      }
-    } else {
-      this.userCacheSignal.set(null);
-      this.currentUserSignal.set(null);
-    }
-  }
-
-  /**
-   * Persists token + user atomically (from the consumer's POV — both
-   * caches update synchronously, storage writes are awaited together).
-   * Fire-and-forget at the storage layer keeps the API non-blocking for
-   * call sites that already assume sync behaviour.
-   */
-  private persistSession(token: string, user: User, scope: { tokenKey: string; userKey: string }): void {
-    this.tokenCacheSignal.set(token);
-    this.userCacheSignal.set(user);
-    void this.storage.set(scope.tokenKey, token);
-    void this.storage.set(scope.userKey, JSON.stringify(user));
-  }
-
-  /**
-   * Persists token alone (used by handleOAuthCallback where the user
-   * profile is fetched right after via loadUserProfile).
-   */
-  private persistTokenOnly(token: string, tokenKey: string): void {
-    this.tokenCacheSignal.set(token);
-    void this.storage.set(tokenKey, token);
-  }
-
-  /**
-   * Persists a user update without rotating the token (used by
-   * patchCurrentUser when only profile fields change).
-   */
-  private persistUserOnly(user: User, userKey: string): void {
-    this.userCacheSignal.set(user);
-    void this.storage.set(userKey, JSON.stringify(user));
-  }
-
-  /**
-   * Wipes the cached session and the storage entries. Used on logout and
-   * session expiration.
-   */
-  private clearStoredSession(scope: { tokenKey: string; userKey: string }): void {
-    this.tokenCacheSignal.set(null);
-    this.userCacheSignal.set(null);
-    void this.storage.remove(scope.tokenKey);
-    void this.storage.remove(scope.userKey);
   }
 }

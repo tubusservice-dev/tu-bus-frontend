@@ -1,0 +1,57 @@
+<form [formGroup]="carouselsForm()" class="section-form">
+  <p class="section-description">
+    Configura el comportamiento de los carruseles automáticos en la tienda.
+  </p>
+
+  <!-- Carrusel Automático del Home -->
+  <div class="carousel-config" formGroupName="homeCarousel" [class.disabled]="!carouselsForm().get('homeCarousel.isEnabled')?.value">
+    <div class="carousel-header">
+      <div class="carousel-info">
+        <h4>Carrusel Automático del Home</h4>
+        <p class="carousel-description">Transición automática de productos destacados en la página principal</p>
+      </div>
+      <label class="toggle-container small">
+        <input type="checkbox" formControlName="isEnabled" class="toggle-input" />
+        <span class="toggle-switch"></span>
+      </label>
+    </div>
+    @if (carouselsForm().get('homeCarousel.isEnabled')?.value) {
+      <div class="slider-group">
+        <label>Intervalo de transición: <strong>{{ getIntervalInSeconds('homeCarousel') }}s</strong></label>
+        <input
+          type="range"
+          formControlName="interval"
+          min="1000"
+          max="15000"
+          step="500"
+          class="slider"
+        />
+        <div class="slider-labels">
+          <span>1s</span>
+          <span>15s</span>
+        </div>
+      </div>
+    }
+  </div>
+
+  @if (errorMessage()) {
+    <div class="alert alert-error">{{ errorMessage() }}</div>
+  }
+  @if (saveSuccess()) {
+    <div class="alert alert-success">Configuración guardada correctamente</div>
+  }
+
+  <button
+    type="button"
+    class="btn-save"
+    (click)="saveCarousels()"
+    [disabled]="isSaving()"
+  >
+    @if (isSaving()) {
+      <span class="btn-spinner"></span>
+      Guardando...
+    } @else {
+      Guardar Carruseles
+    }
+  </button>
+</form>

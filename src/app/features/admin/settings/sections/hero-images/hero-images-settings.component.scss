@@ -1,4 +1,13 @@
-// Home page settings: hero images, floating stats, lightbox, carousel, colour picker and preview.
+// Shared settings partials, in the page's original cascade order.
+@use '../../styles/section-form';
+@use '../../styles/toggle';
+@use '../../styles/carousel';
+@use '../../styles/alerts-buttons';
+
+// Block host so the surrounding spacing applies as it did to the markup it wraps.
+:host {
+  display: block;
+}
 
 // ========== Hero Images Filmstrip ==========
 .hero-filmstrip {
@@ -134,10 +143,6 @@
   @apply text-xs font-medium text-gray-600 dark:text-gray-300;
 }
 
-.stat-field-hint {
-  @apply text-xs font-normal text-gray-400 dark:text-gray-500 ml-1;
-}
-
 .stat-field-helper {
   @apply block text-xs leading-relaxed text-gray-500 dark:text-gray-400 mt-1;
 
@@ -253,141 +258,4 @@
 @keyframes lightbox-img-in {
   from { opacity: 0; transform: scale(0.95); }
   to { opacity: 1; transform: scale(1); }
-}
-
-// ========== Carousel Config ==========
-.carousel-config {
-  @apply p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl space-y-4 border border-gray-200 dark:border-gray-600 transition-all duration-200;
-
-  & + .carousel-config {
-    @apply mt-4;
-  }
-
-  &.disabled {
-    @apply opacity-60;
-
-    .carousel-info h4 {
-      @apply text-gray-500 dark:text-gray-400;
-    }
-  }
-
-  .carousel-header {
-    @apply flex items-center justify-between gap-4;
-  }
-
-  .carousel-info {
-    @apply flex-1;
-
-    h4 {
-      @apply text-sm font-semibold text-gray-900 dark:text-white;
-    }
-
-    .carousel-description {
-      @apply text-xs text-gray-500 dark:text-gray-400 mt-0.5;
-    }
-  }
-}
-
-.slider-group {
-  @apply space-y-3;
-
-  label {
-    @apply block text-sm font-medium text-gray-700 dark:text-gray-300;
-  }
-}
-
-.slider {
-  @apply w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer;
-
-  &::-webkit-slider-thumb {
-    @apply appearance-none w-5 h-5 rounded-full cursor-pointer transition-all shadow-md;
-    background-color: var(--accent-primary);
-
-    &:hover {
-      background-color: var(--accent-hover);
-      transform: scale(1.1);
-    }
-  }
-
-  &::-moz-range-thumb {
-    @apply w-5 h-5 rounded-full cursor-pointer border-0 shadow-md;
-    background-color: var(--accent-primary);
-
-    &:hover {
-      background-color: var(--accent-hover);
-    }
-  }
-
-  &:focus {
-    outline: none;
-
-    &::-webkit-slider-thumb {
-      box-shadow: 0 0 0 3px rgba(var(--accent-primary), 0.2);
-    }
-  }
-}
-
-.slider-labels {
-  @apply flex justify-between text-xs text-gray-500 dark:text-gray-400 font-medium;
-}
-
-// ========== Color Picker ==========
-.color-picker-group {
-  @apply space-y-2;
-
-  label {
-    @apply block text-sm font-medium text-gray-700 dark:text-gray-300;
-  }
-
-  .color-hint {
-    @apply text-xs text-gray-500 dark:text-gray-400 mb-2;
-  }
-}
-
-.color-swatches {
-  @apply flex flex-wrap gap-2;
-}
-
-.color-swatch {
-  @apply w-10 h-10 rounded-lg cursor-pointer border-2 border-transparent hover:scale-110 transition-all duration-150 flex items-center justify-center;
-
-  &.selected {
-    @apply border-white ring-2 ring-offset-2 ring-gray-900 dark:ring-white dark:ring-offset-gray-800;
-  }
-
-  .check-icon {
-    @apply w-5 h-5;
-  }
-}
-
-// ========== Color Preview ==========
-.color-preview {
-  @apply mt-4 p-4 bg-gray-100 dark:bg-gray-700 rounded-lg;
-
-  h4 {
-    @apply text-sm font-medium text-gray-700 dark:text-gray-300 mb-3;
-  }
-}
-
-.preview-card {
-  @apply flex flex-wrap items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-lg;
-
-  .preview-button {
-    @apply px-4 py-2 rounded-lg font-medium text-sm transition-colors;
-
-    &.primary {
-      background-color: var(--preview-primary, #991b1b);
-      @apply text-white hover:opacity-90;
-    }
-
-    &.secondary {
-      background-color: var(--preview-secondary, #dc2626);
-      @apply text-white hover:opacity-90;
-    }
-  }
-
-  .preview-link {
-    color: var(--preview-primary, #991b1b);
-    @apply text-sm font-medium hover:underline cursor-pointer;
-  }
 }

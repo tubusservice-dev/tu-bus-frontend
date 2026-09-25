@@ -1,0 +1,9 @@
+// Shared settings partials, in the page's original cascade order.
+@use '../../styles/section-form';
+@use '../../styles/alerts-buttons';
+@use '../../styles/contact-form';
+
+// Block host so the surrounding spacing applies as it did to the markup it wraps.
+:host {
+  display: block;
+}
