@@ -1,0 +1,157 @@
+// ============================================
+// SERVICE DATE CARD
+// ============================================
+.service-date-badge {
+  @apply ml-auto;
+
+  &.badge-amber {
+    @apply bg-amber-100 text-amber-800;
+  }
+  &.badge-emerald {
+    @apply bg-emerald-100 text-emerald-800;
+  }
+  &.badge-blue {
+    @apply bg-blue-100 text-blue-800;
+  }
+}
+
+:host-context(.dark) .service-date-badge {
+  &.badge-amber {
+    @apply bg-amber-900/30 text-amber-300;
+  }
+  &.badge-emerald {
+    @apply bg-emerald-900/30 text-emerald-300;
+  }
+  &.badge-blue {
+    @apply bg-blue-900/30 text-blue-300;
+  }
+}
+
+.requested-service-body {
+  @apply px-5 sm:px-6 py-4 flex flex-col gap-2;
+}
+
+.requested-service-date {
+  @apply text-base font-semibold m-0 capitalize;
+  color: var(--text-primary, #111827);
+}
+
+:host-context(.dark) .requested-service-date {
+  color: #f3f4f6;
+}
+
+.requested-service-hint {
+  @apply text-xs leading-relaxed m-0;
+  color: var(--text-tertiary, #6b7280);
+}
+
+:host-context(.dark) .requested-service-hint {
+  color: #9ca3af;
+}
+
+// ============================================
+// LOADING / ERROR
+// ============================================
+.loading-state {
+  @apply flex flex-col items-center justify-center py-20 gap-3 text-gray-500 dark:text-gray-400;
+}
+
+.spinner {
+  @apply w-10 h-10 rounded-full animate-spin;
+  border: 3px solid #e5e7eb;
+  border-top-color: var(--accent-primary, #001d56);
+
+  :host-context(.dark) & {
+    border-color: #374151;
+    border-top-color: var(--accent-primary, #3b82f6);
+  }
+}
+
+.error-state {
+  @apply flex flex-col items-center justify-center py-20 gap-4 text-center;
+
+  p { @apply text-red-600 dark:text-red-400; }
+}
+
+.btn-back-link {
+  @apply px-4 py-2 text-sm font-medium rounded-lg transition-colors;
+  @apply bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300;
+  @apply hover:bg-gray-200 dark:hover:bg-gray-600;
+}
+
+// ============================================
+// GRID DE DETALLE
+// ============================================
+.detail-grid {
+  @apply grid grid-cols-1 lg:grid-cols-2 gap-4;
+}
+
+.detail-column {
+  @apply flex flex-col gap-4;
+}
+
+// ============================================
+// TARJETAS
+// ============================================
+.detail-card {
+  @apply rounded-xl border bg-white;
+  border-color: #e5e7eb;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+  // Excepción: si el card contiene un popover (teléfono del mecánico),
+  // necesita overflow visible para que el popover no se corte.
+  &.detail-card-overflow {
+    overflow: visible;
+  }
+
+  :host-context(.dark) & {
+    background-color: #1e293b;
+    border-color: #334155;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+}
+
+.card-title {
+  @apply flex items-center flex-wrap gap-2 px-4 sm:px-5 py-3 text-sm font-semibold border-b;
+  @apply text-gray-700 bg-gray-50 border-gray-200;
+  border-top-left-radius: 0.75rem;
+  border-top-right-radius: 0.75rem;
+  min-width: 0;
+
+  :host-context(.dark) & {
+    @apply text-gray-200;
+    background-color: #1e293b;
+    border-bottom-color: #334155;
+  }
+
+  svg {
+    @apply w-5 h-5 flex-shrink-0;
+    color: #3b82f6;
+
+    :host-context(.dark) & { color: #60a5fa; }
+  }
+
+  // Title text may be long on narrow screens; let it wrap instead of
+  // pushing the adjacent badge off the card.
+  > span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+}
+
+.btn-toggle-detail {
+  @apply ml-auto p-1.5 rounded-md transition-colors;
+  @apply text-gray-500 hover:text-gray-700 hover:bg-gray-200;
+
+  :host-context(.dark) & {
+    @apply text-gray-400 hover:text-gray-200;
+    &:hover { background-color: #374151; }
+  }
+
+  svg { @apply w-4 h-4; }
+}
+
+.card-body-padded {
+  @apply px-4 sm:px-5 py-3;
+}

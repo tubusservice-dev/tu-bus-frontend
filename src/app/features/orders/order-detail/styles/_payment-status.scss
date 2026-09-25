@@ -1,0 +1,267 @@
+// ============================================
+// SECCIÓN PAGO — Comentario
+// ============================================
+.payment-note-section {
+  @apply px-4 sm:px-5 py-3 border-t border-gray-100 dark:border-gray-700 flex flex-col gap-2;
+}
+
+.note-label {
+  @apply text-xs text-gray-500 dark:text-gray-400;
+}
+
+.note-textarea {
+  @apply w-full px-3 py-2 rounded-lg text-sm outline-none resize-none transition-colors;
+  @apply bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600;
+  @apply text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500;
+
+  &:focus {
+    border-color: var(--accent-primary, #001d56);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+  }
+}
+
+.note-actions {
+  @apply flex justify-end;
+}
+
+.btn-save-note {
+  @apply px-4 py-1.5 text-xs font-medium rounded-lg text-white transition-colors;
+  background-color: var(--accent-primary, #001d56);
+
+  &:hover:not(:disabled) { opacity: 0.92; }
+  &:disabled { @apply opacity-50 cursor-not-allowed; }
+}
+
+.alert-success-inline {
+  @apply text-xs px-3 py-2 rounded-md bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400;
+}
+
+.alert-error-inline {
+  @apply text-xs px-3 py-2 rounded-md bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400;
+}
+
+// Comprobante
+.proof-section {
+  @apply flex items-center justify-between gap-3 px-4 sm:px-5 py-3;
+}
+
+.proof-image {
+  @apply rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer object-cover flex-shrink-0;
+  width: 72px;
+  height: 72px;
+  transition: transform 0.15s, box-shadow 0.15s;
+
+  &:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+}
+
+// ============================================
+// SECCIÓN MECÁNICO — Popover de teléfono
+// ============================================
+.info-row-phone {
+  @apply relative flex-wrap;
+  // On narrow viewports the "Teléfono" label + phone button may not fit
+  // on the same line — allow the button to wrap to a new line.
+  row-gap: 0.5rem;
+}
+
+.mechanic-phone-wrapper { @apply relative; }
+
+.mechanic-phone-btn {
+  @apply inline-flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-colors;
+  @apply bg-blue-50 text-blue-600 border border-blue-200;
+  @apply hover:bg-blue-100 active:bg-blue-200;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+
+  :host-context(.dark) & {
+    @apply text-blue-400 border-blue-800;
+    background-color: rgba(59, 130, 246, 0.1);
+    &:hover { background-color: rgba(59, 130, 246, 0.2); }
+  }
+
+  svg { @apply w-3.5 h-3.5 flex-shrink-0; }
+}
+
+.phone-popover {
+  @apply absolute mt-1 rounded-xl shadow-lg overflow-hidden bg-white border border-gray-200;
+  right: 0;
+  min-width: 160px;
+  z-index: 20;
+  animation: popover-in 0.15s ease-out;
+
+  :host-context(.dark) & {
+    background-color: #1e293b;
+    border-color: #334155;
+  }
+}
+
+@keyframes popover-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.popover-option {
+  @apply w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors;
+  @apply text-gray-700 hover:bg-gray-50;
+
+  :host-context(.dark) & {
+    @apply text-gray-300;
+    &:hover { background-color: #334155; }
+  }
+
+  svg { @apply w-5 h-5 flex-shrink-0; }
+
+  & + & {
+    @apply border-t border-gray-100;
+    :host-context(.dark) & { border-top-color: #334155; }
+  }
+
+  &.popover-whatsapp {
+    color: #15803d;
+    :host-context(.dark) & { color: #4ade80; }
+    &:hover {
+      background-color: #f0fdf4;
+      :host-context(.dark) & { background-color: rgba(34, 197, 94, 0.1); }
+    }
+  }
+}
+
+// Botón de seguimiento del servicio
+.btn-tracking-link {
+  @apply flex items-center justify-between gap-2 px-4 py-3 text-sm font-medium transition-colors;
+  @apply text-blue-600 dark:text-blue-400;
+  @apply border-t border-gray-100 dark:border-gray-700;
+  background: transparent;
+  text-decoration: none;
+
+  &:hover { @apply text-blue-700 dark:text-blue-300; }
+
+  svg { @apply w-4 h-4; }
+}
+
+// ============================================
+// ESTADO DE LA ORDEN
+// ============================================
+.current-status-row {
+  @apply flex flex-col gap-1.5 px-4 sm:px-5 py-3;
+}
+
+.current-status-description {
+  @apply text-sm text-gray-600 dark:text-gray-400 leading-relaxed m-0;
+}
+
+.current-status-note {
+  @apply text-sm text-gray-500 dark:text-gray-500 italic;
+}
+
+.current-status-date {
+  @apply text-xs text-gray-400 dark:text-gray-500;
+}
+
+
+// ============================================
+// CANCELAR ORDEN
+// ============================================
+.cancel-section {
+  @apply mt-6 px-4 sm:px-5 py-4 rounded-xl bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/40;
+}
+
+.cancel-inline-text {
+  @apply text-sm text-amber-900 dark:text-amber-200 leading-relaxed m-0;
+}
+
+.cancel-inline-link {
+  @apply inline-block mt-2 font-semibold text-red-600 dark:text-red-400 underline cursor-pointer;
+  &:hover { @apply text-red-700 dark:text-red-300; }
+}
+
+// Modal overlay
+.cancel-overlay {
+  @apply fixed inset-0 flex items-center justify-center p-4 z-50;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+}
+
+.cancel-modal {
+  @apply bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md p-6 text-center;
+  animation: modal-in 0.2s ease-out;
+}
+
+@keyframes modal-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.cancel-modal-icon {
+  @apply w-14 h-14 mx-auto mb-4 flex items-center justify-center rounded-full;
+  @apply bg-amber-100 dark:bg-amber-900/30;
+  svg { @apply w-7 h-7 text-amber-600 dark:text-amber-400; }
+}
+
+.cancel-modal-title {
+  @apply text-lg font-semibold text-gray-900 dark:text-white mb-1;
+}
+
+.cancel-modal-order {
+  @apply text-xs font-mono text-gray-500 dark:text-gray-400 mb-3;
+}
+
+.cancel-modal-text {
+  @apply text-sm text-gray-600 dark:text-gray-400 mb-4;
+}
+
+.cancel-reason-textarea {
+  @apply w-full px-3 py-2 text-sm rounded-lg border outline-none transition-colors resize-none;
+  @apply bg-white dark:bg-gray-700/50 text-gray-900 dark:text-gray-100;
+  @apply border-gray-300 dark:border-gray-600;
+
+  &:focus {
+    border-color: var(--accent-primary, #001d56);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+  }
+}
+
+.cancel-modal-hint {
+  @apply block text-[11px] text-gray-400 dark:text-gray-500 italic mb-3 text-left;
+}
+
+.cancel-modal-actions {
+  @apply flex items-center gap-3 mt-4;
+}
+
+.cancel-modal-back {
+  @apply flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors;
+  @apply text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700;
+  @apply hover:bg-gray-200 dark:hover:bg-gray-600;
+  border: 1px solid transparent;
+}
+
+.cancel-modal-confirm {
+  @apply flex-1 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors;
+  background-color: #ef4444;
+
+  &:hover:not(:disabled) { background-color: #dc2626; }
+  &:disabled { @apply opacity-60 cursor-not-allowed; }
+}
+
+// Loading del cancel
+.cancel-loading {
+  @apply flex flex-col items-center justify-center py-8 gap-4;
+
+  p { @apply text-sm text-gray-600 dark:text-gray-400 m-0; }
+}
+
+.cancel-spinner {
+  @apply w-10 h-10 rounded-full animate-spin;
+  border-width: 3px;
+  border-color: #e5e7eb;
+  border-top-color: #ef4444;
+
+  :host-context(.dark) & {
+    border-color: #374151;
+    border-top-color: #ef4444;
+  }
+}

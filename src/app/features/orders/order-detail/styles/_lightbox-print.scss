@@ -1,0 +1,143 @@
+// ============================================
+// LIGHTBOX COMPROBANTE
+// ============================================
+.lightbox-overlay {
+  @apply fixed inset-0 z-50 flex items-center justify-center p-4 cursor-pointer;
+  background-color: rgba(0, 0, 0, 0.9);
+}
+
+.lightbox-close {
+  @apply absolute top-4 right-4 w-10 h-10 flex items-center justify-center rounded-full text-white;
+  background-color: rgba(255, 255, 255, 0.1);
+  &:hover { background-color: rgba(255, 255, 255, 0.2); }
+
+  svg { @apply w-5 h-5; }
+}
+
+.lightbox-image {
+  @apply max-w-full max-h-[90vh] rounded-lg cursor-default;
+}
+
+// ============================================
+// ELEMENTOS SOLO EN IMPRESIÓN
+// ============================================
+.print-only {
+  display: none;
+}
+
+// ============================================
+// @MEDIA PRINT — Estilos PDF
+// ============================================
+@media print {
+  // Ocultar UI interactiva
+  .no-print,
+  .btn-back,
+  .btn-print,
+  .header-actions,
+  .cancel-overlay,
+  .lightbox-overlay,
+  .btn-toggle-detail,
+  .payment-note-section,
+  .cancel-section,
+  .btn-tracking-link,
+  .phone-popover {
+    display: none !important;
+  }
+
+  // Mostrar elementos de impresión
+  .print-only {
+    display: block !important;
+  }
+
+  // Reset del layout
+  .order-detail-page {
+    background: white !important;
+    color: #111827 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+
+  // Header de impresión
+  .print-header {
+    display: flex !important;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 16px 0;
+    margin-bottom: 16px;
+    border-bottom: 2px solid #111827;
+  }
+
+  .print-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    img { width: 42px; height: 42px; }
+    div { display: flex; flex-direction: column; }
+    strong { font-size: 16px; color: #111827; }
+    span { font-size: 11px; color: #4b5563; }
+  }
+
+  .print-order-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    text-align: right;
+
+    strong { font-size: 14px; color: #111827; }
+    span { font-size: 11px; color: #4b5563; }
+  }
+
+  // Cards compactas para print
+  .detail-card {
+    background: white !important;
+    border: 1px solid #d1d5db !important;
+    box-shadow: none !important;
+    page-break-inside: avoid;
+    margin-bottom: 12px !important;
+  }
+
+  .card-title {
+    background: #f9fafb !important;
+    color: #111827 !important;
+    border-bottom-color: #d1d5db !important;
+    svg { color: #001d56 !important; }
+  }
+
+  .info-label,
+  .info-value,
+  .product-name,
+  .product-qty,
+  .current-status-description,
+  .current-status-note,
+  .current-status-date {
+    color: #111827 !important;
+  }
+
+  .info-label,
+  .product-qty,
+  .current-status-date {
+    color: #4b5563 !important;
+  }
+
+  // Badges con color preservado
+  .status-badge {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+    border: 1px solid currentColor;
+  }
+
+  // Grid single column
+  .detail-grid {
+    display: block !important;
+  }
+
+  // Mechanic button como texto plano
+  .mechanic-phone-btn {
+    background: transparent !important;
+    border: none !important;
+    color: #111827 !important;
+    padding: 0 !important;
+    svg { display: none !important; }
+  }
+}
